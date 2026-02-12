@@ -91,6 +91,23 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         default=None,
         help="Turn limit alias: maps to --turns (rlm) or --max-turns (chat)",
     )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="Chat mode only: LM request timeout in seconds (maps to --timeout)",
+    )
+    parser.add_argument(
+        "--recursive-depth",
+        type=int,
+        default=None,
+        help="Chat mode only: internal self-reflection passes (maps to --recursive-depth)",
+    )
+    parser.add_argument(
+        "--no-recursive-intellect",
+        action="store_true",
+        help="Chat mode only: disable recursive self-reflection",
+    )
     args = parser.parse_args(known)
     return args, passthrough
 
@@ -114,6 +131,12 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
         cmd.extend(["--library", args.library])
     if args.turns is not None:
         cmd.extend(["--max-turns", str(args.turns)])
+    if args.timeout is not None:
+        cmd.extend(["--timeout", str(args.timeout)])
+    if args.recursive_depth is not None:
+        cmd.extend(["--recursive-depth", str(args.recursive_depth)])
+    if args.no_recursive_intellect:
+        cmd.append("--no-recursive-intellect")
     cmd.extend(passthrough)
     return cmd
 
