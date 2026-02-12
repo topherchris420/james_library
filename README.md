@@ -40,3 +40,20 @@ python rain_lab_meeting_chat_version.py --library . --topic "your research topic
 ```
 
 Recursive intellect means each agent can do internal critique+revision passes before speaking, improving grounding, novelty, and clarity.
+
+### Unified launcher (recommended)
+
+Use one command and choose backend mode:
+
+```bash
+python rain_lab.py --mode chat --topic "your research topic"
+python rain_lab.py --mode rlm --topic "your research topic"
+```
+
+You can pass backend-specific flags after `--`:
+
+```bash
+python rain_lab.py --mode chat --topic "your topic" -- --recursive-depth 2 --no-web
+python rain_lab.py --mode rlm --topic "your topic" -- --no-web
+```
+

@@ -8,13 +8,23 @@ import os
 import glob
 
 # --- FORCE UTF-8 GLOBALLY (must be before other imports) ---
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding='utf-8')
+    except Exception:
+        # Some environments don't expose reconfigure(); keep running.
+        pass
 os.environ["PYTHONIOENCODING"] = "utf-8"
 os.environ["PYTHONUTF8"] = "1"
 
 # POINT TO THE USER'S LIBRARY LOCATION
-TARGET_PATH = r"C:\Users\chris\Downloads\files\james_library"
+TARGET_PATH = os.environ.get(
+    "JAMES_LIBRARY_PATH",
+    r"C:\Users\chris\Downloads\files\james_library",
+)
+if not os.path.exists(TARGET_PATH):
+    # Fallback to the current working directory when launched from the repo folder.
+    TARGET_PATH = os.getcwd()
 
 # Add path so we can import 'rlm'
 sys.path.insert(0, TARGET_PATH)
@@ -29,14 +39,16 @@ try:
 except Exception:
     pass
 
-try:
-    from rlm import RLM
-    import rlm as _rlm_mod
-    print(f"Using RLM from: {_rlm_mod.__file__}")
-except ImportError:
-    print(f"❌ CRITICAL ERROR: Could not import 'rlm' from {TARGET_PATH}")
-    print("Ensure the 'rlm' folder is inside 'james_library'.")
-    sys.exit(1)
+RLM = None
+if "--help" not in sys.argv and "-h" not in sys.argv:
+    try:
+        from rlm import RLM
+        import rlm as _rlm_mod
+        print(f"Using RLM from: {_rlm_mod.__file__}")
+    except ImportError:
+        print(f"❌ CRITICAL ERROR: Could not import 'rlm' from {TARGET_PATH}")
+        print("Ensure the 'rlm' folder is inside 'james_library'.")
+        sys.exit(1)
 
 import io
 import time
@@ -58,8 +70,11 @@ def _host_has_web_search() -> bool:
         return False
 
 # --- FORCE UTF-8 ---
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+for _name in ("stdout", "stderr"):
+    _obj = getattr(sys, _name, None)
+    _buffer = getattr(_obj, "buffer", None)
+    if _buffer is not None:
+        setattr(sys, _name, io.TextIOWrapper(_buffer, encoding='utf-8'))
 
 
 # =============================================================================
@@ -71,8 +86,8 @@ import os
 import glob
 import re
 
-# HARDCODED PATH TO USER LIBRARY (Use forward slashes to avoid escape issues)
-LIBRARY_PATH = r"C:/Users/chris/Downloads/files/james_library"
+# PATH TO USER LIBRARY (Use forward slashes to avoid escape issues)
+LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", r"C:/Users/chris/Downloads/files/james_library")
 
 # GLOBAL TOPIC VARIABLE (Injected by the agent's first turn or host env)
 TOPIC = os.environ.get("RLM_TOPIC", "RESEARCH_TOPIC")
@@ -82,6 +97,7 @@ embedder = None
 collection = None
 _web_search_ready = False
 _rag_failed = False
+_paper_cache = {}
 
 
 def _require_web_search():
@@ -258,37 +274,49 @@ def search_web(query):
         return f"Search Error: {e}"
 
 def read_paper(keyword):
-    """Scans LIBRARY_PATH for files matching 'keyword' and returns content (approx 120k chars)."""
-    print(f"📖 READING PAPER: {keyword}...")
-    if keyword.strip().lower() in {"task", "task analysis", "analysis", "context"}:
+    """Read one best-matching paper safely; reuse cached content on repeated reads."""
+    global _paper_cache
+    kw = (keyword or "").strip()
+    print(f"📖 READING PAPER: {kw}...")
+    if kw.lower() in {"task", "task analysis", "analysis", "context"}:
         return "Invalid paper name. Use list_papers() and read_paper() with a real filename."
-    search_pattern = os.path.join(LIBRARY_PATH, f"*{keyword}*")
-    files = [f for f in glob.glob(search_pattern) if f.lower().endswith((".md", ".txt"))]
-    if not files:
+
+    # Prefer exact filename matches first to avoid broad wildcard collisions.
+    all_files = [
+        f for f in (glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")))
+        if not os.path.basename(f).startswith("_")
+        and "SOUL" not in os.path.basename(f).upper()
+        and "LOG" not in os.path.basename(f).upper()
+    ]
+    kw_lower = kw.lower()
+    exact = [f for f in all_files if os.path.basename(f).lower() == kw_lower]
+    if not exact:
+        exact = [f for f in all_files if os.path.basename(f).lower() == (kw_lower + ".md") or os.path.basename(f).lower() == (kw_lower + ".txt")]
+
+    chosen_files = exact if exact else [f for f in all_files if kw_lower in os.path.basename(f).lower()]
+    if not chosen_files:
         return "No paper found."
-    
-    # Read matches up to a total cap to keep context reasonable
-    combined_content = ""
-    total_limit = 120000
-    for file_path in files:
-        basename = os.path.basename(file_path)
-        if basename.startswith("_"):
-            continue
-        if "SOUL" in basename.upper() or "LOG" in basename.upper():
-            continue
-        try:
-            with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
-                remaining = total_limit - len(combined_content)
-                if remaining <= 0:
-                    break
-                content = f.read()[:remaining]
-                combined_content += chr(10) + "--- CONTENT OF " + basename + " ---" + chr(10) + content
-        except Exception as e:
-            combined_content += chr(10) + "Error reading " + str(file_path) + ": " + str(e)
-            
-    result = combined_content if combined_content else "No valid papers found."
-    print(result)
-    return result
+
+    file_path = chosen_files[0]
+    basename = os.path.basename(file_path)
+
+    # Fast path: avoid re-reading the same paper again in this session.
+    if basename in _paper_cache:
+        result = _paper_cache[basename]
+        print(result)
+        return result
+
+    try:
+        with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+            content = f.read()[:120000]
+        result = chr(10) + "--- CONTENT OF " + basename + " ---" + chr(10) + content
+        _paper_cache[basename] = result
+        print(result)
+        return result
+    except Exception as e:
+        msg = "Error reading " + str(file_path) + ": " + str(e)
+        print(msg)
+        return msg
 
 
 def search_library(query):
@@ -632,7 +660,7 @@ def _host_select_files(topic: str, max_files: int = 2) -> list[Path]:
         if any(k in fname for k in keys):
             exact.append(f)
     chosen = exact if exact else candidates
-    return chosen[:max_files]
+    return list(dict.fromkeys(chosen))[:max_files]
 
 
 def _host_snippets(files: list[Path], per_file_chars: int = 1200) -> str:
@@ -729,9 +757,9 @@ BEGIN EXECUTION IMMEDIATELY.
         self.rlm = RLM(
             backend="openai",
             backend_kwargs={
-                "model_name": "qwen2.5-coder-7b-instruct",
-                "base_url": "http://127.0.0.1:1234/v1",
-                "api_key": "lm-studio",
+                "model_name": os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct"),
+                "base_url": os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
+                "api_key": os.environ.get("LM_STUDIO_API_KEY", "lm-studio"),
                 "timeout": 180.0,
             },
             environment="local",
@@ -1250,7 +1278,7 @@ def _host_select_files(topic: str, max_files: int = 2) -> list[Path]:
         if any(k in fname for k in keys):
             exact.append(f)
     chosen = exact if exact else candidates
-    return chosen[:max_files]
+    return list(dict.fromkeys(chosen))[:max_files]
 
 
 def _host_snippets(files: list[Path], per_file_chars: int = 2000) -> str:
