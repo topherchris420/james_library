@@ -1438,7 +1438,10 @@ Examples:
         help='Show detailed loading output (papers, souls, web search)'
     )
     
-    return parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        print(f"⚠️ Ignoring unrecognized args: {' '.join(unknown)}")
+    return args
 
 
 # --- ENTRY POINT ---
