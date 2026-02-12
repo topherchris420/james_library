@@ -68,8 +68,8 @@ class Config:
     api_key: str = os.environ.get("LM_STUDIO_API_KEY", "lm-studio")
     model_name: str = DEFAULT_MODEL_NAME
     max_tokens: int = 200  # Enough tokens for agents to complete their thoughts
-    timeout: float = 120.0  # Increased timeout for slower inference
-    max_retries: int = 2
+    timeout: float = float(os.environ.get("RAIN_TIMEOUT", "240"))  # Request timeout in seconds
+    max_retries: int = int(os.environ.get("RAIN_MAX_RETRIES", "3"))
     recursive_intellect: bool = os.environ.get("RAIN_RECURSIVE_INTELLECT", "1") != "0"
     recursive_depth: int = int(os.environ.get("RAIN_RECURSIVE_DEPTH", "2"))
     
@@ -697,8 +697,15 @@ class RainLabOrchestrator:
         # LLM client with extended timeout for large context processing
         try:
             import httpx
-            # Use httpx.Timeout: reduced for faster failure detection
-            custom_timeout = httpx.Timeout(10.0, read=120.0, write=10.0, connect=10.0)
+            # Use configured timeout so slower local inference can complete.
+            request_timeout = max(10.0, float(config.timeout))
+            connect_timeout = min(30.0, request_timeout)
+            custom_timeout = httpx.Timeout(
+                request_timeout,
+                read=request_timeout,
+                write=connect_timeout,
+                connect=connect_timeout
+            )
             self.client = openai.OpenAI(
                 base_url=config.base_url, 
                 api_key=config.api_key,
@@ -717,7 +724,8 @@ class RainLabOrchestrator:
                 response = self.client.chat.completions.create(
                     model=self.config.model_name,
                     messages=[{"role": "user", "content": "test"}],
-                    max_tokens=5
+                    max_tokens=5,
+                    timeout=max(10.0, self.config.timeout)
                 )
                 print("   ✓ Connection successful!\n")
                 return True
@@ -1004,6 +1012,10 @@ CRITICAL RULES:
         
         # RETRY LOGIC
         for attempt in range(self.config.max_retries):
+            attempt_timeout = max(10.0, self.config.timeout * (1 + (attempt * 0.5)))
+            degraded_mode = attempt > 0
+            effective_context_block = context_block if not degraded_mode else context_block[:max(4000, self.config.total_context_length // 3)]
+            effective_recursive_depth = self.config.recursive_depth if not degraded_mode else 0
             try:
                 # Build conversational user message based on agreeableness
                 if prev_speaker and prev_speaker != agent.name and prev_speaker != "FOUNDER":
@@ -1063,18 +1075,19 @@ Respond as {agent.name} only:"""
                 response = self.client.chat.completions.create(
                     model=self.config.model_name,
                     messages=[
-                        {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
+                        {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{effective_context_block}"},
                         {"role": "user", "content": user_msg}
                     ],
                     temperature=self.config.temperature,
-                    max_tokens=self.config.max_tokens
+                    max_tokens=self.config.max_tokens,
+                    timeout=attempt_timeout
                 )
                 
                 content = response.choices[0].message.content.strip()
 
                 # Optional recursive refinement: critique + revise in short internal loops
-                if self.config.recursive_intellect and self.config.recursive_depth > 0 and content:
-                    for _ in range(self.config.recursive_depth):
+                if self.config.recursive_intellect and effective_recursive_depth > 0 and content:
+                    for _ in range(effective_recursive_depth):
                         critique = self.client.chat.completions.create(
                             model=self.config.model_name,
                             messages=[
@@ -1088,14 +1101,15 @@ Respond as {agent.name} only:"""
                                 )}
                             ],
                             temperature=0.2,
-                            max_tokens=120
+                            max_tokens=120,
+                            timeout=attempt_timeout
                         )
 
                         critique_text = critique.choices[0].message.content.strip()
                         refined = self.client.chat.completions.create(
                             model=self.config.model_name,
                             messages=[
-                                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
+                                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{effective_context_block}"},
                                 {"role": "user", "content": (
                                     f"Revise this response as {agent.name} using critique below. "
                                     "Keep it under 80 words, add one concrete paper-grounded point, "
@@ -1105,7 +1119,8 @@ Respond as {agent.name} only:"""
                                 )}
                             ],
                             temperature=self.config.temperature,
-                            max_tokens=self.config.max_tokens
+                            max_tokens=self.config.max_tokens,
+                            timeout=attempt_timeout
                         )
                         content = refined.choices[0].message.content.strip() or content
                 
@@ -1146,7 +1161,8 @@ Respond as {agent.name} only:"""
                                 {"role": "user", "content": f"Complete this thought in ONE sentence. Keep it brief:\n\n{content}"}
                             ],
                             temperature=self.config.temperature,
-                            max_tokens=60  # Just enough to finish the thought
+                            max_tokens=60,  # Just enough to finish the thought
+                            timeout=attempt_timeout
                         )
                         
                         cont_text = continuation.choices[0].message.content.strip()
@@ -1195,9 +1211,12 @@ Respond as {agent.name} only:"""
                 return content, {}
             
             except openai.APITimeoutError:
-                print(f"\n⏱️  Timeout (attempt {attempt+1}/{self.config.max_retries})")
+                print(f"\n⏱️  Timeout (attempt {attempt+1}/{self.config.max_retries}, timeout={attempt_timeout:.0f}s)")
                 if attempt < self.config.max_retries - 1:
-                    print("   Retrying in 2 seconds...")
+                    if attempt == 0:
+                        print("   Retrying with lighter context and recursive intellect disabled...")
+                    else:
+                        print("   Retrying in 2 seconds...")
                     time.sleep(2)
                 else:
                     print("\n💡 The model might be overloaded. Try:")
@@ -1418,6 +1437,20 @@ Examples:
         default=200,
         help='Max tokens per response (default: 200)'
     )
+
+    parser.add_argument(
+        '--timeout',
+        type=float,
+        default=float(os.environ.get("RAIN_TIMEOUT", "240")),
+        help='Base request timeout in seconds (default: 240)'
+    )
+
+    parser.add_argument(
+        '--max-retries',
+        type=int,
+        default=int(os.environ.get("RAIN_MAX_RETRIES", "3")),
+        help='Maximum retry attempts for model calls (default: 3)'
+    )
     
     parser.add_argument(
         '--no-web',
@@ -1445,6 +1478,8 @@ def main():
         temperature=args.temp,
         max_turns=args.max_turns,
         max_tokens=args.max_tokens,
+        timeout=max(10.0, args.timeout),
+        max_retries=max(1, args.max_retries),
         enable_web_search=not args.no_web,
         verbose=args.verbose,
         model_name=args.model,
