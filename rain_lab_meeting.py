@@ -1223,6 +1223,10 @@ if __name__ == "__main__":
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
     parser.add_argument("topic_words", nargs="*", help="Meeting topic (positional)")
     parser.add_argument("--turns", type=int, default=16, help="Max turns")
+    # Compatibility flags accepted by launcher/chat mode; ignored by RLM engine.
+    parser.add_argument("--timeout", type=float, default=None, help="Compatibility flag (ignored in RLM mode)")
+    parser.add_argument("--recursive-depth", type=int, default=None, help="Compatibility flag (ignored in RLM mode)")
+    parser.add_argument("--no-recursive-intellect", action="store_true", help="Compatibility flag (ignored in RLM mode)")
     parser.add_argument("--no-web", action="store_true", help="Disable required web search")
     parser.add_argument("--require-web", action="store_true", help="Require web search (default)")
     
