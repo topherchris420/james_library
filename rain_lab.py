@@ -1,0 +1,92 @@
+"""Unified launcher for R.A.I.N. Lab meeting modes.
+
+Usage examples:
+  python rain_lab.py --mode rlm --topic "Guarino paper"
+  python rain_lab.py --mode chat --topic "Guarino paper" -- --recursive-depth 2
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+def _split_passthrough_args(argv: list[str]) -> tuple[list[str], list[str]]:
+    if "--" in argv:
+        idx = argv.index("--")
+        return argv[:idx], argv[idx + 1 :]
+    return argv, []
+
+
+def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
+    known, passthrough = _split_passthrough_args(argv)
+    parser = argparse.ArgumentParser(
+        description="Unified launcher for rain_lab_meeting modes"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["rlm", "chat"],
+        default="chat",
+        help="Which engine to run: rlm (tool-exec) or chat (openai chat completions)",
+    )
+    parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
+    parser.add_argument(
+        "--library",
+        type=str,
+        default=None,
+        help="Library path (used directly by chat mode; exported as JAMES_LIBRARY_PATH for rlm mode)",
+    )
+    parser.add_argument(
+        "--turns",
+        type=int,
+        default=None,
+        help="Turn limit alias: maps to --turns (rlm) or --max-turns (chat)",
+    )
+    args = parser.parse_args(known)
+    return args, passthrough
+
+
+def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: Path) -> list[str]:
+    if args.mode == "rlm":
+        target = repo_root / "rain_lab_meeting.py"
+        cmd = [sys.executable, str(target)]
+        if args.topic:
+            cmd.extend(["--topic", args.topic])
+        if args.turns is not None:
+            cmd.extend(["--turns", str(args.turns)])
+        cmd.extend(passthrough)
+        return cmd
+
+    target = repo_root / "rain_lab_meeting_chat_version.py"
+    cmd = [sys.executable, str(target)]
+    if args.topic:
+        cmd.extend(["--topic", args.topic])
+    if args.library:
+        cmd.extend(["--library", args.library])
+    if args.turns is not None:
+        cmd.extend(["--max-turns", str(args.turns)])
+    cmd.extend(passthrough)
+    return cmd
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = list(argv) if argv is not None else sys.argv[1:]
+    args, passthrough = parse_args(argv)
+    repo_root = Path(__file__).resolve().parent
+    cmd = build_command(args, passthrough, repo_root)
+
+    child_env = None
+    if args.library:
+        child_env = dict(os.environ)
+        child_env["JAMES_LIBRARY_PATH"] = args.library
+
+    print(f"Launching mode={args.mode}: {' '.join(cmd)}")
+    result = subprocess.run(cmd, env=child_env)
+    return int(result.returncode)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

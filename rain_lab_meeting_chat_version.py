@@ -19,7 +19,10 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 import argparse
-import msvcrt  # Windows keyboard input detection
+try:
+    import msvcrt  # Windows keyboard input detection
+except ImportError:
+    msvcrt = None
 
 # --- SILENCE WARNINGS ---
 warnings.simplefilter("ignore")
@@ -27,11 +30,13 @@ os.environ['PYTHONWARNINGS'] = 'ignore'
 logging.getLogger().setLevel(logging.WARNING)
 
 # --- IMPORTS ---
-try:
-    import openai
-except ImportError:
-    print("❌ Error: openai package not installed. Run: pip install openai")
-    sys.exit(1)
+openai = None
+if "--help" not in sys.argv and "-h" not in sys.argv:
+    try:
+        import openai
+    except ImportError:
+        print("❌ Error: openai package not installed. Run: pip install openai")
+        sys.exit(1)
 
 # Optional: DuckDuckGo search support
 DDG_AVAILABLE = False
@@ -851,7 +856,7 @@ class RainLabOrchestrator:
             intervention_window = 1.5  # seconds to wait for user input
             start_time = time.time()
             while time.time() - start_time < intervention_window:
-                if msvcrt.kbhit():  # Check if a key was pressed
+                if msvcrt and msvcrt.kbhit():  # Check if a key was pressed
                     key = msvcrt.getch()
                     user_wants_to_speak = True
                     break
