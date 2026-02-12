@@ -65,6 +65,8 @@ class Config:
     max_tokens: int = 200  # Enough tokens for agents to complete their thoughts
     timeout: float = 120.0  # Increased timeout for slower inference
     max_retries: int = 2
+    recursive_intellect: bool = os.environ.get("RAIN_RECURSIVE_INTELLECT", "1") != "0"
+    recursive_depth: int = int(os.environ.get("RAIN_RECURSIVE_DEPTH", "2"))
     
     # File Settings
     library_path: str = DEFAULT_LIBRARY_PATH
@@ -1034,6 +1036,43 @@ Respond as {agent.name} only:"""
                 )
                 
                 content = response.choices[0].message.content.strip()
+
+                # Optional recursive refinement: critique + revise in short internal loops
+                if self.config.recursive_intellect and self.config.recursive_depth > 0 and content:
+                    for _ in range(self.config.recursive_depth):
+                        critique = self.client.chat.completions.create(
+                            model=self.config.model_name,
+                            messages=[
+                                {"role": "system", "content": f"You are a strict research editor for {agent.name}."},
+                                {"role": "user", "content": (
+                                    "Review this draft and return a compact critique with exactly 3 bullets: "
+                                    "(1) factual grounding to provided papers, (2) novelty vs prior turns, "
+                                    "(3) clarity under 80 words.\n\n"
+                                    f"DRAFT:\n{content}\n\n"
+                                    "If there are no issues, still return 3 bullets and say what is strong."
+                                )}
+                            ],
+                            temperature=0.2,
+                            max_tokens=120
+                        )
+
+                        critique_text = critique.choices[0].message.content.strip()
+                        refined = self.client.chat.completions.create(
+                            model=self.config.model_name,
+                            messages=[
+                                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
+                                {"role": "user", "content": (
+                                    f"Revise this response as {agent.name} using critique below. "
+                                    "Keep it under 80 words, add one concrete paper-grounded point, "
+                                    "avoid repetition, and respond in first person only.\n\n"
+                                    f"ORIGINAL:\n{content}\n\n"
+                                    f"CRITIQUE:\n{critique_text}"
+                                )}
+                            ],
+                            temperature=self.config.temperature,
+                            max_tokens=self.config.max_tokens
+                        )
+                        content = refined.choices[0].message.content.strip() or content
                 
                 # Clean up response - remove agent speaking as self
                 if content.startswith(f"{agent.name}:"):
@@ -1317,6 +1356,19 @@ Examples:
         default=0.4,
         help='LLM temperature (0.0-1.0, default: 0.4)'
     )
+
+    parser.add_argument(
+        '--recursive-depth',
+        type=int,
+        default=int(os.environ.get("RAIN_RECURSIVE_DEPTH", "2")),
+        help='Internal self-reflection passes per response (default: 2)'
+    )
+
+    parser.add_argument(
+        '--no-recursive-intellect',
+        action='store_true',
+        help='Disable recursive self-reflection refinement'
+    )
     
     parser.add_argument(
         '--max-turns',
@@ -1361,7 +1413,9 @@ def main():
         enable_web_search=not args.no_web,
         verbose=args.verbose,
         model_name=args.model,
-        base_url=args.base_url
+        base_url=args.base_url,
+        recursive_depth=max(1, args.recursive_depth),
+        recursive_intellect=not args.no_recursive_intellect
     )
     
     # Get topic
