@@ -97,6 +97,7 @@ embedder = None
 collection = None
 _web_search_ready = False
 _rag_failed = False
+_paper_cache = {}
 
 
 def _require_web_search():
@@ -273,37 +274,49 @@ def search_web(query):
         return f"Search Error: {e}"
 
 def read_paper(keyword):
-    """Scans LIBRARY_PATH for files matching 'keyword' and returns content (approx 120k chars)."""
-    print(f"📖 READING PAPER: {keyword}...")
-    if keyword.strip().lower() in {"task", "task analysis", "analysis", "context"}:
+    """Read one best-matching paper safely; reuse cached content on repeated reads."""
+    global _paper_cache
+    kw = (keyword or "").strip()
+    print(f"📖 READING PAPER: {kw}...")
+    if kw.lower() in {"task", "task analysis", "analysis", "context"}:
         return "Invalid paper name. Use list_papers() and read_paper() with a real filename."
-    search_pattern = os.path.join(LIBRARY_PATH, f"*{keyword}*")
-    files = [f for f in glob.glob(search_pattern) if f.lower().endswith((".md", ".txt"))]
-    if not files:
+
+    # Prefer exact filename matches first to avoid broad wildcard collisions.
+    all_files = [
+        f for f in (glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")))
+        if not os.path.basename(f).startswith("_")
+        and "SOUL" not in os.path.basename(f).upper()
+        and "LOG" not in os.path.basename(f).upper()
+    ]
+    kw_lower = kw.lower()
+    exact = [f for f in all_files if os.path.basename(f).lower() == kw_lower]
+    if not exact:
+        exact = [f for f in all_files if os.path.basename(f).lower() == (kw_lower + ".md") or os.path.basename(f).lower() == (kw_lower + ".txt")]
+
+    chosen_files = exact if exact else [f for f in all_files if kw_lower in os.path.basename(f).lower()]
+    if not chosen_files:
         return "No paper found."
-    
-    # Read matches up to a total cap to keep context reasonable
-    combined_content = ""
-    total_limit = 120000
-    for file_path in files:
-        basename = os.path.basename(file_path)
-        if basename.startswith("_"):
-            continue
-        if "SOUL" in basename.upper() or "LOG" in basename.upper():
-            continue
-        try:
-            with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
-                remaining = total_limit - len(combined_content)
-                if remaining <= 0:
-                    break
-                content = f.read()[:remaining]
-                combined_content += chr(10) + "--- CONTENT OF " + basename + " ---" + chr(10) + content
-        except Exception as e:
-            combined_content += chr(10) + "Error reading " + str(file_path) + ": " + str(e)
-            
-    result = combined_content if combined_content else "No valid papers found."
-    print(result)
-    return result
+
+    file_path = chosen_files[0]
+    basename = os.path.basename(file_path)
+
+    # Fast path: avoid re-reading the same paper again in this session.
+    if basename in _paper_cache:
+        result = _paper_cache[basename]
+        print(result)
+        return result
+
+    try:
+        with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+            content = f.read()[:120000]
+        result = chr(10) + "--- CONTENT OF " + basename + " ---" + chr(10) + content
+        _paper_cache[basename] = result
+        print(result)
+        return result
+    except Exception as e:
+        msg = "Error reading " + str(file_path) + ": " + str(e)
+        print(msg)
+        return msg
 
 
 def search_library(query):
@@ -647,7 +660,7 @@ def _host_select_files(topic: str, max_files: int = 2) -> list[Path]:
         if any(k in fname for k in keys):
             exact.append(f)
     chosen = exact if exact else candidates
-    return chosen[:max_files]
+    return list(dict.fromkeys(chosen))[:max_files]
 
 
 def _host_snippets(files: list[Path], per_file_chars: int = 1200) -> str:
@@ -1267,7 +1280,7 @@ def _host_select_files(topic: str, max_files: int = 2) -> list[Path]:
         if any(k in fname for k in keys):
             exact.append(f)
     chosen = exact if exact else candidates
-    return chosen[:max_files]
+    return list(dict.fromkeys(chosen))[:max_files]
 
 
 def _host_snippets(files: list[Path], per_file_chars: int = 2000) -> str:
