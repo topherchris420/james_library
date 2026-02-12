@@ -45,9 +45,18 @@ if "--help" not in sys.argv and "-h" not in sys.argv:
         from rlm import RLM
         import rlm as _rlm_mod
         print(f"Using RLM from: {_rlm_mod.__file__}")
-    except ImportError:
+    except ImportError as e:
+        missing_dep = getattr(e, "name", None)
         print(f"❌ CRITICAL ERROR: Could not import 'rlm' from {TARGET_PATH}")
-        print("Ensure the 'rlm' folder is inside 'james_library'.")
+        print("Checked sys.path entries:")
+        print(f"  - {TARGET_PATH}")
+        print(f"  - {os.path.join(TARGET_PATH, 'rlm-main')}")
+        print(f"  - {os.path.join(TARGET_PATH, 'rlm-main', 'rlm-main')}")
+        if missing_dep:
+            print(f"Missing Python dependency: {missing_dep}")
+            print("Install it in this same Python env and re-run.")
+        else:
+            print(f"ImportError details: {e}")
         sys.exit(1)
 
 import io
@@ -767,7 +776,7 @@ BEGIN EXECUTION IMMEDIATELY.
                 "setup_code": setup_code
             },
             custom_system_prompt=custom_prompt,
-            verbose=True
+            verbose=False
         )
         print("   ✓ RLM initialized with read_paper() and search_web()")
     
