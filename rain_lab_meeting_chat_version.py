@@ -12,6 +12,9 @@ import random
 import sys
 import time
 from pathlib import Path
+
+DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent)
+DEFAULT_MODEL_NAME = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -56,14 +59,15 @@ class Config:
     """Centralized configuration - Optimized for Rnj-1 8B"""
     # LLM Settings (Rnj-1 8B is ~50% faster than 12B models)
     temperature: float = 0.7  # Higher temp for more variety in responses
-    base_url: str = "http://127.0.0.1:1234/v1"
-    api_key: str = "lm-studio"
+    base_url: str = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
+    api_key: str = os.environ.get("LM_STUDIO_API_KEY", "lm-studio")
+    model_name: str = DEFAULT_MODEL_NAME
     max_tokens: int = 200  # Enough tokens for agents to complete their thoughts
     timeout: float = 120.0  # Increased timeout for slower inference
     max_retries: int = 2
     
     # File Settings
-    library_path: str = r"C:\Users\chris\Downloads\files\james_library"
+    library_path: str = DEFAULT_LIBRARY_PATH
     meeting_log: str = "RAIN_LAB_MEETING_LOG.md"
     
     # Conversation Settings
@@ -679,7 +683,7 @@ class RainLabOrchestrator:
         for attempt in range(3):
             try:
                 response = self.client.chat.completions.create(
-                    model="local-model",
+                    model=self.config.model_name,
                     messages=[{"role": "user", "content": "test"}],
                     max_tokens=5
                 )
@@ -695,7 +699,7 @@ class RainLabOrchestrator:
                     print("\n💡 Troubleshooting:")
                     print("   1. Is LM Studio running?")
                     print("   2. Is the server started? (green 'Server Running' button)")
-                    print("   3. Is Mistral Nemo loaded?")
+                    print(f"   3. Is model '{self.config.model_name}' loaded?")
                     print(f"   4. Is it listening on {self.config.base_url}?")
                     print("   5. Try clicking 'Reload Model' in LM Studio\n")
                 else:
@@ -1020,7 +1024,7 @@ Respond as {agent.name} only:"""
                 
                 # Use system message for static context (better caching)
                 response = self.client.chat.completions.create(
-                    model="local-model",
+                    model=self.config.model_name,
                     messages=[
                         {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
                         {"role": "user", "content": user_msg}
@@ -1062,7 +1066,7 @@ Respond as {agent.name} only:"""
                     # Request continuation
                     try:
                         continuation = self.client.chat.completions.create(
-                            model="local-model",
+                            model=self.config.model_name,
                             messages=[
                                 {"role": "system", "content": f"{agent.soul}"},
                                 {"role": "user", "content": f"Complete this thought in ONE sentence. Keep it brief:\n\n{content}"}
@@ -1283,7 +1287,7 @@ Examples:
     parser.add_argument(
         '--library',
         type=str,
-        default=r"C:\Users\chris\Downloads\files\james_library",
+        default=DEFAULT_LIBRARY_PATH,
         help='Path to research library folder'
     )
     
@@ -1291,6 +1295,20 @@ Examples:
         '--topic',
         type=str,
         help='Research topic (if not provided, will prompt)'
+    )
+
+    parser.add_argument(
+        '--model',
+        type=str,
+        default=DEFAULT_MODEL_NAME,
+        help=f"LM Studio model name (default: {DEFAULT_MODEL_NAME})"
+    )
+
+    parser.add_argument(
+        '--base-url',
+        type=str,
+        default=os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
+        help='LM Studio OpenAI-compatible base URL'
     )
     
     parser.add_argument(
@@ -1341,7 +1359,9 @@ def main():
         max_turns=args.max_turns,
         max_tokens=args.max_tokens,
         enable_web_search=not args.no_web,
-        verbose=args.verbose
+        verbose=args.verbose,
+        model_name=args.model,
+        base_url=args.base_url
     )
     
     # Get topic
