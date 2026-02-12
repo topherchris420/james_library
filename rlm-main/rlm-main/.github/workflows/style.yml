@@ -1,0 +1,34 @@
+name: Style
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system ruff==0.14.10 ty==0.0.1a21
+
+      - name: Run ruff linting
+        run: ruff check --config=pyproject.toml .
+
+      - name: Run ruff formatting check
+        run: ruff format --check --config=pyproject.toml .
+
+      - name: Run ty type checking
+        run: ty check --exit-zero --output-format=concise
