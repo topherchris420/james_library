@@ -11,15 +11,17 @@ from rlm import RLM
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # --- CONFIGURATION ---
-LIBRARY_PATH = r"C:\Users\chris\Downloads\files\james_library"
+LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", os.path.dirname(__file__))
+MODEL_NAME = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
+BASE_URL = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
 MAX_PAPER_CHARS = 6000  # Limits paper size to fit in context
 
 # --- INITIALIZE RLM ---
 james_rlm = RLM(
     backend="openai",
     backend_kwargs={
-        "model_name": "local-model",
-        "base_url": "http://127.0.0.1:1234/v1"
+        "model_name": MODEL_NAME,
+        "base_url": BASE_URL
     },
     environment="local",  # Allows code execution on your machine
     verbose=True,  # Shows chain-of-thought and code execution

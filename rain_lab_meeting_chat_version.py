@@ -12,6 +12,9 @@ import random
 import sys
 import time
 from pathlib import Path
+
+DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent)
+DEFAULT_MODEL_NAME = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -56,14 +59,17 @@ class Config:
     """Centralized configuration - Optimized for Rnj-1 8B"""
     # LLM Settings (Rnj-1 8B is ~50% faster than 12B models)
     temperature: float = 0.7  # Higher temp for more variety in responses
-    base_url: str = "http://127.0.0.1:1234/v1"
-    api_key: str = "lm-studio"
+    base_url: str = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
+    api_key: str = os.environ.get("LM_STUDIO_API_KEY", "lm-studio")
+    model_name: str = DEFAULT_MODEL_NAME
     max_tokens: int = 200  # Enough tokens for agents to complete their thoughts
     timeout: float = 120.0  # Increased timeout for slower inference
     max_retries: int = 2
+    recursive_intellect: bool = os.environ.get("RAIN_RECURSIVE_INTELLECT", "1") != "0"
+    recursive_depth: int = int(os.environ.get("RAIN_RECURSIVE_DEPTH", "2"))
     
     # File Settings
-    library_path: str = r"C:\Users\chris\Downloads\files\james_library"
+    library_path: str = DEFAULT_LIBRARY_PATH
     meeting_log: str = "RAIN_LAB_MEETING_LOG.md"
     
     # Conversation Settings
@@ -679,7 +685,7 @@ class RainLabOrchestrator:
         for attempt in range(3):
             try:
                 response = self.client.chat.completions.create(
-                    model="local-model",
+                    model=self.config.model_name,
                     messages=[{"role": "user", "content": "test"}],
                     max_tokens=5
                 )
@@ -695,7 +701,7 @@ class RainLabOrchestrator:
                     print("\n💡 Troubleshooting:")
                     print("   1. Is LM Studio running?")
                     print("   2. Is the server started? (green 'Server Running' button)")
-                    print("   3. Is Mistral Nemo loaded?")
+                    print(f"   3. Is model '{self.config.model_name}' loaded?")
                     print(f"   4. Is it listening on {self.config.base_url}?")
                     print("   5. Try clicking 'Reload Model' in LM Studio\n")
                 else:
@@ -1020,7 +1026,7 @@ Respond as {agent.name} only:"""
                 
                 # Use system message for static context (better caching)
                 response = self.client.chat.completions.create(
-                    model="local-model",
+                    model=self.config.model_name,
                     messages=[
                         {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
                         {"role": "user", "content": user_msg}
@@ -1030,6 +1036,43 @@ Respond as {agent.name} only:"""
                 )
                 
                 content = response.choices[0].message.content.strip()
+
+                # Optional recursive refinement: critique + revise in short internal loops
+                if self.config.recursive_intellect and self.config.recursive_depth > 0 and content:
+                    for _ in range(self.config.recursive_depth):
+                        critique = self.client.chat.completions.create(
+                            model=self.config.model_name,
+                            messages=[
+                                {"role": "system", "content": f"You are a strict research editor for {agent.name}."},
+                                {"role": "user", "content": (
+                                    "Review this draft and return a compact critique with exactly 3 bullets: "
+                                    "(1) factual grounding to provided papers, (2) novelty vs prior turns, "
+                                    "(3) clarity under 80 words.\n\n"
+                                    f"DRAFT:\n{content}\n\n"
+                                    "If there are no issues, still return 3 bullets and say what is strong."
+                                )}
+                            ],
+                            temperature=0.2,
+                            max_tokens=120
+                        )
+
+                        critique_text = critique.choices[0].message.content.strip()
+                        refined = self.client.chat.completions.create(
+                            model=self.config.model_name,
+                            messages=[
+                                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
+                                {"role": "user", "content": (
+                                    f"Revise this response as {agent.name} using critique below. "
+                                    "Keep it under 80 words, add one concrete paper-grounded point, "
+                                    "avoid repetition, and respond in first person only.\n\n"
+                                    f"ORIGINAL:\n{content}\n\n"
+                                    f"CRITIQUE:\n{critique_text}"
+                                )}
+                            ],
+                            temperature=self.config.temperature,
+                            max_tokens=self.config.max_tokens
+                        )
+                        content = refined.choices[0].message.content.strip() or content
                 
                 # Clean up response - remove agent speaking as self
                 if content.startswith(f"{agent.name}:"):
@@ -1062,7 +1105,7 @@ Respond as {agent.name} only:"""
                     # Request continuation
                     try:
                         continuation = self.client.chat.completions.create(
-                            model="local-model",
+                            model=self.config.model_name,
                             messages=[
                                 {"role": "system", "content": f"{agent.soul}"},
                                 {"role": "user", "content": f"Complete this thought in ONE sentence. Keep it brief:\n\n{content}"}
@@ -1283,7 +1326,7 @@ Examples:
     parser.add_argument(
         '--library',
         type=str,
-        default=r"C:\Users\chris\Downloads\files\james_library",
+        default=DEFAULT_LIBRARY_PATH,
         help='Path to research library folder'
     )
     
@@ -1292,12 +1335,39 @@ Examples:
         type=str,
         help='Research topic (if not provided, will prompt)'
     )
+
+    parser.add_argument(
+        '--model',
+        type=str,
+        default=DEFAULT_MODEL_NAME,
+        help=f"LM Studio model name (default: {DEFAULT_MODEL_NAME})"
+    )
+
+    parser.add_argument(
+        '--base-url',
+        type=str,
+        default=os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
+        help='LM Studio OpenAI-compatible base URL'
+    )
     
     parser.add_argument(
         '--temp',
         type=float,
         default=0.4,
         help='LLM temperature (0.0-1.0, default: 0.4)'
+    )
+
+    parser.add_argument(
+        '--recursive-depth',
+        type=int,
+        default=int(os.environ.get("RAIN_RECURSIVE_DEPTH", "2")),
+        help='Internal self-reflection passes per response (default: 2)'
+    )
+
+    parser.add_argument(
+        '--no-recursive-intellect',
+        action='store_true',
+        help='Disable recursive self-reflection refinement'
     )
     
     parser.add_argument(
@@ -1341,7 +1411,11 @@ def main():
         max_turns=args.max_turns,
         max_tokens=args.max_tokens,
         enable_web_search=not args.no_web,
-        verbose=args.verbose
+        verbose=args.verbose,
+        model_name=args.model,
+        base_url=args.base_url,
+        recursive_depth=max(1, args.recursive_depth),
+        recursive_intellect=not args.no_recursive_intellect
     )
     
     # Get topic
