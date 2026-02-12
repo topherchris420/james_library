@@ -765,8 +765,9 @@ BEGIN EXECUTION IMMEDIATELY.
         last_message = history[-1] if history else ""
         last_speaker = last_message.split(":", 1)[0] if ":" in last_message else "colleague"
         last_content = last_message.split(":", 1)[1].strip() if ":" in last_message else last_message
-        must_web = self.require_web and (turn < len(self.team)) and not self.agent_web_used.get(agent.name, False)
-        shared_only = bool(self.shared_sources) and (turn >= len(self.team))
+        must_web = self.require_web and (turn == 0) and not self.agent_web_used.get(agent.name, False)
+        discussion_only = turn >= 1
+        shared_only = discussion_only and bool(self.shared_sources)
         
         # Compact ban block for 4B models
         banned_block = """ABSOLUTE RULES:
@@ -829,14 +830,15 @@ CONVERSATIONAL DYNAMICS:
 2. SECOND sentence must agree or disagree and add one new concrete detail.
 3. Ask a direct question to ONE teammate by name in the final sentence.
 4. Use meeting tone: short sentences, conversational, no lecturing.
-5. If you need data, use tools mid-conversation.
+5. Build on existing evidence; do NOT re-run paper tools in discussion turns.
 6. Include one short quote labeled SOURCE: "..." (<=25 words).
 """
-            if turn >= len(self.team):
+            if discussion_only:
                 start_instruction += """
 MEETING MODE:
-- Do NOT run any tools. Use Shared sources only.
+- Do NOT run tools again. Papers were already loaded in the opener.
 - Focus on reacting to teammates and building consensus or debate.
+- Use conversation history and Shared sources for your SOURCE quote.
 """
         
         
@@ -856,7 +858,7 @@ Your goal is to have a NATURAL TEAM MEETING about: "{topic}"
 Recent discussion:
 {history_text}
 
-Shared sources (use these for quotes; only re-search if needed):
+Shared sources (use these for quotes during discussion turns):
 {shared_sources}
 
 {start_instruction}
@@ -1113,8 +1115,8 @@ Shared sources (use these for quotes; only re-search if needed):
                             except concurrent.futures.TimeoutError:
                                 pass
 
-                    # If shared sources exist after round one, avoid new searches
-                    if self.shared_sources and (turn >= len(self.team)):
+                    # After the opener turn, avoid any new tool calls
+                    if discussion_only:
                         if any(x in response for x in ["search_web", "search_library", "semantic_search", "read_paper", "list_papers"]):
                             retry_prompt = prompt + "\n\nSTRICT RETRY:\n- Do NOT call any tools.\n- Use a Shared sources quote for SOURCE.\n"
                             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -1151,8 +1153,8 @@ Shared sources (use these for quotes; only re-search if needed):
                             except concurrent.futures.TimeoutError:
                                 pass
 
-                # Enforce discussion tone after round one
-                if history and self.shared_sources and (turn >= len(self.team)):
+                # Enforce discussion tone after opener turn
+                if history and discussion_only:
                     last_message = history[-1]
                     last_speaker = last_message.split(":", 1)[0] if ":" in last_message else "colleague"
                     must_name = last_speaker.lower()
