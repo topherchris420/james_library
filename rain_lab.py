@@ -27,7 +27,7 @@ BANNER_LINES = [
     "╚██╗ ██╔╝██╔══╝  ██╔══██╗╚════██║██╔══██╗██║  ██║  ╚██╔╝  ██║╚██╗██║██╔══██║██║╚██╔╝██║██║██║     ╚════██║",
     " ╚████╔╝ ███████╗██║  ██║███████║██║  ██║██████╔╝   ██║   ██║ ╚████║██║  ██║██║ ╚═╝ ██║██║╚██████╗███████║",
     "  ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═════╝    ╚═╝   ╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝ ╚═════╝╚══════╝",
-    "▓▓▓ V E R S Ǝ D Y N A M I C S ▓▓▓          ▓▓▓▓▓▓▓  R.A.I.N. Lab  ▓▓▓▓▓▓▓",
+    "▓▓▓ V E R S 3 D Y N A M I C S ▓▓▓          ▓▓▓▓▓▓▓  R.A.I.N. Lab  ▓▓▓▓▓▓▓",
 ]
 
 
@@ -51,8 +51,6 @@ def _spinner(message: str, duration_s: float = 0.9) -> None:
         i += 1
         time.sleep(0.08)
     print(f"\r{ANSI_GREEN}✔ {message}{ANSI_RESET}")
-
-from pathlib import Path
 
 
 def _split_passthrough_args(argv: list[str]) -> tuple[list[str], list[str]]:
@@ -127,7 +125,6 @@ def main(argv: list[str] | None = None) -> int:
     _print_banner()
     _spinner("Booting VERS3DYNAMICS R.A.I.N. Lab launcher")
     print(f"{ANSI_CYAN}Launching mode={args.mode}: {' '.join(cmd)}{ANSI_RESET}", flush=True)
-    print(f"Launching mode={args.mode}: {' '.join(cmd)}")
     result = subprocess.run(cmd, env=child_env)
     return int(result.returncode)
 
