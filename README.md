@@ -35,6 +35,9 @@ If you are building in deep tech, applied science, product R&D, or experimental 
 
 Run the unified launcher and choose a mode:
 
+See also: [`ARCHITECTURE.md`](ARCHITECTURE.md) for a technical flow diagram of launcher + chat orchestration.
+
+
 ```bash
 python rain_lab.py --mode chat --topic "your research topic"
 python rain_lab.py --mode rlm --topic "your research topic"
