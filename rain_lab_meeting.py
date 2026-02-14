@@ -6,6 +6,13 @@ R.A.I.N. LAB
 import sys
 import os
 import glob
+import io
+import time
+import concurrent.futures
+from pathlib import Path
+from typing import List
+from dataclasses import dataclass, field
+from datetime import datetime
 
 # --- FORCE UTF-8 GLOBALLY (must be before other imports) ---
 for _stream in (sys.stdout, sys.stderr):
@@ -27,9 +34,9 @@ if not os.path.exists(TARGET_PATH):
     TARGET_PATH = os.getcwd()
 
 # Add path so we can import 'rlm'
-sys.path.insert(0, TARGET_PATH)
-sys.path.insert(0, os.path.join(TARGET_PATH, "rlm-main"))  # Just in case it's nested
-sys.path.insert(0, os.path.join(TARGET_PATH, "rlm-main", "rlm-main"))  # Double nested
+sys.path.append(TARGET_PATH)
+sys.path.append(os.path.join(TARGET_PATH, "rlm-main"))  # Just in case it's nested
+sys.path.append(os.path.join(TARGET_PATH, "rlm-main", "rlm-main"))  # Double nested
 
 try:
     import sys as _sys_mod
@@ -58,14 +65,6 @@ if "--help" not in sys.argv and "-h" not in sys.argv:
         else:
             print(f"ImportError details: {e}")
         sys.exit(1)
-
-import io
-import time
-import concurrent.futures
-from pathlib import Path
-from typing import List
-from dataclasses import dataclass, field
-from datetime import datetime
 
 
 def _host_has_web_search() -> bool:
