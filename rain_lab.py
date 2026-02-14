@@ -145,6 +145,24 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(argv) if argv is not None else sys.argv[1:]
     args, passthrough = parse_args(argv)
     repo_root = Path(__file__).resolve().parent
+
+    _print_banner()
+
+    # Interactive prompt if topic is missing (and not asking for help)
+    if not args.topic and "-h" not in passthrough and "--help" not in passthrough:
+        print(f"\n{ANSI_YELLOW}Research Topic needed.{ANSI_RESET}")
+        print(f"{ANSI_DIM}Example: 'Guarino paper', 'Quantum Resonance', 'The nature of time'{ANSI_RESET}")
+        try:
+            # Show cursor and prompt
+            topic_input = input(f"{ANSI_GREEN}Enter topic: {ANSI_RESET}").strip()
+            if topic_input:
+                args.topic = topic_input
+            else:
+                args.topic = "Open research discussion"
+        except KeyboardInterrupt:
+            print(f"\n{ANSI_RED}Aborted.{ANSI_RESET}")
+            return 1
+
     cmd = build_command(args, passthrough, repo_root)
 
     child_env = None
@@ -152,7 +170,6 @@ def main(argv: list[str] | None = None) -> int:
         child_env = dict(os.environ)
         child_env["JAMES_LIBRARY_PATH"] = args.library
 
-    _print_banner()
     _spinner("Booting VERS3DYNAMICS R.A.I.N. Lab launcher")
     print(f"{ANSI_CYAN}Launching mode={args.mode}: {' '.join(cmd)}{ANSI_RESET}", flush=True)
     result = subprocess.run(cmd, env=child_env)
