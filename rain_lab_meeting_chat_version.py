@@ -245,21 +245,28 @@ class ContextManager:
     def _discover_files(self) -> List[Path]:
         """Discover candidate research files, optionally including nested directories."""
         skip_dirs = {".git", "__pycache__", ".venv", "venv", "node_modules", "meeting_archives"}
+        allowed_suffixes = {".md", ".txt", ".py"}
 
         if self.config.recursive_library_scan:
             candidates = [
                 f for f in self.lab_path.rglob("*")
-                if f.is_file() and f.suffix.lower() in {".md", ".txt"}
+                if f.is_file() and f.suffix.lower() in allowed_suffixes
                 and not any(part in skip_dirs for part in f.parts)
             ]
         else:
             candidates = [
                 f for f in self.lab_path.iterdir()
-                if f.is_file() and f.suffix.lower() in {".md", ".txt"}
+                if f.is_file() and f.suffix.lower() in allowed_suffixes
             ]
 
         filtered = [
             f for f in candidates
+            if f.name == "hello_os.py"
+            or f.suffix.lower() in {".md", ".txt"}
+        ]
+
+        filtered = [
+            f for f in filtered
             if "SOUL" not in f.name.upper()
             and "LOG" not in f.name.upper()
             and "MEETING" not in f.name.upper()

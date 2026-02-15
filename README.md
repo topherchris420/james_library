@@ -54,3 +54,9 @@ If you are running LM Studio in terminal mode, these scripts now support environ
 
 
 Recursive intellect means each agent can do internal critique+revision passes before speaking, improving grounding, novelty, and clarity.
+
+### hello_os integration (agent empowerment)
+
+`hello_os.py` is now treated as a first-class research source for both launcher modes:
+- **RLM mode** exposes `read_hello_os()` so agents can intentionally load and reason over the symbolic/geometric engine.
+- **Chat mode** includes `hello_os.py` in context discovery so agents can cite and use its operator design directly.
