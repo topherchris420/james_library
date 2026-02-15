@@ -11,6 +11,7 @@ import os
 import random
 import sys
 import time
+import uuid
 from pathlib import Path
 
 DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent)
@@ -28,6 +29,12 @@ except ImportError:
 warnings.simplefilter("ignore")
 os.environ['PYTHONWARNINGS'] = 'ignore'
 logging.getLogger().setLevel(logging.WARNING)
+
+# --- EVAL METRICS ---
+try:
+    from rain_metrics import MetricsTracker
+except ImportError:
+    MetricsTracker = None  # metrics collection is optional
 
 # --- IMPORTS ---
 openai = None
@@ -808,6 +815,17 @@ class RainLabOrchestrator:
         # Initialize components that need context
         self.director = RainLabDirector(self.config, paper_list)
         self.citation_analyzer = CitationAnalyzer(self.context_manager)
+
+        # Initialize eval metrics tracker
+        self.metrics_tracker = None
+        if MetricsTracker is not None:
+            self.metrics_tracker = MetricsTracker(
+                session_id=str(uuid.uuid4())[:8],
+                topic=topic,
+                model=self.config.model_name,
+                recursive_depth=self.config.recursive_depth,
+            )
+            self.metrics_tracker.set_corpus(self.context_manager.loaded_papers)
         
         # Load agent souls from external files
         if verbose:
@@ -890,6 +908,8 @@ class RainLabOrchestrator:
                             break
                         elif user_input.lower() in ['quit', 'exit', 'stop']:
                             print("\n👋 Meeting ended by FOUNDER.")
+                            if self.metrics_tracker is not None:
+                                self.metrics_tracker.finalize()
                             self.log_manager.finalize_log(self._generate_final_stats())
                             return
                         else:
@@ -938,6 +958,12 @@ class RainLabOrchestrator:
             # 5. Log
             self.log_manager.log_statement(current_agent.name, response, metadata)
             history_log.append(f"{current_agent.name}: {response}")
+
+            # 6. Record eval metrics for this turn
+            if self.metrics_tracker is not None:
+                self.metrics_tracker.record_turn(
+                    current_agent.name, response, metadata
+                )
             
             turn_count += 1
         
@@ -949,6 +975,8 @@ class RainLabOrchestrator:
         self.log_manager.log_statement("James", "Meeting adjourned. Great discussion everyone!")
         
         # Finalize
+        if self.metrics_tracker is not None:
+            self.metrics_tracker.finalize()
         stats = self._generate_final_stats()
         self.log_manager.finalize_log(stats)
         
@@ -1090,6 +1118,7 @@ Respond as {agent.name} only:"""
                 # Optional recursive refinement: critique + revise in short internal loops
                 if self.config.recursive_intellect and self.config.recursive_depth > 0 and content:
                     for _ in range(self.config.recursive_depth):
+                        pre_critique_text = content  # snapshot for metrics
                         critique = self.client.chat.completions.create(
                             model=self.config.model_name,
                             messages=[
@@ -1123,6 +1152,12 @@ Respond as {agent.name} only:"""
                             max_tokens=self.config.max_tokens
                         )
                         content = refined.choices[0].message.content.strip() or content
+
+                        # Record critique pair for eval metrics
+                        if self.metrics_tracker is not None:
+                            self.metrics_tracker.record_critique(
+                                pre_critique_text, content
+                            )
                 
                 # Clean up response - remove agent speaking as self
                 if content.startswith(f"{agent.name}:"):
@@ -1338,6 +1373,15 @@ Keep it under 60 words - maintain your standards but be collegial."""
         stats_lines.append("AGENT PERFORMANCE:")
         for agent in self.team:
             stats_lines.append(f"  • {agent.name}: {agent.citations_made} verified citations")
+
+        # Append eval-framework metrics when available
+        if self.metrics_tracker is not None:
+            m = self.metrics_tracker.summary()
+            stats_lines.append("")
+            stats_lines.append("EVAL METRICS:")
+            stats_lines.append(f"  • Citation accuracy:    {m['citation_accuracy']:.2f}")
+            stats_lines.append(f"  • Novel-claim density:  {m['novel_claim_density']:.2f}")
+            stats_lines.append(f"  • Critique change rate: {m['critique_change_rate']:.2f}")
         
         return "\n".join(stats_lines)
     
