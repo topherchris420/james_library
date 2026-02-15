@@ -12,6 +12,23 @@ import random
 import sys
 import time
 from pathlib import Path
+import re
+
+# --- PRE-COMPILED REGEX PATTERNS ---
+RE_QUOTE_DOUBLE = re.compile(r'"([^"]+)"')
+RE_QUOTE_SINGLE = re.compile(r"'([^']+)'")
+RE_CORRUPTION_CAPS = re.compile(r'[A-Z]{8,}')
+RE_CORRUPTION_PATTERNS = [
+    re.compile(p, re.IGNORECASE) for p in [
+        r'\|eoc_fim\|',           # End of context markers
+        r'ARILEX|AIVERI|RIECK',   # Common corruption sequences
+        r'ingly:\w*scape',        # Gibberish compound words
+        r':\s*\n\s*:\s*\n',       # Empty lines with colons
+        r'##\d+\s*\(',            # Markdown header gibberish
+        r'SING\w{10,}',           # Long corrupt strings starting with SING
+        r'[A-Z]{4,}:[A-Z]{4,}',   # Multiple caps words with colons
+    ]
+]
 
 DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent)
 DEFAULT_MODEL_NAME = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
@@ -496,10 +513,9 @@ class CitationAnalyzer:
     
     def extract_quotes(self, text: str) -> List[str]:
         """Extract quoted text from response"""
-        import re
-        # Match text in "quotes" or 'quotes'
-        quotes = re.findall(r'"([^"]+)"', text)
-        quotes.extend(re.findall(r"'([^']+)'", text))
+        # Match text in "quotes" or 'quotes' using pre-compiled patterns
+        quotes = RE_QUOTE_DOUBLE.findall(text)
+        quotes.extend(RE_QUOTE_SINGLE.findall(text))
         return [q for q in quotes if len(q.split()) > 3]  # Only meaningful quotes
     
     def analyze_response(self, agent_name: str, response: str) -> Dict[str, any]:
@@ -1255,8 +1271,7 @@ Respond as {agent.name} only:"""
         
         # Heuristic 1: Too many consecutive uppercase letters (token corruption)
         # Pattern like "AIVERCREDREDRIECKERE" is a sign of corruption
-        import re
-        if re.search(r'[A-Z]{8,}', text):
+        if RE_CORRUPTION_CAPS.search(text):
             return True, "Excessive consecutive capitals detected"
         
         # Heuristic 2: High ratio of special characters (gibberish)
@@ -1265,18 +1280,9 @@ Respond as {agent.name} only:"""
             return True, "Too many special characters"
         
         # Heuristic 3: Common corruption patterns
-        corruption_patterns = [
-            r'\|eoc_fim\|',           # End of context markers
-            r'ARILEX|AIVERI|RIECK',   # Common corruption sequences
-            r'ingly:\w*scape',        # Gibberish compound words
-            r':\s*\n\s*:\s*\n',       # Empty lines with colons
-            r'##\d+\s*\(',            # Markdown header gibberish
-            r'SING\w{10,}',           # Long corrupt strings starting with SING
-            r'[A-Z]{4,}:[A-Z]{4,}',   # Multiple caps words with colons
-        ]
-        for pattern in corruption_patterns:
-            if re.search(pattern, text, re.IGNORECASE):
-                return True, f"Corruption pattern detected: {pattern[:20]}"
+        for pattern in RE_CORRUPTION_PATTERNS:
+            if pattern.search(text):
+                return True, f"Corruption pattern detected: {pattern.pattern[:20]}"
         
         # Heuristic 4: Too many empty lines or lines with just punctuation
         lines = text.split('\n')
@@ -1349,7 +1355,6 @@ Keep it under 60 words - maintain your standards but be collegial."""
         - "James (R.A.I.N. Lab Lead): ..."
         - "James (R.A.I.N. Lab): ..."
         """
-        import re
         
         # Pattern: agent name followed by optional parenthetical text, then colon
         # Examples: "James:", "James (R.A.I.N. Lab Lead):", "James (anything):"
