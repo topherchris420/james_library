@@ -1,0 +1,4 @@
+openai>=1.0.0
+duckduckgo-search>=4.0
+requests>=2.28.0
+pathlib; python_version<"3.4"

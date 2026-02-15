@@ -38,8 +38,11 @@ def print_error(text):
 def print_info(text):
     print(f"{BLUE}ℹ {text}{RESET}")
 
-# Target library path
-LIBRARY_PATH = r"C:\Users\chris\Downloads\files\james_library"
+# Target library path — honour the env-var, then fall back to the repo root.
+LIBRARY_PATH = os.environ.get(
+    "JAMES_LIBRARY_PATH",
+    os.path.dirname(os.path.abspath(__file__)),
+)
 
 print_header("R.A.I.N. LAB PRE-FLIGHT CHECK")
 print(f"Target library: {LIBRARY_PATH}\n")

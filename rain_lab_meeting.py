@@ -1158,7 +1158,7 @@ Shared sources (use these for quotes during discussion turns):
                                 pass
 
                     # After the opener turn, avoid any new tool calls
-                    if discussion_only:
+                    if turn >= 1:
                         if any(x in response for x in ["search_web", "search_library", "semantic_search", "read_paper", "read_hello_os", "run_hello_os_executable", "list_papers"]):
                             retry_prompt = prompt + "\n\nSTRICT RETRY:\n- Do NOT call any tools.\n- Use a Shared sources quote for SOURCE.\n"
                             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -1196,7 +1196,7 @@ Shared sources (use these for quotes during discussion turns):
                                 pass
 
                 # Enforce discussion tone after opener turn
-                if history and discussion_only:
+                if history and turn >= 1:
                     last_message = history[-1]
                     last_speaker = last_message.split(":", 1)[0] if ":" in last_message else "colleague"
                     must_name = last_speaker.lower()
