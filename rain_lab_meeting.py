@@ -8,11 +8,18 @@ import os
 import glob
 import io
 import time
+import uuid
 import concurrent.futures
 from pathlib import Path
 from typing import List
 from dataclasses import dataclass, field
 from datetime import datetime
+
+# --- EVAL METRICS ---
+try:
+    from rain_metrics import MetricsTracker
+except ImportError:
+    MetricsTracker = None  # metrics collection is optional
 
 # --- FORCE UTF-8 GLOBALLY (must be before other imports) ---
 for _stream in (sys.stdout, sys.stderr):
@@ -941,11 +948,30 @@ Shared sources (use these for quotes during discussion turns):
             agent.load_soul(TARGET_PATH)
         
         self.log.initialize(topic)
+
+        # Initialize eval metrics tracker
+        self.metrics_tracker = None
+        if MetricsTracker is not None:
+            self.metrics_tracker = MetricsTracker(
+                session_id=str(uuid.uuid4())[:8],
+                topic=topic,
+                model=os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct"),
+            )
         # Host-side paper selection (exact filename match first)
         selected_files = _host_select_files(topic, max_files=2)
         selected_names = [f.name for f in selected_files]
         match_names = list(selected_names)
         local_ctx = _host_snippets(selected_files, per_file_chars=1200)
+
+        # Build corpus for eval metrics from selected files
+        if self.metrics_tracker is not None and selected_files:
+            corpus: dict[str, str] = {}
+            for fp in selected_files:
+                try:
+                    corpus[fp.name] = fp.read_text(encoding="utf-8", errors="ignore")
+                except Exception:
+                    pass
+            self.metrics_tracker.set_corpus(corpus)
         
         history: List[str] = []
         
@@ -1237,6 +1263,10 @@ Shared sources (use these for quotes during discussion turns):
                     
                 self.log.log(agent.name, response)
                 history.append(f"{agent.name}: {response}")
+
+                # Record eval metrics for this turn
+                if self.metrics_tracker is not None:
+                    self.metrics_tracker.record_turn(agent.name, response)
                     
             except Exception as e:
                 print(f"⚠️ Error: {e}")
@@ -1247,7 +1277,14 @@ Shared sources (use these for quotes during discussion turns):
             turn += 1
             time.sleep(0.5)
         
-        
+        # Finalize eval metrics
+        if self.metrics_tracker is not None:
+            record = self.metrics_tracker.finalize()
+            print("\nEVAL METRICS:")
+            print(f"  • Citation accuracy:    {record['citation_accuracy']:.2f}")
+            print(f"  • Novel-claim density:  {record['novel_claim_density']:.2f}")
+            print(f"  • Critique change rate: {record['critique_change_rate']:.2f}")
+
         self.log.finalize()
         print("\n📝 Meeting log saved.")
 
