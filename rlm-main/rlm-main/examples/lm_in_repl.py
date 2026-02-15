@@ -37,7 +37,7 @@ def main():
     if not api_key:
         print("Error: PORTKEY_API_KEY not set")
         return
-    print(f"PORTKEY_API_KEY: {api_key}")
+    print("PORTKEY_API_KEY is set")
 
     client = PortkeyClient(api_key=api_key, model_name="@openai/gpt-5-nano")
     print("Created Portkey client with model: @openai/gpt-5-nano")
