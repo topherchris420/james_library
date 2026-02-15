@@ -777,9 +777,9 @@ class RainLabOrchestrator:
         
         # UTF-8 setup
         if sys.stdout.encoding != 'utf-8':
-            try: 
+            try:
                 sys.stdout.reconfigure(encoding='utf-8')
-            except: 
+            except Exception:  # Some runtimes lack reconfigure()
                 pass
         
         # Header - 3D block ASCII Banner

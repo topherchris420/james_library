@@ -43,7 +43,7 @@ try:
     for _m in list(_sys_mod.modules):
         if _m == 'rlm' or _m.startswith('rlm.'):
             _sys_mod.modules.pop(_m, None)
-except Exception:
+except Exception:  # noqa: E722 — best-effort cache clear; safe to ignore
     pass
 
 RLM = None
@@ -963,7 +963,7 @@ Shared sources (use these for quotes during discussion turns):
         try:
             import signal
             signal.signal(signal.SIGINT, _handle_sigint)
-        except Exception:
+        except Exception:  # SIGINT handler unavailable on some platforms
             pass
         
         turn = 0
@@ -992,13 +992,13 @@ Shared sources (use these for quotes during discussion turns):
                     future = executor.submit(_call_model, prompt)
                     try:
                         result = future.result(timeout=60)
-                    except concurrent.futures.TimeoutError:
+                    except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                         # Retry once with a shorter prompt
                         short_prompt = prompt[-3000:]
                         future = executor.submit(_call_model, short_prompt)
                         try:
                             result = future.result(timeout=60)
-                        except concurrent.futures.TimeoutError:
+                        except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                             result = None
 
                 if result is None:
@@ -1047,7 +1047,7 @@ Shared sources (use these for quotes during discussion turns):
                                 retry_result = future.result(timeout=45)
                                 retry_response = retry_result.response if hasattr(retry_result, 'response') else str(retry_result)
                                 response = retry_response.strip()
-                            except concurrent.futures.TimeoutError:
+                            except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                                 pass
 
 
@@ -1135,7 +1135,7 @@ Shared sources (use these for quotes during discussion turns):
                                 retry_result = future.result(timeout=45)
                                 retry_response = retry_result.response if hasattr(retry_result, 'response') else str(retry_result)
                                 response = retry_response.strip()
-                            except concurrent.futures.TimeoutError:
+                            except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                                 pass
 
                     # Hard override: strip refusals/apologies/repl talk entirely
@@ -1173,7 +1173,7 @@ Shared sources (use these for quotes during discussion turns):
                                 retry_result = future.result(timeout=45)
                                 retry_response = retry_result.response if hasattr(retry_result, 'response') else str(retry_result)
                                 response = retry_response.strip()
-                            except concurrent.futures.TimeoutError:
+                            except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                                 pass
 
                     # After the opener turn, avoid any new tool calls
@@ -1186,7 +1186,7 @@ Shared sources (use these for quotes during discussion turns):
                                     retry_result = future.result(timeout=45)
                                     retry_response = retry_result.response if hasattr(retry_result, 'response') else str(retry_result)
                                     response = retry_response.strip()
-                                except concurrent.futures.TimeoutError:
+                                except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                                     pass
 
                 # Enforce James' meeting opener on first turn
@@ -1211,7 +1211,7 @@ Shared sources (use these for quotes during discussion turns):
                                 retry_result = future.result(timeout=45)
                                 retry_response = retry_result.response if hasattr(retry_result, 'response') else str(retry_result)
                                 response = retry_response.strip()
-                            except concurrent.futures.TimeoutError:
+                            except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                                 pass
 
                 # Enforce discussion tone after opener turn
@@ -1230,7 +1230,7 @@ Shared sources (use these for quotes during discussion turns):
                                 retry_result = future.result(timeout=45)
                                 retry_response = retry_result.response if hasattr(retry_result, 'response') else str(retry_result)
                                 response = retry_response.strip()
-                            except concurrent.futures.TimeoutError:
+                            except concurrent.futures.TimeoutError:  # Retry timed out; keep prior response
                                 pass
 
                 print(f"\n{agent.color}{agent.name}: {response}\033[0m")
