@@ -19,6 +19,24 @@ from rlm.environments.base_env import NonIsolatedEnv
 # Safe Builtins
 # =============================================================================
 
+# Safe modules allowed for import
+_SAFE_MODULES = {
+    "math",
+    "json",
+    "random",
+    "datetime",
+    "re",
+    "collections",
+    "itertools",
+    "functools",
+    "string",
+    "time",
+    "heapq",
+    "bisect",
+    "copy",
+    "typing",
+}
+
 # Safe builtins - blocks dangerous operations like eval/exec/input
 _SAFE_BUILTINS = {
     # Core types and functions
@@ -80,8 +98,7 @@ _SAFE_BUILTINS = {
     "property": property,
     "staticmethod": staticmethod,
     "classmethod": classmethod,
-    "__import__": __import__,
-    "open": open,
+    # __import__ and open are replaced in setup()
     # Exceptions
     "Exception": Exception,
     "BaseException": BaseException,
@@ -153,9 +170,13 @@ class LocalREPL(NonIsolatedEnv):
 
     def setup(self):
         """Setup the environment."""
-        # Create sandboxed globals
+        # Create sandboxed globals with safe builtins
+        builtins = _SAFE_BUILTINS.copy()
+        builtins["__import__"] = self._safe_import
+        builtins["open"] = self._safe_open
+
         self.globals: dict[str, Any] = {
-            "__builtins__": _SAFE_BUILTINS.copy(),
+            "__builtins__": builtins,
             "__name__": "__main__",
         }
         self.locals: dict[str, Any] = {}
@@ -168,6 +189,34 @@ class LocalREPL(NonIsolatedEnv):
         self.globals["SHOW_VARS"] = self._show_vars
         self.globals["llm_query"] = self._llm_query
         self.globals["llm_query_batched"] = self._llm_query_batched
+
+    def _safe_import(self, name, globals=None, locals=None, fromlist=(), level=0):
+        """Restricted import that only allows safe modules."""
+        base_name = name.split('.')[0]
+        if base_name in _SAFE_MODULES:
+             return __import__(name, globals, locals, fromlist, level)
+        raise ImportError(f"Import of module '{name}' is not allowed in LocalREPL.")
+
+    def _safe_open(self, file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
+        """Restricted open that only allows files inside the temp directory."""
+        # Resolve absolute path
+        if not isinstance(file, (str, bytes, os.PathLike)):
+             # File descriptors are not supported for security
+             raise IOError("File descriptors are not supported in restricted open.")
+
+        # Handle relative paths (relative to CWD, which is self.temp_dir during execution)
+        try:
+            full_path = os.path.abspath(os.path.join(os.getcwd(), str(file)))
+            temp_dir_abs = os.path.abspath(self.temp_dir)
+
+            # Use commonpath to safely check if full_path is inside temp_dir_abs
+            if os.path.commonpath([temp_dir_abs, full_path]) != temp_dir_abs:
+                 raise IOError(f"Access to file '{file}' outside sandbox is denied.")
+        except (ValueError, OSError):
+             # ValueError happens on Windows if paths are on different drives
+             raise IOError(f"Access to file '{file}' outside sandbox is denied.")
+
+        return open(file, mode, buffering, encoding, errors, newline, closefd, opener)
 
     def _final_var(self, variable_name: str) -> str:
         """Return the value of a variable as a final answer."""
