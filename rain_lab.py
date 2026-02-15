@@ -74,9 +74,9 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--mode",
-        choices=["rlm", "chat"],
+        choices=["rlm", "chat", "hello-os"],
         default="chat",
-        help="Which engine to run: rlm (tool-exec) or chat (openai chat completions)",
+        help="Which engine to run: rlm (tool-exec), chat (openai chat completions), or hello-os (single executable)",
     )
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
     parser.add_argument(
@@ -113,6 +113,12 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 
 def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: Path) -> list[str]:
+    if args.mode == "hello-os":
+        target = repo_root / "hello_os_executable.py"
+        cmd = [sys.executable, str(target)]
+        cmd.extend(passthrough if passthrough else ["inspect"])
+        return cmd
+
     if args.mode == "rlm":
         target = repo_root / "rain_lab_meeting.py"
         cmd = [sys.executable, str(target)]
@@ -149,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_banner()
 
     # Interactive prompt if topic is missing (and not asking for help)
-    if not args.topic and "-h" not in passthrough and "--help" not in passthrough:
+    if args.mode != "hello-os" and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
         print(f"\n{ANSI_YELLOW}Research Topic needed.{ANSI_RESET}")
         print(f"{ANSI_DIM}Example: 'Guarino paper', 'Quantum Resonance', 'The nature of time'{ANSI_RESET}")
         try:

@@ -567,7 +567,7 @@ def create_team() -> List[Agent]:
             focus="Physics simulations and research analysis",
             color="\033[92m",  # Green
             tool_instruction="""
-AVAILABLE: read_paper(), search_web(), list_papers()
+AVAILABLE: read_paper(), read_hello_os(), run_hello_os_executable(), search_web(), list_papers()
 BANNED: llm_query(), FINAL_VAR(), FINAL(), SHOW_VARS(), context
 RESPOND: 50-100 words, conversational, as a scientist.
 """
@@ -1047,7 +1047,7 @@ Shared sources (use these for quotes during discussion turns):
                     if tools_locked:
                         cleaned_lines = []
                         for ln in response.splitlines():
-                            if any(t in ln for t in ["read_paper(", "search_web(", "search_library(", "semantic_search(", "list_papers("]):
+                            if any(t in ln for t in ["read_paper(", "read_hello_os(", "run_hello_os_executable(", "search_web(", "search_library(", "semantic_search(", "list_papers("]):
                                 continue
                             cleaned_lines.append(ln)
                         response = "\n".join(cleaned_lines).strip()
@@ -1159,7 +1159,7 @@ Shared sources (use these for quotes during discussion turns):
 
                     # After the opener turn, avoid any new tool calls
                     if discussion_only:
-                        if any(x in response for x in ["search_web", "search_library", "semantic_search", "read_paper", "list_papers"]):
+                        if any(x in response for x in ["search_web", "search_library", "semantic_search", "read_paper", "read_hello_os", "run_hello_os_executable", "list_papers"]):
                             retry_prompt = prompt + "\n\nSTRICT RETRY:\n- Do NOT call any tools.\n- Use a Shared sources quote for SOURCE.\n"
                             with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
                                 future = executor.submit(_call_model, retry_prompt)
