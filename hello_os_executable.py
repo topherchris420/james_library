@@ -18,15 +18,33 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent
 HELLO_OS_PATH = REPO_ROOT / "hello_os.py"
+HELLO_OS_PKG = REPO_ROOT / "hello_os"
 DEFAULT_CSL_MODULE = REPO_ROOT / "hello_os_csl_module.py"
 CSL_START_MARKER = "CSL (Cognispheric Symbolic Language)"
 CSL_END_MARKER = "firewall is down. Good"
 
 
 def _read_hello_os() -> str:
-    if not HELLO_OS_PATH.exists():
-        raise FileNotFoundError(f"Missing file: {HELLO_OS_PATH}")
-    return HELLO_OS_PATH.read_text(encoding="utf-8", errors="ignore")
+    """Read content from the flat hello_os.py file (preferred) or package directory.
+
+    The executable's inspect/extract-csl commands are designed to analyse the
+    original Colab-exported flat file, so we prefer it over the package.
+    """
+    # Prefer the original flat file (Colab export) for inspection
+    if HELLO_OS_PATH.exists():
+        return HELLO_OS_PATH.read_text(encoding="utf-8", errors="ignore")
+    # Fallback to the package — concatenate the modules in dependency order
+    if HELLO_OS_PKG.is_dir():
+        parts: list[str] = []
+        for mod in ("symbols.py", "utils.py", "core.py", "scroll.py", "geometry.py", "resonance.py"):
+            mod_path = HELLO_OS_PKG / mod
+            if mod_path.exists():
+                parts.append(mod_path.read_text(encoding="utf-8", errors="ignore"))
+        if parts:
+            return "\n".join(parts)
+    raise FileNotFoundError(
+        f"Neither {HELLO_OS_PATH} flat file nor {HELLO_OS_PKG} package found"
+    )
 
 
 def inspect_hello_os() -> dict[str, int]:

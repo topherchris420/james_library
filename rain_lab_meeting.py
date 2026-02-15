@@ -107,6 +107,7 @@ _web_search_ready = False
 _rag_failed = False
 _paper_cache = {}
 HELLO_OS_PATH = os.path.join(LIBRARY_PATH, "hello_os.py")
+HELLO_OS_PKG = os.path.join(LIBRARY_PATH, "hello_os")
 
 
 def _require_web_search():
@@ -420,25 +421,43 @@ def list_papers():
     """Lists all research papers in the library."""
     files = glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt"))
     research = [os.path.basename(f) for f in files if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
-    if os.path.exists(HELLO_OS_PATH):
-        research.append("hello_os.py")
+    if os.path.exists(HELLO_OS_PATH) or os.path.isdir(HELLO_OS_PKG):
+        research.append("hello_os")
     result = "Available papers: " + ", ".join(research)
     print(result)
     return result
 
 def read_hello_os(max_chars=120000):
-    """Read hello_os.py so agents can leverage its operators and design patterns."""
+    """Read hello_os so agents can leverage its operators and design patterns.
+
+    Prefers the hello_os/ package directory when available, falls back to the
+    flat hello_os.py file.
+    """
     print("📖 READING HELLO_OS...")
-    if not os.path.exists(HELLO_OS_PATH):
-        return "hello_os.py not found in library path."
     try:
+        # Prefer the package directory
+        if os.path.isdir(HELLO_OS_PKG):
+            parts = []
+            for mod in ("symbols.py", "utils.py", "core.py", "geometry.py", "resonance.py"):
+                mod_path = os.path.join(HELLO_OS_PKG, mod)
+                if os.path.exists(mod_path):
+                    with open(mod_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+                        parts.append(f.read())
+            if parts:
+                content = chr(10).join(parts)[:max_chars]
+                result = chr(10) + "--- CONTENT OF hello_os (package) ---" + chr(10) + content
+                print(result)
+                return result
+        # Fallback to flat file
+        if not os.path.exists(HELLO_OS_PATH):
+            return "hello_os.py not found in library path."
         with open(HELLO_OS_PATH, 'r', encoding='utf-8-sig', errors='ignore') as f:
             content = f.read()[:max_chars]
         result = chr(10) + "--- CONTENT OF hello_os.py ---" + chr(10) + content
         print(result)
         return result
     except Exception as e:
-        msg = "Error reading hello_os.py: " + str(e)
+        msg = "Error reading hello_os: " + str(e)
         print(msg)
         return msg
 
