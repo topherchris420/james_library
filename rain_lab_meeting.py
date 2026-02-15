@@ -107,7 +107,6 @@ _web_search_ready = False
 _rag_failed = False
 _paper_cache = {}
 HELLO_OS_PATH = os.path.join(LIBRARY_PATH, "hello_os.py")
-HELLO_OS_EXEC_PATH = os.path.join(LIBRARY_PATH, "hello_os_executable.py")
 
 
 def _require_web_search():
@@ -423,8 +422,6 @@ def list_papers():
     research = [os.path.basename(f) for f in files if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
     if os.path.exists(HELLO_OS_PATH):
         research.append("hello_os.py")
-    if os.path.exists(HELLO_OS_EXEC_PATH):
-        research.append("hello_os_executable.py")
     result = "Available papers: " + ", ".join(research)
     print(result)
     return result
@@ -442,33 +439,6 @@ def read_hello_os(max_chars=120000):
         return result
     except Exception as e:
         msg = "Error reading hello_os.py: " + str(e)
-        print(msg)
-        return msg
-
-
-def run_hello_os_executable(command="inspect", max_chars=120000):
-    """Run hello_os_executable.py as a single executable interface and return stdout."""
-    print(f"🚀 RUNNING HELLO_OS EXECUTABLE: {command}")
-    if not os.path.exists(HELLO_OS_EXEC_PATH):
-        return "hello_os_executable.py not found in library path."
-    if command not in {"inspect", "extract-csl", "run-csl"}:
-        return "Invalid command. Use one of: inspect, extract-csl, run-csl."
-
-    try:
-        import subprocess
-        import sys
-
-        args = [sys.executable, HELLO_OS_EXEC_PATH, command]
-        if command in {"extract-csl", "run-csl"}:
-            args.extend(["--output", os.path.join(LIBRARY_PATH, "hello_os_csl_module.py")])
-        proc = subprocess.run(args, capture_output=True, text=True)
-        output = (proc.stdout or "") + ("\n" + proc.stderr if proc.stderr else "")
-        output = output[:max_chars]
-        result = f"[exit={proc.returncode}]\n" + output
-        print(result)
-        return result
-    except Exception as e:
-        msg = "Error running hello_os_executable.py: " + str(e)
         print(msg)
         return msg
 
@@ -563,7 +533,6 @@ Available functions (already defined):
 ```python
 content = read_paper("keyword")      # Read a paper from the library
 hello_os = read_hello_os()            # Load hello_os.py into context
-hello_exec = run_hello_os_executable("inspect")  # Run unified executable interface
 results = search_web("query")        # Search the web
 papers = list_papers()               # List available papers
 search_results = search_library("query") # Keyword search in library
@@ -576,7 +545,7 @@ RULES:
 - You are ONLY {self.name}. Never speak as another team member.
 - Be concise: 80-120 words max per response.
 - When you need data, write code to get it.
-- Only use: read_paper(), read_hello_os(), run_hello_os_executable(), search_web(), list_papers(), search_library(), semantic_search()
+- Only use: read_paper(), read_hello_os(), search_web(), list_papers(), search_library(), semantic_search()
 """
             self._soul_cache = external_soul + rlm_rules
             print(f"     ✓ Soul loaded: {self.name.upper()}_SOUL.md")
@@ -792,7 +761,6 @@ AVAILABLE TOOLS:
 4. search_library(query): Keyword search in library.
 5. semantic_search(query): Semantic RAG search in library.
 6. read_hello_os(max_chars=120000): Reads hello_os.py for symbolic/geometric engine patterns.
-7. run_hello_os_executable(command="inspect"): Runs hello_os_executable.py as one executable interface.
 
 FAILURE CONDITIONS:
 - Asking “what should I research?”
@@ -830,7 +798,7 @@ BEGIN EXECUTION IMMEDIATELY.
             custom_system_prompt=custom_prompt,
             verbose=False
         )
-        print("   ✓ RLM initialized with read_paper(), hello_os executable tools, and search_web()")
+        print("   ✓ RLM initialized with read_paper(), read_hello_os(), and search_web()")
     
     def build_prompt(self, agent: Agent, topic: str, history: List[str], turn: int) -> str:
         recent = history[-6:] if len(history) > 6 else history
@@ -861,7 +829,7 @@ BEGIN EXECUTION IMMEDIATELY.
 - NEVER print placeholder text (e.g., "Let's analyze the context"). Always call tools or discuss findings.
 - NEVER print "analyze the provided context" or similar. Do real work only.
 
-ONLY USE: read_paper(), read_hello_os(), run_hello_os_executable(), search_web(), list_papers(), search_library(), semantic_search()
+ONLY USE: read_paper(), read_hello_os(), search_web(), list_papers(), search_library(), semantic_search()
 FORMAT: Write a ```python``` code block, then plain text response.
 """
         

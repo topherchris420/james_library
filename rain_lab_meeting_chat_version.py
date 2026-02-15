@@ -261,7 +261,7 @@ class ContextManager:
 
         filtered = [
             f for f in candidates
-            if f.name in {"hello_os.py", "hello_os_executable.py"}
+            if f.name == "hello_os.py"
             or f.suffix.lower() in {".md", ".txt"}
         ]
 
