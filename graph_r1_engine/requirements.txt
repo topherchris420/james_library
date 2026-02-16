@@ -1,0 +1,57 @@
+# requirements.txt records the full set of dependencies for development
+accelerate
+codetiming
+datasets
+dill
+flash-attn
+hydra-core
+liger-kernel
+math-verify[antlr4_9_3]
+numpy
+pandas
+peft
+pyarrow>=15.0.0
+pybind11
+pylatexenc
+ray[default]
+tensordict<0.6
+torchdata
+transformers
+vllm<=0.6.3
+wandb
+
+FlagEmbedding
+faiss-cpu
+accelerate
+aioboto3
+aiohttp
+
+# database packages
+graspologic
+hnswlib
+nano-vectordb
+neo4j
+networkx
+ollama
+openai
+oracledb
+pymilvus
+pymongo
+pymysql
+pyvis
+# lmdeploy[all]
+sqlalchemy
+tenacity
+
+
+# LLM packages
+tiktoken
+transformers
+xxhash
+jsonlines
+nltk
+PyPDF2
+fastapi
+uvicorn
+spacy
+
