@@ -7,12 +7,32 @@ R.A.I.N. LAB - RESEARCH
 
 import warnings
 import logging
+import glob
 import os
 import random
+import shutil
 import sys
 import time
 import uuid
 from pathlib import Path
+import re
+
+# --- PRE-COMPILED REGEX PATTERNS ---
+RE_QUOTE_DOUBLE = re.compile(r'"([^"]+)"')
+RE_QUOTE_SINGLE = re.compile(r"'([^']+)'")
+RE_CORRUPTION_CAPS = re.compile(r'[A-Z]{8,}')
+RE_WEB_SEARCH_COMMAND = re.compile(r"\[SEARCH:\s*(.*?)\]", re.IGNORECASE)
+RE_CORRUPTION_PATTERNS = [
+    re.compile(p, re.IGNORECASE) for p in [
+        r'\|eoc_fim\|',           # End of context markers
+        r'ARILEX|AIVERI|RIECK',   # Common corruption sequences
+        r'ingly:\w*scape',        # Gibberish compound words
+        r':\s*\n\s*:\s*\n',       # Empty lines with colons
+        r'##\d+\s*\(',            # Markdown header gibberish
+        r'SING\w{10,}',           # Long corrupt strings starting with SING
+        r'[A-Z]{4,}:[A-Z]{4,}',   # Multiple caps words with colons
+    ]
+]
 
 DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent)
 DEFAULT_MODEL_NAME = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
@@ -63,6 +83,87 @@ except ImportError:
         DDG_PACKAGE = "duckduckgo_search"
     except ImportError:
         pass  # Web search will be disabled
+
+
+# Optional: Text-to-speech support
+try:
+    import pyttsx3 as _pyttsx3
+except Exception:
+    _pyttsx3 = None
+
+pyttsx3 = _pyttsx3
+
+
+class VoiceEngine:
+    """Simple pyttsx3 wrapper with graceful fallback to text-only mode."""
+
+    def __init__(self):
+        self.enabled = False
+        self.engine = None
+        self.voice_id_by_character: Dict[str, str] = {}
+        self.default_voice_id: Optional[str] = None
+
+        if pyttsx3 is None:
+            return
+
+        try:
+            self.engine = pyttsx3.init()
+            self._initialize_character_voices()
+            self.enabled = True
+        except Exception as e:
+            print(f"⚠️  Voice engine unavailable: {e}")
+            self.engine = None
+            self.enabled = False
+
+    def _initialize_character_voices(self):
+        """Load Windows character voices and map them to known agents."""
+        if not self.engine:
+            return
+
+        try:
+            available_voices = self.engine.getProperty("voices") or []
+        except Exception:
+            available_voices = []
+
+        male_voice_id = None
+        female_voice_id = None
+
+        for voice in available_voices:
+            voice_name = (getattr(voice, "name", "") or "").lower()
+            if "david" in voice_name and male_voice_id is None:
+                male_voice_id = voice.id
+            if "zira" in voice_name and female_voice_id is None:
+                female_voice_id = voice.id
+
+        current_voice_id = self.engine.getProperty("voice")
+        self.default_voice_id = male_voice_id or female_voice_id or current_voice_id
+
+        self.voice_id_by_character = {
+            "James": male_voice_id or self.default_voice_id,
+            "Luca": male_voice_id or self.default_voice_id,
+            "Jasmine": female_voice_id or self.default_voice_id,
+            "Elena": female_voice_id or self.default_voice_id,
+        }
+
+    def _voice_for_agent(self, agent_name: str) -> Optional[str]:
+        """Return mapped voice id for known characters."""
+        return self.voice_id_by_character.get(agent_name, self.default_voice_id)
+
+    def speak(self, text: str, agent_name: Optional[str] = None):
+        """Speak text synchronously; no-op if voice is unavailable."""
+        if not self.enabled or not self.engine or not text:
+            return
+
+        try:
+            target_voice = self._voice_for_agent(agent_name or "")
+            if target_voice:
+                self.engine.setProperty("voice", target_voice)
+            self.engine.say(text)
+            # Blocks until the queue is empty so audio matches text output order
+            self.engine.runAndWait()
+        except Exception as e:
+            print(f"⚠️  Voice playback failed: {e}")
+            self.enabled = False
 
 
 # --- CONFIGURATION (RTX 4090 + RNJ-1 8B OPTIMIZED) ---
@@ -503,10 +604,9 @@ class CitationAnalyzer:
     
     def extract_quotes(self, text: str) -> List[str]:
         """Extract quoted text from response"""
-        import re
-        # Match text in "quotes" or 'quotes'
-        quotes = re.findall(r'"([^"]+)"', text)
-        quotes.extend(re.findall(r"'([^']+)'", text))
+        # Match text in "quotes" or 'quotes' using pre-compiled patterns
+        quotes = RE_QUOTE_DOUBLE.findall(text)
+        quotes.extend(RE_QUOTE_SINGLE.findall(text))
         return [q for q in quotes if len(q.split()) > 3]  # Only meaningful quotes
     
     def analyze_response(self, agent_name: str, response: str) -> Dict[str, any]:
@@ -701,6 +801,42 @@ SESSION ENDED
             print(f"⚠️  Logging error: {e}")
 
 
+class Diplomat:
+    """Simple file-based mailbox for external messages."""
+
+    def __init__(self, base_path: str = ".", inbox: str = "inbox", outbox: str = "outbox", processed: str = "processed"):
+        self.inbox = os.path.join(base_path, inbox)
+        self.outbox = os.path.join(base_path, outbox)
+        self.processed = os.path.join(base_path, processed)
+
+        os.makedirs(self.inbox, exist_ok=True)
+        os.makedirs(self.outbox, exist_ok=True)
+        os.makedirs(self.processed, exist_ok=True)
+
+    def check_inbox(self) -> Optional[str]:
+        """Read first inbox message, archive it, and return formatted text."""
+        message_files = sorted(glob.glob(os.path.join(self.inbox, "*.txt")), key=os.path.getmtime)
+        if not message_files:
+            return None
+
+        message_file = message_files[0]
+        try:
+            with open(message_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+        except Exception as e:
+            print(f"⚠️  Failed to read diplomat message '{message_file}': {e}")
+            return None
+
+        archived_path = os.path.join(self.processed, os.path.basename(message_file))
+        try:
+            shutil.move(message_file, archived_path)
+        except Exception as e:
+            print(f"⚠️  Failed to archive diplomat message '{message_file}': {e}")
+            return None
+
+        return f"📨 EXTERNAL MESSAGE: {content}"
+
+
 # --- MAIN ORCHESTRATOR ---
 class RainLabOrchestrator:
     """Main orchestrator with enhanced citation tracking and error handling"""
@@ -715,6 +851,8 @@ class RainLabOrchestrator:
         self.director = None
         self.citation_analyzer = None
         self.web_search_manager = WebSearchManager(config)
+        self.voice_engine = VoiceEngine()
+        self.diplomat = Diplomat(base_path=self.config.library_path)
         
         # LLM client with extended timeout for large context processing
         try:
@@ -735,6 +873,22 @@ class RainLabOrchestrator:
         except Exception as e:
             print(f"❌ Failed to initialize OpenAI client: {e}")
             sys.exit(1)
+
+    def get_last_meeting_summary(self) -> str:
+        """Load the tail of the newest archived meeting summary."""
+        archive_pattern = os.path.join("meeting_archives", "*.md")
+        archive_files = glob.glob(archive_pattern)
+
+        if not archive_files:
+            return ""
+
+        newest_file = max(archive_files, key=os.path.getmtime)
+        try:
+            with open(newest_file, "r", encoding="utf-8") as f:
+                return f.read()[-2000:]
+        except Exception as e:
+            print(f"⚠️  Failed to load meeting archive '{newest_file}': {e}")
+            return ""
     
     def test_connection(self) -> bool:
         """Test LM Studio connection with retry"""
@@ -806,7 +960,16 @@ class RainLabOrchestrator:
         verbose = self.config.verbose
         if verbose:
             print("🔍 Scanning for Research Papers...")
+        else:
+            print("🔍 Scanning research library...", end="", flush=True)
+
         context_block, paper_list = self.context_manager.get_library_context(verbose=verbose)
+
+        if not verbose:
+            if paper_list:
+                print(f"\r\033[K\033[92m✓\033[0m Scanned {len(paper_list)} papers")
+            else:
+                print(f"\r\033[K\033[91m✗\033[0m No papers found.")
         
         if not paper_list:
             print("\n❌ No papers found. Cannot proceed.")
@@ -830,13 +993,26 @@ class RainLabOrchestrator:
         # Load agent souls from external files
         if verbose:
             print("\n🧠 Loading Agent Souls...")
+        else:
+            print("🧠 Loading agents...", end="", flush=True)
+
         for agent in self.team:
             agent.load_soul(self.config.library_path, verbose=verbose)
+
+        if not verbose:
+            print(f"\r\033[K\033[92m✓\033[0m Agents ready")
         
         # Perform web search for supplementary context
         web_context = ""
         if self.web_search_manager.enabled:
-            web_context, _ = self.web_search_manager.search(topic, verbose=verbose)
+            if not verbose:
+                print("🌐 Searching web...", end="", flush=True)
+
+            web_context, results = self.web_search_manager.search(topic, verbose=verbose)
+
+            if not verbose:
+                count = len(results) if results else 0
+                print(f"\r\033[K\033[92m✓\033[0m Web search ({count} results)")
         elif self.config.enable_web_search and not DDG_AVAILABLE and verbose:
             print("\n⚠️  Web search disabled: duckduckgo-search not installed")
             print("   Install with: pip install duckduckgo-search\n")
@@ -848,6 +1024,10 @@ class RainLabOrchestrator:
         
         # Store for use in agent responses
         self.full_context = full_context
+
+        previous_meeting_summary = self.get_last_meeting_summary()
+        if previous_meeting_summary:
+            self.full_context += "\n### PREVIOUS MEETING CONTEXT\n" + previous_meeting_summary
         
         # Initialize log
         self.log_manager.initialize_log(topic, len(paper_list))
@@ -871,6 +1051,11 @@ class RainLabOrchestrator:
         wrap_up_start_turn = self.config.max_turns - self.config.wrap_up_turns
         
         while turn_count < self.config.max_turns:
+            external_message = self.diplomat.check_inbox()
+            if external_message:
+                print(f"\n\033[93m{external_message}\033[0m")
+                history_log.append(external_message)
+
             # Check if we should enter wrap-up phase
             if not in_wrap_up and turn_count >= wrap_up_start_turn:
                 in_wrap_up = True
@@ -948,6 +1133,29 @@ class RainLabOrchestrator:
             print(f"\n{current_agent.color}{'─'*70}")
             print(f"{current_agent.name}: {clean_response}")
             print(f"{'─'*70}\033[0m")
+            self.voice_engine.speak(
+                f"{current_agent.name}: {clean_response}",
+                agent_name=current_agent.name,
+            )
+
+            search_match = RE_WEB_SEARCH_COMMAND.search(clean_response)
+            if search_match:
+                query = search_match.group(1).strip()
+                if query:
+                    print(f"\033[94m🌐 Active Web Search requested: {query}\033[0m")
+                    web_note, web_results = self.web_search_manager.search(query, verbose=verbose)
+
+                    if web_note:
+                        print("\033[94m📎 Web Search Result:\033[0m")
+                        print(web_note)
+                        history_log.append(f"SYSTEM: Web search for '{query}'\n{web_note}")
+                    else:
+                        no_result_note = f"No web results returned for query: {query}"
+                        print(f"\033[94m📎 Web Search Result: {no_result_note}\033[0m")
+                        history_log.append(f"SYSTEM: {no_result_note}")
+
+                    if web_results:
+                        self.full_context += f"\n\n### LIVE WEB SEARCH\nQuery: {query}\n{web_note}"
             
             # Show citation feedback
             if metadata and metadata.get('verified'):
@@ -1039,6 +1247,7 @@ CRITICAL RULES:
 - Use "exact quotes" from the papers when citing data
 - Mention which paper you're quoting: [from filename.md]
 - If you must speculate, prefix with [SPECULATION]
+- CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
 - Keep response under 150 words
 
 {agent.name}:"""
@@ -1081,6 +1290,7 @@ RECENT DISCUSSION:
 3. ADVANCE the discussion - raise a NEW point, question, or angle not yet discussed
 4. Focus on YOUR specialty: {agent.focus}
 5. Keep response under 80 words - be concise
+6. CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
 
 Your task: {mission}
 
@@ -1290,8 +1500,7 @@ Respond as {agent.name} only:"""
         
         # Heuristic 1: Too many consecutive uppercase letters (token corruption)
         # Pattern like "AIVERCREDREDRIECKERE" is a sign of corruption
-        import re
-        if re.search(r'[A-Z]{8,}', text):
+        if RE_CORRUPTION_CAPS.search(text):
             return True, "Excessive consecutive capitals detected"
         
         # Heuristic 2: High ratio of special characters (gibberish)
@@ -1300,18 +1509,9 @@ Respond as {agent.name} only:"""
             return True, "Too many special characters"
         
         # Heuristic 3: Common corruption patterns
-        corruption_patterns = [
-            r'\|eoc_fim\|',           # End of context markers
-            r'ARILEX|AIVERI|RIECK',   # Common corruption sequences
-            r'ingly:\w*scape',        # Gibberish compound words
-            r':\s*\n\s*:\s*\n',       # Empty lines with colons
-            r'##\d+\s*\(',            # Markdown header gibberish
-            r'SING\w{10,}',           # Long corrupt strings starting with SING
-            r'[A-Z]{4,}:[A-Z]{4,}',   # Multiple caps words with colons
-        ]
-        for pattern in corruption_patterns:
-            if re.search(pattern, text, re.IGNORECASE):
-                return True, f"Corruption pattern detected: {pattern[:20]}"
+        for pattern in RE_CORRUPTION_PATTERNS:
+            if pattern.search(text):
+                return True, f"Corruption pattern detected: {pattern.pattern[:20]}"
         
         # Heuristic 4: Too many empty lines or lines with just punctuation
         lines = text.split('\n')
@@ -1393,7 +1593,6 @@ Keep it under 60 words - maintain your standards but be collegial."""
         - "James (R.A.I.N. Lab Lead): ..."
         - "James (R.A.I.N. Lab): ..."
         """
-        import re
         
         # Pattern: agent name followed by optional parenthetical text, then colon
         # Examples: "James:", "James (R.A.I.N. Lab Lead):", "James (anything):"
