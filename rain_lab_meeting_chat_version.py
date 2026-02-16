@@ -40,6 +40,7 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 import argparse
+from graph_bridge import HypergraphManager
 try:
     import msvcrt  # Windows keyboard input detection
 except ImportError:
@@ -853,6 +854,8 @@ class RainLabOrchestrator:
         self.web_search_manager = WebSearchManager(config)
         self.voice_engine = VoiceEngine()
         self.diplomat = Diplomat(base_path=self.config.library_path)
+        self.hypergraph_manager = HypergraphManager(library_path=self.config.library_path)
+        self.hypergraph_manager.build()
         
         # LLM client with extended timeout for large context processing
         try:
@@ -1311,6 +1314,15 @@ Your specialty: {agent.focus}
 Your task: {mission}
 
 Respond as {agent.name} only:"""
+
+                if agent.name == "Luca":
+                    graph_findings = self.hypergraph_manager.query(topic=topic)
+                    user_msg += f"""
+
+HIDDEN CONNECTIONS (KNOWLEDGE HYPERGRAPH):
+{graph_findings}
+Use these links to propose creative cross-paper insights if relevant.
+"""
                 
                 # Use system message for static context (better caching)
                 response = self.client.chat.completions.create(
