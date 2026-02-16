@@ -7,6 +7,7 @@ R.A.I.N. LAB - RESEARCH
 
 import warnings
 import logging
+import glob
 import os
 import random
 import sys
@@ -744,6 +745,22 @@ class RainLabOrchestrator:
         except Exception as e:
             print(f"❌ Failed to initialize OpenAI client: {e}")
             sys.exit(1)
+
+    def get_last_meeting_summary(self) -> str:
+        """Load the tail of the newest archived meeting summary."""
+        archive_pattern = os.path.join("meeting_archives", "*.md")
+        archive_files = glob.glob(archive_pattern)
+
+        if not archive_files:
+            return ""
+
+        newest_file = max(archive_files, key=os.path.getmtime)
+        try:
+            with open(newest_file, "r", encoding="utf-8") as f:
+                return f.read()[-2000:]
+        except Exception as e:
+            print(f"⚠️  Failed to load meeting archive '{newest_file}': {e}")
+            return ""
     
     def test_connection(self) -> bool:
         """Test LM Studio connection with retry"""
@@ -868,6 +885,10 @@ class RainLabOrchestrator:
         
         # Store for use in agent responses
         self.full_context = full_context
+
+        previous_meeting_summary = self.get_last_meeting_summary()
+        if previous_meeting_summary:
+            self.full_context += "\n### PREVIOUS MEETING CONTEXT\n" + previous_meeting_summary
         
         # Initialize log
         self.log_manager.initialize_log(topic, len(paper_list))
