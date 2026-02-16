@@ -580,6 +580,23 @@ class WebSearchManager:
         
         return "", []
     
+    def _sanitize_text(self, text: str) -> str:
+        """Sanitize web content to prevent prompt injection and control token attacks"""
+        if not text:
+            return ""
+
+        # 1. Remove LLM control tokens and known corruption markers
+        for token in ["<|endoftext|>", "<|im_start|>", "<|im_end|>", "|eoc_fim|"]:
+            text = text.replace(token, "[TOKEN_REMOVED]")
+
+        # 2. Neutralize '###' headers that could simulate system/user turns
+        text = text.replace("###", ">>>")
+
+        # 3. Prevent recursive search triggers
+        text = text.replace("[SEARCH:", "[SEARCH;")
+
+        return text.strip()
+
     def _format_results(self, results: List[Dict]) -> str:
         """Format results for agent context"""
         if not results:
@@ -587,9 +604,12 @@ class WebSearchManager:
         
         formatted = ["\n### WEB SEARCH RESULTS (cite as [from web: title])"]
         for r in results:
-            formatted.append(f"**{r['title']}**")
-            formatted.append(f"{r['body']}")
-            formatted.append(f"Source: {r['href']}\n")
+            safe_title = self._sanitize_text(r.get('title', ''))
+            safe_body = self._sanitize_text(r.get('body', ''))
+
+            formatted.append(f"**{safe_title}**")
+            formatted.append(f"{safe_body}")
+            formatted.append(f"Source: {r.get('href', '')}\n")
         
         return "\n".join(formatted)
 
