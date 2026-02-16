@@ -357,11 +357,16 @@ class ContextManager:
         allowed_suffixes = {".md", ".txt", ".py"}
 
         if self.config.recursive_library_scan:
-            candidates = [
-                f for f in self.lab_path.rglob("*")
-                if f.is_file() and f.suffix.lower() in allowed_suffixes
-                and not any(part in skip_dirs for part in f.parts)
-            ]
+            candidates = []
+            for root, dirs, files in os.walk(self.lab_path):
+                # Prune skip_dirs in-place to prevent traversing them
+                dirs[:] = [d for d in dirs if d not in skip_dirs]
+
+                for file in files:
+                    if Path(file).suffix.lower() in allowed_suffixes:
+                        # Ensure file itself isn't in skip list (rare but possible)
+                        if file not in skip_dirs:
+                            candidates.append(Path(root) / file)
         else:
             candidates = [
                 f for f in self.lab_path.iterdir()
