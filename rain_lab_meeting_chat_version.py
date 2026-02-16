@@ -77,6 +77,45 @@ except ImportError:
         pass  # Web search will be disabled
 
 
+# Optional: Text-to-speech support
+try:
+    import pyttsx3
+except ImportError:
+    pyttsx3 = None
+
+
+class VoiceEngine:
+    """Simple pyttsx3 wrapper with graceful fallback to text-only mode."""
+
+    def __init__(self):
+        self.enabled = False
+        self.engine = None
+
+        if pyttsx3 is None:
+            return
+
+        try:
+            self.engine = pyttsx3.init()
+            self.enabled = True
+        except Exception as e:
+            print(f"⚠️  Voice engine unavailable: {e}")
+            self.engine = None
+            self.enabled = False
+
+    def speak(self, text: str):
+        """Speak text synchronously; no-op if voice is unavailable."""
+        if not self.enabled or not self.engine or not text:
+            return
+
+        try:
+            self.engine.say(text)
+            # Blocks until the queue is empty so audio matches text output order
+            self.engine.runAndWait()
+        except Exception as e:
+            print(f"⚠️  Voice playback failed: {e}")
+            self.enabled = False
+
+
 # --- CONFIGURATION (RTX 4090 + RNJ-1 8B OPTIMIZED) ---
 @dataclass
 class Config:
@@ -726,6 +765,7 @@ class RainLabOrchestrator:
         self.director = None
         self.citation_analyzer = None
         self.web_search_manager = WebSearchManager(config)
+        self.voice_engine = VoiceEngine()
         
         # LLM client with extended timeout for large context processing
         try:
@@ -988,6 +1028,7 @@ class RainLabOrchestrator:
             print(f"\n{current_agent.color}{'─'*70}")
             print(f"{current_agent.name}: {clean_response}")
             print(f"{'─'*70}\033[0m")
+            self.voice_engine.speak(f"{current_agent.name}: {clean_response}")
 
             search_match = RE_WEB_SEARCH_COMMAND.search(clean_response)
             if search_match:
