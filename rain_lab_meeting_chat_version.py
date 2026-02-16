@@ -10,6 +10,7 @@ import logging
 import glob
 import os
 import random
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -793,6 +794,42 @@ SESSION ENDED
             print(f"⚠️  Logging error: {e}")
 
 
+class Diplomat:
+    """Simple file-based mailbox for external messages."""
+
+    def __init__(self, base_path: str = ".", inbox: str = "inbox", outbox: str = "outbox", processed: str = "processed"):
+        self.inbox = os.path.join(base_path, inbox)
+        self.outbox = os.path.join(base_path, outbox)
+        self.processed = os.path.join(base_path, processed)
+
+        os.makedirs(self.inbox, exist_ok=True)
+        os.makedirs(self.outbox, exist_ok=True)
+        os.makedirs(self.processed, exist_ok=True)
+
+    def check_inbox(self) -> Optional[str]:
+        """Read first inbox message, archive it, and return formatted text."""
+        message_files = sorted(glob.glob(os.path.join(self.inbox, "*.txt")), key=os.path.getmtime)
+        if not message_files:
+            return None
+
+        message_file = message_files[0]
+        try:
+            with open(message_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+        except Exception as e:
+            print(f"⚠️  Failed to read diplomat message '{message_file}': {e}")
+            return None
+
+        archived_path = os.path.join(self.processed, os.path.basename(message_file))
+        try:
+            shutil.move(message_file, archived_path)
+        except Exception as e:
+            print(f"⚠️  Failed to archive diplomat message '{message_file}': {e}")
+            return None
+
+        return f"📨 EXTERNAL MESSAGE: {content}"
+
+
 # --- MAIN ORCHESTRATOR ---
 class RainLabOrchestrator:
     """Main orchestrator with enhanced citation tracking and error handling"""
@@ -808,6 +845,7 @@ class RainLabOrchestrator:
         self.citation_analyzer = None
         self.web_search_manager = WebSearchManager(config)
         self.voice_engine = VoiceEngine()
+        self.diplomat = Diplomat(base_path=self.config.library_path)
         
         # LLM client with extended timeout for large context processing
         try:
@@ -995,6 +1033,11 @@ class RainLabOrchestrator:
         wrap_up_start_turn = self.config.max_turns - self.config.wrap_up_turns
         
         while turn_count < self.config.max_turns:
+            external_message = self.diplomat.check_inbox()
+            if external_message:
+                print(f"\n\033[93m{external_message}\033[0m")
+                history_log.append(external_message)
+
             # Check if we should enter wrap-up phase
             if not in_wrap_up and turn_count >= wrap_up_start_turn:
                 in_wrap_up = True
