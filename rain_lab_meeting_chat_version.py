@@ -355,39 +355,81 @@ class ContextManager:
     def _discover_files(self) -> List[Path]:
         """Discover candidate research files, optionally including nested directories."""
         skip_dirs = {".git", "__pycache__", ".venv", "venv", "node_modules", "meeting_archives"}
-        allowed_suffixes = {".md", ".txt", ".py"}
+        allowed_suffixes = (".md", ".txt", ".py")
+        exclude_patterns = ["SOUL", "LOG", "MEETING"]
+
+        candidates = []
 
         if self.config.recursive_library_scan:
-            candidates = []
             for root, dirs, files in os.walk(self.lab_path):
                 # Prune skip_dirs in-place to prevent traversing them
                 dirs[:] = [d for d in dirs if d not in skip_dirs]
 
+                # Pre-calculate parent dir check for .py files
+                # If root ends with "hello_os", then files in it are inside hello_os package
+                parent_name = os.path.basename(root)
+                is_hello_os_dir = (parent_name == "hello_os")
+
                 for file in files:
-                    if Path(file).suffix.lower() in allowed_suffixes:
-                        # Ensure file itself isn't in skip list (rare but possible)
-                        if file not in skip_dirs:
-                            candidates.append(Path(root) / file)
+                    # 1. Fast suffix check (string op, no object creation)
+                    name_lower = file.lower()
+                    if not name_lower.endswith(allowed_suffixes):
+                        continue
+
+                    # 2. Check exclusions
+                    name_upper = file.upper()
+                    if any(p in name_upper for p in exclude_patterns):
+                        continue
+
+                    if file in skip_dirs:
+                        continue
+
+                    # 3. Apply specific filtering rules
+                    # Rule: .md/.txt are always allowed. .py only if hello_os.py or inside hello_os dir.
+                    is_md_txt = name_lower.endswith((".md", ".txt"))
+
+                    is_valid_py = False
+                    if name_lower.endswith(".py"):
+                        if file == "hello_os.py":
+                            is_valid_py = True
+                        elif is_hello_os_dir:
+                            is_valid_py = True
+
+                    if is_md_txt or is_valid_py:
+                        candidates.append(Path(root) / file)
         else:
-            candidates = [
-                f for f in self.lab_path.iterdir()
-                if f.is_file() and f.suffix.lower() in allowed_suffixes
-            ]
+            # Non-recursive scan (top-level only)
+            for f in self.lab_path.iterdir():
+                if not f.is_file():
+                    continue
 
-        filtered = [
-            f for f in candidates
-            if f.name == "hello_os.py"
-            or (f.parent.name == "hello_os" and f.suffix == ".py")
-            or f.suffix.lower() in {".md", ".txt"}
-        ]
+                name = f.name
+                name_lower = name.lower()
 
-        filtered = [
-            f for f in filtered
-            if "SOUL" not in f.name.upper()
-            and "LOG" not in f.name.upper()
-            and "MEETING" not in f.name.upper()
-        ]
-        return sorted(filtered)[: self.config.max_library_files]
+                if not name_lower.endswith(allowed_suffixes):
+                    continue
+
+                if name in skip_dirs:
+                    continue
+
+                name_upper = name.upper()
+                if any(p in name_upper for p in exclude_patterns):
+                    continue
+
+                is_md_txt = name_lower.endswith((".md", ".txt"))
+
+                is_valid_py = False
+                if name_lower.endswith(".py"):
+                    if name == "hello_os.py":
+                        is_valid_py = True
+                    # Check if the library itself is the hello_os package folder
+                    elif self.lab_path.name == "hello_os":
+                        is_valid_py = True
+
+                if is_md_txt or is_valid_py:
+                    candidates.append(f)
+
+        return sorted(candidates)[: self.config.max_library_files]
 
     def get_library_context(self, verbose: bool = False) -> Tuple[str, List[str]]:
         """Read COMPLETE papers from local library"""
