@@ -1,7 +1,7 @@
 import json
 import subprocess
 import sys
-
+import hello_os_executable as hoe
 
 def test_inspect_runs(repo_root):
     """hello_os_executable.py inspect must produce valid JSON."""
@@ -47,3 +47,17 @@ def test_extract_csl(repo_root, tmp_path):
     assert result.returncode == 0, f"extract-csl failed:\n{result.stderr}"
     assert out_file.exists()
     assert out_file.stat().st_size > 0
+
+
+def test_extract_csl_without_end_marker(tmp_path, monkeypatch):
+    """extract-csl should gracefully fall back to EOF when end marker is missing."""
+    sample = "header\nCSL (Cognispheric Symbolic Language)\nbody\n"
+    monkeypatch.setattr(hoe, "_read_hello_os", lambda: sample)
+    out_file = tmp_path / "csl_eof.py"
+
+    out = hoe.extract_csl_module(out_file)
+
+    assert out == out_file
+    content = out_file.read_text(encoding="utf-8")
+    assert "Cognispheric Symbolic Language" in content
+    assert content.endswith("\n")

@@ -22,7 +22,7 @@ def test_parse_rlm_mode():
 def test_build_command_chat(repo_root):
     args, pt = parse_args(["--mode", "chat", "--topic", "x"])
     cmd = build_command(args, pt, repo_root)
-    assert "rain_lab_meeting_chat_version.py" in cmd[1]
+    assert "chat_with_james.py" in cmd[1]
 
 
 def test_build_command_rlm(repo_root):
@@ -47,3 +47,16 @@ def test_turns_forwarded(repo_root):
     cmd = build_command(args, pt, repo_root)
     assert "--max-turns" in cmd
     assert "5" in cmd
+
+def test_build_command_chat_falls_back_to_legacy(repo_root, monkeypatch):
+    args, pt = parse_args(["--mode", "chat", "--topic", "x"])
+    original_exists = Path.exists
+
+    monkeypatch.setattr(
+        Path,
+        "exists",
+        lambda self: False if self.name == "chat_with_james.py" else original_exists(self),
+    )
+
+    cmd = build_command(args, pt, repo_root)
+    assert "rain_lab_meeting_chat_version.py" in cmd[1]

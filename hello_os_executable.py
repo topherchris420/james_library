@@ -75,7 +75,9 @@ def extract_csl_module(output_path: Path = DEFAULT_CSL_MODULE) -> Path:
     head_start = 0
     end_idx = text.find(CSL_END_MARKER, start_idx)
     if end_idx == -1:
-        raise ValueError("Could not locate CSL end marker in hello_os.py")
+        # Package fallback content may not include the flat-file marker.
+        # In that case, extract from the start marker to EOF.
+        end_idx = len(text)
 
     csl_text = text[head_start:end_idx].rstrip() + "\n"
     output_path.write_text(csl_text, encoding="utf-8")
