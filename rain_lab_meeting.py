@@ -32,13 +32,13 @@ os.environ["PYTHONIOENCODING"] = "utf-8"
 os.environ["PYTHONUTF8"] = "1"
 
 # POINT TO THE USER'S LIBRARY LOCATION
-TARGET_PATH = os.environ.get(
-    "JAMES_LIBRARY_PATH",
-    r"C:\Users\chris\Downloads\files\james_library",
-)
-if not os.path.exists(TARGET_PATH):
+TARGET_PATH = os.environ.get("JAMES_LIBRARY_PATH")
+if not TARGET_PATH or not os.path.exists(TARGET_PATH):
     # Fallback to the current working directory when launched from the repo folder.
     TARGET_PATH = os.getcwd()
+
+# Ensure consistent environment for subprocesses/REPL
+os.environ["JAMES_LIBRARY_PATH"] = TARGET_PATH
 
 # Add path so we can import 'rlm'
 sys.path.append(TARGET_PATH)
@@ -102,7 +102,7 @@ import glob
 import re
 
 # PATH TO USER LIBRARY (Use forward slashes to avoid escape issues)
-LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", r"C:/Users/chris/Downloads/files/james_library")
+LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", os.getcwd())
 
 # GLOBAL TOPIC VARIABLE (Injected by the agent's first turn or host env)
 TOPIC = os.environ.get("RLM_TOPIC", "RESEARCH_TOPIC")
