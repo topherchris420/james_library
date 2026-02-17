@@ -113,8 +113,17 @@ collection = None
 _web_search_ready = False
 _rag_failed = False
 _paper_cache = {}
+_library_files_cache = None  # Cache for glob results
 HELLO_OS_PATH = os.path.join(LIBRARY_PATH, "hello_os.py")
 HELLO_OS_PKG = os.path.join(LIBRARY_PATH, "hello_os")
+
+
+def _get_library_files():
+    """Return cached list of library files to avoid repeated globs."""
+    global _library_files_cache
+    if _library_files_cache is None:
+        _library_files_cache = glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt"))
+    return _library_files_cache
 
 
 def _require_web_search():
@@ -234,7 +243,7 @@ def index_library():
     
     print("📚 Indexing library...")
     count = 0
-    for file_path in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")):
+    for file_path in _get_library_files():
         if "SOUL" in file_path or "LOG" in file_path: continue
         try:
             with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
@@ -300,7 +309,7 @@ def read_paper(keyword):
 
     # Prefer exact filename matches first to avoid broad wildcard collisions.
     all_files = [
-        f for f in (glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")))
+        f for f in _get_library_files()
         if not os.path.basename(f).startswith("_")
         and "SOUL" not in os.path.basename(f).upper()
         and "LOG" not in os.path.basename(f).upper()
@@ -350,7 +359,7 @@ def search_library(query):
     keywords = [k.lower() for k in query.split() if len(k) > 3]
     if not keywords: keywords = [query.lower()]
     
-    for file_path in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")):
+    for file_path in _get_library_files():
         basename = os.path.basename(file_path)
         if basename.startswith("_"):
             continue
@@ -390,7 +399,7 @@ def search_library(query):
         result = "\\n".join(output)
     else:
         # Auto-list papers if search fails
-        all_files = [os.path.basename(f) for f in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")) if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
+        all_files = [os.path.basename(f) for f in _get_library_files() if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
         result = f"No direct matches for '{query}'.\\nAVAILABLE PAPERS:\\n" + ", ".join(all_files) + "\\n\\nSYSTEM ADVICE: Pick a filename from above and use read_paper() on it."
 
     print(result)
@@ -426,7 +435,7 @@ def semantic_search(query):
 
 def list_papers():
     """Lists all research papers in the library."""
-    files = glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt"))
+    files = _get_library_files()
     research = [os.path.basename(f) for f in files if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
     if os.path.exists(HELLO_OS_PATH) or os.path.isdir(HELLO_OS_PKG):
         research.append("hello_os")
