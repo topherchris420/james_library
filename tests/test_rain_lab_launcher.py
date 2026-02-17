@@ -48,8 +48,12 @@ def test_turns_forwarded(repo_root):
     assert "--max-turns" in cmd
     assert "5" in cmd
 
-def test_build_command_chat_falls_back_to_legacy(repo_root, monkeypatch):
+def test_build_command_chat_requires_single_script(repo_root, monkeypatch):
     args, pt = parse_args(["--mode", "chat", "--topic", "x"])
     monkeypatch.setattr(Path, "exists", lambda self: False if self.name == "chat_with_james.py" else Path.__dict__["exists"](self))
-    cmd = build_command(args, pt, repo_root)
-    assert "rain_lab_meeting_chat_version.py" in cmd[1]
+    try:
+        build_command(args, pt, repo_root)
+    except FileNotFoundError as exc:
+        assert "chat_with_james.py" in str(exc)
+    else:
+        raise AssertionError("Expected FileNotFoundError when chat_with_james.py is missing")

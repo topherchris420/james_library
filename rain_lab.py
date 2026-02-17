@@ -130,11 +130,12 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
         cmd.extend(passthrough)
         return cmd
 
-    # Prefer the dedicated single-agent chat script when present.
-    # Fall back to the legacy meeting chat implementation to preserve compatibility.
-    preferred_target = repo_root / "chat_with_james.py"
-    legacy_target = repo_root / "rain_lab_meeting_chat_version.py"
-    target = preferred_target if preferred_target.exists() else legacy_target
+    target = repo_root / "chat_with_james.py"
+    if not target.exists():
+        raise FileNotFoundError(
+            "Chat mode requires chat_with_james.py; rain_lab_meeting_chat_version.py "
+            "is no longer used by rain_lab.py"
+        )
     cmd = [sys.executable, str(target)]
     if args.topic:
         cmd.extend(["--topic", args.topic])
