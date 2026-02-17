@@ -122,21 +122,22 @@ rlm_paths = [
 ]
 
 rlm_found = False
+rlm_imported = False
+last_rlm_error = None
 for rlm_path in rlm_paths:
     if os.path.exists(rlm_path):
         print_success(f"RLM directory found: {rlm_path}")
         rlm_found = True
-        
+
         # Check if we can actually import it
         sys.path.insert(0, rlm_path)
         try:
             from rlm import RLM
-            print_success("RLM module imports successfully")
+            print_success(f"RLM module imports successfully (via: {rlm_path})")
+            rlm_imported = True
             break
         except ImportError as e:
-            print_error(f"RLM directory exists but import failed: {e}")
-            all_checks_passed = False
-            break
+            last_rlm_error = e
 
 if not rlm_found:
     print_error("RLM library not found in expected locations")
@@ -144,23 +145,34 @@ if not rlm_found:
     for path in rlm_paths:
         print(f"  • {path}")
     all_checks_passed = False
+elif not rlm_imported:
+    print_error(f"RLM directory exists but import failed: {last_rlm_error}")
+    all_checks_passed = False
 
 # =============================================================================
 # CHECK 5: PYTHON DEPENDENCIES
 # =============================================================================
 print(f"\n{BOLD}[5/6] Checking Python Dependencies...{RESET}")
 
-dependencies = {
-    "duckduckgo-search": "ddgs",  # package name : import name
+dependency_groups = {
+    "duckduckgo-search / ddgs": ["ddgs", "duckduckgo_search"],
 }
 
-for package, import_name in dependencies.items():
-    try:
-        __import__(import_name)
-        print_success(f"{package} installed")
-    except ImportError:
-        print_error(f"{package} NOT installed")
-        print_info(f"Install with: pip install {package}")
+for package_name, import_names in dependency_groups.items():
+    installed_import = None
+    for import_name in import_names:
+        try:
+            __import__(import_name)
+            installed_import = import_name
+            break
+        except ImportError:
+            continue
+
+    if installed_import:
+        print_success(f"{package_name} installed (import: {installed_import})")
+    else:
+        print_error(f"{package_name} NOT installed")
+        print_info("Install with: pip install duckduckgo-search or pip install ddgs")
         all_checks_passed = False
 
 # =============================================================================

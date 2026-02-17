@@ -26,3 +26,10 @@ def test_preflight_uses_env_var(repo_root):
     source = (repo_root / "rain_preflight_check.py").read_text(encoding="utf-8")
     assert "JAMES_LIBRARY_PATH" in source
     assert r"C:\Users" not in source
+
+
+def test_preflight_duckduckgo_dual_import_support(repo_root):
+    """Preflight should accept both legacy and current DuckDuckGo import names."""
+    source = (repo_root / "rain_preflight_check.py").read_text(encoding="utf-8")
+    assert '"ddgs"' in source
+    assert '"duckduckgo_search"' in source
