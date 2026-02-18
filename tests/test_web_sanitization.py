@@ -9,7 +9,6 @@ sys.modules["ddgs"] = MagicMock()
 sys.modules["duckduckgo_search"] = MagicMock()
 sys.modules["pyttsx3"] = MagicMock()
 sys.modules["graph_bridge"] = MagicMock()
-sys.modules["rain_metrics"] = MagicMock()
 
 # Ensure the module can be imported
 sys.path.insert(0, os.getcwd())

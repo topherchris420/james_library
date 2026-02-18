@@ -12,7 +12,6 @@ sys.modules["ddgs"] = MagicMock()
 sys.modules["duckduckgo_search"] = MagicMock()
 sys.modules["pyttsx3"] = MagicMock()
 sys.modules["graph_bridge"] = MagicMock()
-sys.modules["rain_metrics"] = MagicMock()
 # Mock msvcrt for Windows
 sys.modules["msvcrt"] = MagicMock()
 
