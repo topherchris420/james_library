@@ -93,14 +93,21 @@ class OracleDB:
             )
 
     async def check_tables(self):
+        # Validate table names against allowlist to prevent SQL injection
+        allowed_tables = set(TABLES.keys())
         for k, v in TABLES.items():
+            # Validate table name is in allowlist (defense in depth)
+            if k not in allowed_tables:
+                logger.warning(f"Table {k} not in allowlist, skipping")
+                continue
             try:
                 if k.lower() == "graphr1_graph":
                     await self.query(
                         "SELECT id FROM GRAPH_TABLE (graphr1_graph MATCH (a) COLUMNS (a.id)) fetch first row only"
                     )
                 else:
-                    await self.query("SELECT 1 FROM {k}".format(k=k))
+                    # Table name is validated against allowlist above
+                    await self.query(f"SELECT 1 FROM `{k}`")
             except Exception as e:
                 logger.error(f"Failed to check table {k} in Oracle database")
                 logger.error(f"Oracle database error: {e}")

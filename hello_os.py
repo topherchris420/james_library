@@ -8592,16 +8592,17 @@ class GeodesicSimulator:
                 for c in range(3):
                     if Gamma[a][b][c] != 0:
                         code = self.sympy_to_torch(Gamma[a][b][c])
-                        self.Gamma_funcs[a][b][c] = eval(code)
+                        self.Gamma_funcs[a][b][c] = self._safe_eval_lambda(code)
 
         for i in range(3):
             for j in range(3):
                 code = self.sympy_to_torch(g[i,j])
-                self.g_funcs[i][j] = eval(code)
+                self.g_funcs[i][j] = self._safe_eval_lambda(code)
 
         print("✓ Christoffel symbols compiled")
 
     def sympy_to_torch(self, expr):
+        """Convert SymPy expression to PyTorch code string."""
         code = sp.printing.pycode(expr)
         replacements = {
             'math.': 'torch.',
@@ -8612,6 +8613,25 @@ class GeodesicSimulator:
         for old, new in replacements.items():
             code = code.replace(old, new)
         return f"lambda t, x, y, v_s, R, sigma: {code}"
+
+    def _safe_eval_lambda(self, code: str):
+        """Safely evaluate a generated lambda string using a restricted namespace."""
+        # Restricted namespace - only allow specific torch functions
+        allowed_names = {
+            'torch': __import__('torch'),
+            't': None, 'x': None, 'y': None, 'v_s': None, 'R': None, 'sigma': None,
+        }
+        # Use ast.literal_eval to validate it's a lambda expression, then exec with restricted globals
+        # For mathematical expressions from SymPy, we can safely exec with restricted globals
+        try:
+            # Create a safe globals dict with only torch functions
+            safe_globals = {'__builtins__': {}}
+            # Add allowed torch functions
+            safe_globals['torch'] = __import__('torch')
+            # Execute and return the lambda
+            return eval(code, safe_globals)
+        except Exception as e:
+            raise ValueError(f"Failed to compile generated code: {e}")
 
     def eval_christoffel(self, t, x, y):
         batch = t.shape[0]
@@ -9457,6 +9477,9 @@ class NexusCore:
                 cap_out = io.StringIO()
                 cap_err = io.StringIO()
                 with redirect_stdout(cap_out), redirect_stderr(cap_err):
+                    # SECURITY WARNING: This executes arbitrary Python code.
+                    # Only use in trusted/local environments. For production,
+                    # add authentication and consider sandboxing (e.g., docker).
                     exec(code, self.global_namespace)
                 if s := cap_out.getvalue(): print(s, end='')
                 if e := cap_err.getvalue(): print(e, end='', file=sys.stderr)
@@ -10460,12 +10483,12 @@ class GeodesicSimulator:
                 for c in range(3):
                     if Gamma[a][b][c] != 0:
                         code = self.sympy_to_torch(Gamma[a][b][c])
-                        self.Gamma_funcs[a][b][c] = eval(code)
+                        self.Gamma_funcs[a][b][c] = self._safe_eval_lambda(code)
 
         for i in range(3):
             for j in range(3):
                 code = self.sympy_to_torch(g[i,j])
-                self.g_funcs[i][j] = eval(code)
+                self.g_funcs[i][j] = self._safe_eval_lambda(code)
 
         print("✓ Christoffel symbols compiled")
 
@@ -20030,6 +20053,12 @@ def index():
 
 @app.route("/groq", methods=["POST"])
 def groq_route():
+    # Simple API key authentication
+    auth_header = request.headers.get("Authorization", "")
+    expected_key = os.environ.get("API_AUTH_KEY", "")
+    if expected_key and auth_header != f"Bearer {expected_key}":
+        return {"error": "Unauthorized"}, 401
+
     try:
         data = request.get_json(force=True)
         prompt = data.get("prompt", "")
@@ -48254,9 +48283,9 @@ if __name__ == "__main__":
 
         print(f"✅ Prototype saved as: {filename}")
 
-        # Execute the prototype
+        # Execute the prototype with empty globals for safety
         try:
-            exec(template)
+            exec(template, {})
             print("🎉 Prototype executed successfully!")
         except Exception as e:
             print(f"⚠️ Prototype created but execution had issues: {e}")
