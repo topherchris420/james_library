@@ -17,6 +17,7 @@ import uuid
 from pathlib import Path
 import re
 import select
+import bisect
 
 # --- PRE-COMPILED REGEX PATTERNS ---
 RE_QUOTE_DOUBLE = re.compile(r'"([^"]+)"')
@@ -368,7 +369,9 @@ class ContextManager:
         self.config = config
         self.lab_path = Path(config.library_path)
         self.loaded_papers: Dict[str, str] = {}
-        self.loaded_papers_lower: Dict[str, str] = {}
+        self.global_context_index: str = ""
+        self.context_offsets: List[Tuple[int, str]] = []
+        self.offset_keys: List[int] = []
         self.paper_list: List[str] = []
     
     def _discover_files(self) -> List[Path]:
@@ -454,7 +457,9 @@ class ContextManager:
         """Read COMPLETE papers from local library"""
         # Ensure repeated calls don't keep stale/duplicated state.
         self.loaded_papers = {}
-        self.loaded_papers_lower = {}
+        self.global_context_index = ""
+        self.context_offsets = []
+        self.offset_keys = []
         self.paper_list = []
 
         if verbose:
@@ -481,6 +486,8 @@ class ContextManager:
             print(f"   ✓ Found {len(all_files)} papers.\n")
         
         total_chars = 0
+        current_offset = 0
+        index_parts = []
         
         for filepath in all_files:
             try:
@@ -490,8 +497,13 @@ class ContextManager:
                     # Store FULL content for citation verification
                     paper_ref = str(filepath.relative_to(self.lab_path))
                     self.loaded_papers[paper_ref] = content
-                    self.loaded_papers_lower[paper_ref] = content.lower()
                     self.paper_list.append(paper_ref)
+
+                    # Build Global Index for fast O(1) searches
+                    content_lower = content.lower()
+                    self.context_offsets.append((current_offset, paper_ref))
+                    index_parts.append(content_lower)
+                    current_offset += len(content_lower) + 1  # +1 for delimiter
                     
                     # Include full paper up to snippet length (25k = essentially full)
                     remaining_budget = self.config.total_context_length - total_chars
@@ -516,6 +528,10 @@ class ContextManager:
                     print(f"     ✗ Error reading {filepath.name}: {e}")
                 continue
         
+        # Finalize global index
+        self.global_context_index = "\0".join(index_parts)
+        self.offset_keys = [o[0] for o in self.context_offsets]
+
         combined = "\n".join(buffer)
         
         if verbose:
@@ -525,14 +541,13 @@ class ContextManager:
         return combined, self.paper_list
     
     def verify_citation(self, quote: str, fuzzy: bool = True) -> Optional[str]:
-        """Verify if a quote exists in loaded papers"""
+        """Verify if a quote exists in loaded papers using global index"""
         quote_clean = quote.strip().lower()
         
         # Skip very short quotes
         if len(quote_clean.split()) < 3:
             return None
         
-        # Pre-calculate fuzzy matching windows outside the loop to optimize performance
         windows_to_check = []
         if fuzzy:
             quote_words = quote_clean.split()
@@ -546,19 +561,26 @@ class ContextManager:
                 ]
                 # Filter out None values once
                 windows_to_check = [w for w in raw_windows if w]
+        else:
+            windows_to_check = [quote_clean]
 
-        for paper_name in self.loaded_papers:
-            content_clean = self.loaded_papers_lower[paper_name]
-            
-            if fuzzy:
-                # Use pre-calculated windows
-                for window in windows_to_check:
-                    if window in content_clean:
-                        return paper_name
-            else:
-                # Exact match required
-                if quote_clean in content_clean:
-                    return paper_name
+        # Use global index search
+        best_offset = -1
+
+        for window in windows_to_check:
+            # Find earliest occurrence in global index
+            idx = self.global_context_index.find(window)
+            if idx != -1:
+                # If we found a match, check if it's earlier than previous matches
+                if best_offset == -1 or idx < best_offset:
+                    best_offset = idx
+
+        if best_offset != -1:
+            # Map offset to paper using binary search
+            # bisect_right returns insertion point to maintain order
+            paper_idx = bisect.bisect_right(self.offset_keys, best_offset) - 1
+            if 0 <= paper_idx < len(self.context_offsets):
+                return self.context_offsets[paper_idx][1]
         
         return None
 

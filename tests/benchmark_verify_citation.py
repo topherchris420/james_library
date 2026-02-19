@@ -23,21 +23,33 @@ def run_benchmark():
     num_papers = 1000
     base_content = "This is a dummy text that does NOT contain the target quote at all. " * 10
 
+    # The quote to verify
+    quote = "sample text containing some words"
+
+    cm.context_offsets = []
+    index_parts = []
+    current_offset = 0
+
     # Fill loaded_papers with content that DOES NOT contain the quote (worst case scan)
     # except the last one
     for i in range(num_papers):
         paper_name = f"paper_{i}.md"
         content = f"Paper {i} content. {base_content}"
+
+        # Add the quote to the LAST paper to force full scan (worst case)
+        if i == num_papers - 1:
+            content += f" {quote} "
+
         cm.loaded_papers[paper_name] = content
-        cm.loaded_papers_lower[paper_name] = content.lower()
 
-    # The quote to verify
-    quote = "sample text containing some words"
+        # Populate index
+        content_lower = content.lower()
+        cm.context_offsets.append((current_offset, paper_name))
+        index_parts.append(content_lower)
+        current_offset += len(content_lower) + 1
 
-    # Add the quote to the LAST paper to force full scan (worst case)
-    last_paper = f"paper_{num_papers-1}.md"
-    cm.loaded_papers[last_paper] += f" {quote} "
-    cm.loaded_papers_lower[last_paper] += f" {quote.lower()} "
+    cm.global_context_index = "\0".join(index_parts)
+    cm.offset_keys = [o[0] for o in cm.context_offsets]
 
     print(f"Running benchmark with {num_papers} papers...")
     print(f"Quote: '{quote}' (located in the last paper)")
