@@ -92,6 +92,20 @@ for _name in ("stdout", "stderr"):
         setattr(sys, _name, io.TextIOWrapper(_buffer, encoding='utf-8'))
 
 
+def sanitize_text(text: str) -> str:
+    """Sanitize external content to prevent prompt injection and control token attacks"""
+    if not text:
+        return ""
+    # 1. Remove LLM control tokens and known corruption markers
+    for token in ["<|endoftext|>", "<|im_start|>", "<|im_end|>", "|eoc_fim|"]:
+        text = text.replace(token, "[TOKEN_REMOVED]")
+    # 2. Neutralize '###' headers that could simulate system/user turns
+    text = text.replace("###", ">>>")
+    # 3. Prevent recursive search triggers
+    text = text.replace("[SEARCH:", "[SEARCH;")
+    return text.strip()
+
+
 # =============================================================================
 # THE SETUP CODE: INJECTED INTO RLM REPL
 # This code runs INSIDE the agent's brain before it starts.
@@ -116,6 +130,17 @@ _paper_cache = {}
 _library_files_cache = None  # Cache for glob results
 HELLO_OS_PATH = os.path.join(LIBRARY_PATH, "hello_os.py")
 HELLO_OS_PKG = os.path.join(LIBRARY_PATH, "hello_os")
+
+
+def sanitize_text(text):
+    if not text: return ""
+    text = text.replace("<|endoftext|>", "[TOKEN_REMOVED]")
+    text = text.replace("<|im_start|>", "[TOKEN_REMOVED]")
+    text = text.replace("<|im_end|>", "[TOKEN_REMOVED]")
+    text = text.replace("|eoc_fim|", "[TOKEN_REMOVED]")
+    text = text.replace("###", ">>>")
+    text = text.replace("[SEARCH:", "[SEARCH;")
+    return text.strip()
 
 
 def _get_library_files():
@@ -290,6 +315,7 @@ def search_web(query):
              results = list(DDGS().text(query, max_results=5))
 
         result = "\\n".join([f"{r['title']}: {r['body']}" for r in results])
+        result = sanitize_text(result)
         print(result)
         return result
     except ImportError:
@@ -335,6 +361,7 @@ def read_paper(keyword):
     try:
         with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
             content = f.read()[:120000]
+        content = sanitize_text(content)
         result = chr(10) + "--- CONTENT OF " + basename + " ---" + chr(10) + content
         _paper_cache[basename] = result
         print(result)
@@ -427,6 +454,7 @@ def semantic_search(query):
                 
                 
         result = "\\n\\n".join(output) if output else "No semantic matches found."
+        result = sanitize_text(result)
         print(result)
         return result
     except Exception as e:
@@ -461,6 +489,7 @@ def read_hello_os(max_chars=120000):
                         parts.append(f.read())
             if parts:
                 content = chr(10).join(parts)[:max_chars]
+                content = sanitize_text(content)
                 result = chr(10) + "--- CONTENT OF hello_os (package) ---" + chr(10) + content
                 print(result)
                 return result
@@ -469,6 +498,7 @@ def read_hello_os(max_chars=120000):
             return "hello_os.py not found in library path."
         with open(HELLO_OS_PATH, 'r', encoding='utf-8-sig', errors='ignore') as f:
             content = f.read()[:max_chars]
+        content = sanitize_text(content)
         result = chr(10) + "--- CONTENT OF hello_os.py ---" + chr(10) + content
         print(result)
         return result
@@ -695,6 +725,7 @@ def _host_local_context(topic: str) -> tuple[list[str], str]:
     for f in matches[:2]:
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
+            content = sanitize_text(content)
             snippets.append("--- " + f.name + " ---" + chr(10) + content[:2000])
         except Exception:
             continue
@@ -731,6 +762,7 @@ def _host_snippets(files: list[Path], per_file_chars: int = 1200) -> str:
     for f in files:
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
+            content = sanitize_text(content)
             snippets.append("--- " + f.name + " ---" + chr(10) + content[:per_file_chars])
         except Exception:
             continue
@@ -1416,6 +1448,7 @@ def _host_snippets(files: list[Path], per_file_chars: int = 2000) -> str:
     for f in files:
         try:
             content = f.read_text(encoding="utf-8", errors="ignore")
+            content = sanitize_text(content)
             snippets.append("--- " + f.name + " ---" + chr(10) + content[:per_file_chars])
         except Exception:
             continue
