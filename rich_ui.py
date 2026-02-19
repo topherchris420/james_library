@@ -80,7 +80,7 @@ def panel(title: str, content: str, width: int = 60) -> str:
         Formatted panel string
     """
     lines = content.split('\n')
-    max_len = max(len(l) for l in lines) if lines else 0
+    max_len = max(len(line_text) for line_text in lines) if lines else 0
     w = min(max(width, max_len + 4), 120)
 
     border = "═" * (w - 2)
