@@ -1,0 +1,55 @@
+<svg width="960" height="540" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="James Library logo">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="80%">
+      <stop offset="0%" stop-color="#082167"/>
+      <stop offset="100%" stop-color="#04133e"/>
+    </radialGradient>
+    <linearGradient id="leftGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#33f5ff"/>
+      <stop offset="100%" stop-color="#4a7cff"/>
+    </linearGradient>
+    <linearGradient id="rightGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c997ff"/>
+      <stop offset="100%" stop-color="#8f8bff"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.8"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="540" fill="url(#bg)"/>
+
+  <g transform="translate(480 215)">
+    <!-- book shell -->
+    <path d="M-104 -74 L-8 -74 L-8 42 Q-56 28 -104 40 Z" fill="none" stroke="#f3f3f6" stroke-width="4"/>
+    <path d="M104 -74 L8 -74 L8 42 Q56 28 104 40 Z" fill="none" stroke="#f3f3f6" stroke-width="4"/>
+
+    <!-- center fold -->
+    <path d="M0 -88 Q-10 -15 0 52" fill="none" stroke="url(#leftGlow)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M0 -88 Q10 -15 0 52" fill="none" stroke="url(#rightGlow)" stroke-width="6" stroke-linecap="round"/>
+
+    <!-- left petal -->
+    <path d="M-88 -58 Q-28 -66 -10 -18 Q-14 22 -56 44 Q-102 20 -88 -58 Z" fill="none" stroke="url(#leftGlow)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M-88 -58 Q-66 -8 -56 44" fill="none" stroke="url(#leftGlow)" stroke-width="5"/>
+
+    <!-- right petal -->
+    <path d="M88 -58 Q28 -66 10 -18 Q14 22 56 44 Q102 20 88 -58 Z" fill="none" stroke="url(#rightGlow)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M88 -58 Q66 -8 56 44" fill="none" stroke="url(#rightGlow)" stroke-width="5"/>
+
+    <!-- network nodes -->
+    <g stroke-width="4" fill="none" stroke-linecap="round">
+      <path d="M-82 -16 L-40 -28 L-18 8" stroke="url(#leftGlow)"/>
+      <path d="M82 -16 L40 -28 L18 8" stroke="url(#rightGlow)"/>
+      <path d="M-40 -28 L-56 10" stroke="url(#leftGlow)"/>
+      <path d="M40 -28 L56 10" stroke="url(#rightGlow)"/>
+    </g>
+    <circle cx="-82" cy="-16" r="9" fill="url(#leftGlow)" filter="url(#soft)"/>
+    <circle cx="-40" cy="-28" r="7" fill="url(#leftGlow)"/>
+    <circle cx="-18" cy="8" r="8" fill="url(#rightGlow)"/>
+    <circle cx="82" cy="-16" r="9" fill="url(#rightGlow)" filter="url(#soft)"/>
+    <circle cx="40" cy="-28" r="7" fill="url(#rightGlow)"/>
+    <circle cx="18" cy="8" r="8" fill="url(#leftGlow)"/>
+  </g>
+
+  <text x="480" y="360" fill="#f5f6fa" font-family="Segoe UI, Arial, sans-serif" font-weight="500" font-size="64" letter-spacing="4" text-anchor="middle">JAMES LIBRARY</text>
+</svg>
