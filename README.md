@@ -35,16 +35,16 @@ If you are building in deep tech, applied science, product R&D, or experimental 
 
 Run the unified launcher and choose a mode:
 
-See also: [`ARCHITECTURE.md`](ARCHITECTURE.md) for a technical flow diagram of launcher + chat orchestration.
-
-
 ```bash
 python rain_lab.py --mode chat --topic "your research topic"
 python rain_lab.py --mode rlm --topic "your research topic"
+```
 
-## Quick terminal setup (LM Studio)
+See also: [`ARCHITECTURE.md`](ARCHITECTURE.md) for a technical flow diagram of launcher + chat orchestration.
 
-If you are running LM Studio in terminal mode, these scripts now support environment-based defaults:
+### Quick terminal setup (LM Studio)
+
+If you are running LM Studio in terminal mode, these scripts support environment-based defaults:
 
 - `LM_STUDIO_MODEL` (default: `qwen2.5-coder-7b-instruct`)
 - `LM_STUDIO_BASE_URL` (default: `http://127.0.0.1:1234/v1`)
@@ -52,15 +52,14 @@ If you are running LM Studio in terminal mode, these scripts now support environ
 - `RAIN_RECURSIVE_INTELLECT` (`1`/`0`, default enabled)
 - `RAIN_RECURSIVE_DEPTH` (default: `2`)
 
-
-Recursive intellect means each agent can do internal critique+revision passes before speaking, improving grounding, novelty, and clarity.
+Recursive intellect means each agent can do internal critique + revision passes before speaking, improving grounding, novelty, and clarity.
 
 ### hello_os integration (agent empowerment)
 
-`hello_os.py` is now treated as a first-class research source for both launcher modes:
+`hello_os.py` is treated as a first-class research source for both launcher modes:
+
 - **RLM mode** exposes `read_hello_os()` so agents can intentionally load and reason over the symbolic/geometric engine.
 - **Chat mode** includes `hello_os.py` in context discovery so agents can cite and use its operator design directly.
-
 
 ### Persistent background service (OpenClaw)
 
@@ -71,9 +70,9 @@ python deploy.py --service-name james-library --target rain_lab.py --target-args
 ```
 
 `deploy.py` auto-detects the operating system and installs:
+
 - Windows: NSSM service command using a headless Python executable (`pythonw.exe` when available)
 - macOS: `~/Library/LaunchAgents/*.plist` with `KeepAlive=true`
 - Linux: `/etc/systemd/system/*.service` with `Restart=always`
 
-The supervisor process is `openclaw_service.py`, which runs a heartbeat every 60 seconds.
-It checks `tasks.json` for `restart` directives and scans `logs/*.log` for crash patterns to self-heal by restarting the target process.
+The supervisor process is `openclaw_service.py`, which runs a heartbeat every 60 seconds. It checks `tasks.json` for `restart` directives and scans `logs/*.log` for crash patterns to self-heal by restarting the target process.
