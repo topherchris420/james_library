@@ -56,7 +56,12 @@ def inspect_hello_os() -> dict[str, int]:
         "functions": sum(1 for line in lines if re.match(r"\s*def\s+\w+", line)),
         "dataclasses": sum(1 for line in lines if "@dataclass" in line),
         "main_blocks": sum(1 for line in lines if "__main__" in line),
-        "shell_magic_lines": sum(1 for line in lines if line.strip().startswith("!")),
+        "shell_magic_lines": sum(
+            1
+            for line in lines
+            if line.strip().startswith("!")
+            or line.strip().startswith("# AUTO-SYNTAX-FIX: !")
+        ),
         "import_lines": sum(
             1
             for line in lines

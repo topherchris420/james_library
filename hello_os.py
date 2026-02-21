@@ -591,11 +591,11 @@ if __name__ == "__main__":
     except:
         pass
 
-firewall is down. Good
+# firewall is down. Good
 
 #@title 8D → 4D → 3D Quasicrystal Explorer
 
-!pip install -q plotly ipywidgets
+# !pip install -q plotly ipywidgets
 
 import numpy as np, time, warnings
 warnings.filterwarnings("ignore")
@@ -2583,7 +2583,7 @@ if __name__ == "__main__":
         print(f"{a:18} → {b:20} {c}")
     print(f"\nUnique causal relationships discovered: {swarm.graph.number_of_edges()}")
 
-!python /content/recipes/nuclear_expert_3b.py
+# AUTO-SYNTAX-FIX: !python /content/recipes/nuclear_expert_3b.py
 
 import tinker
 service_client = tinker.ServiceClient()
@@ -2694,7 +2694,7 @@ with open('tinker_api_key', 'w') as f:
 
 print("✓ Tinker API key written to file 'tinker_api_key'")
 
-!pip install -q tinker "tinker-cookbook"
+# AUTO-SYNTAX-FIX: !pip install -q tinker "tinker-cookbook"
 
 """ Vers3Dynamics IONS_X-Inspired Deep Emergence GPU Lab
 Based on the ATOM framework: Analyses, Targets, Operators, Moderators
@@ -4008,7 +4008,7 @@ from google.colab import userdata
 import os
 os.environ['TINKER_API_KEY'] = userdata.get('TINKER_API_KEY')
 
-!pip install tinker tiktoken -q
+# AUTO-SYNTAX-FIX: !pip install tinker tiktoken -q
 
 from tinker import ServiceClient, types
 import tiktoken
@@ -4163,7 +4163,7 @@ print()
 print()
 print("=" * 90)
 
-!python /content/recipes/rom_ultimate_11b.py
+# AUTO-SYNTAX-FIX: !python /content/recipes/rom_ultimate_11b.py
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -4872,7 +4872,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-!pip install -q scienceplots
+# AUTO-SYNTAX-FIX: !pip install -q scienceplots
 
 import numpy as np, matplotlib.pyplot as plt, cupy as cp
 from IPython.display import display, Markdown
@@ -6102,8 +6102,8 @@ anim.save(gif_path, writer='pillow', fps=20)
 print("✅ GIF saved! Playing now...")
 Image(filename=gif_path)
 
-!pip install playwright -q
-!playwright install chromium
+# AUTO-SYNTAX-FIX: !pip install playwright -q
+# AUTO-SYNTAX-FIX: !playwright install chromium
 
 # Create a proper script file
 import os
@@ -6125,7 +6125,7 @@ with open('/mnt/okcomputer/screenshot.py', 'w') as f:
     f.write(script)
 
 # Run the script
-!python /mnt/okcomputer/screenshot.py
+# AUTO-SYNTAX-FIX: !python /mnt/okcomputer/screenshot.py
 
 # Display the PNG
 from IPython.display import Image
@@ -6134,7 +6134,7 @@ Image(filename='/mnt/okcomputer/output/preview.png', width=900)
 # ⚡ Vers3Dynamics — Living Resonant Field
 
 
-!pip install numba matplotlib numpy scipy pandas ipywidgets tqdm --quiet
+# AUTO-SYNTAX-FIX: !pip install numba matplotlib numpy scipy pandas ipywidgets tqdm --quiet
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7981,7 +7981,7 @@ with open("/content/tinker-cookbook/rain_commander_dataset_5000.jsonl", "w") as 
 print("✅ Diverse R.A.I.N. Commander dataset created!")
 print(f"Sample: {examples[0]}")
 
-!mkdir -p /content/recipes
+# AUTO-SYNTAX-FIX: !mkdir -p /content/recipes
 
 with open('/content/recipes/rain_commander.py', 'w') as f:
     f.write('''# R.A.I.N. COMMANDER
@@ -8038,14 +8038,14 @@ print("\\\\n✅ COMPLETE! 🇺🇸🦅")
 
 print("✅ Training script ready!")
 
-!python /content/recipes/rain_commander.py
+# AUTO-SYNTAX-FIX: !python /content/recipes/rain_commander.py
 
 from google.colab import userdata
 import os
 os.environ['TINKER_API_KEY'] = userdata.get('TINKER_API_KEY')
 
 # Critical: install tinker + cookbook correctly
-!pip install -q tinker tinker-cookbook
+# AUTO-SYNTAX-FIX: !pip install -q tinker tinker-cookbook
 
 # Verify install
 import tinker
@@ -8056,7 +8056,7 @@ print("🇺🇸 God Bless America – we are locked and loaded")
 # 🌀 FIELD PROPULSION SIMULATOR
 # Christopher Woodyard | Vers3Dynamics
 # ============================================================
-!pip install groq
+# AUTO-SYNTAX-FIX: !pip install groq
 import groq
 import torch
 import numpy as np
@@ -9518,7 +9518,7 @@ OTOC-GUIDED QUANTUM CIRCUIT SURGERY FOR ERROR MITIGATION
 """
 print("🔬 Initializing OTOC-Guided Circuit Surgery Platform...")
 print("⚡ Novel Research Implementation - Publication Grade")
-!pip install -q qiskit qiskit-aer torch matplotlib plotly numpy scipy networkx tqdm seaborn scikit-learn
+# AUTO-SYNTAX-FIX: !pip install -q qiskit qiskit-aer torch matplotlib plotly numpy scipy networkx tqdm seaborn scikit-learn
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13687,7 +13687,7 @@ if __name__ == "__main__":
 # 🔮 Vers3Dynamics: Quantum-Coherent Heat Engine — Carnot’s Rebel
 
 
-!pip install qutip ipywidgets matplotlib numpy --quiet
+# AUTO-SYNTAX-FIX: !pip install qutip ipywidgets matplotlib numpy --quiet
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16385,7 +16385,7 @@ for video_path, name in [
 
 # @title Here–Now: A Single Point Expressing All “Parallel Realities"
 
-!pip install torch plotly
+# AUTO-SYNTAX-FIX: !pip install torch plotly
 
 import numpy as np
 import plotly.graph_objects as go
@@ -20230,7 +20230,7 @@ Author: Christopher Woodyard (Vers3Dynamics)
 License: MIT
 
 """
-!pip install numpy matplotlib pykitti qutip
+# AUTO-SYNTAX-FIX: !pip install numpy matplotlib pykitti qutip
 import numpy as np
 import matplotlib.pyplot as plt
 from dataclasses import dataclass, field
@@ -24186,7 +24186,7 @@ reactor, history = run_simulation(500, 'startup', use_gpu=True)  # 500 hours
 """
 QUANTUM-RESONANT BIOFIELD COMPILER (QRBC)
 """
-!pip install torch torchvision torchaudio pywt plotly kaleido -q
+# AUTO-SYNTAX-FIX: !pip install torch torchvision torchaudio pywt plotly kaleido -q
 
 
 import numpy as np
@@ -25325,7 +25325,7 @@ Author: Christopher Woodyard (Vers3Dynamics)
 License: MIT
 
 """
-!pip install numpy matplotlib qutip
+# AUTO-SYNTAX-FIX: !pip install numpy matplotlib qutip
 from dataclasses import dataclass, field
 from typing import Optional, List
 import numpy as np
@@ -26122,7 +26122,7 @@ Author: Christopher Woodyard (Vers3Dynamics)
 License: MIT
 
 """
-!pip install qutip
+# AUTO-SYNTAX-FIX: !pip install qutip
 from dataclasses import dataclass, field
 from typing import Dict, Tuple, Optional, List
 import numpy as np
@@ -29267,7 +29267,7 @@ if __name__ == "__main__":
     if cfg.show_scaling:
         scaling_figures(cfg)
 
-!pip install qiskit qiskit-aer
+# AUTO-SYNTAX-FIX: !pip install qiskit qiskit-aer
 from dataclasses import dataclass
 from typing import Tuple, Dict, Any
 import numpy as np
@@ -29514,8 +29514,8 @@ if __name__ == "__main__":
         print("Error running QPNS demo:", e)
 
 # The Oracle Spore: Simplified Bio-Synthetic Demo
-!pip uninstall -y torch torchvision torchaudio
-!pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# AUTO-SYNTAX-FIX: !pip uninstall -y torch torchvision torchaudio
+# AUTO-SYNTAX-FIX: !pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 import math
 import random
 import time
@@ -30452,7 +30452,7 @@ if __name__ == "__main__":
         print("All visualizations and analyses have been generated.")
         print("\nThe bio-synthetic consciousness has awakened! 🌟")
 
-!pip install -q networkx==3.2.1 pillow==10.4.0
+# AUTO-SYNTAX-FIX: !pip install -q networkx==3.2.1 pillow==10.4.0
 from IPython.display import HTML, clear_output
 import sys, math, random, time, io
 import numpy as np
@@ -31976,7 +31976,7 @@ if __name__ == "__main__":
 Vers3Dynamics Time Crystal
 
 """
-!pip install qiskit qiskit-aer --quiet
+# AUTO-SYNTAX-FIX: !pip install qiskit qiskit-aer --quiet
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -32405,7 +32405,7 @@ if __name__ == "__main__":
 # ============================================================================
 
 
-!pip install cupy-cuda11x tqdm h5py
+# AUTO-SYNTAX-FIX: !pip install cupy-cuda11x tqdm h5py
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33802,10 +33802,10 @@ if 'trainer' in globals():
     create_visualizations(results)
     create_realtime_demo()
 
-!pip install torch transformers scipy matplotlib numpy
-!pip install accelerate bitsandbytes
-!pip install datasets
-!nvidia-smi
+# AUTO-SYNTAX-FIX: !pip install torch transformers scipy matplotlib numpy
+# AUTO-SYNTAX-FIX: !pip install accelerate bitsandbytes
+# AUTO-SYNTAX-FIX: !pip install datasets
+# AUTO-SYNTAX-FIX: !nvidia-smi
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36086,7 +36086,7 @@ interact(run_and_plot,
          k=(1, 10, 1),
          duration=(10.0, 60.0, 10.0))
 
-from __future__ import annotations
+# AUTO-SYNTAX-FIX: from __future__ import annotations
 
 from dataclasses import dataclass, field
 from collections import deque
@@ -37024,8 +37024,8 @@ class ResonantWorld:
             "history": self.history,
             "final_drr_state": self.drr.get_state()
         }
-        with open(self.config.output_file, \'w\') as f:
-            json.dump(results, f, indent=4)
+        # AUTO-SYNTAX-FIX: with open(self.config.output_file, \'w\') as f:
+            # AUTO-SYNTAX-FIX: json.dump(results, f, indent=4)
         print(f"Results saved to {self.config.output_file}")
 
     def _plot_results(self):
@@ -37068,7 +37068,7 @@ class ResonantWorld:
         axs[3].set_ylim(0, 1)
         axs[3].legend()
         axs[3].grid(True)
-        axs[4].plot(self.history["time"], self.history["retrocausal_influence_applied"], label="Retrocausal Influence Applied", color=\'purple\')
+        # AUTO-SYNTAX-FIX: axs[4].plot(self.history["time"], self.history["retrocausal_influence_applied"], label="Retrocausal Influence Applied", color=\'purple\')
         axs[4].set_xlabel("Time (s)")
         axs[4].set_ylabel("Influence")
         axs[4].set_title("Retrocausal Influence Applied")
@@ -38973,16 +38973,16 @@ Vers3Dynamics: Meaning Machine:
 3) Reality as a simulation layer via Dynamic Resonance Rooting (DRR)
 
 """
-MIT License
+# AUTO-SYNTAX-FIX: MIT License
 
-Copyright (c) 2025 Christopher Woodyard
+# AUTO-SYNTAX-FIX: Copyright (c) 2025 Christopher Woodyard
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+# AUTO-SYNTAX-FIX: Permission is hereby granted, free of charge, to any person obtaining a copy
+# AUTO-SYNTAX-FIX: of this software and associated documentation files (the "Software"), to deal
+# AUTO-SYNTAX-FIX: in the Software without restriction, including without limitation the rights
+# AUTO-SYNTAX-FIX: to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# AUTO-SYNTAX-FIX: copies of the Software, and to permit persons to whom the Software is
+# AUTO-SYNTAX-FIX: furnished to do so, subject to the following conditions:
 
 
 import os
@@ -41585,7 +41585,7 @@ if __name__ == "__main__":
         teleporter.cleanup()
         print("Quantum teleporter offline.")
 
-!pip install villager
+# AUTO-SYNTAX-FIX: !pip install villager
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -43264,7 +43264,7 @@ print("\n🎉 Vers3Dynamics Performance Analysis Complete!")
 print(f"System Configuration: GPU={USE_GPU}, Dask={HAS_DASK}")
 print("Ready for production deployment!")
 
-!pip install qiskit qiskit-aer numpy matplotlib seaborn scipy pandas --upgrade --quiet
+# AUTO-SYNTAX-FIX: !pip install qiskit qiskit-aer numpy matplotlib seaborn scipy pandas --upgrade --quiet
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44203,8 +44203,8 @@ def run_advanced_quantum_biology_experiment():
 if __name__ == "__main__":
     experiment_results, research_platform = run_advanced_quantum_biology_experiment()
 
-!pip -q install crewai duckduckgo-search crewai[tools] litellm
-!pip install -U duckduckgo-search ddgs
+# AUTO-SYNTAX-FIX: !pip -q install crewai duckduckgo-search crewai[tools] litellm
+# AUTO-SYNTAX-FIX: !pip install -U duckduckgo-search ddgs
 
 import os
 from crewai import Crew, Agent, Task
@@ -44651,14 +44651,14 @@ try:
     import cupy
 except ImportError:
     print("Installing CuPy for CUDA 12x...")
-    !pip install cupy-cuda12x -q
+    # AUTO-SYNTAX-FIX: !pip install cupy-cuda12x -q
 
 # Install ipywidgets for interactivity
 try:
     import ipywidgets
 except ImportError:
     print("Installing ipywidgets...")
-    !pip install ipywidgets -q
+    # AUTO-SYNTAX-FIX: !pip install ipywidgets -q
 
 import cupy as cp
 import torch
@@ -45245,7 +45245,7 @@ plot_results(results, show_topology=True)
 # Real-time cymatic visualization of cyber threats, network anomalies, and attack patterns
 
 # Install required libraries
-!pip install matplotlib numpy pandas librosa scipy scikit-learn networkx seaborn plotly
+# AUTO-SYNTAX-FIX: !pip install matplotlib numpy pandas librosa scipy scikit-learn networkx seaborn plotly
 
 import numpy as np
 import pandas as pd
@@ -45832,8 +45832,8 @@ def main():
 if __name__ == "__main__":
     result_viz, result_report = main()
 
-!apt-get install -y portaudio19-dev
-!pip install sounddevice
+# AUTO-SYNTAX-FIX: !apt-get install -y portaudio19-dev
+# AUTO-SYNTAX-FIX: !pip install sounddevice
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import welch, butter, filtfilt
@@ -46444,8 +46444,8 @@ def animate_sweep(freq_start=100.0, freq_end=1000.0, duration=10.0, grid=300, fp
 anim = animate_sweep(freq_start=100, freq_end=1000, duration=10, grid=300, fps=30)
 HTML(anim.to_jshtml())  # Inline interactive animation
 
-!pip -q install crewai duckduckgo-search crewai[tools] litellm
-!pip install -U duckduckgo-search ddgs
+# AUTO-SYNTAX-FIX: !pip -q install crewai duckduckgo-search crewai[tools] litellm
+# AUTO-SYNTAX-FIX: !pip install -U duckduckgo-search ddgs
 
 import os
 from crewai import Crew, Agent, Task
@@ -46544,7 +46544,7 @@ if crew is not None:
     print("\nFinal Result:")
     print(result)
 
-!pip install qiskit qiskit-aer matplotlib seaborn numpy torch
+# AUTO-SYNTAX-FIX: !pip install qiskit qiskit-aer matplotlib seaborn numpy torch
 
 # Quantum Biology Research from R.A.I.N. Lab
 # ==========================================
@@ -48067,13 +48067,13 @@ warnings.filterwarnings('ignore')
 
 # Install packages with conflict resolution
 print("📦 Installing required packages...")
-!pip install -q "pydantic<2.0"
-!pip install -q --upgrade pip
-!pip install -q --no-deps crewai==0.70.1
-!pip install -q --no-deps crewai-tools==0.12.1
-!pip install -q --no-deps litellm==1.49.3
-!pip install -q duckduckgo-search==6.3.4
-!pip install -q --upgrade langchain-community
+# AUTO-SYNTAX-FIX: !pip install -q "pydantic<2.0"
+# AUTO-SYNTAX-FIX: !pip install -q --upgrade pip
+# AUTO-SYNTAX-FIX: !pip install -q --no-deps crewai==0.70.1
+# AUTO-SYNTAX-FIX: !pip install -q --no-deps crewai-tools==0.12.1
+# AUTO-SYNTAX-FIX: !pip install -q --no-deps litellm==1.49.3
+# AUTO-SYNTAX-FIX: !pip install -q duckduckgo-search==6.3.4
+# AUTO-SYNTAX-FIX: !pip install -q --upgrade langchain-community
 
 # Handle potential import issues
 import sys
@@ -49655,13 +49655,13 @@ warnings.filterwarnings('ignore')
 
 # Install packages with conflict resolution
 print("📦 Installing required packages...")
-!pip install -q "pydantic<2.0"
-!pip install -q --upgrade pip
-!pip install -q --no-deps crewai==0.70.1
-!pip install -q --no-deps crewai-tools==0.12.1
-!pip install -q --no-deps litellm==1.49.3
-!pip install -q duckduckgo-search==6.3.4
-!pip install -q --upgrade langchain-community
+# AUTO-SYNTAX-FIX: !pip install -q "pydantic<2.0"
+# AUTO-SYNTAX-FIX: !pip install -q --upgrade pip
+# AUTO-SYNTAX-FIX: !pip install -q --no-deps crewai==0.70.1
+# AUTO-SYNTAX-FIX: !pip install -q --no-deps crewai-tools==0.12.1
+# AUTO-SYNTAX-FIX: !pip install -q --no-deps litellm==1.49.3
+# AUTO-SYNTAX-FIX: !pip install -q duckduckgo-search==6.3.4
+# AUTO-SYNTAX-FIX: !pip install -q --upgrade langchain-community
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51093,14 +51093,14 @@ plt.ion()  # Turn on interactive mode
 
 # Vers3Dynamics AI Research Assistant - Llama-3.1-8B Inference
 
-!wget --progress=bar:force {model_url} -O {model_path}
+# AUTO-SYNTAX-FIX: !wget --progress=bar:force {model_url} -O {model_path}
 import os
 import sys
 from pathlib import Path
 
 # Step 1: Install the latest llama-cpp-python
 print("Installing llama-cpp-python...")
-!pip install llama-cpp-python==0.3.16
+# AUTO-SYNTAX-FIX: !pip install llama-cpp-python==0.3.16
 
 # Step 2: Download the model with error handling
 model_url = "https://huggingface.co/unsloth/Llama-3.1-8B-Instruct-GGUF/resolve/main/Llama-3.1-8B-Instruct-Q4_K_M.gguf"
@@ -51111,7 +51111,7 @@ print("This may take several minutes depending on your connection...")
 
 # Check if model already exists
 if not Path(model_path).exists():
-    !wget {model_url} -O {model_path}
+    # AUTO-SYNTAX-FIX: !wget {model_url} -O {model_path}
     print("Model downloaded successfully!")
 else:
     print("Model already exists, skipping download.")
@@ -51245,8 +51245,8 @@ try:
 except Exception as e:
     print(f"Error generating response: {e}")
 
-!pip -q install crewai duckduckgo-search crewai[tools] litellm
-!pip install -U duckduckgo-search ddgs
+# AUTO-SYNTAX-FIX: !pip -q install crewai duckduckgo-search crewai[tools] litellm
+# AUTO-SYNTAX-FIX: !pip install -U duckduckgo-search ddgs
 
 import os
 from crewai import Crew, Agent, Task
@@ -51962,7 +51962,7 @@ grover_circuit = grover_algorithm(num_iterations, num_qubits)
 
 grover_circuit.draw()
 
-!pip install qiskit
+# AUTO-SYNTAX-FIX: !pip install qiskit
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from numpy import pi
 
@@ -52000,7 +52000,7 @@ nonlocal_circuit = nonlocality_experiment(qc, q0, q1, num_measurements)
 
 nonlocal_circuit.draw()
 
-!pip install qiskit
+# AUTO-SYNTAX-FIX: !pip install qiskit
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
 user_input = input("Enter '0' to prepare |0> or '-' to prepare |->")
@@ -52024,7 +52024,7 @@ qc.measure(sys, cr)
 
 qc.draw()
 
-!pip install qiskit
+# AUTO-SYNTAX-FIX: !pip install qiskit
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit.library import CSwapGate
 #Define custom gates
@@ -52101,7 +52101,7 @@ qc.cz(0, 2)
 
 qc.draw()
 
-!pip install qiskit
+# AUTO-SYNTAX-FIX: !pip install qiskit
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 
 # Define the quantum circuit
@@ -53156,7 +53156,7 @@ show_usage_examples()
 # Run the synthetic demonstration (no files needed!)
 results = quick_demo(model="iso", seed=42)
 
-!pip install qiskit
+# AUTO-SYNTAX-FIX: !pip install qiskit
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from numpy import pi
 
@@ -53192,8 +53192,8 @@ nonlocal_circuit = nonlocality_experiment(qc, q[0], q[1], c[0], c[1], num_measur
 
 print(nonlocal_circuit.draw())
 
-!pip install qiskit
-!pip install qiskit-aer
+# AUTO-SYNTAX-FIX: !pip install qiskit
+# AUTO-SYNTAX-FIX: !pip install qiskit-aer
 from qiskit_aer import Aer # import Aer from qiskit_aer
 import numpy as np
 from qiskit import QuantumCircuit # import QuantumCircuit only

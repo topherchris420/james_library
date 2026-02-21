@@ -1173,6 +1173,7 @@ Shared sources (use these for quotes during discussion turns):
                                 pass
 
                     # After the opener turn, avoid any new tool calls
+                    discussion_only = bool(history)
                     if discussion_only:
                         if any(x in response for x in ["search_web", "search_library", "semantic_search", "read_paper", "list_papers"]):
                             retry_prompt = prompt + "\n\nSTRICT RETRY:\n- Do NOT call any tools.\n- Use a Shared sources quote for SOURCE.\n"
@@ -1211,7 +1212,7 @@ Shared sources (use these for quotes during discussion turns):
                                 pass
 
                 # Enforce discussion tone after opener turn
-                if history and discussion_only:
+                if history:
                     last_message = history[-1]
                     last_speaker = last_message.split(":", 1)[0] if ":" in last_message else "colleague"
                     must_name = last_speaker.lower()

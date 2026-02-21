@@ -19,7 +19,7 @@ expected_length = 59  # 57 original + 1 space + 1 extension = 59? Wait.
 # Underline 1: " ... ▓" -> " ... ▓▓" (Added 1 char)
 # Underline 2: " ... ▒" -> " ... ▒▒" (Added 1 char)
 
-if all(l == lengths[0] for l in lengths):
+if all(line_length == lengths[0] for line_length in lengths):
     print(f"\nSUCCESS: All lines are equal length ({lengths[0]}).")
 else:
     print(f"\nFAILURE: Line lengths are inconsistent: {lengths}")

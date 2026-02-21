@@ -19,5 +19,5 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: ruff check .
-      - run: pytest tests/ -v --tb=short
+      - run: ruff check . --output-format=full
+      - run: pytest tests/ -v -ra --tb=long

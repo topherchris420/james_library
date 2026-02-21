@@ -42,19 +42,23 @@ except Exception as e:
 # --- TOOLS ---
 def get_library_path():
     for p in POSSIBLE_PATHS:
-        if os.path.exists(p): return p
+        if os.path.exists(p):
+            return p
     return None
 
 def load_file(filename, default):
     if os.path.exists(filename):
-        with open(filename, "r", encoding="utf-8") as f: return f.read()
+        with open(filename, "r", encoding="utf-8") as f:
+            return f.read()
     return default
 
 def read_theory_context():
     lib_path = get_library_path()
-    if not lib_path: return None, "NO LIBRARY"
+    if not lib_path:
+        return None, "NO LIBRARY"
     files = [f for f in os.listdir(lib_path) if f.endswith((".md", ".txt"))]
-    if not files: return None, "EMPTY LIBRARY"
+    if not files:
+        return None, "EMPTY LIBRARY"
     selected = random.choice(files)
     with open(os.path.join(lib_path, selected), "r", encoding="utf-8") as f:
         content = f.read()[:MAX_READ_CHARS]
@@ -84,16 +88,19 @@ def search_web(query):
     if HAS_SEARCH:
         try:
             results = DDGS().text(query, max_results=2)
-            if not results: return "No external matches found."
+            if not results:
+                return "No external matches found."
             return "\n".join([f"- {r['title']}: {r['body'][:300]}..." for r in results])
-        except: return "Network instability. Assuming novelty."
+        except Exception:
+            return "Network instability. Assuming novelty."
     return "Offline Mode. Search skipped."
 
 def file_finding(title, hypothesis, coherence):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     clean_hyp = hypothesis.replace("{file_path:", "").replace("content:", "").replace("}", "")
     entry = f"\n=== ROUTINE ANALYSIS ({timestamp}) ===\nTOPIC: {title}\nCOHERENCE: {coherence}/10\nNOTES: {clean_hyp}\n[SIGNED] {EMPLOYEE_ID}\n"
-    with open(LAB_NOTEBOOK, "a", encoding="utf-8") as f: f.write(entry)
+    with open(LAB_NOTEBOOK, "a", encoding="utf-8") as f:
+        f.write(entry)
     print(f"📄 [FILED] Saved to Lab Notebook: '{title}'", flush=True)
     return "Finding documented."
 
