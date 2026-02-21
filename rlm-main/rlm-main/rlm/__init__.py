@@ -144,3 +144,37 @@ def _extract_content_from_sse(body: str) -> str:
 
 
 __all__ = ["RLM", "CompletionResult"]
+
+
+def _extract_choice_content(choice: dict[str, Any]) -> str:
+    """Normalize LM Studio/OpenAI chat completion content variants."""
+    message = choice.get("message") or {}
+    content = message.get("content")
+
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict):
+                text = part.get("text") or part.get("content")
+                if text:
+                    parts.append(str(text))
+        return "".join(parts)
+    if isinstance(content, dict):
+        text = content.get("text") or content.get("content")
+        if text:
+            return str(text)
+
+    text = choice.get("text")
+    if isinstance(text, str):
+        return text
+
+    delta = choice.get("delta") or {}
+    delta_content = delta.get("content")
+    if isinstance(delta_content, str):
+        return delta_content
+
+    return ""
