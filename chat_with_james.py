@@ -1,6 +1,9 @@
-import sys
 import io
 import os
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Optional, Tuple
 
 # Add the RLM library to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "rlm-main", "rlm-main"))
@@ -10,50 +13,55 @@ from rlm import RLM
 # --- 1. FORCE UTF-8 ---
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-# --- CONFIGURATION ---
-LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", os.path.dirname(__file__))
-MODEL_NAME = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
-BASE_URL = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
-MAX_PAPER_CHARS = 6000  # Limits paper size to fit in context
+@dataclass
+class AppConfig:
+    library_path: Path = Path(os.environ.get("JAMES_LIBRARY_PATH", os.path.dirname(__file__)))
+    model_name: str = os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
+    base_url: str = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
+    max_paper_chars: int = 6000
+    max_history_messages: int = 20
 
-# --- INITIALIZE RLM ---
-james_rlm = RLM(
-    backend="openai",
-    backend_kwargs={
-        "model_name": MODEL_NAME,
-        "base_url": BASE_URL
-    },
-    environment="local",  # Allows code execution on your machine
-    verbose=True,  # Shows chain-of-thought and code execution
-)
 
-# --- LOCATE THE SOUL ---
-soul_paths = [
-    os.path.join(LIBRARY_PATH, "JAMES_SOUL.md"),
-    r"james_library\JAMES_SOUL.md",
-    r"JAMES_SOUL.md"
-]
+@dataclass
+class JamesChatApp:
+    config: AppConfig
+    conversation_history: List[Tuple[str, str]] = field(default_factory=list)
+    loaded_papers: List[Tuple[str, str]] = field(default_factory=list)
 
-james_personality = "You are James, a visionary scientist at Vers3Dynamics. You are intense, curious, and precise."
+    def __post_init__(self):
+        self.james_rlm = RLM(
+            backend="openai",
+            backend_kwargs={
+                "model_name": self.config.model_name,
+                "base_url": self.config.base_url,
+            },
+            environment="local",
+            verbose=True,
+        )
+        self.james_personality = self._load_personality()
+        self.base_context = self._build_base_context()
 
-for path in soul_paths:
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            james_personality = f.read()
-        print(f"🧬 Soul Loaded from: {path}")
-        break
+    def _load_personality(self) -> str:
+        default_personality = "You are James, a visionary scientist at Vers3Dynamics. You are intense, curious, and precise."
+        soul_paths = [
+            self.config.library_path / "JAMES_SOUL.md",
+            Path("james_library") / "JAMES_SOUL.md",
+            Path("JAMES_SOUL.md"),
+        ]
 
-print(f"\n⚡ James is listening. (RLM Mode - Can execute Python code!)")
-print(f"Commands:\n  /list  -> Show available research papers")
-print(f"  /read [name] -> Load a paper into James's memory (e.g., '/read friction')")
-print(f"  quit   -> Exit\n")
+        for path in soul_paths:
+            if path.exists():
+                personality = path.read_text(encoding="utf-8")
+                print(f"🧬 Soul Loaded from: {path}")
+                return personality
 
-# --- BUILD CONTEXT ---
-# RLM uses a single prompt approach, so we'll build context as a string
-base_context = f"""INTERNAL SYSTEM COMMAND: Activate Persona 'JAMES'.
+        return default_personality
+
+    def _build_base_context(self) -> str:
+        return f"""INTERNAL SYSTEM COMMAND: Activate Persona 'JAMES'.
 
 PROFILE:
-{james_personality}
+{self.james_personality}
 
 USER: Christopher (Lead Researcher).
 
@@ -62,104 +70,108 @@ You can write and execute Python code to perform calculations, analysis, or any 
 When asked to calculate or compute something, write Python code to do so.
 """
 
-# Track conversation history and loaded papers
-conversation_history = []
-loaded_papers = []
+    def list_papers(self) -> str:
+        if not self.config.library_path.exists():
+            return "❌ Library folder not found."
 
+        files = [f.name for f in self.config.library_path.iterdir() if f.suffix in {".md", ".txt"}]
+        if not files:
+            return "❌ Library is empty."
 
-def list_papers():
-    if not os.path.exists(LIBRARY_PATH):
-        return "❌ Library folder not found."
-    files = [f for f in os.listdir(LIBRARY_PATH) if f.endswith((".md", ".txt"))]
-    if not files:
-        return "❌ Library is empty."
-    return "\n".join([f"📄 {f}" for f in files])
+        return "\n".join(f"📄 {file_name}" for file_name in files)
 
+    def read_paper(self, keyword: str) -> Tuple[Optional[str], str]:
+        if not self.config.library_path.exists():
+            return None, "Library not found."
 
-def read_paper(keyword):
-    if not os.path.exists(LIBRARY_PATH):
-        return None, "Library not found."
-    
-    files = [f for f in os.listdir(LIBRARY_PATH) if f.endswith((".md", ".txt"))]
-    # Find best match
-    match = next((f for f in files if keyword.lower() in f.lower()), None)
-    
-    if match:
-        with open(os.path.join(LIBRARY_PATH, match), "r", encoding="utf-8") as f:
-            content = f.read()[:MAX_PAPER_CHARS]  # Truncate to fit context
-        return match, content
-    return None, "File not found."
+        files = [f for f in self.config.library_path.iterdir() if f.suffix in {".md", ".txt"}]
+        match = next((f for f in files if keyword.lower() in f.name.lower()), None)
 
+        if not match:
+            return None, "File not found."
 
-def build_prompt(user_message):
-    """Build the full prompt including context, papers, and conversation history."""
-    prompt_parts = [base_context]
-    
-    # Add loaded papers
-    if loaded_papers:
-        prompt_parts.append("\n--- LOADED RESEARCH PAPERS ---")
-        for paper_name, paper_content in loaded_papers:
-            prompt_parts.append(f"\n[{paper_name}]:\n{paper_content}\n")
-    
-    # Add recent conversation history (limit to last 10 exchanges to manage context)
-    if conversation_history:
-        prompt_parts.append("\n--- CONVERSATION HISTORY ---")
-        for role, content in conversation_history[-20:]:  # Last 10 exchanges (20 messages)
-            prefix = "Christopher" if role == "user" else "James"
-            prompt_parts.append(f"\n{prefix}: {content}")
-    
-    # Add current user message
-    prompt_parts.append(f"\nChristopher: {user_message}")
-    prompt_parts.append("\nJames:")
-    
-    return "\n".join(prompt_parts)
+        content = match.read_text(encoding="utf-8")[: self.config.max_paper_chars]
+        return match.name, content
 
+    def build_prompt(self, user_message: str) -> str:
+        prompt_parts = [self.base_context]
 
-while True:
-    try:
-        user_input = input("\n👤 Christopher: ")
-        if user_input.lower() in ["quit", "exit"]:
-            break
-        
-        # --- COMMAND HANDLING ---
-        if user_input.lower() == "/list":
-            print(f"\n📚 Library Contents:\n{list_papers()}")
-            continue
+        if self.loaded_papers:
+            prompt_parts.append("\n--- LOADED RESEARCH PAPERS ---")
+            for paper_name, paper_content in self.loaded_papers:
+                prompt_parts.append(f"\n[{paper_name}]:\n{paper_content}\n")
 
-        if user_input.lower().startswith("/read"):
-            keyword = user_input.replace("/read", "").strip()
+        if self.conversation_history:
+            prompt_parts.append("\n--- CONVERSATION HISTORY ---")
+            for role, content in self.conversation_history[-self.config.max_history_messages :]:
+                speaker = "Christopher" if role == "user" else "James"
+                prompt_parts.append(f"\n{speaker}: {content}")
+
+        prompt_parts.append(f"\nChristopher: {user_message}")
+        prompt_parts.append("\nJames:")
+
+        return "\n".join(prompt_parts)
+
+    def process_command(self, user_input: str) -> Optional[str]:
+        command = user_input.lower().strip()
+        if command == "/list":
+            print(f"\n📚 Library Contents:\n{self.list_papers()}")
+            return None
+
+        if command.startswith("/read"):
+            keyword = user_input.replace("/read", "", 1).strip()
             if not keyword:
                 print("⚠️ Please specify a name (e.g., '/read friction')")
-                continue
-            
-            fname, content = read_paper(keyword)
-            if fname:
-                print(f"📖 Reading '{fname}' into memory...", end="", flush=True)
-                loaded_papers.append((fname, content))
-                print(" Done.")
-                # Auto-prompt James to acknowledge the paper
-                user_input = f"I have just loaded the paper '{fname}'. Please analyze it briefly."
-            else:
+                return None
+
+            fname, content = self.read_paper(keyword)
+            if not fname:
                 print(f"❌ Could not find a paper matching '{keyword}'")
-                continue
+                return None
 
-        # --- NORMAL CHAT WITH RLM ---
-        conversation_history.append(("user", user_input))
-        
-        print("⚡ James: ", end="", flush=True)
-        
-        # Build the full prompt and send to RLM
-        full_prompt = build_prompt(user_input)
-        result = james_rlm.completion(full_prompt)
-        
-        # Get the response
-        response = result.response if hasattr(result, 'response') else str(result)
-        
-        print(response)
-        
-        conversation_history.append(("assistant", response))
-        
-    except KeyboardInterrupt:
-        break
+            print(f"📖 Reading '{fname}' into memory...", end="", flush=True)
+            self.loaded_papers.append((fname, content))
+            print(" Done.")
+            return f"I have just loaded the paper '{fname}'. Please analyze it briefly."
 
-print("\n👋 James signing off.")
+        return user_input
+
+    def run(self):
+        print("\n⚡ James is listening. (RLM Mode - Can execute Python code!)")
+        print("Commands:\n  /list  -> Show available research papers")
+        print("  /read [name] -> Load a paper into James's memory (e.g., '/read friction')")
+        print("  quit   -> Exit\n")
+
+        while True:
+            try:
+                user_input = input("\n👤 Christopher: ")
+                if user_input.lower() in {"quit", "exit"}:
+                    break
+
+                processed_input = self.process_command(user_input)
+                if processed_input is None:
+                    continue
+
+                self.conversation_history.append(("user", processed_input))
+                print("⚡ James: ", end="", flush=True)
+
+                full_prompt = self.build_prompt(processed_input)
+                result = self.james_rlm.completion(full_prompt)
+                response = result.response if hasattr(result, "response") else str(result)
+
+                print(response)
+                self.conversation_history.append(("assistant", response))
+
+            except KeyboardInterrupt:
+                break
+
+        print("\n👋 James signing off.")
+
+
+def main():
+    app = JamesChatApp(AppConfig())
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
