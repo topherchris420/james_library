@@ -1,5 +1,7 @@
 ## 🚀 open-source (beta) R.A.I.N. Lab
 
+![James Library](assets/james-library.svg)
+
 R.A.I.N. Lab (Recursive Architecture of Intelligent Nexus) is open source.
 
 This idea started as a local skunkworks experiment: what happens when agents are built as a research partner instead of a single chatbot? The result is a multi-agent, local-first system where specialized AI scientists collaborate, debate, critique, and synthesize ideas over your own knowledge base.
