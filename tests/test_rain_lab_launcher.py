@@ -77,3 +77,11 @@ def test_build_command_backup(repo_root):
     args, pt = parse_args(["--mode", "backup"])
     cmd = build_command(args, pt, repo_root)
     assert "rain_lab_backup.py" in cmd[1]
+
+
+def test_build_command_first_run(repo_root):
+    args, pt = parse_args(["--mode", "first-run", "--topic", "hello"])
+    cmd = build_command(args, pt, repo_root)
+    assert "rain_first_run.py" in cmd[1]
+    assert "--topic" in cmd
+    assert "hello" in cmd

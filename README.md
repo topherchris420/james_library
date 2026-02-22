@@ -10,6 +10,18 @@ This idea started as a local skunkworks experiment: what happens when agents are
 
 R.A.I.N. Lab is designed for people who want high-agency workflows: researchers, founders, engineers, and independent labs who care about sovereignty, technical depth, and iterative discovery.
 
+### Start Here (5 Minutes)
+
+If this is your first time in the repo, use this sequence:
+
+```bash
+python bootstrap_local.py
+python rain_lab.py --mode first-run
+python rain_lab.py --mode chat --topic "your first research question"
+```
+
+`--mode first-run` runs preflight checks and prints next-step commands so newcomers can get to a successful first response faster.
+
 ### Why this exists
 
 Most AI interfaces optimize for fast answers.  
@@ -40,6 +52,7 @@ If you are building in deep tech, applied science, product R&D, or experimental 
 Run the unified launcher and choose a mode:
 
 ```bash
+python rain_lab.py --mode first-run
 python rain_lab.py --mode chat --topic "your research topic"
 python rain_lab.py --mode rlm --topic "your research topic"
 python rain_lab.py --mode compile --library .

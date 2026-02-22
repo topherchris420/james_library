@@ -52,7 +52,7 @@ all_checks_passed = True
 # =============================================================================
 # CHECK 1: LIBRARY PATH EXISTS
 # =============================================================================
-print(f"{BOLD}[1/6] Checking Library Path...{RESET}")
+print(f"{BOLD}[1/7] Checking Library Path...{RESET}")
 if os.path.exists(LIBRARY_PATH):
     print_success(f"Library path exists: {LIBRARY_PATH}")
 else:
@@ -63,7 +63,7 @@ else:
 # =============================================================================
 # CHECK 2: SOUL FILES
 # =============================================================================
-print(f"\n{BOLD}[2/6] Checking Soul Files...{RESET}")
+print(f"\n{BOLD}[2/7] Checking Soul Files...{RESET}")
 required_souls = ["JAMES_SOUL.md", "JASMINE_SOUL.md", "ELENA_SOUL.md", "LUCA_SOUL.md"]
 missing_souls = []
 
@@ -82,7 +82,7 @@ if missing_souls:
 # =============================================================================
 # CHECK 3: RESEARCH PAPERS
 # =============================================================================
-print(f"\n{BOLD}[3/6] Checking Research Papers...{RESET}")
+print(f"\n{BOLD}[3/7] Checking Research Papers...{RESET}")
 md_files = glob.glob(os.path.join(LIBRARY_PATH, "*.md"))
 txt_files = glob.glob(os.path.join(LIBRARY_PATH, "*.txt"))
 
@@ -112,7 +112,7 @@ else:
 # =============================================================================
 # CHECK 4: RLM LIBRARY
 # =============================================================================
-print(f"\n{BOLD}[4/6] Checking RLM Library...{RESET}")
+print(f"\n{BOLD}[4/7] Checking RLM Library...{RESET}")
 
 # Try multiple possible locations
 rlm_paths = [
@@ -152,7 +152,7 @@ elif not rlm_imported:
 # =============================================================================
 # CHECK 5: PYTHON DEPENDENCIES
 # =============================================================================
-print(f"\n{BOLD}[5/6] Checking Python Dependencies...{RESET}")
+print(f"\n{BOLD}[5/7] Checking Python Dependencies...{RESET}")
 
 dependency_groups = {
     "duckduckgo-search / ddgs": ["ddgs", "duckduckgo_search"],
@@ -178,7 +178,7 @@ for package_name, import_names in dependency_groups.items():
 # =============================================================================
 # CHECK 6: LM STUDIO API
 # =============================================================================
-print(f"\n{BOLD}[6/6] Checking LM Studio API...{RESET}")
+print(f"\n{BOLD}[6/7] Checking LM Studio API...{RESET}")
 
 try:
     import requests
@@ -240,10 +240,10 @@ print_header("PRE-FLIGHT SUMMARY")
 
 if all_checks_passed:
     print(f"{GREEN}{BOLD}✓ ALL SYSTEMS GO{RESET}")
-    print(f"\n{BLUE}Ready to launch R.A.I.N. Lab meeting:{RESET}")
+    print(f"\n{BLUE}Ready to launch R.A.I.N. Lab:{RESET}")
     print(f"  cd \"{LIBRARY_PATH}\"")
-    print(f"  python -X utf8 rain_lab_meeting.py")
-    print(f"\n{BLUE}When prompted, enter topic:{RESET} Guarino Metric")
+    print("  python rain_lab.py --mode chat --topic \"your first research question\"")
+    print("  python rain_lab.py --mode rlm --topic \"your first research question\"")
 else:
     print(f"{RED}{BOLD}✗ PRE-FLIGHT FAILED{RESET}")
     print(f"\n{YELLOW}Fix the issues above before running the meeting.{RESET}")

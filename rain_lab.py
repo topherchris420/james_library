@@ -1,6 +1,7 @@
 """Unified launcher for R.A.I.N. Lab meeting modes.
 
 Usage examples:
+  python rain_lab.py --mode first-run
   python rain_lab.py --mode rlm --topic "Guarino paper"
   python rain_lab.py --mode chat --topic "Guarino paper" -- --recursive-depth 2
 """
@@ -78,9 +79,9 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--mode",
-        choices=["rlm", "chat", "hello-os", "compile", "preflight", "backup"],
+        choices=["rlm", "chat", "hello-os", "compile", "preflight", "backup", "first-run"],
         default="chat",
-        help="Which engine to run: rlm (tool-exec), chat (openai chat completions), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), or backup (local snapshot)",
+        help="Which engine to run: rlm (tool-exec), chat (openai chat completions), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), backup (local snapshot), or first-run (guided onboarding)",
     )
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
     parser.add_argument(
@@ -117,6 +118,14 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 
 def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: Path) -> list[str]:
+
+    if args.mode == "first-run":
+        target = repo_root / "rain_first_run.py"
+        cmd = [sys.executable, str(target)]
+        if args.topic:
+            cmd.extend(["--topic", args.topic])
+        cmd.extend(passthrough)
+        return cmd
 
     if args.mode == "compile":
         target = repo_root / "library_compiler.py"
@@ -209,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_banner()
 
     # Interactive prompt if topic is missing (and not asking for help)
-    if args.mode not in {"hello-os", "compile", "preflight", "backup"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
+    if args.mode not in {"hello-os", "compile", "preflight", "backup", "first-run"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
         print(f"\n{ANSI_YELLOW}Research Topic needed.{ANSI_RESET}")
         print(f"{ANSI_DIM}Example: 'Guarino paper', 'Quantum Resonance', 'The nature of time'{ANSI_RESET}")
         try:
