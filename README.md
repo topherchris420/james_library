@@ -38,9 +38,14 @@ Run the unified launcher and choose a mode:
 ```bash
 python rain_lab.py --mode chat --topic "your research topic"
 python rain_lab.py --mode rlm --topic "your research topic"
+python rain_lab.py --mode compile --library .
 ```
 
+`--mode compile` builds local knowledge artifacts (`.rain_compile/`): TF-IDF, embeddings, entity graph, equation index, grounded quote spans, and contradiction candidates.
+
 See also: [`ARCHITECTURE.md`](ARCHITECTURE.md) for a technical flow diagram of launcher + chat orchestration.
+
+Strategic roadmap: [`PRODUCT_ROADMAP.md`](PRODUCT_ROADMAP.md) for the trust, grounding, memory-governance, and autonomous research roadmap.
 
 ### Quick terminal setup (LM Studio)
 
