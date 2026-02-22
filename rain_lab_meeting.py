@@ -106,6 +106,17 @@ def sanitize_text(text: str) -> str:
     return text.strip()
 
 
+def _env_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return max(minimum, min(maximum, value))
+
+
 try:
     from tools import get_setup_code as _get_setup_code
 except Exception:  # noqa: E722
@@ -804,6 +815,7 @@ class ResearchCouncil:
         self.agent_web_used = {agent.name: False for agent in self.team}
         self.shared_sources: list[str] = []
         self.require_web = os.environ.get("RLM_REQUIRE_WEB", "1") == "1"
+        self.max_model_calls_per_turn = _env_int("RAIN_MAX_CALLS_PER_TURN", 2, 1, 3)
 
         if self.require_web and not _host_has_web_search():
             print("CRITICAL: DuckDuckGo client not installed.")
@@ -1078,7 +1090,12 @@ Shared sources (use these for quotes during discussion turns):
                 print("="*50)
     
                 # Timeout-protected call (retry once with shorter prompt)
+                turn_model_calls = 0
                 def _call_model(p: str):
+                    nonlocal turn_model_calls
+                    if turn_model_calls >= self.max_model_calls_per_turn:
+                        raise concurrent.futures.TimeoutError("Per-turn model call limit reached")
+                    turn_model_calls += 1
                     return self.rlm.completion(p)
 
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
