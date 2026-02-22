@@ -80,6 +80,23 @@ def test_run_rain_lab_error_path(monkeypatch, tmp_path):
     assert async_trace.exists()
 
 
+def test_run_rain_lab_canceled_path(monkeypatch, tmp_path):
+    async_trace = tmp_path / "runtime_events_canceled.jsonl"
+    monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.setattr(runtime, "_load_context", lambda: ("", []))
+
+    def _raise(messages, timeout_s):
+        raise RuntimeError("The operation was canceled.")
+
+    monkeypatch.setattr(runtime, "_call_llm_sync", _raise)
+
+    out = asyncio.run(runtime.run_rain_lab(query="test", mode="chat", agent=None, recursive_depth=1))
+    assert "runtime canceled" in out.lower()
+    payload = json.loads(async_trace.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert payload["status"] == "canceled"
+
+
 def test_run_rain_lab_strict_grounding_blocks_ungrounded(monkeypatch, tmp_path):
     async_trace = tmp_path / "runtime_events_strict.jsonl"
     monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
@@ -136,6 +153,15 @@ def test_runtime_cli_main_blocked_exit(monkeypatch):
     monkeypatch.setattr(runtime, "run_rain_lab", _blocked)
     rc = runtime.main(["--topic", "x"])
     assert rc == 2
+
+
+def test_runtime_cli_main_canceled_exit(monkeypatch):
+    async def _canceled(*args, **kwargs):
+        return "R.A.I.N. runtime canceled: the operation was canceled."
+
+    monkeypatch.setattr(runtime, "run_rain_lab", _canceled)
+    rc = runtime.main(["--topic", "x"])
+    assert rc == 3
 
 
 def test_trace_path_defaults_inside_library(monkeypatch, tmp_path):

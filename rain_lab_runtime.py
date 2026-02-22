@@ -420,6 +420,23 @@ def _format_output(payload: dict[str, Any], return_json: bool) -> str:
     return "\n\n".join(lines)
 
 
+def _classify_runtime_exception(exc: Exception) -> tuple[str, str]:
+    message = str(exc).strip()
+    lower = message.lower()
+    if (
+        "operation was canceled" in lower
+        or "operation was cancelled" in lower
+        or "request was canceled" in lower
+        or "request was cancelled" in lower
+    ):
+        return (
+            "canceled",
+            "R.A.I.N. runtime canceled: the operation was canceled. "
+            "Retry and verify LM Studio is running with a loaded model.",
+        )
+    return ("error", "R.A.I.N. runtime error: unable to generate response.")
+
+
 async def run_rain_lab(
     query: str,
     mode: str = "chat",
@@ -476,10 +493,11 @@ async def run_rain_lab(
         state.status = "ok"
         state.add_event("llm_response_received", {"chars": len(response_text)})
     except Exception as exc:
-        state.status = "error"
-        state.add_event("runtime_failed", {"error": str(exc)})
+        status, message = _classify_runtime_exception(exc)
+        state.status = status
+        state.add_event("runtime_failed", {"error": str(exc), "status": status})
         _trace_state(state)
-        return "R.A.I.N. runtime error: unable to generate response."
+        return message
 
     provenance = _extract_provenance(response_text)
     confidence = _confidence_score(response_text, provenance)
@@ -567,12 +585,16 @@ def _cli_exit_code(output: str) -> int:
             return 0
         if status == "blocked":
             return 2
+        if status == "canceled":
+            return 3
         if status:
             return 1
 
     lower = body.lower()
     if "grounding policy blocked" in lower:
         return 2
+    if "runtime canceled" in lower:
+        return 3
     if "runtime error" in lower:
         return 1
     return 0
