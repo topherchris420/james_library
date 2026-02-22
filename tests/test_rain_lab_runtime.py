@@ -1,5 +1,6 @@
 import json
 import asyncio
+import os
 
 import pytest
 
@@ -102,3 +103,33 @@ def test_runtime_healthcheck_smoke(tmp_path, monkeypatch):
     assert "ok" in result
     assert "checks" in result
     assert "library_exists" in result["checks"]
+
+
+def test_runtime_cli_main_success(monkeypatch, capsys, tmp_path):
+    async def _fake_run_rain_lab(query, mode, agent, recursive_depth):
+        assert query == "test topic"
+        assert mode == "chat"
+        assert recursive_depth == 2
+        return "Answer [from paper.md]\n\nConfidence: 0.70"
+
+    monkeypatch.setattr(runtime, "run_rain_lab", _fake_run_rain_lab)
+    rc = runtime.main(["--topic", "test topic", "--recursive-depth", "2", "--library", str(tmp_path)])
+
+    assert rc == 0
+    assert os.environ.get("JAMES_LIBRARY_PATH") == str(tmp_path)
+    assert "Answer [from paper.md]" in capsys.readouterr().out
+
+
+def test_runtime_cli_main_requires_query(capsys):
+    rc = runtime.main([])
+    assert rc == 2
+    assert "provide --topic or --query" in capsys.readouterr().out.lower()
+
+
+def test_runtime_cli_main_blocked_exit(monkeypatch):
+    async def _blocked(*args, **kwargs):
+        return "Grounding policy blocked this answer."
+
+    monkeypatch.setattr(runtime, "run_rain_lab", _blocked)
+    rc = runtime.main(["--topic", "x"])
+    assert rc == 2

@@ -24,41 +24,44 @@ ANSI_YELLOW = "\033[93m"
 ANSI_DIM = "\033[90m"
 
 BANNER_LINES = [
-    "██████╗  █████╗ ██╗███╗   ██╗    ██╗      █████╗ ██████╗ ",
-    "██╔══██╗██╔══██╗██║████╗  ██║    ██║     ██╔══██╗██╔══██╗",
-    "██████╔╝███████║██║██╔██╗ ██║    ██║     ███████║██████╔╝",
-    "██╔══██╗██╔══██║██║██║╚██╗██║    ██║     ██╔══██║██╔══██╗",
-    "██║  ██║██║  ██║██║██║ ╚████║    ███████╗██║  ██║██████╔╝",
-    "╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝    ╚══════╝╚═╝  ╚═╝╚═════╝ ",
-    "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓",
-    "▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒ V E R S 3 D Y N A M I C S ▒▒▒▒▒▒▒▒▒▒▒▒",
+    "==============================================================",
+    "  R.A.I.N. LAB - Recursive Architecture of Intelligent Nexus  ",
+    "==============================================================",
+    "                 V E R S 3 D Y N A M I C S                   ",
 ]
 
 
+def _console_safe(text: str) -> str:
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+
+
 def _print_banner() -> None:
-    colors = [ANSI_CYAN, ANSI_BLUE, ANSI_MAGENTA, ANSI_BLUE, ANSI_CYAN, ANSI_GREEN, ANSI_BLUE, ANSI_YELLOW]
+    colors = [ANSI_CYAN, ANSI_BLUE, ANSI_MAGENTA, ANSI_YELLOW]
     for line, color in zip(BANNER_LINES, colors):
-        print(f"{ANSI_DIM} {line}{ANSI_RESET}", flush=True)
-        print(f"{color}{line}{ANSI_RESET}", flush=True)
+        safe_line = _console_safe(line)
+        print(f"{ANSI_DIM} {safe_line}{ANSI_RESET}", flush=True)
+        print(f"{color}{safe_line}{ANSI_RESET}", flush=True)
 
 
 def _spinner(message: str, duration_s: float = 1.25) -> None:
+    safe_message = _console_safe(message)
     if not sys.stdout.isatty():
-        print(f"{ANSI_CYAN}{message}...{ANSI_RESET}", flush=True)
+        print(f"{ANSI_CYAN}{safe_message}...{ANSI_RESET}", flush=True)
         return
 
-    frames = ["▱▱▱", "▰▱▱", "▰▰▱", "▰▰▰", "▱▰▰", "▱▱▰"]
+    frames = ["[   ]", "[=  ]", "[== ]", "[===]", "[ ==]", "[  =]"]
     colors = [ANSI_CYAN, ANSI_BLUE, ANSI_MAGENTA, ANSI_GREEN, ANSI_YELLOW]
     end_time = time.time() + max(0.2, duration_s)
     i = 0
     while time.time() < end_time:
         frame = frames[i % len(frames)]
         color = colors[i % len(colors)]
-        pulse = "•" * ((i % 3) + 1)
-        print(f"\r{color}{frame} {message} {pulse}{ANSI_RESET}   ", end="", flush=True)
+        pulse = "." * ((i % 3) + 1)
+        print(f"\r{color}{frame} {safe_message} {pulse}{ANSI_RESET}   ", end="", flush=True)
         i += 1
         time.sleep(0.09)
-    print(f"\r{ANSI_GREEN}✔ {message}{ANSI_RESET}   ")
+    print(f"\r{ANSI_GREEN}OK {safe_message}{ANSI_RESET}   ")
 
 
 def _split_passthrough_args(argv: list[str]) -> tuple[list[str], list[str]]:

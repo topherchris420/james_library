@@ -6,6 +6,7 @@ with lightweight typed runtime state/events plus provenance extraction.
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import json
 import os
@@ -520,3 +521,68 @@ async def run_rain_lab(
     )
 
     return _format_output(payload, config.return_json)
+
+
+def _parse_cli_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="R.A.I.N. Lab runtime CLI")
+    parser.add_argument("--topic", type=str, default=None, help="Research topic/query")
+    parser.add_argument("--query", type=str, default=None, help="Alias for --topic")
+    parser.add_argument("--mode", choices=sorted(_VALID_MODES), default="chat")
+    parser.add_argument("--agent", type=str, default=None, help="Agent identity hint")
+    parser.add_argument("--recursive-depth", type=int, default=1, help="Internal critique depth")
+    parser.add_argument("--library", type=str, default=None, help="Override JAMES_LIBRARY_PATH")
+    return parser.parse_args(argv)
+
+
+def _cli_exit_code(output: str) -> int:
+    body = output.strip()
+    if body.startswith("{") and body.endswith("}"):
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            payload = {}
+        status = str(payload.get("status", "")).lower()
+        if status == "ok":
+            return 0
+        if status == "blocked":
+            return 2
+        if status:
+            return 1
+
+    lower = body.lower()
+    if "grounding policy blocked" in lower:
+        return 2
+    if "runtime error" in lower:
+        return 1
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_cli_args(argv)
+    query = (args.query or args.topic or "").strip()
+    if not query:
+        print("R.A.I.N. runtime error: provide --topic or --query.")
+        return 2
+
+    if args.library:
+        os.environ["JAMES_LIBRARY_PATH"] = args.library
+
+    try:
+        output = asyncio.run(
+            run_rain_lab(
+                query=query,
+                mode=args.mode,
+                agent=args.agent,
+                recursive_depth=max(1, int(args.recursive_depth)),
+            )
+        )
+    except Exception:
+        print("R.A.I.N. runtime error: unexpected runtime failure.")
+        return 1
+
+    print(output)
+    return _cli_exit_code(output)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
