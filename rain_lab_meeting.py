@@ -116,7 +116,7 @@ except Exception:  # noqa: E722
 # THE SETUP CODE: INJECTED INTO RLM REPL
 # This code runs INSIDE the agent's brain before it starts.
 # =============================================================================
-setup_code = '''
+_DEFAULT_SETUP_CODE = '''
 import os
 import glob
 import re
@@ -573,11 +573,23 @@ if collection and collection.count() == 0:
     index_library()
 '''
 
-if _get_setup_code is not None:
+def _resolve_setup_code(default_code: str) -> str:
+    """Load setup code from tools.py when valid; otherwise keep embedded fallback."""
+    if _get_setup_code is None:
+        return default_code
+
     try:
-        setup_code = _get_setup_code()
-    except Exception:
-        pass
+        candidate = _get_setup_code()
+        if not isinstance(candidate, str) or not candidate.strip():
+            raise ValueError("setup code is empty")
+        compile(candidate, "<tools_setup_code>", "exec")
+        return candidate
+    except Exception as exc:
+        print(f"[WARNING] Invalid tools.get_setup_code(); using embedded fallback. ({exc})")
+        return default_code
+
+
+setup_code = _resolve_setup_code(_DEFAULT_SETUP_CODE)
 
 
 # =============================================================================
@@ -1433,41 +1445,3 @@ if __name__ == "__main__":
         raise
 
 
-def _host_select_files(topic: str, max_files: int = 2) -> list[Path]:
-    lib = Path(TARGET_PATH)
-    files = list(lib.glob("*.md")) + list(lib.glob("*.txt"))
-    candidates = []
-    for f in files:
-        name = f.name.upper()
-        if f.name.startswith("_"):
-            continue
-        if "SOUL" in name or "LOG" in name:
-            continue
-        candidates.append(f)
-    if not candidates:
-        return []
-
-    keys = [k.lower() for k in topic.split() if len(k) > 3]
-    exact = []
-    for f in candidates:
-        fname = f.name.lower()
-        if any(k in fname for k in keys):
-            exact.append(f)
-    chosen = exact if exact else candidates
-    return list(dict.fromkeys(chosen))[:max_files]
-
-
-def _host_snippets(files: list[Path], per_file_chars: int = 2000) -> str:
-    snippets = []
-    for f in files:
-        try:
-            content = f.read_text(encoding="utf-8", errors="ignore")
-            content = sanitize_text(content)
-            snippets.append("--- " + f.name + " ---" + chr(10) + content[:per_file_chars])
-        except Exception:
-            continue
-    return "\n\n".join(snippets)
-
-# =============================================================================
-# MAIN ORCHESTRATOR
-# =============================================================================
