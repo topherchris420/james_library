@@ -2,6 +2,16 @@ import sys
 import io
 import os
 
+
+def sanitize_text(text: str) -> str:
+    if not text:
+        return ""
+    for token in ("<|endoftext|>", "<|im_start|>", "<|im_end|>", "|eoc_fim|"):
+        text = text.replace(token, "[TOKEN_REMOVED]")
+    text = text.replace("###", ">>>")
+    text = text.replace("[SEARCH:", "[SEARCH;")
+    return text.strip()
+
 # Add the RLM library to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "rlm-main", "rlm-main"))
 
@@ -39,7 +49,7 @@ james_personality = "You are James, a visionary scientist at Vers3Dynamics. You 
 for path in soul_paths:
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
-            james_personality = f.read()
+            james_personality = sanitize_text(f.read())
         print(f"🧬 Soul Loaded from: {path}")
         break
 
@@ -87,7 +97,7 @@ def read_paper(keyword):
     if match:
         with open(os.path.join(LIBRARY_PATH, match), "r", encoding="utf-8") as f:
             content = f.read()[:MAX_PAPER_CHARS]  # Truncate to fit context
-        return match, content
+        return match, sanitize_text(content)
     return None, "File not found."
 
 

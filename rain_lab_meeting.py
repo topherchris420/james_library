@@ -106,6 +106,12 @@ def sanitize_text(text: str) -> str:
     return text.strip()
 
 
+try:
+    from tools import get_setup_code as _get_setup_code
+except Exception:  # noqa: E722
+    _get_setup_code = None
+
+
 # =============================================================================
 # THE SETUP CODE: INJECTED INTO RLM REPL
 # This code runs INSIDE the agent's brain before it starts.
@@ -566,6 +572,12 @@ if collection and collection.count() == 0:
     print("Empty library detected. Indexing now...")
     index_library()
 '''
+
+if _get_setup_code is not None:
+    try:
+        setup_code = _get_setup_code()
+    except Exception:
+        pass
 
 
 # =============================================================================

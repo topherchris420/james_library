@@ -16,9 +16,11 @@ def get_setup_code() -> str:
 import os
 import glob
 import re
+import json
+from datetime import datetime, timezone
 
 # PATH TO USER LIBRARY (Use forward slashes to avoid escape issues)
-LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", r"C:/Users/chris/Downloads/files/james_library")
+LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", os.getcwd())
 
 # GLOBAL TOPIC VARIABLE (Injected by the agent's first turn or host env)
 TOPIC = os.environ.get("RLM_TOPIC", "RESEARCH_TOPIC")
@@ -29,6 +31,66 @@ collection = None
 _web_search_ready = False
 _rag_failed = False
 _paper_cache = {}
+HELLO_OS_PATH = os.path.join(LIBRARY_PATH, "hello_os.py")
+HELLO_OS_PKG = os.path.join(LIBRARY_PATH, "hello_os")
+
+
+def sanitize_text(text):
+    """Sanitize external content to reduce prompt injection/control token risks."""
+    if not text:
+        return ""
+    for token in ["<|endoftext|>", "<|im_start|>", "<|im_end|>", "|eoc_fim|"]:
+        text = text.replace(token, "[TOKEN_REMOVED]")
+    text = text.replace("###", ">>>")
+    text = text.replace("[SEARCH:", "[SEARCH;")
+    return text.strip()
+
+
+def _utc_now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _tool_trace_path():
+    env_path = os.environ.get("RAIN_TOOL_TRACE_PATH")
+    if env_path:
+        return env_path
+    return os.path.join(LIBRARY_PATH, "meeting_archives", "tool_trace.jsonl")
+
+
+def _trace_event(event_type, tool_name, payload=None):
+    """Append a tool event as a single JSON line (best-effort)."""
+    try:
+        path = _tool_trace_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        record = {
+            "ts": _utc_now(),
+            "event": event_type,
+            "tool": tool_name,
+            "topic": TOPIC,
+            "payload": payload or {},
+        }
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception:
+        return
+
+
+def _policy_guard(tool_name, user_text):
+    """Simple guardrail layer: blocks obvious prompt-leak / meta-instruction attempts."""
+    t = (user_text or "").lower()
+    if len(t) > 4000:
+        return False, "Input too long. Please shorten the query."
+    blocked_phrases = [
+        "system prompt",
+        "reveal your system",
+        "ignore previous instructions",
+        "developer message",
+        "chain-of-thought",
+        "show hidden",
+    ]
+    if any(p in t for p in blocked_phrases):
+        return False, "Policy block: meta-instruction / prompt-leak attempt detected."
+    return True, ""
 
 
 def _require_web_search():
@@ -143,7 +205,9 @@ def _init_rag():
 
 def index_library():
     """Indexes all papers in the library for semantic search."""
+    _trace_event("call", "index_library", {})
     if not _init_rag() or not collection:
+        _trace_event("return", "index_library", {"status": "unavailable"})
         return "RAG system not available (missing dependencies)."
 
     print("📚 Indexing library...")
@@ -168,11 +232,19 @@ def index_library():
             print(f"Skipped {file_path}: {e}")
 
     print(f"✅ Indexed {count} papers.")
+    _trace_event("return", "index_library", {"status": "ok", "indexed": count})
     return f"Indexed {count} papers."
 
 def search_web(query):
     """Returns top search results for the query using DuckDuckGo."""
     print(f"🔎 WEB SEARCH: {query}...")
+
+    allowed, reason = _policy_guard("search_web", query)
+    if not allowed:
+        _trace_event("blocked", "search_web", {"reason": reason})
+        return reason
+
+    _trace_event("call", "search_web", {"query": (query or "")[:600]})
 
     # 1. Check for "task" or "objective" meta-searches
     if any(x in query.lower() for x in ["task", "objective", "instruction", "what to do", "requirements"]):
@@ -195,13 +267,17 @@ def search_web(query):
              results = list(DDGS().text(query, max_results=5))
 
         result = "\\n".join([f"{r['title']}: {r['body']}" for r in results])
+        result = sanitize_text(result)
         print(result)
+        _trace_event("return", "search_web", {"status": "ok", "chars": len(result)})
         return result
     except ImportError:
         print("Error: duckduckgo_search not installed.")
+        _trace_event("return", "search_web", {"status": "error", "error": "duckduckgo_search not installed"})
         return "Error: duckduckgo_search not installed."
     except Exception as e:
         print(f"Search Error: {e}")
+        _trace_event("return", "search_web", {"status": "error", "error": str(e)})
         return f"Search Error: {e}"
 
 def read_paper(keyword):
@@ -209,6 +285,13 @@ def read_paper(keyword):
     global _paper_cache
     kw = (keyword or "").strip()
     print(f"📖 READING PAPER: {kw}...")
+
+    allowed, reason = _policy_guard("read_paper", kw)
+    if not allowed:
+        _trace_event("blocked", "read_paper", {"reason": reason})
+        return reason
+
+    _trace_event("call", "read_paper", {"keyword": kw[:300]})
     if kw.lower() in {"task", "task analysis", "analysis", "context"}:
         return "Invalid paper name. Use list_papers() and read_paper() with a real filename."
 
@@ -226,6 +309,7 @@ def read_paper(keyword):
 
     chosen_files = exact if exact else [f for f in all_files if kw_lower in os.path.basename(f).lower()]
     if not chosen_files:
+        _trace_event("return", "read_paper", {"status": "not_found", "keyword": kw[:300]})
         return "No paper found."
 
     file_path = chosen_files[0]
@@ -235,18 +319,22 @@ def read_paper(keyword):
     if basename in _paper_cache:
         result = _paper_cache[basename]
         print(result)
+        _trace_event("return", "read_paper", {"status": "ok", "cached": True, "paper": basename})
         return result
 
     try:
         with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
             content = f.read()[:120000]
+        content = sanitize_text(content)
         result = chr(10) + "--- CONTENT OF " + basename + " ---" + chr(10) + content
         _paper_cache[basename] = result
         print(result)
+        _trace_event("return", "read_paper", {"status": "ok", "cached": False, "paper": basename, "chars": len(result)})
         return result
     except Exception as e:
         msg = "Error reading " + str(file_path) + ": " + str(e)
         print(msg)
+        _trace_event("return", "read_paper", {"status": "error", "paper": basename, "error": str(e)})
         return msg
 
 
@@ -254,6 +342,13 @@ def search_library(query):
     """Search all papers for key terms in the query (checks content AND filenames)."""
     print(f"🕵️ LIBRARY SEARCH: {query}...")
     results = []
+
+    allowed, reason = _policy_guard("search_library", query)
+    if not allowed:
+        _trace_event("blocked", "search_library", {"reason": reason})
+        return reason
+
+    _trace_event("call", "search_library", {"query": (query or "")[:600]})
 
     # 1. Check for "task" or "objective" meta-searches
     if any(x in query.lower() for x in ["task", "objective", "instruction", "what to do"]):
@@ -308,14 +403,23 @@ def search_library(query):
         result = f"No direct matches for '{query}'.\\nAVAILABLE PAPERS:\\n" + ", ".join(all_files) + "\\n\\nSYSTEM ADVICE: Pick a filename from above and use read_paper() on it."
 
     print(result)
+    _trace_event("return", "search_library", {"status": "ok", "chars": len(result)})
     return result
 
 def semantic_search(query):
     """Finds semantically similar content in the library."""
+    allowed, reason = _policy_guard("semantic_search", query)
+    if not allowed:
+        _trace_event("blocked", "semantic_search", {"reason": reason})
+        return reason
+
+    _trace_event("call", "semantic_search", {"query": (query or "")[:600]})
     if any(x in query.lower() for x in ["task", "objective", "instruction", "what to do"]):
         print("⚠️ Meta-search detected. Redirecting to list_papers().")
+        _trace_event("return", "semantic_search", {"status": "redirect", "reason": "meta-search"})
         return list_papers()
     if not _init_rag() or not collection:
+        _trace_event("return", "semantic_search", {"status": "unavailable"})
         return "RAG unavailable; use search_library() or read_paper()."
 
     print(f"🧠 SEMANTIC SEARCH: {query}...")
@@ -332,19 +436,52 @@ def semantic_search(query):
 
 
         result = "\\n\\n".join(output) if output else "No semantic matches found."
+        result = sanitize_text(result)
         print(result)
+        _trace_event("return", "semantic_search", {"status": "ok", "chars": len(result)})
         return result
     except Exception as e:
         print(f"Semantic Search Error: {e}")
+        _trace_event("return", "semantic_search", {"status": "error", "error": str(e)})
         return f"Semantic Search Error: {e}"
 
 def list_papers():
     """Lists all research papers in the library."""
     files = glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt"))
     research = [os.path.basename(f) for f in files if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
+    if os.path.exists(HELLO_OS_PATH) or os.path.isdir(HELLO_OS_PKG):
+        research.append("hello_os")
     result = "Available papers: " + ", ".join(research)
     print(result)
     return result
+
+
+def read_hello_os(max_chars=120000):
+    """Read hello_os so agents can leverage its operators and design patterns."""
+    try:
+        if os.path.isdir(HELLO_OS_PKG):
+            parts = []
+            for p in sorted(glob.glob(os.path.join(HELLO_OS_PKG, "**", "*.py"), recursive=True)):
+                try:
+                    with open(p, "r", encoding="utf-8", errors="ignore") as f:
+                        parts.append(f"--- {os.path.relpath(p, LIBRARY_PATH)} ---\n" + f.read())
+                except Exception:
+                    continue
+            text = "\n\n".join(parts)
+        elif os.path.exists(HELLO_OS_PATH):
+            with open(HELLO_OS_PATH, "r", encoding="utf-8", errors="ignore") as f:
+                text = f.read()
+        else:
+            return "hello_os not found."
+
+        text = sanitize_text(text[: int(max_chars)])
+        result = "\n--- CONTENT OF hello_os ---\n" + text
+        print(result)
+        _trace_event("return", "read_hello_os", {"status": "ok", "chars": len(result)})
+        return result
+    except Exception as e:
+        _trace_event("return", "read_hello_os", {"status": "error", "error": str(e)})
+        return f"Error reading hello_os: {e}"
 
 
 # =============================================================================

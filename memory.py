@@ -149,7 +149,7 @@ def _get_memory():
     """Get or create global memory instance."""
     global _memory
     if _memory is None:
-        library_path = os.environ.get("JAMES_LIBRARY_PATH", r"C:/Users/chris/Downloads/files/james_library")
+        library_path = os.environ.get("JAMES_LIBRARY_PATH", os.getcwd())
         _memory = ResearchMemory(library_path)
     return _memory
 

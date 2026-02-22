@@ -1,275 +1,275 @@
+"""Unified async runtime for R.A.I.N. Lab integrations.
+
+This module provides a stable async entrypoint used by gateways (e.g. Telegram)
+with lightweight typed runtime state/events plus provenance extraction.
+"""
+
 from __future__ import annotations
 
-import argparse
 import asyncio
 import json
+import os
 import re
-import time
-from collections import defaultdict
+import uuid
 from dataclasses import asdict, dataclass, field
-from enum import Enum
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
-
-
-class EventType(str, Enum):
-    REQUEST_RECEIVED = "request_received"
-    CLAIM_EMITTED = "claim_emitted"
-    EVIDENCE_LINKED = "evidence_linked"
-    CONTRADICTION_FOUND = "contradiction_found"
-    EXPERIMENT_PLANNED = "experiment_planned"
-    EXPERIMENT_RAN = "experiment_ran"
-    RED_TEAM_CHECK = "red_team_check"
-    SYNTHESIS_READY = "synthesis_ready"
+from typing import Any, Optional
 
 
 @dataclass(slots=True)
 class RuntimeEvent:
-    event_type: EventType
-    timestamp: float
-    payload: dict[str, Any]
+    timestamp: str
+    kind: str
+    payload: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
-class Claim:
-    claim_id: str
-    text: str
-    confidence: float
-    source_chain: list[str]
+class ProvenanceItem:
+    source: str
+    source_type: str  # "paper" | "web"
+    quote: Optional[str] = None
 
 
 @dataclass(slots=True)
-class Contradiction:
-    claim_id: str
-    reason: str
-
-
-@dataclass(slots=True)
-class ExperimentResult:
-    hypothesis: str
-    plan: str
-    simulation: str
-    outcome: str
-
-
-@dataclass(slots=True)
-class KnowledgeGraph:
-    nodes: dict[str, dict[str, Any]] = field(default_factory=dict)
-    edges: list[dict[str, str]] = field(default_factory=list)
-
-    def add_claim(self, claim: Claim) -> None:
-        self.nodes[claim.claim_id] = {
-            "type": "claim",
-            "text": claim.text,
-            "confidence": claim.confidence,
-            "source_count": len(claim.source_chain),
-            "timestamp": time.time(),
-        }
-        for idx, source in enumerate(claim.source_chain):
-            source_node = f"source:{source}"
-            if source_node not in self.nodes:
-                self.nodes[source_node] = {"type": "source", "label": source}
-            self.edges.append({"from": claim.claim_id, "to": source_node, "type": f"supported_by_{idx}"})
-
-    def add_contradiction(self, contradiction: Contradiction) -> None:
-        cid = f"contradiction:{len(self.edges)}"
-        self.nodes[cid] = {"type": "contradiction", "reason": contradiction.reason}
-        self.edges.append({"from": cid, "to": contradiction.claim_id, "type": "targets"})
-
-
-@dataclass(slots=True)
-class SharedMissionState:
-    mission: str
-    interface: str
-    claims: list[Claim] = field(default_factory=list)
-    contradictions: list[Contradiction] = field(default_factory=list)
-    experiments: list[ExperimentResult] = field(default_factory=list)
-    disagreements: list[str] = field(default_factory=list)
-    prompt_injection_flags: list[str] = field(default_factory=list)
-    graph: KnowledgeGraph = field(default_factory=KnowledgeGraph)
+class RuntimeState:
+    session_id: str
+    query: str
+    mode: str
+    agent: Optional[str]
+    status: str = "initialized"
     events: list[RuntimeEvent] = field(default_factory=list)
 
-
-class UnifiedOrchestrationEngine:
-    """Single runtime used by CLI/chat/telegram/service pathways."""
-
-    def __init__(self, memory_path: Path | None = None) -> None:
-        self.memory_path = memory_path or Path("logs/runtime_memory_graph.json")
-
-    async def run(self, query: str, interface: str, mode: str = "chat", agent: str | None = None) -> dict[str, Any]:
-        state = SharedMissionState(mission=query, interface=interface)
-        self._emit(state, EventType.REQUEST_RECEIVED, {"query": query, "mode": mode, "agent": agent})
-
-        claims = self._extract_claims(query)
-        for claim in claims:
-            state.claims.append(claim)
-            state.graph.add_claim(claim)
-            self._emit(state, EventType.CLAIM_EMITTED, asdict(claim))
-            self._emit(
-                state,
-                EventType.EVIDENCE_LINKED,
-                {"claim_id": claim.claim_id, "source_chain": claim.source_chain},
+    def add_event(self, kind: str, payload: Optional[dict[str, Any]] = None) -> None:
+        self.events.append(
+            RuntimeEvent(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                kind=kind,
+                payload=payload or {},
             )
-
-        for contradiction in self._detect_contradictions(state.claims):
-            state.contradictions.append(contradiction)
-            state.graph.add_contradiction(contradiction)
-            self._emit(state, EventType.CONTRADICTION_FOUND, asdict(contradiction))
-
-        for experiment in self._run_experiment_loop(state.claims):
-            state.experiments.append(experiment)
-            self._emit(state, EventType.EXPERIMENT_PLANNED, {"hypothesis": experiment.hypothesis, "plan": experiment.plan})
-            self._emit(state, EventType.EXPERIMENT_RAN, asdict(experiment))
-
-        for check in self._adversarial_checks(query, state.claims):
-            if check.startswith("injection:"):
-                state.prompt_injection_flags.append(check)
-            else:
-                state.disagreements.append(check)
-            self._emit(state, EventType.RED_TEAM_CHECK, {"finding": check})
-
-        summary = self._build_operator_summary(state)
-        self._emit(state, EventType.SYNTHESIS_READY, {"summary": summary})
-
-        self._persist_graph(state.graph)
-        return {
-            "response": summary,
-            "ledger": {
-                "claims": [asdict(c) for c in state.claims],
-                "contradictions": [asdict(c) for c in state.contradictions],
-                "experiments": [asdict(e) for e in state.experiments],
-                "events": [asdict(e) for e in state.events],
-            },
-            "operator_panel": {
-                "mission_state": "complete",
-                "disagreements": state.disagreements,
-                "source_coverage": sum(len(c.source_chain) for c in state.claims),
-                "confidence_drift": self._confidence_drift(state.claims),
-                "why_this_answer": "Synthesis is derived from claim confidence, contradiction checks, and experiment outcomes.",
-            },
-            "graph": {
-                "nodes": state.graph.nodes,
-                "edges": state.graph.edges,
-            },
-        }
-
-    def _emit(self, state: SharedMissionState, event_type: EventType, payload: dict[str, Any]) -> None:
-        state.events.append(RuntimeEvent(event_type=event_type, timestamp=time.time(), payload=payload))
-
-    def _extract_claims(self, query: str) -> list[Claim]:
-        sentences = [s.strip() for s in re.split(r"[.!?]", query) if s.strip()]
-        if not sentences:
-            sentences = [query.strip() or "No claim provided"]
-        claims: list[Claim] = []
-        for i, sentence in enumerate(sentences, start=1):
-            confidence = max(0.3, min(0.95, 0.45 + len(sentence.split()) / 30.0))
-            sources = ["user_prompt"]
-            if any(k in sentence.lower() for k in ["paper", "study", "evidence", "data"]):
-                sources.append("local_library_reference")
-            claims.append(Claim(claim_id=f"claim_{i}", text=sentence, confidence=round(confidence, 2), source_chain=sources))
-        return claims
-
-    def _detect_contradictions(self, claims: list[Claim]) -> list[Contradiction]:
-        contradictions: list[Contradiction] = []
-        for claim in claims:
-            lowered = claim.text.lower()
-            if "always" in lowered and "never" in lowered:
-                contradictions.append(Contradiction(claim_id=claim.claim_id, reason="Contains both absolute terms 'always' and 'never'."))
-            if "impossible" in lowered and "already" in lowered:
-                contradictions.append(Contradiction(claim_id=claim.claim_id, reason="Simultaneously describes impossible and already-completed state."))
-        return contradictions
-
-    def _run_experiment_loop(self, claims: list[Claim]) -> list[ExperimentResult]:
-        results: list[ExperimentResult] = []
-        for claim in claims[:2]:
-            hypothesis = f"If '{claim.text[:80]}' is accurate, measurable indicators should improve."
-            plan = "Generate baseline metric B=0.5, apply simulated intervention Δ based on confidence, compare B+Δ > B."
-            delta = round((claim.confidence - 0.5) * 0.4, 3)
-            simulated = round(0.5 + delta, 3)
-            outcome = "supported" if simulated > 0.5 else "not_supported"
-            results.append(
-                ExperimentResult(
-                    hypothesis=hypothesis,
-                    plan=plan,
-                    simulation=f"baseline=0.5; delta={delta}; simulated={simulated}",
-                    outcome=outcome,
-                )
-            )
-        return results
-
-    def _adversarial_checks(self, query: str, claims: list[Claim]) -> list[str]:
-        findings: list[str] = []
-        lowered = query.lower()
-        injection_markers = ["ignore previous", "system prompt", "override", "do not follow"]
-        for marker in injection_markers:
-            if marker in lowered:
-                findings.append(f"injection: detected potential prompt-injection marker '{marker}'")
-
-        if claims and max(c.confidence for c in claims) - min(c.confidence for c in claims) > 0.3:
-            findings.append("cross_check: confidence spread indicates model disagreement; require secondary pass")
-
-        if not findings:
-            findings.append("cross_check: no major adversarial issues found")
-        return findings
-
-    def _build_operator_summary(self, state: SharedMissionState) -> str:
-        top_claims = "; ".join(f"{c.text} (conf={c.confidence})" for c in state.claims[:3])
-        contradictions = len(state.contradictions)
-        experiments_supported = sum(1 for e in state.experiments if e.outcome == "supported")
-        return (
-            f"Mission '{state.mission}' processed via {state.interface}. "
-            f"Claims: {len(state.claims)}. Contradictions: {contradictions}. "
-            f"Experiments supporting hypothesis: {experiments_supported}/{len(state.experiments)}. "
-            f"Top claims: {top_claims}."
         )
 
-    def _confidence_drift(self, claims: list[Claim]) -> float:
-        if not claims:
-            return 0.0
-        scores = [c.confidence for c in claims]
-        return round(max(scores) - min(scores), 3)
 
-    def _persist_graph(self, graph: KnowledgeGraph) -> None:
-        self.memory_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {"nodes": graph.nodes, "edges": graph.edges, "updated_at": time.time()}
-        self.memory_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+_RE_LOCAL_SOURCE = re.compile(r"\[from\s+([^\]]+?)\]", re.IGNORECASE)
+_RE_WEB_SOURCE = re.compile(r"\[from\s+web:\s*([^\]]+?)\]", re.IGNORECASE)
+_RE_QUOTE = re.compile(r'"([^"]+)"')
 
 
-_ENGINE = UnifiedOrchestrationEngine()
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
-async def run_rain_lab(query: str, mode: str = "chat", agent: str | None = None, recursive_depth: int = 1) -> str:
-    del recursive_depth
-    result = await _ENGINE.run(query=query, interface=mode, mode=mode, agent=agent)
-    return result["response"]
+def _safe_agent_name(agent: Optional[str]) -> str:
+    if not agent:
+        return "James"
+    cleaned = agent.strip().lower()
+    mapping = {"james": "James", "jasmine": "Jasmine", "elena": "Elena", "luca": "Luca"}
+    return mapping.get(cleaned, "James")
 
 
-async def run_rain_lab_detailed(query: str, interface: str, mode: str = "chat", agent: str | None = None) -> dict[str, Any]:
-    return await _ENGINE.run(query=query, interface=interface, mode=mode, agent=agent)
+def _library_path() -> Path:
+    default_path = Path(__file__).resolve().parent
+    return Path(os.environ.get("JAMES_LIBRARY_PATH", str(default_path)))
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Unified runtime CLI for R.A.I.N. Lab")
-    parser.add_argument("--topic", required=True)
-    parser.add_argument("--mode", default="chat")
-    parser.add_argument("--agent", default=None)
-    parser.add_argument("--library", default=None)
-    parser.add_argument("--timeout", default=None)
-    parser.add_argument("--recursive-depth", default=None)
-    parser.add_argument("--no-recursive-intellect", action="store_true")
-    parser.add_argument("--json", action="store_true", help="Print full operator payload as JSON")
-    args = parser.parse_args(argv)
+def _load_context(max_chars: int = 12000, max_files: int = 40) -> tuple[str, list[str]]:
+    base = _library_path()
+    if not base.exists():
+        return "", []
 
-    del args.library, args.timeout, args.recursive_depth, args.no_recursive_intellect
-    payload = asyncio.run(run_rain_lab_detailed(query=args.topic, interface="cli", mode=args.mode, agent=args.agent))
-    if args.json:
-        print(json.dumps(payload, indent=2))
-    else:
-        print(payload["response"])
-        print("\nOperator panel:")
-        print(json.dumps(payload["operator_panel"], indent=2))
-    return 0
+    files = sorted(list(base.glob("*.md")) + list(base.glob("*.txt")))
+    files = [
+        p
+        for p in files
+        if "SOUL" not in p.name.upper() and "LOG" not in p.name.upper() and not p.name.startswith("_")
+    ][:max_files]
+
+    names: list[str] = []
+    chunks: list[str] = []
+    budget = max_chars
+    for p in files:
+        try:
+            text = p.read_text(encoding="utf-8", errors="ignore").strip()
+        except Exception:
+            continue
+        if not text:
+            continue
+        names.append(p.name)
+        take = min(len(text), budget)
+        chunks.append(f"--- {p.name} ---\n{text[:take]}")
+        budget -= take
+        if budget <= 0:
+            break
+
+    return "\n\n".join(chunks), names
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def _extract_provenance(response_text: str) -> list[ProvenanceItem]:
+    provenance: list[ProvenanceItem] = []
+
+    web_sources = {m.strip() for m in _RE_WEB_SOURCE.findall(response_text)}
+    local_sources = {m.strip() for m in _RE_LOCAL_SOURCE.findall(response_text)}
+
+    # Avoid double-counting [from web: ...] as local.
+    local_sources = {s for s in local_sources if not s.lower().startswith("web:")}
+
+    quotes = [q.strip() for q in _RE_QUOTE.findall(response_text) if len(q.split()) > 3]
+    first_quote = quotes[0] if quotes else None
+
+    for src in sorted(local_sources):
+        provenance.append(ProvenanceItem(source=src, source_type="paper", quote=first_quote))
+    for src in sorted(web_sources):
+        provenance.append(ProvenanceItem(source=src, source_type="web", quote=first_quote))
+
+    return provenance
+
+
+def _confidence_score(response_text: str, provenance: list[ProvenanceItem]) -> float:
+    score = 0.35
+    citation_bonus = min(len(provenance), 3) * 0.18
+    score += citation_bonus
+
+    lower = response_text.lower()
+    if "[speculation]" in lower or "[theory]" in lower:
+        score -= 0.12
+    if "don't know" in lower or "not sure" in lower or "papers don't cover this" in lower:
+        score -= 0.15
+
+    return max(0.05, min(0.98, round(score, 2)))
+
+
+def _trace_log_path() -> Path:
+    env = os.environ.get("RAIN_RUNTIME_TRACE_PATH")
+    if env:
+        return Path(env)
+    return _library_path() / "meeting_archives" / "runtime_events.jsonl"
+
+
+def _append_trace_line(payload: dict[str, Any]) -> None:
+    path = _trace_log_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def _build_messages(
+    query: str,
+    mode: str,
+    agent: str,
+    context_block: str,
+    recursive_depth: int,
+) -> list[dict[str, str]]:
+    mode_instruction = (
+        "You are in multi-agent synthesis mode. Give concise, evidence-grounded synthesis."
+        if mode == "rlm"
+        else "You are in direct chat mode. Answer crisply with research grounding."
+    )
+    system_prompt = (
+        f"You are {agent}, a R.A.I.N. Lab research agent. "
+        f"{mode_instruction} "
+        f"Prefer grounded claims and cite as [from filename.md] or [from web: source]. "
+        f"Recursive depth hint: {recursive_depth}. Keep answer under 180 words.\n\n"
+        f"LOCAL RESEARCH CONTEXT:\n{context_block}"
+    )
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": query},
+    ]
+
+
+def _call_llm_sync(messages: list[dict[str, str]], timeout_s: float) -> str:
+    try:
+        import openai
+    except ImportError as exc:
+        raise RuntimeError("openai package is required for run_rain_lab runtime") from exc
+
+    client = openai.OpenAI(
+        base_url=os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
+        api_key=os.environ.get("LM_STUDIO_API_KEY", "lm-studio"),
+        timeout=timeout_s,
+    )
+    response = client.chat.completions.create(
+        model=os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct"),
+        messages=messages,
+        max_tokens=220,
+        temperature=0.4,
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
+async def run_rain_lab(
+    query: str,
+    mode: str = "chat",
+    agent: str | None = None,
+    recursive_depth: int = 1,
+) -> str:
+    """Unified async runtime entrypoint for non-CLI gateways."""
+    resolved_agent = _safe_agent_name(agent)
+    state = RuntimeState(
+        session_id=str(uuid.uuid4())[:8],
+        query=query,
+        mode=mode,
+        agent=resolved_agent,
+    )
+    state.add_event("runtime_started", {"mode": mode, "agent": resolved_agent})
+
+    context_block, paper_list = _load_context()
+    state.add_event("context_loaded", {"papers": len(paper_list), "chars": len(context_block)})
+
+    messages = _build_messages(
+        query=query,
+        mode=mode,
+        agent=resolved_agent,
+        context_block=context_block,
+        recursive_depth=max(1, int(recursive_depth)),
+    )
+    state.add_event("llm_request_prepared", {"message_count": len(messages)})
+
+    try:
+        response_text = await asyncio.to_thread(_call_llm_sync, messages, 120.0)
+        state.status = "ok"
+        state.add_event("llm_response_received", {"chars": len(response_text)})
+    except Exception as exc:
+        state.status = "error"
+        state.add_event("runtime_failed", {"error": str(exc)})
+        _append_trace_line(
+            {
+                "timestamp": _utc_now(),
+                "session_id": state.session_id,
+                "status": state.status,
+                "query": query,
+                "mode": mode,
+                "agent": resolved_agent,
+                "events": [asdict(e) for e in state.events],
+            }
+        )
+        return "R.A.I.N. runtime error: unable to generate response."
+
+    provenance = _extract_provenance(response_text)
+    confidence = _confidence_score(response_text, provenance)
+    state.add_event(
+        "provenance_analyzed",
+        {
+            "sources": len(provenance),
+            "confidence": confidence,
+        },
+    )
+
+    _append_trace_line(
+        {
+            "timestamp": _utc_now(),
+            "session_id": state.session_id,
+            "status": state.status,
+            "query": query,
+            "mode": mode,
+            "agent": resolved_agent,
+            "confidence": confidence,
+            "provenance": [asdict(p) for p in provenance],
+            "events": [asdict(e) for e in state.events],
+        }
+    )
+
+    if provenance:
+        sources = ", ".join(sorted({p.source for p in provenance})[:3])
+        return f"{response_text}\n\nProvenance: {sources}\nConfidence: {confidence:.2f}"
+    return f"{response_text}\n\nConfidence: {confidence:.2f}"
