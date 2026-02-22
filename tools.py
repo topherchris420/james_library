@@ -11,7 +11,7 @@ import re
 
 def get_setup_code() -> str:
     """Returns the setup code that gets injected into RLM agent context."""
-    return '''
+    return r'''
 
 import os
 import glob
@@ -824,9 +824,9 @@ def extract_claims(text: str) -> list:
 
     # Patterns for numerical claims
     patterns = [
-        r'([A-Z][^.!?]*?\d+\.?\d*\s*(?:Hz|kHz|MHz|GHz|Hz|s|ms|ns|J|eV|keV|MeV|GeV|T|mT|G|K|W|kW|MW|kg|g|m|cm|mm|nm|um|mol|L|mL|Pa|bar|atm|Ω|Hz\/s)),
-        r'(?:found|measured|observed|calculated|estimated)\s+([^.!?]*?\d+\.?\d*\s*(?:%|percent|times|order of magnitude)),
-        r'(?:increased|decreased|changed)\s+by\s+(\d+\.?\d*\s*(?:%|times)),
+        r"([A-Z][^.!?]*?\d+\.?\d*\s*(?:Hz|kHz|MHz|GHz|s|ms|ns|J|eV|keV|MeV|GeV|T|mT|G|K|W|kW|MW|kg|g|m|cm|mm|nm|um|mol|L|mL|Pa|bar|atm|ohm|Hz/s))",
+        r"((?:found|measured|observed|calculated|estimated)\s+[^.!?]*?\d+\.?\d*\s*(?:%|percent|times|order of magnitude))",
+        r"((?:increased|decreased|changed)\s+by\s+\d+\.?\d*\s*(?:%|times))",
     ]
 
     claims = []

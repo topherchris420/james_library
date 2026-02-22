@@ -12,10 +12,21 @@ compatible `/v1/chat/completions` endpoint.
 
 from __future__ import annotations
 
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
+import io
 import json
+import re
 from typing import Any
 from urllib import request, error
+
+_PYTHON_BLOCK_RE = re.compile(r"```python\s*(.*?)```", re.IGNORECASE | re.DOTALL)
+_LOCAL_TOOL_RETRY_PROMPT = (
+    "Tool results from local Python execution:\n"
+    "{tool_report}\n\n"
+    "Use these results to continue. "
+    "If you are done, answer directly without a python code block."
+)
 
 
 @dataclass
@@ -49,6 +60,14 @@ class RLM:
         self.environment_kwargs = environment_kwargs or {}
         self.custom_system_prompt = custom_system_prompt
         self.verbose = verbose
+        self.max_local_steps = max(1, int(self.environment_kwargs.get("max_local_steps", 4)))
+        self._local_scope: dict[str, Any] | None = None
+
+        if self.environment == "local":
+            self._local_scope = {"__name__": "__rlm_local__"}
+            setup_code = str(self.environment_kwargs.get("setup_code", "") or "").strip()
+            if setup_code:
+                self._run_setup_code(setup_code)
 
     def completion(self, prompt: str) -> CompletionResult:
         messages: list[dict[str, str]] = []
@@ -56,6 +75,72 @@ class RLM:
             messages.append({"role": "system", "content": self.custom_system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        if self.environment == "local":
+            return self._completion_with_local_tools(messages)
+        return self._chat_completion(messages)
+
+    def _run_setup_code(self, setup_code: str) -> None:
+        if self._local_scope is None:
+            return
+
+        try:
+            compiled = compile(setup_code, "<rlm_setup_code>", "exec")
+            exec(compiled, self._local_scope, self._local_scope)
+        except Exception as exc:  # noqa: BLE001
+            raise RuntimeError(f"Failed to execute local setup_code: {exc}") from exc
+
+    def _run_local_code(self, code: str) -> tuple[bool, str]:
+        if self._local_scope is None:
+            return False, "Local execution environment is not initialized."
+
+        output = io.StringIO()
+        try:
+            compiled = compile(code, "<rlm_local_code>", "exec")
+        except Exception as exc:  # noqa: BLE001
+            return False, f"SyntaxError: {exc}"
+
+        try:
+            with redirect_stdout(output), redirect_stderr(output):
+                exec(compiled, self._local_scope, self._local_scope)
+            text = output.getvalue().strip()
+            return True, text or "[no output]"
+        except Exception as exc:  # noqa: BLE001
+            text = output.getvalue().strip()
+            prefix = f"{text}\n" if text else ""
+            return False, prefix + f"{exc.__class__.__name__}: {exc}"
+
+    def _completion_with_local_tools(self, messages: list[dict[str, str]]) -> CompletionResult:
+        last_result: CompletionResult | None = None
+
+        for _ in range(self.max_local_steps):
+            result = self._chat_completion(messages)
+            last_result = result
+            code_blocks = _extract_python_code_blocks(result.response)
+            if not code_blocks:
+                return result
+
+            messages.append({"role": "assistant", "content": result.response})
+
+            execution_notes: list[str] = []
+            for i, code in enumerate(code_blocks, 1):
+                ok, local_output = self._run_local_code(code)
+                status = "ok" if ok else "error"
+                execution_notes.append(f"[python block {i} {status}]\n{local_output}")
+
+            tool_report = "\n\n".join(execution_notes) if execution_notes else "[no output]"
+            messages.append(
+                {
+                    "role": "user",
+                    "content": _LOCAL_TOOL_RETRY_PROMPT.format(tool_report=tool_report),
+                }
+            )
+
+        return CompletionResult(
+            response="Local execution step limit reached before a final answer.",
+            raw=last_result.raw if last_result is not None else None,
+        )
+
+    def _chat_completion(self, messages: list[dict[str, str]]) -> CompletionResult:
         payload = {
             "model": self.model_name,
             "messages": messages,
@@ -141,6 +226,15 @@ def _extract_content_from_sse(body: str) -> str:
         if isinstance(first.get("text"), str):
             chunks.append(first["text"])
     return "".join(chunks)
+
+
+def _extract_python_code_blocks(text: str) -> list[str]:
+    blocks: list[str] = []
+    for match in _PYTHON_BLOCK_RE.findall(text):
+        code = match.strip()
+        if code:
+            blocks.append(code)
+    return blocks
 
 
 __all__ = ["RLM", "CompletionResult"]

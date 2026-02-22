@@ -25,7 +25,8 @@ def search_arxiv(query: str, max_results: int = 5) -> str:
         # Use ArXiv API
         base_url = "http://export.arxiv.org/api/query"
         params = {
-            "search_query": f"all:{urllib.parse.quote(query)}",
+            # urlencode() below handles escaping; avoid double-encoding the query.
+            "search_query": f"all:{query}",
             "max_results": max_results,
             "sortBy": "relevance",
             "sortOrder": "descending"

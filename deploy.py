@@ -21,10 +21,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _run(cmd: list[str], dry_run: bool) -> None:
+def _run(cmd: list[str], dry_run: bool, *, allow_failure: bool = False) -> None:
     print("$", " ".join(cmd))
     if not dry_run:
-        subprocess.run(cmd, check=True)
+        try:
+            subprocess.run(cmd, check=True)
+        except subprocess.CalledProcessError:
+            if allow_failure:
+                print(f"Ignoring non-zero exit status for optional command: {' '.join(cmd)}")
+                return
+            raise
 
 
 def _windows_install(repo_root: Path, args: argparse.Namespace, dry_run: bool) -> None:
@@ -102,7 +108,8 @@ def _macos_install(repo_root: Path, args: argparse.Namespace, dry_run: bool) -> 
         (repo_root / "logs").mkdir(exist_ok=True)
         plist_path.write_text(plist, encoding="utf-8")
 
-    _run(["launchctl", "unload", str(plist_path)], dry_run)
+    # First install has nothing loaded yet; unload may fail and is safe to ignore.
+    _run(["launchctl", "unload", str(plist_path)], dry_run, allow_failure=True)
     _run(["launchctl", "load", str(plist_path)], dry_run)
 
 
