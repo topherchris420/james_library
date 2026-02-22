@@ -58,3 +58,10 @@ def test_build_command_chat_requires_runtime_script(repo_root, monkeypatch):
         assert "rain_lab_runtime.py" in str(exc)
     else:
         raise AssertionError("Expected FileNotFoundError when rain_lab_runtime.py is missing")
+
+
+def test_build_command_compile(repo_root):
+    args, pt = parse_args(["--mode", "compile"])
+    cmd = build_command(args, pt, repo_root)
+    assert "library_compiler.py" in cmd[1]
+    assert "--library" in cmd

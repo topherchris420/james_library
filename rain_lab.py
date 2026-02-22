@@ -75,9 +75,9 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--mode",
-        choices=["rlm", "chat", "hello-os"],
+        choices=["rlm", "chat", "hello-os", "compile"],
         default="chat",
-        help="Which engine to run: rlm (tool-exec), chat (openai chat completions), or hello-os (single executable)",
+        help="Which engine to run: rlm (tool-exec), chat (openai chat completions), hello-os (single executable), or compile (build knowledge artifacts)",
     )
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
     parser.add_argument(
@@ -114,6 +114,15 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 
 
 def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: Path) -> list[str]:
+
+    if args.mode == "compile":
+        target = repo_root / "library_compiler.py"
+        cmd = [sys.executable, str(target)]
+        lib_path = args.library or str(repo_root)
+        cmd.extend(["--library", lib_path])
+        cmd.extend(passthrough)
+        return cmd
+
     if args.mode == "hello-os":
         target = repo_root / "hello_os_executable.py"
         cmd = [sys.executable, str(target)]
@@ -183,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_banner()
 
     # Interactive prompt if topic is missing (and not asking for help)
-    if args.mode != "hello-os" and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
+    if args.mode not in {"hello-os", "compile"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
         print(f"\n{ANSI_YELLOW}Research Topic needed.{ANSI_RESET}")
         print(f"{ANSI_DIM}Example: 'Guarino paper', 'Quantum Resonance', 'The nature of time'{ANSI_RESET}")
         try:
