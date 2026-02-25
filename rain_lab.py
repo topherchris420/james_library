@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 ANSI_RESET = "\033[0m"
@@ -31,6 +33,8 @@ BANNER_LINES = [
     "==============================================================",
     "                 V E R S 3 D Y N A M I C S                   ",
 ]
+
+VALID_UI_MODES = {"auto", "on", "off"}
 
 
 def _console_safe(text: str) -> str:
@@ -75,6 +79,10 @@ def _split_passthrough_args(argv: list[str]) -> tuple[list[str], list[str]]:
 
 def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     known, passthrough = _split_passthrough_args(argv)
+    default_ui_mode = os.environ.get("RAIN_UI_MODE", "auto").strip().lower()
+    if default_ui_mode not in VALID_UI_MODES:
+        default_ui_mode = "auto"
+
     parser = argparse.ArgumentParser(
         description="Unified launcher for rain_lab_meeting modes"
     )
@@ -121,6 +129,24 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         help="Chat mode only: path to runtime TOML config (maps to --config).",
     )
     parser.add_argument(
+        "--ui",
+        choices=sorted(VALID_UI_MODES),
+        default=default_ui_mode,
+        help="Chat/Godot UI behavior: auto (default) launches avatars when available, on requires UI stack, off forces CLI-only.",
+    )
+    parser.add_argument(
+        "--godot-client-bin",
+        type=str,
+        default=os.environ.get("RAIN_GODOT_BIN", ""),
+        help="UI mode: Godot executable name/path (defaults to RAIN_GODOT_BIN, then godot4/godot).",
+    )
+    parser.add_argument(
+        "--godot-project-dir",
+        type=str,
+        default=os.environ.get("RAIN_GODOT_PROJECT_DIR", "godot_client"),
+        help="UI mode: Godot project directory (must contain project.godot).",
+    )
+    parser.add_argument(
         "--godot-events-log",
         type=str,
         default=os.environ.get("RAIN_VISUAL_EVENTS_LOG", "meeting_archives/godot_events.jsonl"),
@@ -159,6 +185,11 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         "--no-godot-bridge",
         action="store_true",
         help="Godot mode: do not auto-launch godot_event_bridge.py.",
+    )
+    parser.add_argument(
+        "--no-godot-client",
+        action="store_true",
+        help="Godot/chat UI mode: do not auto-launch the Godot client.",
     )
     args = parser.parse_args(known)
     return args, passthrough
@@ -284,6 +315,129 @@ def build_godot_bridge_command(args: argparse.Namespace, repo_root: Path) -> lis
     return cmd
 
 
+def _resolve_executable(candidate: str) -> str | None:
+    text = (candidate or "").strip()
+    if not text:
+        return None
+
+    path_candidate = Path(text).expanduser()
+    if path_candidate.is_absolute() or any(sep in text for sep in ("/", "\\")):
+        if path_candidate.exists():
+            return str(path_candidate)
+        return None
+
+    return shutil.which(text)
+
+
+def build_godot_client_command(args: argparse.Namespace, repo_root: Path) -> list[str] | None:
+    if args.no_godot_client:
+        return None
+
+    project_dir = Path(args.godot_project_dir).expanduser()
+    if not project_dir.is_absolute():
+        project_dir = (repo_root / project_dir).resolve()
+    project_file = project_dir / "project.godot"
+    if not project_file.exists():
+        return None
+
+    candidate_bins: list[str] = []
+    if args.godot_client_bin:
+        candidate_bins.append(args.godot_client_bin)
+    candidate_bins.extend(["godot4", "godot"])
+
+    for candidate in candidate_bins:
+        resolved = _resolve_executable(candidate)
+        if resolved:
+            return [resolved, "--path", str(project_dir)]
+
+    return None
+
+
+@dataclass(frozen=True)
+class LaunchPlan:
+    effective_mode: str
+    launch_bridge: bool = False
+    launch_godot_client: bool = False
+    godot_client_cmd: list[str] | None = None
+
+
+def resolve_launch_plan(args: argparse.Namespace, repo_root: Path) -> LaunchPlan:
+    visual_runtime_exists = (repo_root / "rain_lab_meeting_chat_version.py").exists()
+    bridge_exists = (repo_root / "godot_event_bridge.py").exists()
+    godot_client_cmd = build_godot_client_command(args, repo_root)
+
+    wants_bridge = not args.no_godot_bridge
+    wants_client = not args.no_godot_client
+
+    if args.mode == "chat":
+        if args.ui == "off":
+            return LaunchPlan(effective_mode="chat")
+
+        if args.ui == "on":
+            missing: list[str] = []
+            if not visual_runtime_exists:
+                missing.append("rain_lab_meeting_chat_version.py")
+            if wants_bridge and not bridge_exists:
+                missing.append("godot_event_bridge.py")
+            if wants_client and godot_client_cmd is None:
+                missing.append("Godot executable + godot_client/project.godot")
+            if missing:
+                missing_str = ", ".join(missing)
+                raise RuntimeError(f"UI mode 'on' requires: {missing_str}")
+            return LaunchPlan(
+                effective_mode="godot",
+                launch_bridge=wants_bridge,
+                launch_godot_client=wants_client and godot_client_cmd is not None,
+                godot_client_cmd=godot_client_cmd,
+            )
+
+        # ui=auto: prefer avatars only when the full stack is available.
+        if not visual_runtime_exists:
+            return LaunchPlan(effective_mode="chat")
+        if wants_bridge and not bridge_exists:
+            return LaunchPlan(effective_mode="chat")
+        if wants_client and godot_client_cmd is None:
+            return LaunchPlan(effective_mode="chat")
+        return LaunchPlan(
+            effective_mode="godot",
+            launch_bridge=wants_bridge,
+            launch_godot_client=wants_client and godot_client_cmd is not None,
+            godot_client_cmd=godot_client_cmd,
+        )
+
+    if args.mode == "godot":
+        if not visual_runtime_exists:
+            raise FileNotFoundError("Godot mode requires rain_lab_meeting_chat_version.py")
+        if wants_bridge and not bridge_exists:
+            raise FileNotFoundError("Godot mode bridge requires godot_event_bridge.py")
+
+        launch_client = args.ui != "off" and wants_client and godot_client_cmd is not None
+        return LaunchPlan(
+            effective_mode="godot",
+            launch_bridge=wants_bridge,
+            launch_godot_client=launch_client,
+            godot_client_cmd=godot_client_cmd if launch_client else None,
+        )
+
+    return LaunchPlan(effective_mode=args.mode)
+
+
+def _copy_args_with_mode(args: argparse.Namespace, mode: str) -> argparse.Namespace:
+    payload = vars(args).copy()
+    payload["mode"] = mode
+    return argparse.Namespace(**payload)
+
+
+def _terminate_process(proc: subprocess.Popen[bytes] | None) -> None:
+    if proc is None or proc.poll() is not None:
+        return
+    proc.terminate()
+    try:
+        proc.wait(timeout=3.0)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
 async def run_rain_lab(
     query: str,
     mode: str = "chat",
@@ -338,10 +492,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\n{ANSI_RED}Aborted.{ANSI_RESET}")
             return 1
 
-    cmd = build_command(args, passthrough, repo_root)
+    launch_plan = resolve_launch_plan(args, repo_root)
+    if args.mode == "chat" and args.ui == "auto":
+        if launch_plan.effective_mode == "godot":
+            print(f"{ANSI_GREEN}UI auto: Godot avatars available; launching visual mode.{ANSI_RESET}")
+        else:
+            print(f"{ANSI_DIM}UI auto: Godot UI unavailable; running CLI chat mode.{ANSI_RESET}")
+
+    effective_args = _copy_args_with_mode(args, launch_plan.effective_mode)
+    cmd = build_command(effective_args, passthrough, repo_root)
+
     bridge_cmd: list[str] | None = None
-    if args.mode == "godot" and not args.no_godot_bridge:
-        bridge_cmd = build_godot_bridge_command(args, repo_root)
+    if launch_plan.launch_bridge:
+        bridge_cmd = build_godot_bridge_command(effective_args, repo_root)
 
     child_env = None
     if args.library:
@@ -349,24 +512,48 @@ def main(argv: list[str] | None = None) -> int:
         child_env["JAMES_LIBRARY_PATH"] = args.library
 
     bridge_proc: subprocess.Popen[bytes] | None = None
-    if bridge_cmd is not None:
-        _spinner("Starting Godot event bridge")
-        print(f"{ANSI_CYAN}Launching bridge: {' '.join(bridge_cmd)}{ANSI_RESET}", flush=True)
-        bridge_proc = subprocess.Popen(bridge_cmd, env=child_env)
-        time.sleep(0.25)
+    godot_proc: subprocess.Popen[bytes] | None = None
+
+    auto_chat_visual = args.mode == "chat" and args.ui == "auto" and launch_plan.effective_mode == "godot"
+    try:
+        if bridge_cmd is not None:
+            _spinner("Starting Godot event bridge")
+            print(f"{ANSI_CYAN}Launching bridge: {' '.join(bridge_cmd)}{ANSI_RESET}", flush=True)
+            bridge_proc = subprocess.Popen(bridge_cmd, env=child_env)
+            time.sleep(0.25)
+
+        if launch_plan.launch_godot_client and launch_plan.godot_client_cmd is not None:
+            _spinner("Starting Godot avatar client")
+            print(
+                f"{ANSI_CYAN}Launching Godot client: {' '.join(launch_plan.godot_client_cmd)}{ANSI_RESET}",
+                flush=True,
+            )
+            godot_proc = subprocess.Popen(launch_plan.godot_client_cmd, env=child_env)
+            time.sleep(0.25)
+    except Exception as exc:
+        _terminate_process(godot_proc)
+        _terminate_process(bridge_proc)
+        bridge_proc = None
+        godot_proc = None
+
+        if auto_chat_visual:
+            print(
+                f"{ANSI_YELLOW}UI auto: visual startup failed ({exc}); falling back to CLI chat mode.{ANSI_RESET}",
+                flush=True,
+            )
+            effective_args = _copy_args_with_mode(args, "chat")
+            cmd = build_command(effective_args, passthrough, repo_root)
+        else:
+            raise
 
     _spinner("Booting VERS3DYNAMICS R.A.I.N. Lab launcher")
-    print(f"{ANSI_CYAN}Launching mode={args.mode}: {' '.join(cmd)}{ANSI_RESET}", flush=True)
+    print(f"{ANSI_CYAN}Launching mode={effective_args.mode}: {' '.join(cmd)}{ANSI_RESET}", flush=True)
     try:
         result = subprocess.run(cmd, env=child_env)
         return int(result.returncode)
     finally:
-        if bridge_proc is not None and bridge_proc.poll() is None:
-            bridge_proc.terminate()
-            try:
-                bridge_proc.wait(timeout=3.0)
-            except subprocess.TimeoutExpired:
-                bridge_proc.kill()
+        _terminate_process(bridge_proc)
+        _terminate_process(godot_proc)
 
 
 if __name__ == "__main__":

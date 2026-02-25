@@ -4,13 +4,21 @@ from pathlib import Path
 # Ensure the repo root is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from rain_lab import build_command, build_godot_bridge_command, parse_args
+import rain_lab as rain_launcher
+from rain_lab import (
+    build_command,
+    build_godot_bridge_command,
+    build_godot_client_command,
+    parse_args,
+    resolve_launch_plan,
+)
 
 
 def test_parse_defaults():
     args, _ = parse_args([])
     assert args.mode == "chat"
     assert args.topic is None
+    assert args.ui == "auto"
 
 
 def test_parse_rlm_mode():
@@ -22,9 +30,16 @@ def test_parse_rlm_mode():
 def test_parse_godot_mode_defaults():
     args, _ = parse_args(["--mode", "godot", "--topic", "demo"])
     assert args.mode == "godot"
+    assert args.ui == "auto"
     assert args.godot_events_log.endswith("meeting_archives/godot_events.jsonl")
     assert args.godot_ws_host == "127.0.0.1"
     assert args.godot_ws_port == 8765
+
+
+def test_parse_ui_env_invalid_falls_back_to_auto(monkeypatch):
+    monkeypatch.setenv("RAIN_UI_MODE", "invalid")
+    args, _ = parse_args(["--mode", "chat", "--topic", "demo"])
+    assert args.ui == "auto"
 
 
 def test_parse_config_path():
@@ -109,6 +124,67 @@ def test_build_godot_bridge_command(repo_root):
     assert "--port" in cmd and "9000" in cmd
     assert "--poll-interval" in cmd and "0.25" in cmd
     assert "--replay-existing" in cmd
+
+
+def test_build_godot_client_command(repo_root, monkeypatch):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x"])
+
+    def fake_which(name: str) -> str | None:
+        if name == "godot4":
+            return r"C:\Tools\Godot\godot4.exe"
+        return None
+
+    monkeypatch.setattr(rain_launcher.shutil, "which", fake_which)
+    cmd = build_godot_client_command(args, repo_root)
+    assert cmd is not None
+    assert cmd[0].endswith("godot4.exe")
+    assert cmd[1] == "--path"
+    assert cmd[2].endswith("godot_client")
+
+
+def test_resolve_launch_plan_chat_auto_prefers_godot(repo_root, monkeypatch):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x"])
+    expected_client_cmd = ["godot4", "--path", str(repo_root / "godot_client")]
+    monkeypatch.setattr(
+        rain_launcher,
+        "build_godot_client_command",
+        lambda _args, _root: expected_client_cmd,
+    )
+
+    plan = resolve_launch_plan(args, repo_root)
+    assert plan.effective_mode == "godot"
+    assert plan.launch_bridge is True
+    assert plan.launch_godot_client is True
+    assert plan.godot_client_cmd == expected_client_cmd
+
+
+def test_resolve_launch_plan_chat_auto_falls_back_without_client(repo_root, monkeypatch):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x"])
+    monkeypatch.setattr(rain_launcher, "build_godot_client_command", lambda _args, _root: None)
+    plan = resolve_launch_plan(args, repo_root)
+    assert plan.effective_mode == "chat"
+    assert plan.launch_bridge is False
+    assert plan.launch_godot_client is False
+    assert plan.godot_client_cmd is None
+
+
+def test_resolve_launch_plan_chat_ui_on_requires_stack(repo_root, monkeypatch):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x", "--ui", "on"])
+    monkeypatch.setattr(rain_launcher, "build_godot_client_command", lambda _args, _root: None)
+    try:
+        resolve_launch_plan(args, repo_root)
+    except RuntimeError as exc:
+        assert "UI mode 'on' requires" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError when ui=on has no client")
+
+
+def test_resolve_launch_plan_chat_ui_off_forces_cli(repo_root):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x", "--ui", "off"])
+    plan = resolve_launch_plan(args, repo_root)
+    assert plan.effective_mode == "chat"
+    assert plan.launch_bridge is False
+    assert plan.launch_godot_client is False
 
 
 def test_build_command_rlm(repo_root):
