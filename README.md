@@ -25,7 +25,9 @@
 
 ## Mission Statement
 
-Vers3Dynamics is an R&D platform for simulating **non-linear wave interactions** and **bio-acoustic phenomena**. We combine:
+Vers3Dynamics' R.A.I.N. Lab is an R&D platform for **non-linear wave interactions** and **bio-acoustic phenomena**. 
+
+We combine:
 
 - **ZeroClaw** (The Body): A high-performance Rust AI Agent Engine for autonomous tool execution
 - **James Library** (The Mind): Python-based acoustic physics research with resonance, cymatics, and Havana Syndrome simulations
