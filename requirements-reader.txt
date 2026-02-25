@@ -1,5 +1,7 @@
 # Dependencies for James Reader - Headless CLI
-# Install with: pip install -r requirements-reader.txt
+# Install with: 
+
+pip install -r requirements-reader.txt
 
 # Document parsing
 docling>=2.55.0
