@@ -4,6 +4,7 @@ Usage examples:
   python rain_lab.py --mode first-run
   python rain_lab.py --mode rlm --topic "Guarino paper"
   python rain_lab.py --mode chat --topic "Guarino paper" -- --recursive-depth 2
+  python rain_lab.py --mode godot --topic "Guarino paper"
 """
 
 from __future__ import annotations
@@ -79,9 +80,9 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--mode",
-        choices=["rlm", "chat", "hello-os", "compile", "preflight", "backup", "first-run"],
+        choices=["rlm", "chat", "godot", "hello-os", "compile", "preflight", "backup", "first-run"],
         default="chat",
-        help="Which engine to run: rlm (tool-exec), chat (openai chat completions), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), backup (local snapshot), or first-run (guided onboarding)",
+        help="Which engine to run: rlm (tool-exec), chat (runtime), godot (chat runtime + visual events), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), backup (local snapshot), or first-run (guided onboarding)",
     )
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
     parser.add_argument(
@@ -118,6 +119,46 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         type=str,
         default=None,
         help="Chat mode only: path to runtime TOML config (maps to --config).",
+    )
+    parser.add_argument(
+        "--godot-events-log",
+        type=str,
+        default=os.environ.get("RAIN_VISUAL_EVENTS_LOG", "meeting_archives/godot_events.jsonl"),
+        help="Godot mode: JSONL events file used by the bridge and emitter.",
+    )
+    parser.add_argument(
+        "--godot-tts-audio-dir",
+        type=str,
+        default=os.environ.get("RAIN_TTS_AUDIO_DIR", "meeting_archives/tts_audio"),
+        help="Godot mode: per-turn TTS export directory.",
+    )
+    parser.add_argument(
+        "--godot-ws-host",
+        type=str,
+        default="127.0.0.1",
+        help="Godot mode: bridge WebSocket host.",
+    )
+    parser.add_argument(
+        "--godot-ws-port",
+        type=int,
+        default=8765,
+        help="Godot mode: bridge WebSocket port.",
+    )
+    parser.add_argument(
+        "--godot-bridge-poll-interval",
+        type=float,
+        default=0.1,
+        help="Godot mode: JSONL tail polling interval in seconds.",
+    )
+    parser.add_argument(
+        "--godot-replay-existing",
+        action="store_true",
+        help="Godot mode: bridge replays existing event log contents on startup.",
+    )
+    parser.add_argument(
+        "--no-godot-bridge",
+        action="store_true",
+        help="Godot mode: do not auto-launch godot_event_bridge.py.",
     )
     args = parser.parse_args(known)
     return args, passthrough
@@ -171,6 +212,34 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
         cmd.extend(passthrough)
         return cmd
 
+    if args.mode == "godot":
+        target = repo_root / "rain_lab_meeting_chat_version.py"
+        if not target.exists():
+            raise FileNotFoundError("Godot mode requires rain_lab_meeting_chat_version.py")
+        cmd = [
+            sys.executable,
+            str(target),
+            "--emit-visual-events",
+            "--visual-events-log",
+            args.godot_events_log,
+            "--tts-audio-dir",
+            args.godot_tts_audio_dir,
+        ]
+        if args.topic:
+            cmd.extend(["--topic", args.topic])
+        if args.library:
+            cmd.extend(["--library", args.library])
+        if args.turns is not None:
+            cmd.extend(["--max-turns", str(args.turns)])
+        if args.timeout is not None:
+            cmd.extend(["--timeout", str(args.timeout)])
+        if args.no_recursive_intellect:
+            cmd.append("--no-recursive-intellect")
+        elif args.recursive_depth is not None:
+            cmd.extend(["--recursive-depth", str(args.recursive_depth)])
+        cmd.extend(passthrough)
+        return cmd
+
     target = repo_root / "rain_lab_runtime.py"
     if not target.exists():
         raise FileNotFoundError("Chat mode requires rain_lab_runtime.py")
@@ -191,6 +260,27 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
     if args.config:
         cmd.extend(["--config", args.config])
     cmd.extend(passthrough)
+    return cmd
+
+
+def build_godot_bridge_command(args: argparse.Namespace, repo_root: Path) -> list[str]:
+    target = repo_root / "godot_event_bridge.py"
+    if not target.exists():
+        raise FileNotFoundError("Godot mode bridge requires godot_event_bridge.py")
+    cmd = [
+        sys.executable,
+        str(target),
+        "--events-file",
+        args.godot_events_log,
+        "--host",
+        args.godot_ws_host,
+        "--port",
+        str(args.godot_ws_port),
+        "--poll-interval",
+        str(args.godot_bridge_poll_interval),
+    ]
+    if args.godot_replay_existing:
+        cmd.append("--replay-existing")
     return cmd
 
 
@@ -249,16 +339,34 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
     cmd = build_command(args, passthrough, repo_root)
+    bridge_cmd: list[str] | None = None
+    if args.mode == "godot" and not args.no_godot_bridge:
+        bridge_cmd = build_godot_bridge_command(args, repo_root)
 
     child_env = None
     if args.library:
         child_env = dict(os.environ)
         child_env["JAMES_LIBRARY_PATH"] = args.library
 
+    bridge_proc: subprocess.Popen[bytes] | None = None
+    if bridge_cmd is not None:
+        _spinner("Starting Godot event bridge")
+        print(f"{ANSI_CYAN}Launching bridge: {' '.join(bridge_cmd)}{ANSI_RESET}", flush=True)
+        bridge_proc = subprocess.Popen(bridge_cmd, env=child_env)
+        time.sleep(0.25)
+
     _spinner("Booting VERS3DYNAMICS R.A.I.N. Lab launcher")
     print(f"{ANSI_CYAN}Launching mode={args.mode}: {' '.join(cmd)}{ANSI_RESET}", flush=True)
-    result = subprocess.run(cmd, env=child_env)
-    return int(result.returncode)
+    try:
+        result = subprocess.run(cmd, env=child_env)
+        return int(result.returncode)
+    finally:
+        if bridge_proc is not None and bridge_proc.poll() is None:
+            bridge_proc.terminate()
+            try:
+                bridge_proc.wait(timeout=3.0)
+            except subprocess.TimeoutExpired:
+                bridge_proc.kill()
 
 
 if __name__ == "__main__":

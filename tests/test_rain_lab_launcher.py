@@ -4,7 +4,7 @@ from pathlib import Path
 # Ensure the repo root is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from rain_lab import build_command, parse_args
+from rain_lab import build_command, build_godot_bridge_command, parse_args
 
 
 def test_parse_defaults():
@@ -17,6 +17,14 @@ def test_parse_rlm_mode():
     args, _ = parse_args(["--mode", "rlm", "--topic", "test"])
     assert args.mode == "rlm"
     assert args.topic == "test"
+
+
+def test_parse_godot_mode_defaults():
+    args, _ = parse_args(["--mode", "godot", "--topic", "demo"])
+    assert args.mode == "godot"
+    assert args.godot_events_log.endswith("meeting_archives/godot_events.jsonl")
+    assert args.godot_ws_host == "127.0.0.1"
+    assert args.godot_ws_port == 8765
 
 
 def test_parse_config_path():
@@ -63,6 +71,44 @@ def test_build_command_chat_no_recursive_flag(repo_root):
     cmd = build_command(args, pt, repo_root)
     assert "--no-recursive-intellect" in cmd
     assert "--recursive-depth" not in cmd
+
+
+def test_build_command_godot(repo_root):
+    args, pt = parse_args(["--mode", "godot", "--topic", "x", "--turns", "2", "--timeout", "30"])
+    cmd = build_command(args, pt, repo_root)
+    assert "rain_lab_meeting_chat_version.py" in cmd[1]
+    assert "--emit-visual-events" in cmd
+    assert "--visual-events-log" in cmd
+    assert "--tts-audio-dir" in cmd
+    assert "--max-turns" in cmd and "2" in cmd
+    assert "--timeout" in cmd and "30.0" in cmd
+
+
+def test_build_godot_bridge_command(repo_root):
+    args, _ = parse_args(
+        [
+            "--mode",
+            "godot",
+            "--topic",
+            "x",
+            "--godot-events-log",
+            "meeting_archives/custom_events.jsonl",
+            "--godot-ws-host",
+            "0.0.0.0",
+            "--godot-ws-port",
+            "9000",
+            "--godot-bridge-poll-interval",
+            "0.25",
+            "--godot-replay-existing",
+        ]
+    )
+    cmd = build_godot_bridge_command(args, repo_root)
+    assert "godot_event_bridge.py" in cmd[1]
+    assert "--events-file" in cmd and "meeting_archives/custom_events.jsonl" in cmd
+    assert "--host" in cmd and "0.0.0.0" in cmd
+    assert "--port" in cmd and "9000" in cmd
+    assert "--poll-interval" in cmd and "0.25" in cmd
+    assert "--replay-existing" in cmd
 
 
 def test_build_command_rlm(repo_root):
