@@ -180,6 +180,14 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
     cmd.extend(["--mode", args.mode])
     if args.library:
         cmd.extend(["--library", args.library])
+    if args.turns is not None:
+        cmd.extend(["--max-turns", str(args.turns)])
+    if args.timeout is not None:
+        cmd.extend(["--timeout", str(args.timeout)])
+    if args.no_recursive_intellect:
+        cmd.append("--no-recursive-intellect")
+    elif args.recursive_depth is not None:
+        cmd.extend(["--recursive-depth", str(args.recursive_depth)])
     if args.config:
         cmd.extend(["--config", args.config])
     cmd.extend(passthrough)

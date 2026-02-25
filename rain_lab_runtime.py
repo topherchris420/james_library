@@ -80,6 +80,8 @@ class RuntimeConfig:
     strict_grounding: bool
     min_grounding_confidence: float
     return_json: bool
+    trace_enabled: bool
+    trace_include_payload: bool
     llm_base_url: str
     llm_model: str
     llm_api_key: Optional[str] = field(default=None, repr=False)
@@ -270,6 +272,8 @@ def _public_runtime_config(config: RuntimeConfig) -> dict[str, Any]:
         "strict_grounding": config.strict_grounding,
         "min_grounding_confidence": config.min_grounding_confidence,
         "return_json": config.return_json,
+        "trace_enabled": config.trace_enabled,
+        "trace_include_payload": config.trace_include_payload,
         "llm_base_url": config.llm_base_url,
         "llm_model": config.llm_model,
         "llm_api_key_configured": bool(config.llm_api_key),
@@ -304,6 +308,8 @@ def _load_runtime_config(config_path: Optional[str] = None) -> RuntimeConfig:
         1.0,
     )
     return_json_default = _coerce_bool(runtime_section.get("return_json"), False)
+    trace_enabled_default = _coerce_bool(runtime_section.get("trace_enabled"), False)
+    trace_include_payload_default = _coerce_bool(runtime_section.get("trace_include_payload"), False)
 
     base_url_default = _pick_optional_str(
         llm_section.get("base_url"),
@@ -328,6 +334,8 @@ def _load_runtime_config(config_path: Optional[str] = None) -> RuntimeConfig:
         strict_grounding=_env_bool("RAIN_STRICT_GROUNDING", strict_grounding_default),
         min_grounding_confidence=_env_float("RAIN_MIN_GROUNDED_CONFIDENCE", min_grounding_default, 0.0, 1.0),
         return_json=_env_bool("RAIN_RUNTIME_JSON_RESPONSE", return_json_default),
+        trace_enabled=_env_bool("RAIN_RUNTIME_TRACE_ENABLED", trace_enabled_default),
+        trace_include_payload=_env_bool("RAIN_RUNTIME_TRACE_INCLUDE_PAYLOAD", trace_include_payload_default),
         llm_base_url=_pick_optional_str(os.environ.get("LM_STUDIO_BASE_URL"), base_url_default)
         or _DEFAULT_LLM_BASE_URL,
         llm_model=_pick_optional_str(os.environ.get("LM_STUDIO_MODEL"), model_default) or _DEFAULT_LLM_MODEL,
@@ -519,17 +527,64 @@ def _append_trace_line(payload: dict[str, Any]) -> None:
         f.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
-def _trace_state(state: RuntimeState, **extra: Any) -> None:
+def _redact_trace_response(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {"present": value is not None}
+
+    provenance = value.get("provenance", [])
+    provenance_count = len(provenance) if isinstance(provenance, list) else 0
+    answer = value.get("answer", "")
+    return {
+        "status": value.get("status"),
+        "mode": value.get("mode"),
+        "agent": value.get("agent"),
+        "confidence": value.get("confidence"),
+        "grounded": value.get("grounded"),
+        "red_badge": value.get("red_badge"),
+        "provenance_count": provenance_count,
+        "answer_chars": len(str(answer)),
+    }
+
+
+def _sanitize_trace_extras(extra: dict[str, Any], include_payload: bool) -> dict[str, Any]:
+    if include_payload:
+        return extra
+
+    sanitized: dict[str, Any] = {}
+    for key, value in extra.items():
+        if key == "response":
+            sanitized["response"] = _redact_trace_response(value)
+            continue
+        if key == "provenance":
+            if isinstance(value, list):
+                sanitized["provenance"] = {"count": len(value)}
+            else:
+                sanitized["provenance"] = {"count": None}
+            continue
+        sanitized[key] = value
+    return sanitized
+
+
+def _trace_state(state: RuntimeState, config: RuntimeConfig, **extra: Any) -> None:
+    if not config.trace_enabled:
+        return
+
     payload = {
         "timestamp": _utc_now(),
         "session_id": state.session_id,
         "status": state.status,
-        "query": state.query,
         "mode": state.mode,
         "agent": state.agent,
         "events": [asdict(e) for e in state.events],
     }
-    payload.update(extra)
+
+    if config.trace_include_payload:
+        payload["query"] = state.query
+    else:
+        payload["query"] = "[redacted]"
+        payload["query_chars"] = len(state.query)
+
+    payload.update(_sanitize_trace_extras(extra, config.trace_include_payload))
     _append_trace_line(payload)
 
 
@@ -669,12 +724,15 @@ def runtime_healthcheck(config_path: Optional[str] = None) -> dict[str, Any]:
     except Exception:
         checks["openai_importable"] = False
 
-    try:
-        trace_dir = _trace_log_path().parent
-        trace_dir.mkdir(parents=True, exist_ok=True)
-        checks["trace_dir_writable"] = os.access(trace_dir, os.W_OK)
-    except Exception:
-        checks["trace_dir_writable"] = False
+    if config.trace_enabled:
+        try:
+            trace_dir = _trace_log_path().parent
+            trace_dir.mkdir(parents=True, exist_ok=True)
+            checks["trace_dir_writable"] = os.access(trace_dir, os.W_OK)
+        except Exception:
+            checks["trace_dir_writable"] = False
+    else:
+        checks["trace_dir_writable"] = True
 
     try:
         _validate_runtime_config(config)
@@ -736,12 +794,18 @@ async def run_rain_lab(
     agent: str | None = None,
     recursive_depth: int = 1,
     config_path: str | None = None,
+    llm_timeout_s: float | None = None,
+    max_turns: int = 1,
 ) -> str:
     """Unified async runtime entrypoint for non-CLI gateways."""
     try:
         config = _load_runtime_config(config_path=config_path)
     except Exception as exc:
         return str(exc)
+
+    if llm_timeout_s is not None:
+        config.llm_timeout_s = max(10.0, min(600.0, float(llm_timeout_s)))
+
     resolved_agent = _safe_agent_name(agent)
     safe_query = _sanitize_query(query, config.max_query_chars)
 
@@ -761,19 +825,22 @@ async def run_rain_lab(
             "config_path": config.config_path,
             "llm_base_url": config.llm_base_url,
             "llm_model": config.llm_model,
+            "trace_enabled": config.trace_enabled,
+            "trace_include_payload": config.trace_include_payload,
+            "max_turns": max_turns,
         },
     )
 
     if mode not in _VALID_MODES:
         state.status = "error"
         state.add_event("runtime_failed", {"error": f"Unsupported mode: {mode}"})
-        _trace_state(state)
+        _trace_state(state, config)
         return "R.A.I.N. runtime error: unsupported mode. Use 'chat' or 'rlm'."
 
     if not safe_query:
         state.status = "error"
         state.add_event("runtime_failed", {"error": "Empty query after sanitization"})
-        _trace_state(state)
+        _trace_state(state, config)
         return "R.A.I.N. runtime error: query is empty after sanitization."
 
     try:
@@ -782,8 +849,23 @@ async def run_rain_lab(
         message = str(exc)
         state.status = "error"
         state.add_event("runtime_failed", {"error": message, "kind": "config"})
-        _trace_state(state)
+        _trace_state(state, config)
         return message
+
+    if max_turns < 1:
+        state.status = "error"
+        state.add_event("runtime_failed", {"error": "Invalid max_turns", "max_turns": max_turns})
+        _trace_state(state, config)
+        return "R.A.I.N. runtime error: --max-turns must be at least 1."
+
+    if max_turns != 1:
+        state.status = "error"
+        state.add_event(
+            "runtime_failed",
+            {"error": "Unsupported max_turns for this runtime", "max_turns": max_turns},
+        )
+        _trace_state(state, config)
+        return "R.A.I.N. runtime error: chat runtime currently supports --max-turns 1."
 
     context_block, paper_list = _load_context()
     state.add_event("context_loaded", {"papers": len(paper_list), "chars": len(context_block)})
@@ -805,7 +887,7 @@ async def run_rain_lab(
         status, message = _classify_runtime_exception(exc)
         state.status = status
         state.add_event("runtime_failed", {"error": str(exc), "status": status})
-        _trace_state(state)
+        _trace_state(state, config)
         return message
 
     provenance = _extract_provenance(response_text)
@@ -862,6 +944,7 @@ async def run_rain_lab(
 
     _trace_state(
         state,
+        config,
         confidence=confidence,
         grounded=bool(payload.get("grounded", False)),
         provenance=[asdict(p) for p in provenance],
@@ -878,6 +961,23 @@ def _parse_cli_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--mode", choices=sorted(_VALID_MODES), default="chat")
     parser.add_argument("--agent", type=str, default=None, help="Agent identity hint")
     parser.add_argument("--recursive-depth", type=int, default=1, help="Internal critique depth")
+    parser.add_argument(
+        "--no-recursive-intellect",
+        action="store_true",
+        help="Disable recursive self-reflection (forces recursive depth to 1).",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=None,
+        help="Per-request LLM timeout override in seconds.",
+    )
+    parser.add_argument(
+        "--max-turns",
+        type=int,
+        default=1,
+        help="Maximum turns for chat runtime. Current runtime supports 1.",
+    )
     parser.add_argument("--library", type=str, default=None, help="Override JAMES_LIBRARY_PATH")
     parser.add_argument(
         "--config",
@@ -922,6 +1022,8 @@ def main(argv: list[str] | None = None) -> int:
         print("R.A.I.N. runtime error: provide --topic or --query.")
         return 2
 
+    recursive_depth = 1 if args.no_recursive_intellect else max(1, int(args.recursive_depth))
+
     if args.library:
         os.environ["JAMES_LIBRARY_PATH"] = args.library
 
@@ -931,8 +1033,10 @@ def main(argv: list[str] | None = None) -> int:
                 query=query,
                 mode=args.mode,
                 agent=args.agent,
-                recursive_depth=max(1, int(args.recursive_depth)),
+                recursive_depth=recursive_depth,
                 config_path=args.config,
+                llm_timeout_s=args.timeout,
+                max_turns=args.max_turns,
             )
         )
     except Exception:

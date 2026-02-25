@@ -57,6 +57,40 @@ offset_right = 520.0
 offset_bottom = 40.0
 text = "Theme: flower_field"
 
+[node name="DemoControls" type="PanelContainer" parent="UILayer"]
+anchor_left = 0.03
+anchor_top = 0.64
+anchor_right = 0.97
+anchor_bottom = 0.71
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="Margin" type="MarginContainer" parent="UILayer/DemoControls"]
+offset_right = 1208.0
+offset_bottom = 50.0
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="HBox" type="HBoxContainer" parent="UILayer/DemoControls/Margin"]
+offset_right = 1184.0
+offset_bottom = 34.0
+theme_override_constants/separation = 10
+
+[node name="PlayPauseButton" type="Button" parent="UILayer/DemoControls/Margin/HBox"]
+custom_minimum_size = Vector2(84, 0)
+text = "Pause"
+
+[node name="Scrubber" type="HSlider" parent="UILayer/DemoControls/Margin/HBox"]
+size_flags_horizontal = 3
+step = 0.001
+
+[node name="ReplayStatus" type="Label" parent="UILayer/DemoControls/Margin/HBox"]
+custom_minimum_size = Vector2(130, 0)
+text = "Replay 0/0"
+
 [node name="Managers" type="Node" parent="."]
 
 [node name="ThemeManager" type="Node" parent="Managers"]

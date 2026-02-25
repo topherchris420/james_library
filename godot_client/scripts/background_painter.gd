@@ -1,25 +1,33 @@
 extends Node2D
 class_name BackgroundPainter
 
+const GRADIENT_SHADER_PATH := "res://shaders/background_gradient.gdshader"
+
 var _theme_id: String = "flower_field"
 var _background_cfg: Dictionary = {}
 var _seed: int = 1
+var _gradient_rect: ColorRect
 
 
 func _ready() -> void:
+	_ensure_gradient_layer()
 	var viewport := get_viewport()
 	if viewport != null:
 		viewport.size_changed.connect(_on_viewport_size_changed)
+	_sync_gradient_rect()
+	_apply_gradient_to_shader()
 
 
 func apply_theme(theme_id: String, background_cfg: Dictionary) -> void:
 	_theme_id = theme_id
 	_background_cfg = background_cfg.duplicate(true)
 	_seed = abs(hash(theme_id)) + 17
+	_apply_gradient_to_shader()
 	queue_redraw()
 
 
 func _on_viewport_size_changed() -> void:
+	_sync_gradient_rect()
 	queue_redraw()
 
 
@@ -28,14 +36,6 @@ func _draw() -> void:
 	var horizon_ratio := float(_background_cfg.get("horizon_y", 0.62))
 	var horizon_y := int(size.y * horizon_ratio)
 
-	var sky_top := _color_from(_background_cfg.get("sky_top", "#7cc6ff"), "#7cc6ff")
-	var sky_bottom := _color_from(_background_cfg.get("sky_bottom", "#dff4ff"), "#dff4ff")
-	var ground_top := _color_from(_background_cfg.get("ground_top", "#79b55a"), "#79b55a")
-	var ground_bottom := _color_from(_background_cfg.get("ground_bottom", "#4a7a37"), "#4a7a37")
-
-	_draw_vertical_gradient(Rect2(0, 0, size.x, horizon_y), sky_top, sky_bottom)
-	_draw_vertical_gradient(Rect2(0, horizon_y, size.x, size.y - horizon_y), ground_top, ground_bottom)
-
 	var decor_style := str(_background_cfg.get("decor_style", "flowers")).to_lower()
 	if decor_style == "lab":
 		_draw_lab(size, horizon_y)
@@ -43,13 +43,42 @@ func _draw() -> void:
 		_draw_flower_field(size, horizon_y)
 
 
-func _draw_vertical_gradient(rect: Rect2, top_color: Color, bottom_color: Color) -> void:
-	var height := maxi(1, int(rect.size.y))
-	for y in range(height):
-		var denom := float(maxi(1, height - 1))
-		var t := float(y) / denom
-		var c := top_color.lerp(bottom_color, t)
-		draw_rect(Rect2(rect.position.x, rect.position.y + y, rect.size.x, 1), c, true)
+func _ensure_gradient_layer() -> void:
+	if _gradient_rect != null:
+		return
+	_gradient_rect = ColorRect.new()
+	_gradient_rect.name = "GradientRect"
+	_gradient_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_gradient_rect.z_index = -100
+	add_child(_gradient_rect)
+
+	var shader := load(GRADIENT_SHADER_PATH)
+	if shader is Shader:
+		var material := ShaderMaterial.new()
+		material.shader = shader
+		_gradient_rect.material = material
+
+
+func _sync_gradient_rect() -> void:
+	if _gradient_rect == null:
+		return
+	var rect := get_viewport_rect()
+	_gradient_rect.position = rect.position
+	_gradient_rect.size = rect.size
+
+
+func _apply_gradient_to_shader() -> void:
+	if _gradient_rect == null:
+		return
+	var material := _gradient_rect.material
+	if material == null or not (material is ShaderMaterial):
+		return
+	var shader_mat := material as ShaderMaterial
+	shader_mat.set_shader_parameter("sky_top", _color_from(_background_cfg.get("sky_top", "#7cc6ff"), "#7cc6ff"))
+	shader_mat.set_shader_parameter("sky_bottom", _color_from(_background_cfg.get("sky_bottom", "#dff4ff"), "#dff4ff"))
+	shader_mat.set_shader_parameter("ground_top", _color_from(_background_cfg.get("ground_top", "#79b55a"), "#79b55a"))
+	shader_mat.set_shader_parameter("ground_bottom", _color_from(_background_cfg.get("ground_bottom", "#4a7a37"), "#4a7a37"))
+	shader_mat.set_shader_parameter("horizon_y", clampf(float(_background_cfg.get("horizon_y", 0.62)), 0.02, 0.98))
 
 
 func _draw_flower_field(size: Vector2, horizon_y: int) -> void:

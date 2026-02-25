@@ -1,0 +1,34 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/agent_avatar.gd" id="1_agent"]
+
+[node name="AgentAvatar" type="Node2D"]
+script = ExtResource("1_agent")
+
+[node name="ActiveRing" type="Polygon2D" parent="."]
+
+[node name="Shadow" type="Polygon2D" parent="."]
+
+[node name="BobRoot" type="Node2D" parent="."]
+
+[node name="Body" type="Polygon2D" parent="BobRoot"]
+
+[node name="Shoulders" type="Polygon2D" parent="BobRoot"]
+
+[node name="Neck" type="Polygon2D" parent="BobRoot"]
+
+[node name="Head" type="Polygon2D" parent="BobRoot"]
+
+[node name="Hair" type="Polygon2D" parent="BobRoot"]
+
+[node name="LeftEye" type="Polygon2D" parent="BobRoot"]
+
+[node name="RightEye" type="Polygon2D" parent="BobRoot"]
+
+[node name="Mouth" type="Polygon2D" parent="BobRoot"]
+
+[node name="ActiveStripe" type="Polygon2D" parent="BobRoot"]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="ActiveRingPlayer" type="AnimationPlayer" parent="."]

@@ -37,6 +37,34 @@ def test_build_command_chat_with_config(repo_root):
     assert "runtime.toml" in cmd
 
 
+def test_build_command_chat_forwards_runtime_flags(repo_root):
+    args, pt = parse_args(
+        [
+            "--mode",
+            "chat",
+            "--topic",
+            "x",
+            "--turns",
+            "1",
+            "--timeout",
+            "30",
+            "--recursive-depth",
+            "4",
+        ]
+    )
+    cmd = build_command(args, pt, repo_root)
+    assert "--max-turns" in cmd and "1" in cmd
+    assert "--timeout" in cmd and "30.0" in cmd
+    assert "--recursive-depth" in cmd and "4" in cmd
+
+
+def test_build_command_chat_no_recursive_flag(repo_root):
+    args, pt = parse_args(["--mode", "chat", "--topic", "x", "--no-recursive-intellect", "--recursive-depth", "9"])
+    cmd = build_command(args, pt, repo_root)
+    assert "--no-recursive-intellect" in cmd
+    assert "--recursive-depth" not in cmd
+
+
 def test_build_command_rlm(repo_root):
     args, pt = parse_args(["--mode", "rlm", "--topic", "y"])
     cmd = build_command(args, pt, repo_root)

@@ -33,6 +33,7 @@ def test_run_rain_lab_happy_path(monkeypatch, tmp_path):
 
     monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
     monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_ENABLED", "1")
     monkeypatch.setattr(
         runtime,
         "_load_context",
@@ -62,6 +63,9 @@ def test_run_rain_lab_happy_path(monkeypatch, tmp_path):
     assert payload["status"] == "ok"
     assert payload["mode"] == "chat"
     assert payload["agent"] == "James"
+    assert payload["query"] == "[redacted]"
+    assert payload["query_chars"] == len("test query")
+    assert payload["response"]["answer_chars"] > 0
     assert "events" in payload and payload["events"]
 
 
@@ -69,6 +73,7 @@ def test_run_rain_lab_error_path(monkeypatch, tmp_path):
     async_trace = tmp_path / "runtime_events_error.jsonl"
     monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
     monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_ENABLED", "1")
     monkeypatch.setattr(runtime, "_load_context", lambda: ("", []))
 
     def _raise(*args, **kwargs):
@@ -85,6 +90,7 @@ def test_run_rain_lab_canceled_path(monkeypatch, tmp_path):
     async_trace = tmp_path / "runtime_events_canceled.jsonl"
     monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
     monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_ENABLED", "1")
     monkeypatch.setattr(runtime, "_load_context", lambda: ("", []))
 
     def _raise(*args, **kwargs):
@@ -102,6 +108,7 @@ def test_run_rain_lab_strict_grounding_blocks_ungrounded(monkeypatch, tmp_path):
     async_trace = tmp_path / "runtime_events_strict.jsonl"
     monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
     monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_ENABLED", "1")
     monkeypatch.setenv("RAIN_STRICT_GROUNDING", "1")
     monkeypatch.setenv("RAIN_MIN_GROUNDED_CONFIDENCE", "0.8")
     monkeypatch.setattr(runtime, "_load_context", lambda: ("", []))
@@ -127,11 +134,21 @@ def test_runtime_healthcheck_smoke(tmp_path, monkeypatch):
 
 
 def test_runtime_cli_main_success(monkeypatch, capsys, tmp_path):
-    async def _fake_run_rain_lab(query, mode, agent, recursive_depth, config_path=None):
+    async def _fake_run_rain_lab(
+        query,
+        mode,
+        agent,
+        recursive_depth,
+        config_path=None,
+        llm_timeout_s=None,
+        max_turns=1,
+    ):
         assert query == "test topic"
         assert mode == "chat"
         assert recursive_depth == 2
         assert config_path is None
+        assert llm_timeout_s is None
+        assert max_turns == 1
         return "Answer [from paper.md]\n\nConfidence: 0.70"
 
     monkeypatch.setattr(runtime, "run_rain_lab", _fake_run_rain_lab)
@@ -143,8 +160,18 @@ def test_runtime_cli_main_success(monkeypatch, capsys, tmp_path):
 
 
 def test_runtime_cli_main_passes_config(monkeypatch, tmp_path):
-    async def _fake_run_rain_lab(query, mode, agent, recursive_depth, config_path=None):
+    async def _fake_run_rain_lab(
+        query,
+        mode,
+        agent,
+        recursive_depth,
+        config_path=None,
+        llm_timeout_s=None,
+        max_turns=1,
+    ):
         assert config_path == "runtime.toml"
+        assert llm_timeout_s is None
+        assert max_turns == 1
         return "Answer"
 
     monkeypatch.setattr(runtime, "run_rain_lab", _fake_run_rain_lab)
@@ -176,6 +203,35 @@ def test_runtime_cli_main_canceled_exit(monkeypatch):
     assert rc == 3
 
 
+def test_runtime_cli_main_rejects_max_turns_gt_one(monkeypatch, capsys):
+    monkeypatch.setenv("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
+    monkeypatch.delenv("LM_STUDIO_API_KEY", raising=False)
+    rc = runtime.main(["--topic", "x", "--max-turns", "2"])
+    out = capsys.readouterr().out.lower()
+    assert rc == 1
+    assert "supports --max-turns 1" in out
+
+
+def test_runtime_cli_main_passes_timeout_and_no_recursive(monkeypatch):
+    async def _fake_run_rain_lab(
+        query,
+        mode,
+        agent,
+        recursive_depth,
+        config_path=None,
+        llm_timeout_s=None,
+        max_turns=1,
+    ):
+        assert recursive_depth == 1
+        assert llm_timeout_s == 42.0
+        assert max_turns == 1
+        return "Answer"
+
+    monkeypatch.setattr(runtime, "run_rain_lab", _fake_run_rain_lab)
+    rc = runtime.main(["--topic", "x", "--recursive-depth", "5", "--no-recursive-intellect", "--timeout", "42"])
+    assert rc == 0
+
+
 def test_trace_path_defaults_inside_library(monkeypatch, tmp_path):
     monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
     monkeypatch.delenv("RAIN_RUNTIME_TRACE_PATH", raising=False)
@@ -205,6 +261,32 @@ def test_trace_path_allows_external_with_override(monkeypatch, tmp_path):
 
     path = runtime._trace_log_path()
     assert path == external.resolve()
+
+
+def test_tracing_disabled_by_default(monkeypatch, tmp_path):
+    async_trace = tmp_path / "runtime_events.jsonl"
+    monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.delenv("RAIN_RUNTIME_TRACE_ENABLED", raising=False)
+    monkeypatch.setattr(runtime, "_load_context", lambda: ("", []))
+    monkeypatch.setattr(runtime, "_call_llm_sync", lambda *args, **kwargs: "Answer [from paper.md]")
+
+    _ = asyncio.run(runtime.run_rain_lab(query="test", mode="chat", agent="James", recursive_depth=1))
+    assert not async_trace.exists()
+
+
+def test_tracing_can_include_payload(monkeypatch, tmp_path):
+    async_trace = tmp_path / "runtime_events_payload.jsonl"
+    monkeypatch.setenv("JAMES_LIBRARY_PATH", str(tmp_path))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_PATH", str(async_trace))
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_ENABLED", "1")
+    monkeypatch.setenv("RAIN_RUNTIME_TRACE_INCLUDE_PAYLOAD", "1")
+    monkeypatch.setattr(runtime, "_load_context", lambda: ("", []))
+    monkeypatch.setattr(runtime, "_call_llm_sync", lambda *args, **kwargs: "Answer [from paper.md]")
+
+    _ = asyncio.run(runtime.run_rain_lab(query="sensitive query", mode="chat", agent="James", recursive_depth=1))
+    payload = json.loads(async_trace.read_text(encoding="utf-8").strip().splitlines()[-1])
+    assert payload["query"] == "sensitive query"
 
 
 def test_load_runtime_config_from_toml(monkeypatch, tmp_path):

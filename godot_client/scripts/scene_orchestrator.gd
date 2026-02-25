@@ -1,15 +1,21 @@
 extends Node2D
 
 const DEFAULT_PARTICIPANTS: Array[String] = ["james", "jasmine", "elena", "luca"]
+const AGENT_AVATAR_SCENE: PackedScene = preload("res://scenes/agent_avatar.tscn")
 
 @export var initial_theme_id: String = "flower_field"
 @export var theme_hotkeys_enabled: bool = true
 @export var fallback_participants: Array[String] = DEFAULT_PARTICIPANTS
+@export var avatar_scene: PackedScene = AGENT_AVATAR_SCENE
 
 @onready var _background_layer: BackgroundPainter = $BackgroundLayer
 @onready var _character_layer: Node2D = $CharacterLayer
 @onready var _dialogue_ui: DialogueUI = $UILayer/DialoguePanel
 @onready var _theme_badge: Label = $UILayer/ThemeBadge
+@onready var _demo_controls: Control = $UILayer/DemoControls
+@onready var _demo_play_pause: Button = $UILayer/DemoControls/Margin/HBox/PlayPauseButton
+@onready var _demo_scrubber: HSlider = $UILayer/DemoControls/Margin/HBox/Scrubber
+@onready var _demo_status: Label = $UILayer/DemoControls/Margin/HBox/ReplayStatus
 @onready var _theme_manager: ThemeManager = $Managers/ThemeManager
 @onready var _event_client: EventClient = $Managers/EventClient
 @onready var _audio_sync: AudioSync = $Managers/AudioSync
@@ -17,11 +23,14 @@ const DEFAULT_PARTICIPANTS: Array[String] = ["james", "jasmine", "elena", "luca"
 var _participants: Array[String] = []
 var _avatars: Dictionary = {}
 var _active_speaker_id: String = ""
+var _syncing_demo_scrubber: bool = false
 
 
 func _ready() -> void:
 	_theme_manager.theme_applied.connect(_on_theme_applied)
 	_event_client.event_received.connect(_on_event_received)
+	_event_client.demo_progress_changed.connect(_on_demo_progress_changed)
+	_event_client.demo_playback_state_changed.connect(_on_demo_playback_state_changed)
 	_audio_sync.utterance_started.connect(_on_utterance_started)
 	_audio_sync.utterance_finished.connect(_on_utterance_finished)
 
@@ -30,6 +39,7 @@ func _ready() -> void:
 
 	_spawn_participants(fallback_participants)
 	_dialogue_ui.show_status("Waiting for conversation events...")
+	_configure_demo_controls()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -76,6 +86,8 @@ func _on_event_received(event_payload: Dictionary) -> void:
 			_handle_theme_changed(event_payload)
 		"conversation_ended":
 			_handle_conversation_ended()
+		"conversation_reset":
+			_handle_conversation_reset()
 		_:
 			push_warning("Unhandled event type: %s" % event_type)
 
@@ -131,6 +143,12 @@ func _handle_conversation_ended() -> void:
 	_dialogue_ui.show_status("Conversation ended.")
 
 
+func _handle_conversation_reset() -> void:
+	_audio_sync.stop_current_utterance(true)
+	_spawn_participants([])
+	_dialogue_ui.show_status("Replay reset.")
+
+
 func _on_utterance_started(agent_id: String) -> void:
 	for key in _avatars.keys():
 		var avatar_variant: Variant = _avatars[key]
@@ -174,7 +192,16 @@ func _spawn_participants(agent_ids: Array[String]) -> void:
 		var x := lerpf(left_x, right_x, t)
 		var y := base_y + absf(t - 0.5) * 92.0
 
-		var avatar := AgentAvatar.new()
+		var avatar: AgentAvatar
+		if avatar_scene != null:
+			var instance := avatar_scene.instantiate()
+			if instance is AgentAvatar:
+				avatar = instance as AgentAvatar
+			else:
+				instance.free()
+				avatar = AgentAvatar.new()
+		else:
+			avatar = AgentAvatar.new()
 		_character_layer.add_child(avatar)
 		avatar.configure(agent_id, _title_case(agent_id), _theme_manager.get_agent_style(agent_id))
 		avatar.position = Vector2(x, y)
@@ -244,3 +271,47 @@ func _to_dict(value: Variant) -> Dictionary:
 	if value is Dictionary:
 		return value
 	return {}
+
+
+func _configure_demo_controls() -> void:
+	_demo_controls.visible = _event_client.is_demo_mode()
+	if not _demo_controls.visible:
+		return
+
+	_demo_play_pause.pressed.connect(_on_demo_play_pause_pressed)
+	_demo_scrubber.min_value = 0.0
+	_demo_scrubber.max_value = 1.0
+	_demo_scrubber.step = 0.001
+	_demo_scrubber.value_changed.connect(_on_demo_scrubber_value_changed)
+
+	_on_demo_playback_state_changed(_event_client.is_demo_paused())
+	_on_demo_progress_changed(
+		_event_client.get_demo_progress(),
+		_event_client.get_demo_emitted_count(),
+		_event_client.get_demo_total_count(),
+	)
+
+
+func _on_demo_play_pause_pressed() -> void:
+	_event_client.set_demo_paused(not _event_client.is_demo_paused())
+
+
+func _on_demo_scrubber_value_changed(value: float) -> void:
+	if _syncing_demo_scrubber:
+		return
+	_event_client.seek_demo_progress(value)
+
+
+func _on_demo_progress_changed(progress: float, emitted_count: int, total_count: int) -> void:
+	if not _demo_controls.visible:
+		return
+	_syncing_demo_scrubber = true
+	_demo_scrubber.value = progress
+	_syncing_demo_scrubber = false
+	_demo_status.text = "Replay %d/%d" % [emitted_count, total_count]
+
+
+func _on_demo_playback_state_changed(paused: bool) -> void:
+	if not _demo_controls.visible:
+		return
+	_demo_play_pause.text = "Play" if paused else "Pause"
