@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>
-    Bridging autonomous AI agency with complex acoustic physics research —
+    Bridging autonomous AI agents with complex acoustic physics research —
     simulating resonance, cymatics, and bio-acoustic phenomena through a unified Rust-first execution engine.
   </strong>
 </p>
