@@ -2,9 +2,9 @@
 
 ## Quick triage
 
-1. Run `python rain_lab.py --mode preflight`.
-2. Confirm your Python is supported (`3.10+`).
-3. Confirm LM Studio is reachable at `http://127.0.0.1:1234/v1/models`.
+1. Run `python rain_health_check.py` (or `RAIN_Lab_Health_Check.cmd` on Windows).
+2. Run `python rain_lab.py --mode preflight`.
+3. Confirm your Python is supported (`3.10+`).
 
 ## Common issues
 
@@ -67,9 +67,22 @@ Fix:
 - If needed, run launcher directly:
   - `RAIN_Lab_Chat.cmd`
 
+### 7) Health check reports launcher log not found
+
+Behavior:
+- `rain_health_check.py` reads launcher events from `meeting_archives/launcher_events.jsonl`.
+- The file is created after you run `rain_lab.py` at least once.
+
+Fix:
+- Run one session: `python rain_lab.py --mode chat --topic "health-check seed"`
+- Then re-run health check:
+  - `RAIN_Lab_Health_Check.cmd`
+  - or `python rain_health_check.py`
+
 ## Verification commands
 
 - Preflight: `python rain_lab.py --mode preflight`
 - Backup: `python rain_lab.py --mode backup -- --json`
+- One-screen health check: `python rain_health_check.py`
 - Runtime healthcheck:
   - `python -c "from rain_lab_runtime import runtime_healthcheck; import json; print(json.dumps(runtime_healthcheck(), indent=2))"`

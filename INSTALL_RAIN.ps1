@@ -64,6 +64,7 @@ if (-not $NoShortcuts) {
     $startMenuRoot = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\R.A.I.N. Lab"
     $chatCmd = Join-Path $repoRoot "RAIN_Lab_Chat.cmd"
     $firstRunCmd = Join-Path $repoRoot "RAIN_Lab_First_Run.cmd"
+    $healthCmd = Join-Path $repoRoot "RAIN_Lab_Health_Check.cmd"
     $iconPath = Join-Path $env:SystemRoot "System32\shell32.dll"
     $iconLocation = "$iconPath,220"
 
@@ -72,6 +73,9 @@ if (-not $NoShortcuts) {
     }
     if (-not (Test-Path $firstRunCmd)) {
         throw "Missing launcher script: $firstRunCmd"
+    }
+    if (-not (Test-Path $healthCmd)) {
+        throw "Missing launcher script: $healthCmd"
     }
 
     if (-not $NoDesktopShortcut) {
@@ -89,6 +93,13 @@ if (-not $NoShortcuts) {
             -TargetPath $chatCmd `
             -WorkingDirectory $repoRoot `
             -Description "Launch R.A.I.N. Lab chat mode (auto UI)." `
+            -IconLocation $iconLocation
+
+        New-RainShortcut `
+            -ShortcutPath (Join-Path $startMenuRoot "R.A.I.N. Lab Health Check.lnk") `
+            -TargetPath $healthCmd `
+            -WorkingDirectory $repoRoot `
+            -Description "Run local health checks for LM Studio, UI, and launcher logs." `
             -IconLocation $iconLocation
 
         New-RainShortcut `

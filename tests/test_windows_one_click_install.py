@@ -7,6 +7,7 @@ def test_one_click_launcher_scripts_exist(repo_root: Path) -> None:
         "INSTALL_RAIN.cmd",
         "RAIN_Lab_Chat.cmd",
         "RAIN_Lab_First_Run.cmd",
+        "RAIN_Lab_Health_Check.cmd",
     ]
     for rel in expected:
         assert (repo_root / rel).exists(), f"Missing launcher artifact: {rel}"
@@ -17,3 +18,4 @@ def test_installer_mentions_shortcut_creation(repo_root: Path) -> None:
     assert "NoShortcuts" in text
     assert "New-RainShortcut" in text
     assert "R.A.I.N. Lab Chat" in text
+    assert "R.A.I.N. Lab Health Check" in text

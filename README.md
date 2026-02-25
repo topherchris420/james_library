@@ -141,6 +141,7 @@ The installer creates:
 - Start Menu shortcuts:
   - `R.A.I.N. Lab Chat`
   - `R.A.I.N. Lab First Run`
+  - `R.A.I.N. Lab Health Check`
 
 ---
 
