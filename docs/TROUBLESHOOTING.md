@@ -56,6 +56,17 @@ Fix:
 - Use default output, or explicitly allow external output:
   - `RAIN_ALLOW_EXTERNAL_BACKUP_PATH=1`
 
+### 6) One-click installer or shortcut does nothing
+
+Fix:
+- Right-click `INSTALL_RAIN.cmd` and choose "Run as administrator" once.
+- If PowerShell execution policy blocks scripts, run:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\INSTALL_RAIN.ps1`
+- Recreate shortcuts only:
+  - `powershell -NoProfile -ExecutionPolicy Bypass -File .\INSTALL_RAIN.ps1 -SkipPreflight`
+- If needed, run launcher directly:
+  - `RAIN_Lab_Chat.cmd`
+
 ## Verification commands
 
 - Preflight: `python rain_lab.py --mode preflight`

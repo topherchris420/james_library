@@ -128,6 +128,20 @@ python rain_lab.py --mode rlm --topic "acoustic resonance phenomena"
 .\research.ps1 -Topic "cymatics patterns"
 ```
 
+### Option 4: One-Click Windows Installer (Non-Technical)
+
+```text
+1) Double-click INSTALL_RAIN.cmd
+2) Wait for install to finish
+3) Double-click "R.A.I.N. Lab Chat" shortcut on Desktop/Start Menu
+```
+
+The installer creates:
+- Desktop shortcut: `R.A.I.N. Lab Chat`
+- Start Menu shortcuts:
+  - `R.A.I.N. Lab Chat`
+  - `R.A.I.N. Lab First Run`
+
 ---
 
 ## Project Structure
