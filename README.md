@@ -308,7 +308,6 @@ cargo test
 - [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) - Strategic roadmap
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
 - [SECURITY.md](SECURITY.md) - Security policies
-- [CLAUDE.md](CLAUDE.md) - AI agent protocols
 
 ---
 
@@ -320,6 +319,6 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## Brand
 
-**Vers3Dynamics** — Where autonomous AI agency meets acoustic physics research.
+**Vers3Dynamics** — Where autonomous local AI agents meet acoustic physics research.
 
 Built with precision by itself.
