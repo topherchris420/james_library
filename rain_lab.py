@@ -113,6 +113,12 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         action="store_true",
         help="Chat mode only: disable recursive self-reflection",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Chat mode only: path to runtime TOML config (maps to --config).",
+    )
     args = parser.parse_args(known)
     return args, passthrough
 
@@ -174,6 +180,8 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
     cmd.extend(["--mode", args.mode])
     if args.library:
         cmd.extend(["--library", args.library])
+    if args.config:
+        cmd.extend(["--config", args.config])
     cmd.extend(passthrough)
     return cmd
 

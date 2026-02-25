@@ -19,10 +19,22 @@ def test_parse_rlm_mode():
     assert args.topic == "test"
 
 
+def test_parse_config_path():
+    args, _ = parse_args(["--mode", "chat", "--topic", "x", "--config", "runtime.toml"])
+    assert args.config == "runtime.toml"
+
+
 def test_build_command_chat(repo_root):
     args, pt = parse_args(["--mode", "chat", "--topic", "x"])
     cmd = build_command(args, pt, repo_root)
     assert "rain_lab_runtime.py" in cmd[1]
+
+
+def test_build_command_chat_with_config(repo_root):
+    args, pt = parse_args(["--mode", "chat", "--topic", "x", "--config", "runtime.toml"])
+    cmd = build_command(args, pt, repo_root)
+    assert "--config" in cmd
+    assert "runtime.toml" in cmd
 
 
 def test_build_command_rlm(repo_root):

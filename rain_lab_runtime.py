@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import ipaddress
 import json
 import os
 import re
@@ -15,8 +16,19 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from heapq import nsmallest
+from itertools import chain
 from pathlib import Path
 from typing import Any, Optional
+from urllib.parse import urlparse
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python <3.11 compatibility
+    try:
+        import tomli as tomllib  # type: ignore[no-redef]
+    except ModuleNotFoundError:  # pragma: no cover
+        tomllib = None  # type: ignore[assignment]
 
 try:
     from truth_layer import Evidence, assert_grounded, build_grounded_response
@@ -68,14 +80,19 @@ class RuntimeConfig:
     strict_grounding: bool
     min_grounding_confidence: float
     return_json: bool
+    llm_base_url: str
+    llm_model: str
+    llm_api_key: Optional[str] = field(default=None, repr=False)
+    config_path: Optional[str] = None
 
 
-_RE_LOCAL_SOURCE = re.compile(r"\[from\s+([^\]]+?)\]", re.IGNORECASE)
-_RE_WEB_SOURCE = re.compile(r"\[from\s+web:\s*([^\]]+?)\]", re.IGNORECASE)
+_RE_SOURCE_TAG = re.compile(r"\[from\s+(web:\s*)?([^\]]+?)\]", re.IGNORECASE)
 _RE_QUOTE = re.compile(r'"([^"]+)"')
 _RE_WHITESPACE = re.compile(r"\s+")
 _CONTROL_TOKENS = ("<|endoftext|>", "<|im_start|>", "<|im_end|>", "|eoc_fim|")
 _VALID_MODES = {"chat", "rlm"}
+_DEFAULT_LLM_BASE_URL = "http://127.0.0.1:1234/v1"
+_DEFAULT_LLM_MODEL = "qwen2.5-coder-7b-instruct"
 
 
 def _utc_now() -> str:
@@ -111,15 +128,211 @@ def _env_float(name: str, default: float, minimum: float, maximum: float) -> flo
     return max(minimum, min(maximum, value))
 
 
-def _load_runtime_config() -> RuntimeConfig:
+def _coerce_bool(value: Any, default: bool) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"1", "true", "yes", "on"}:
+            return True
+        if lowered in {"0", "false", "no", "off"}:
+            return False
+    return default
+
+
+def _coerce_int(value: Any, default: int, minimum: int, maximum: int) -> int:
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(maximum, parsed))
+
+
+def _coerce_float(value: Any, default: float, minimum: float, maximum: float) -> float:
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(maximum, parsed))
+
+
+def _normalize_optional_str(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _pick_optional_str(*values: Any) -> Optional[str]:
+    for value in values:
+        normalized = _normalize_optional_str(value)
+        if normalized:
+            return normalized
+    return None
+
+
+def _dict_section(root: dict[str, Any], key: str) -> dict[str, Any]:
+    section = root.get(key)
+    if isinstance(section, dict):
+        return section
+    return {}
+
+
+def _resolve_runtime_config_path(config_path: Optional[str]) -> Optional[Path]:
+    raw = (config_path or os.environ.get("RAIN_RUNTIME_CONFIG") or "").strip()
+    if not raw:
+        return None
+    candidate = Path(raw).expanduser()
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+    return candidate.resolve()
+
+
+def _load_runtime_config_file(config_path: Optional[str]) -> tuple[dict[str, Any], Optional[Path]]:
+    resolved = _resolve_runtime_config_path(config_path)
+    if resolved is None:
+        return {}, None
+    if not resolved.exists():
+        raise RuntimeError(f"R.A.I.N. runtime config error: file not found: {resolved}")
+    if tomllib is None:
+        raise RuntimeError(
+            "R.A.I.N. runtime config error: TOML parser unavailable. "
+            "Use Python 3.11+ or install tomli."
+        )
+
+    try:
+        content = resolved.read_text(encoding="utf-8")
+        parsed = tomllib.loads(content)
+    except Exception as exc:
+        raise RuntimeError(f"R.A.I.N. runtime config error: failed to parse {resolved}: {exc}") from exc
+
+    if not isinstance(parsed, dict):
+        raise RuntimeError(f"R.A.I.N. runtime config error: top-level table required in {resolved}")
+    return parsed, resolved
+
+
+def _is_local_or_private_base_url(base_url: str) -> bool:
+    parsed = urlparse(base_url)
+    host = (parsed.hostname or "").strip().lower()
+    if not host:
+        return False
+    if host in {"localhost", "host.docker.internal"} or host.endswith(".local"):
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return (
+        ip.is_loopback
+        or ip.is_private
+        or ip.is_link_local
+        or getattr(ip, "is_unspecified", False)
+    )
+
+
+def _validate_runtime_config(config: RuntimeConfig) -> None:
+    base_url = (config.llm_base_url or "").strip()
+    parsed = urlparse(base_url)
+    if not base_url or parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise RuntimeError(
+            "R.A.I.N. runtime config error: invalid LLM base URL. "
+            "Set LM_STUDIO_BASE_URL or llm.base_url to a valid http(s) URL."
+        )
+
+    model = (config.llm_model or "").strip()
+    if not model:
+        raise RuntimeError(
+            "R.A.I.N. runtime config error: missing model. "
+            "Set LM_STUDIO_MODEL or llm.model."
+        )
+
+    if not config.llm_api_key and not _is_local_or_private_base_url(base_url):
+        raise RuntimeError(
+            "R.A.I.N. runtime config error: missing API key for non-local endpoint. "
+            "Set LM_STUDIO_API_KEY or llm.api_key."
+        )
+
+
+def _public_runtime_config(config: RuntimeConfig) -> dict[str, Any]:
+    return {
+        "llm_timeout_s": config.llm_timeout_s,
+        "llm_retries": config.llm_retries,
+        "llm_retry_backoff_s": config.llm_retry_backoff_s,
+        "max_query_chars": config.max_query_chars,
+        "strict_grounding": config.strict_grounding,
+        "min_grounding_confidence": config.min_grounding_confidence,
+        "return_json": config.return_json,
+        "llm_base_url": config.llm_base_url,
+        "llm_model": config.llm_model,
+        "llm_api_key_configured": bool(config.llm_api_key),
+        "config_path": config.config_path,
+    }
+
+
+def _load_runtime_config(config_path: Optional[str] = None) -> RuntimeConfig:
+    file_config, resolved_config_path = _load_runtime_config_file(config_path)
+    runtime_section = _dict_section(file_config, "runtime")
+    llm_section = _dict_section(file_config, "llm")
+
+    timeout_default = _coerce_float(
+        runtime_section.get("llm_timeout_s", runtime_section.get("timeout_s")),
+        120.0,
+        10.0,
+        600.0,
+    )
+    retries_default = _coerce_int(runtime_section.get("llm_retries", runtime_section.get("retries")), 2, 0, 5)
+    retry_backoff_default = _coerce_float(
+        runtime_section.get("llm_retry_backoff_s", runtime_section.get("retry_backoff_s")),
+        0.8,
+        0.1,
+        5.0,
+    )
+    max_query_chars_default = _coerce_int(runtime_section.get("max_query_chars"), 4000, 100, 32000)
+    strict_grounding_default = _coerce_bool(runtime_section.get("strict_grounding"), False)
+    min_grounding_default = _coerce_float(
+        runtime_section.get("min_grounding_confidence"),
+        0.4,
+        0.0,
+        1.0,
+    )
+    return_json_default = _coerce_bool(runtime_section.get("return_json"), False)
+
+    base_url_default = _pick_optional_str(
+        llm_section.get("base_url"),
+        runtime_section.get("llm_base_url"),
+        _DEFAULT_LLM_BASE_URL,
+    ) or _DEFAULT_LLM_BASE_URL
+    model_default = _pick_optional_str(
+        llm_section.get("model"),
+        runtime_section.get("llm_model"),
+        _DEFAULT_LLM_MODEL,
+    ) or _DEFAULT_LLM_MODEL
+    api_key_default = _pick_optional_str(
+        llm_section.get("api_key"),
+        runtime_section.get("llm_api_key"),
+    )
+
     return RuntimeConfig(
-        llm_timeout_s=_env_float("RAIN_RUNTIME_TIMEOUT_S", 120.0, 10.0, 600.0),
-        llm_retries=_env_int("RAIN_RUNTIME_RETRIES", 2, 0, 5),
-        llm_retry_backoff_s=_env_float("RAIN_RUNTIME_RETRY_BACKOFF_S", 0.8, 0.1, 5.0),
-        max_query_chars=_env_int("RAIN_RUNTIME_MAX_QUERY_CHARS", 4000, 100, 32000),
-        strict_grounding=_env_bool("RAIN_STRICT_GROUNDING", False),
-        min_grounding_confidence=_env_float("RAIN_MIN_GROUNDED_CONFIDENCE", 0.4, 0.0, 1.0),
-        return_json=_env_bool("RAIN_RUNTIME_JSON_RESPONSE", False),
+        llm_timeout_s=_env_float("RAIN_RUNTIME_TIMEOUT_S", timeout_default, 10.0, 600.0),
+        llm_retries=_env_int("RAIN_RUNTIME_RETRIES", retries_default, 0, 5),
+        llm_retry_backoff_s=_env_float("RAIN_RUNTIME_RETRY_BACKOFF_S", retry_backoff_default, 0.1, 5.0),
+        max_query_chars=_env_int("RAIN_RUNTIME_MAX_QUERY_CHARS", max_query_chars_default, 100, 32000),
+        strict_grounding=_env_bool("RAIN_STRICT_GROUNDING", strict_grounding_default),
+        min_grounding_confidence=_env_float("RAIN_MIN_GROUNDED_CONFIDENCE", min_grounding_default, 0.0, 1.0),
+        return_json=_env_bool("RAIN_RUNTIME_JSON_RESPONSE", return_json_default),
+        llm_base_url=_pick_optional_str(os.environ.get("LM_STUDIO_BASE_URL"), base_url_default)
+        or _DEFAULT_LLM_BASE_URL,
+        llm_model=_pick_optional_str(os.environ.get("LM_STUDIO_MODEL"), model_default) or _DEFAULT_LLM_MODEL,
+        llm_api_key=_pick_optional_str(os.environ.get("LM_STUDIO_API_KEY"), api_key_default),
+        config_path=str(resolved_config_path) if resolved_config_path else None,
     )
 
 
@@ -156,32 +369,85 @@ def _sanitize_query(query: str, max_chars: int) -> str:
     return text
 
 
+def _read_context_excerpt(path: Path, char_budget: int) -> str:
+    """Read at most `char_budget` chars of stripped text from `path`.
+
+    Preserves prior behavior: equivalent to `path.read_text(...).strip()[:char_budget]`
+    while avoiding full-file reads when the budget is already exhausted.
+    """
+    if char_budget <= 0:
+        return ""
+
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        collected: list[str] = []
+        remaining = char_budget
+        found_non_whitespace = False
+
+        while True:
+            chunk = handle.read(8192)
+            if not chunk:
+                break
+
+            if not found_non_whitespace:
+                chunk = chunk.lstrip()
+                if not chunk:
+                    continue
+                found_non_whitespace = True
+
+            if len(chunk) >= remaining:
+                prefix = chunk[:remaining]
+                collected.append(prefix)
+
+                # If any non-whitespace content remains, this is a true
+                # truncation and we can return immediately.
+                tail = chunk[remaining:]
+                if tail.strip():
+                    return "".join(collected)
+
+                # Otherwise, only trailing whitespace may remain. Keep scanning
+                # until EOF or until we confirm additional non-whitespace text.
+                while True:
+                    trailing = handle.read(8192)
+                    if not trailing:
+                        return "".join(collected).rstrip()
+                    if trailing.strip():
+                        return "".join(collected)
+
+            collected.append(chunk)
+            remaining -= len(chunk)
+
+        if not collected:
+            return ""
+
+    return "".join(collected).rstrip()
+
+
 def _load_context(max_chars: int = 12000, max_files: int = 40) -> tuple[str, list[str]]:
     base = _library_path()
     if not base.exists():
         return "", []
 
-    files = sorted(list(base.glob("*.md")) + list(base.glob("*.txt")))
-    files = [
+    candidates = chain(base.glob("*.md"), base.glob("*.txt"))
+    filtered_candidates = (
         p
-        for p in files
+        for p in candidates
         if "SOUL" not in p.name.upper() and "LOG" not in p.name.upper() and not p.name.startswith("_")
-    ][:max_files]
+    )
+    files = nsmallest(max_files, filtered_candidates, key=lambda p: str(p))
 
     names: list[str] = []
     chunks: list[str] = []
     budget = max_chars
     for p in files:
         try:
-            text = p.read_text(encoding="utf-8", errors="ignore").strip()
+            text = _read_context_excerpt(p, budget)
         except Exception:
             continue
         if not text:
             continue
         names.append(p.name)
-        take = min(len(text), budget)
-        chunks.append(f"--- {p.name} ---\n{text[:take]}")
-        budget -= take
+        chunks.append(f"--- {p.name} ---\n{text}")
+        budget -= len(text)
         if budget <= 0:
             break
 
@@ -190,12 +456,16 @@ def _load_context(max_chars: int = 12000, max_files: int = 40) -> tuple[str, lis
 
 def _extract_provenance(response_text: str) -> list[ProvenanceItem]:
     provenance: list[ProvenanceItem] = []
-
-    web_sources = {m.strip() for m in _RE_WEB_SOURCE.findall(response_text)}
-    local_sources = {m.strip() for m in _RE_LOCAL_SOURCE.findall(response_text)}
-
-    # Avoid double-counting [from web: ...] as local.
-    local_sources = {s for s in local_sources if not s.lower().startswith("web:")}
+    web_sources: set[str] = set()
+    local_sources: set[str] = set()
+    for match in _RE_SOURCE_TAG.finditer(response_text):
+        source = match.group(2).strip()
+        if not source:
+            continue
+        if match.group(1):
+            web_sources.add(source)
+        else:
+            local_sources.add(source)
 
     quotes = [q.strip() for q in _RE_QUOTE.findall(response_text) if len(q.split()) > 3]
     first_quote = quotes[0] if quotes else None
@@ -288,19 +558,25 @@ def _build_messages(
     ]
 
 
-def _call_llm_sync(messages: list[dict[str, str]], timeout_s: float) -> str:
+def _call_llm_sync(
+    messages: list[dict[str, str]],
+    timeout_s: float,
+    base_url: str,
+    api_key: str,
+    model: str,
+) -> str:
     try:
         import openai
     except ImportError as exc:
         raise RuntimeError("openai package is required for run_rain_lab runtime") from exc
 
     client = openai.OpenAI(
-        base_url=os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1"),
-        api_key=os.environ.get("LM_STUDIO_API_KEY", "lm-studio"),
+        base_url=base_url,
+        api_key=api_key,
         timeout=timeout_s,
     )
     response = client.chat.completions.create(
-        model=os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct"),
+        model=model,
         messages=messages,
         max_tokens=220,
         temperature=0.4,
@@ -314,10 +590,18 @@ async def _call_llm_with_retries(
     state: RuntimeState,
 ) -> str:
     last_error: Exception | None = None
+    api_key = config.llm_api_key or "lm-studio"
 
     for attempt in range(config.llm_retries + 1):
         try:
-            return await asyncio.to_thread(_call_llm_sync, messages, config.llm_timeout_s)
+            return await asyncio.to_thread(
+                _call_llm_sync,
+                messages,
+                config.llm_timeout_s,
+                config.llm_base_url,
+                api_key,
+                config.llm_model,
+            )
         except Exception as exc:
             last_error = exc
             state.add_event(
@@ -368,14 +652,15 @@ def _build_grounding_payload(
     )
 
 
-def runtime_healthcheck() -> dict[str, Any]:
-    config = _load_runtime_config()
+def runtime_healthcheck(config_path: Optional[str] = None) -> dict[str, Any]:
+    config = _load_runtime_config(config_path=config_path)
     library = _library_path()
 
     checks: dict[str, bool] = {
         "library_exists": library.exists(),
         "trace_dir_writable": False,
         "openai_importable": False,
+        "llm_config_valid": False,
     }
 
     try:
@@ -391,10 +676,16 @@ def runtime_healthcheck() -> dict[str, Any]:
     except Exception:
         checks["trace_dir_writable"] = False
 
+    try:
+        _validate_runtime_config(config)
+        checks["llm_config_valid"] = True
+    except Exception:
+        checks["llm_config_valid"] = False
+
     return {
         "ok": all(checks.values()),
         "checks": checks,
-        "config": asdict(config),
+        "config": _public_runtime_config(config),
         "library_path": str(library),
         "trace_path": str(_trace_log_path()),
     }
@@ -423,6 +714,8 @@ def _format_output(payload: dict[str, Any], return_json: bool) -> str:
 def _classify_runtime_exception(exc: Exception) -> tuple[str, str]:
     message = str(exc).strip()
     lower = message.lower()
+    if lower.startswith("r.a.i.n. runtime config error:"):
+        return ("error", message)
     if (
         "operation was canceled" in lower
         or "operation was cancelled" in lower
@@ -442,9 +735,13 @@ async def run_rain_lab(
     mode: str = "chat",
     agent: str | None = None,
     recursive_depth: int = 1,
+    config_path: str | None = None,
 ) -> str:
     """Unified async runtime entrypoint for non-CLI gateways."""
-    config = _load_runtime_config()
+    try:
+        config = _load_runtime_config(config_path=config_path)
+    except Exception as exc:
+        return str(exc)
     resolved_agent = _safe_agent_name(agent)
     safe_query = _sanitize_query(query, config.max_query_chars)
 
@@ -461,6 +758,9 @@ async def run_rain_lab(
             "agent": resolved_agent,
             "strict_grounding": config.strict_grounding,
             "max_query_chars": config.max_query_chars,
+            "config_path": config.config_path,
+            "llm_base_url": config.llm_base_url,
+            "llm_model": config.llm_model,
         },
     )
 
@@ -475,6 +775,15 @@ async def run_rain_lab(
         state.add_event("runtime_failed", {"error": "Empty query after sanitization"})
         _trace_state(state)
         return "R.A.I.N. runtime error: query is empty after sanitization."
+
+    try:
+        _validate_runtime_config(config)
+    except Exception as exc:
+        message = str(exc)
+        state.status = "error"
+        state.add_event("runtime_failed", {"error": message, "kind": "config"})
+        _trace_state(state)
+        return message
 
     context_block, paper_list = _load_context()
     state.add_event("context_loaded", {"papers": len(paper_list), "chars": len(context_block)})
@@ -570,6 +879,12 @@ def _parse_cli_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--agent", type=str, default=None, help="Agent identity hint")
     parser.add_argument("--recursive-depth", type=int, default=1, help="Internal critique depth")
     parser.add_argument("--library", type=str, default=None, help="Override JAMES_LIBRARY_PATH")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Optional TOML config path for runtime and LLM settings.",
+    )
     return parser.parse_args(argv)
 
 
@@ -617,6 +932,7 @@ def main(argv: list[str] | None = None) -> int:
                 mode=args.mode,
                 agent=args.agent,
                 recursive_depth=max(1, int(args.recursive_depth)),
+                config_path=args.config,
             )
         )
     except Exception:
