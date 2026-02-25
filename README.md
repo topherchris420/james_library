@@ -274,14 +274,21 @@ The James Library contains research on:
 Visualize multi-agent research conversations in Godot:
 
 ```bash
-# Start the event bridge
-python godot_event_bridge.py --events-file meeting_archives/godot_events.jsonl
+# Preferred launcher flow (auto UI + sidecar supervision + lifecycle logs)
+python rain_lab.py --mode chat --ui auto --topic "your topic"
 
-# Run research with visual events
-python rain_lab_meeting_chat_version.py --topic "your topic" --emit-visual-events
+# Force UI and fail if visual stack is unavailable
+python rain_lab.py --mode chat --ui on --topic "your topic"
 ```
 
-Then open `godot_client/project.godot` in Godot 4.x.
+`--ui auto` starts avatars when Godot is available and falls back to CLI when not.
+
+Advanced manual flow is still available:
+
+```bash
+python godot_event_bridge.py --events-file meeting_archives/godot_events.jsonl
+python rain_lab_meeting_chat_version.py --topic "your topic" --emit-visual-events
+```
 
 ---
 
@@ -310,6 +317,7 @@ cargo test
 - [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md) - Strategic roadmap
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
 - [SECURITY.md](SECURITY.md) - Security policies
+- [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md) - Pass/fail production gates
 ---
 
 ## License

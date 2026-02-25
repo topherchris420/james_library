@@ -10,12 +10,14 @@ Usage examples:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 ANSI_RESET = "\033[0m"
@@ -40,6 +42,44 @@ VALID_UI_MODES = {"auto", "on", "off"}
 def _console_safe(text: str) -> str:
     encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
     return text.encode(encoding, errors="replace").decode(encoding, errors="replace")
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    value = raw.strip().lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _env_int(name: str, default: int, minimum: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+def _env_float(name: str, default: float, minimum: float) -> float:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _print_banner() -> None:
@@ -82,6 +122,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     default_ui_mode = os.environ.get("RAIN_UI_MODE", "auto").strip().lower()
     if default_ui_mode not in VALID_UI_MODES:
         default_ui_mode = "auto"
+    default_restart_sidecars = _env_bool("RAIN_RESTART_SIDECARS", True)
 
     parser = argparse.ArgumentParser(
         description="Unified launcher for rain_lab_meeting modes"
@@ -190,6 +231,48 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         "--no-godot-client",
         action="store_true",
         help="Godot/chat UI mode: do not auto-launch the Godot client.",
+    )
+    parser.add_argument(
+        "--launcher-log",
+        type=str,
+        default=os.environ.get("RAIN_LAUNCHER_LOG", "meeting_archives/launcher_events.jsonl"),
+        help="Write launcher lifecycle events to JSONL (relative to --library or repo root).",
+    )
+    parser.add_argument(
+        "--no-launcher-log",
+        action="store_true",
+        help="Disable JSONL launcher event logging.",
+    )
+    parser.add_argument(
+        "--restart-sidecars",
+        action="store_true",
+        dest="restart_sidecars",
+        default=default_restart_sidecars,
+        help="Auto-restart Godot sidecars (bridge/client) if they exit while session is running.",
+    )
+    parser.add_argument(
+        "--no-restart-sidecars",
+        action="store_false",
+        dest="restart_sidecars",
+        help="Disable sidecar auto-restart supervision.",
+    )
+    parser.add_argument(
+        "--max-sidecar-restarts",
+        type=int,
+        default=_env_int("RAIN_MAX_SIDECAR_RESTARTS", 2, 0),
+        help="Maximum restart attempts per sidecar process.",
+    )
+    parser.add_argument(
+        "--sidecar-restart-backoff",
+        type=float,
+        default=_env_float("RAIN_SIDECAR_RESTART_BACKOFF", 0.5, 0.0),
+        help="Delay in seconds before restarting a failed sidecar.",
+    )
+    parser.add_argument(
+        "--sidecar-poll-interval",
+        type=float,
+        default=_env_float("RAIN_SIDECAR_POLL_INTERVAL", 0.25, 0.05),
+        help="Supervisor poll interval in seconds while session is running.",
     )
     args = parser.parse_args(known)
     return args, passthrough
@@ -361,6 +444,155 @@ class LaunchPlan:
     godot_client_cmd: list[str] | None = None
 
 
+@dataclass
+class SidecarSpec:
+    name: str
+    command: list[str]
+    critical: bool = False
+
+
+@dataclass
+class SidecarState:
+    spec: SidecarSpec
+    process: subprocess.Popen[bytes]
+    restart_count: int = 0
+    active: bool = True
+
+
+def _resolve_launcher_log_path(args: argparse.Namespace, repo_root: Path) -> Path | None:
+    if args.no_launcher_log:
+        return None
+
+    raw = (args.launcher_log or "").strip()
+    if not raw:
+        return None
+
+    candidate = Path(raw).expanduser()
+    if candidate.is_absolute():
+        return candidate
+
+    if args.library:
+        base_dir = Path(args.library).expanduser()
+        if not base_dir.is_absolute():
+            base_dir = (Path.cwd() / base_dir).resolve()
+    else:
+        base_dir = repo_root
+
+    return (base_dir / candidate).resolve()
+
+
+def _append_launcher_event(log_path: Path | None, event: str, **payload: object) -> None:
+    if log_path is None:
+        return
+
+    record = {"ts": _utc_now_iso(), "event": event, **payload}
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception:
+        # Logging must never block the launcher.
+        return
+
+
+def _launch_sidecar(
+    spec: SidecarSpec,
+    child_env: dict[str, str] | None,
+    log_path: Path | None,
+) -> SidecarState:
+    _spinner(f"Starting {spec.name}")
+    print(f"{ANSI_CYAN}Launching {spec.name}: {' '.join(spec.command)}{ANSI_RESET}", flush=True)
+    process = subprocess.Popen(spec.command, env=child_env)
+    _append_launcher_event(
+        log_path,
+        "sidecar_started",
+        sidecar=spec.name,
+        pid=process.pid,
+        command=spec.command,
+        critical=spec.critical,
+        restart_count=0,
+    )
+    return SidecarState(spec=spec, process=process)
+
+
+def _supervise_sidecars(
+    sidecars: list[SidecarState],
+    child_env: dict[str, str] | None,
+    args: argparse.Namespace,
+    log_path: Path | None,
+) -> str | None:
+    for sidecar in sidecars:
+        if not sidecar.active:
+            continue
+
+        exit_code = sidecar.process.poll()
+        if exit_code is None:
+            continue
+
+        _append_launcher_event(
+            log_path,
+            "sidecar_exited",
+            sidecar=sidecar.spec.name,
+            exit_code=exit_code,
+            pid=sidecar.process.pid,
+            restart_count=sidecar.restart_count,
+            critical=sidecar.spec.critical,
+        )
+        print(
+            f"{ANSI_YELLOW}Warning: {sidecar.spec.name} exited with code {exit_code}.{ANSI_RESET}",
+            flush=True,
+        )
+
+        should_restart = (
+            args.restart_sidecars
+            and sidecar.restart_count < max(0, int(args.max_sidecar_restarts))
+        )
+        if should_restart:
+            sidecar.restart_count += 1
+            backoff = max(0.0, float(args.sidecar_restart_backoff))
+            if backoff > 0.0:
+                time.sleep(backoff)
+
+            try:
+                sidecar.process = subprocess.Popen(sidecar.spec.command, env=child_env)
+            except Exception as exc:
+                sidecar.active = False
+                _append_launcher_event(
+                    log_path,
+                    "sidecar_restart_failed",
+                    sidecar=sidecar.spec.name,
+                    restart_count=sidecar.restart_count,
+                    error=str(exc),
+                    critical=sidecar.spec.critical,
+                )
+                if sidecar.spec.critical:
+                    return f"{sidecar.spec.name} failed to restart ({exc})"
+                continue
+
+            _append_launcher_event(
+                log_path,
+                "sidecar_restarted",
+                sidecar=sidecar.spec.name,
+                pid=sidecar.process.pid,
+                restart_count=sidecar.restart_count,
+                max_restarts=args.max_sidecar_restarts,
+            )
+            print(
+                f"{ANSI_GREEN}Recovered: restarted {sidecar.spec.name} "
+                f"({sidecar.restart_count}/{args.max_sidecar_restarts}).{ANSI_RESET}",
+                flush=True,
+            )
+            continue
+
+        sidecar.active = False
+        if sidecar.spec.critical:
+            return (
+                f"{sidecar.spec.name} stopped (exit {exit_code}) and restart budget is exhausted."
+            )
+
+    return None
+
+
 def resolve_launch_plan(args: argparse.Namespace, repo_root: Path) -> LaunchPlan:
     visual_runtime_exists = (repo_root / "rain_lab_meeting_chat_version.py").exists()
     bridge_exists = (repo_root / "godot_event_bridge.py").exists()
@@ -420,6 +652,29 @@ def resolve_launch_plan(args: argparse.Namespace, repo_root: Path) -> LaunchPlan
         )
 
     return LaunchPlan(effective_mode=args.mode)
+
+
+def _build_sidecar_specs(
+    args: argparse.Namespace,
+    launch_plan: LaunchPlan,
+    bridge_cmd: list[str] | None,
+) -> list[SidecarSpec]:
+    strict_ui = args.ui == "on"
+    specs: list[SidecarSpec] = []
+
+    if bridge_cmd is not None:
+        specs.append(SidecarSpec(name="Godot event bridge", command=bridge_cmd, critical=strict_ui))
+
+    if launch_plan.launch_godot_client and launch_plan.godot_client_cmd is not None:
+        specs.append(
+            SidecarSpec(
+                name="Godot avatar client",
+                command=launch_plan.godot_client_cmd,
+                critical=strict_ui,
+            )
+        )
+
+    return specs
 
 
 def _copy_args_with_mode(args: argparse.Namespace, mode: str) -> argparse.Namespace:
@@ -499,61 +754,111 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"{ANSI_DIM}UI auto: Godot UI unavailable; running CLI chat mode.{ANSI_RESET}")
 
+    log_path = _resolve_launcher_log_path(args, repo_root)
+    _append_launcher_event(
+        log_path,
+        "launcher_started",
+        requested_mode=args.mode,
+        ui=args.ui,
+        restart_sidecars=bool(args.restart_sidecars),
+        max_sidecar_restarts=max(0, int(args.max_sidecar_restarts)),
+        sidecar_restart_backoff=max(0.0, float(args.sidecar_restart_backoff)),
+        sidecar_poll_interval=max(0.05, float(args.sidecar_poll_interval)),
+        passthrough=passthrough,
+    )
+
     effective_args = _copy_args_with_mode(args, launch_plan.effective_mode)
     cmd = build_command(effective_args, passthrough, repo_root)
 
     bridge_cmd: list[str] | None = None
     if launch_plan.launch_bridge:
         bridge_cmd = build_godot_bridge_command(effective_args, repo_root)
+    sidecar_specs = _build_sidecar_specs(args, launch_plan, bridge_cmd)
 
     child_env = None
     if args.library:
         child_env = dict(os.environ)
         child_env["JAMES_LIBRARY_PATH"] = args.library
 
-    bridge_proc: subprocess.Popen[bytes] | None = None
-    godot_proc: subprocess.Popen[bytes] | None = None
+    sidecars: list[SidecarState] = []
+    main_proc: subprocess.Popen[bytes] | None = None
+    exit_code = 1
 
     auto_chat_visual = args.mode == "chat" and args.ui == "auto" and launch_plan.effective_mode == "godot"
     try:
-        if bridge_cmd is not None:
-            _spinner("Starting Godot event bridge")
-            print(f"{ANSI_CYAN}Launching bridge: {' '.join(bridge_cmd)}{ANSI_RESET}", flush=True)
-            bridge_proc = subprocess.Popen(bridge_cmd, env=child_env)
-            time.sleep(0.25)
-
-        if launch_plan.launch_godot_client and launch_plan.godot_client_cmd is not None:
-            _spinner("Starting Godot avatar client")
-            print(
-                f"{ANSI_CYAN}Launching Godot client: {' '.join(launch_plan.godot_client_cmd)}{ANSI_RESET}",
-                flush=True,
-            )
-            godot_proc = subprocess.Popen(launch_plan.godot_client_cmd, env=child_env)
+        for spec in sidecar_specs:
+            sidecars.append(_launch_sidecar(spec, child_env, log_path))
             time.sleep(0.25)
     except Exception as exc:
-        _terminate_process(godot_proc)
-        _terminate_process(bridge_proc)
-        bridge_proc = None
-        godot_proc = None
+        for sidecar in sidecars:
+            _terminate_process(sidecar.process)
+        sidecars = []
 
         if auto_chat_visual:
             print(
                 f"{ANSI_YELLOW}UI auto: visual startup failed ({exc}); falling back to CLI chat mode.{ANSI_RESET}",
                 flush=True,
             )
+            _append_launcher_event(
+                log_path,
+                "ui_auto_fallback",
+                reason=str(exc),
+                from_mode=launch_plan.effective_mode,
+                to_mode="chat",
+            )
             effective_args = _copy_args_with_mode(args, "chat")
             cmd = build_command(effective_args, passthrough, repo_root)
+            sidecar_specs = []
         else:
+            _append_launcher_event(log_path, "launcher_failed", phase="sidecar_launch", error=str(exc))
             raise
 
     _spinner("Booting VERS3DYNAMICS R.A.I.N. Lab launcher")
     print(f"{ANSI_CYAN}Launching mode={effective_args.mode}: {' '.join(cmd)}{ANSI_RESET}", flush=True)
+    _append_launcher_event(
+        log_path,
+        "session_launch",
+        mode=effective_args.mode,
+        command=cmd,
+        sidecars=[sidecar.spec.name for sidecar in sidecars],
+    )
     try:
-        result = subprocess.run(cmd, env=child_env)
-        return int(result.returncode)
+        main_proc = subprocess.Popen(cmd, env=child_env)
+        _append_launcher_event(
+            log_path,
+            "session_started",
+            mode=effective_args.mode,
+            pid=main_proc.pid,
+        )
+
+        poll_interval = max(0.05, float(args.sidecar_poll_interval))
+        while True:
+            result_code = main_proc.poll()
+            if result_code is not None:
+                exit_code = int(result_code)
+                break
+
+            fatal = _supervise_sidecars(sidecars, child_env, args, log_path)
+            if fatal:
+                print(f"{ANSI_RED}Critical sidecar failure: {fatal}{ANSI_RESET}", flush=True)
+                _append_launcher_event(log_path, "sidecar_fatal", reason=fatal)
+                _terminate_process(main_proc)
+                exit_code = 1
+                break
+
+            time.sleep(poll_interval)
+
+        return exit_code
     finally:
-        _terminate_process(bridge_proc)
-        _terminate_process(godot_proc)
+        _terminate_process(main_proc)
+        for sidecar in sidecars:
+            _terminate_process(sidecar.process)
+        _append_launcher_event(
+            log_path,
+            "launcher_finished",
+            exit_code=exit_code,
+            mode=effective_args.mode,
+        )
 
 
 if __name__ == "__main__":

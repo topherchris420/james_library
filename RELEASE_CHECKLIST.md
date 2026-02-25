@@ -8,6 +8,8 @@ Use this checklist before tagging a public local-first release.
 - [ ] Run full tests: `pytest -q`.
 - [ ] Run lint: `ruff check .`.
 - [ ] Run preflight: `python rain_lab.py --mode preflight`.
+- [ ] Run UI auto smoke test: `python rain_lab.py --mode chat --ui auto --topic "release smoke test"`.
+- [ ] Verify launcher lifecycle log: `meeting_archives/launcher_events.jsonl`.
 - [ ] Verify backup flow: `python rain_lab.py --mode backup -- --json`.
 
 ## 2. Reproducibility
@@ -30,3 +32,4 @@ Use this checklist before tagging a public local-first release.
 - [ ] Tag release (example): `git tag -a v2026.02.22 -m "R.A.I.N. Lab local-first release"`.
 - [ ] Push commits and tag: `git push origin main --tags`.
 - [ ] Verify fresh clone bootstrap from scratch.
+- [ ] Run pass/fail gates in `docs/PRODUCTION_READINESS.md`.

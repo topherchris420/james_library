@@ -6,6 +6,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import rain_lab as rain_launcher
 from rain_lab import (
+    _build_sidecar_specs,
+    _resolve_launcher_log_path,
     build_command,
     build_godot_bridge_command,
     build_godot_client_command,
@@ -19,6 +21,11 @@ def test_parse_defaults():
     assert args.mode == "chat"
     assert args.topic is None
     assert args.ui == "auto"
+    assert args.restart_sidecars is True
+    assert args.max_sidecar_restarts == 2
+    assert args.sidecar_restart_backoff == 0.5
+    assert args.sidecar_poll_interval == 0.25
+    assert args.launcher_log.endswith("meeting_archives/launcher_events.jsonl")
 
 
 def test_parse_rlm_mode():
@@ -40,6 +47,40 @@ def test_parse_ui_env_invalid_falls_back_to_auto(monkeypatch):
     monkeypatch.setenv("RAIN_UI_MODE", "invalid")
     args, _ = parse_args(["--mode", "chat", "--topic", "demo"])
     assert args.ui == "auto"
+
+
+def test_parse_supervision_env(monkeypatch):
+    monkeypatch.setenv("RAIN_RESTART_SIDECARS", "0")
+    monkeypatch.setenv("RAIN_MAX_SIDECAR_RESTARTS", "5")
+    monkeypatch.setenv("RAIN_SIDECAR_RESTART_BACKOFF", "1.25")
+    monkeypatch.setenv("RAIN_SIDECAR_POLL_INTERVAL", "0.4")
+    args, _ = parse_args(["--mode", "chat", "--topic", "demo"])
+    assert args.restart_sidecars is False
+    assert args.max_sidecar_restarts == 5
+    assert args.sidecar_restart_backoff == 1.25
+    assert args.sidecar_poll_interval == 0.4
+
+
+def test_resolve_launcher_log_path(repo_root):
+    args, _ = parse_args(
+        [
+            "--mode",
+            "chat",
+            "--topic",
+            "x",
+            "--library",
+            str(repo_root),
+            "--launcher-log",
+            "meeting_archives/custom_launcher_events.jsonl",
+        ]
+    )
+    log_path = _resolve_launcher_log_path(args, repo_root)
+    assert log_path == (repo_root / "meeting_archives" / "custom_launcher_events.jsonl").resolve()
+
+
+def test_resolve_launcher_log_path_disabled(repo_root):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x", "--no-launcher-log"])
+    assert _resolve_launcher_log_path(args, repo_root) is None
 
 
 def test_parse_config_path():
@@ -185,6 +226,19 @@ def test_resolve_launch_plan_chat_ui_off_forces_cli(repo_root):
     assert plan.effective_mode == "chat"
     assert plan.launch_bridge is False
     assert plan.launch_godot_client is False
+
+
+def test_build_sidecar_specs_strict_ui(repo_root):
+    args, _ = parse_args(["--mode", "chat", "--topic", "x", "--ui", "on"])
+    plan = rain_launcher.LaunchPlan(
+        effective_mode="godot",
+        launch_bridge=True,
+        launch_godot_client=True,
+        godot_client_cmd=["godot4", "--path", str(repo_root / "godot_client")],
+    )
+    specs = _build_sidecar_specs(args, plan, ["python", "godot_event_bridge.py"])
+    assert len(specs) == 2
+    assert all(spec.critical for spec in specs)
 
 
 def test_build_command_rlm(repo_root):
