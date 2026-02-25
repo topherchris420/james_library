@@ -182,3 +182,33 @@ python deploy.py --service-name james-library --target rain_lab.py --target-args
 - Linux: `/etc/systemd/system/*.service` with `Restart=always`
 
 The supervisor process is `openclaw_service.py`, which runs a heartbeat every 60 seconds. It checks `tasks.json` for `restart` directives and scans `logs/*.log` for crash patterns to self-heal by restarting the target process.
+
+### Godot retro RPG visual layer (MVP)
+
+A Godot 4 presentation client now lives in `godot_client/` to render multi-agent conversations with a 2D pixel-art style while keeping backend conversation logic unchanged.
+
+Run:
+
+1. Open `godot_client/project.godot` in Godot 4.x.
+2. Press Play to run `scenes/conversation_root.tscn`.
+3. Press `1` (`flower_field`) or `2` (`lab`) to swap themes at runtime.
+
+Live backend bridge + per-turn audio files:
+
+1. Start bridge relay: `python godot_event_bridge.py --events-file meeting_archives/godot_events.jsonl`
+2. Run multi-agent meeting with event/audio export enabled:
+   `python rain_lab_meeting_chat_version.py --topic "your topic" --emit-visual-events --tts-audio-dir meeting_archives/tts_audio`
+3. Godot client can connect by setting `use_demo_events=false` and `backend_ws_url=ws://127.0.0.1:8765` on `EventClient`.
+
+How to add a new theme:
+
+1. Copy a folder under `godot_client/themes/<new_theme_id>/theme.json`.
+2. Keep the same schema keys (`background`, `ui`, `audio`, `agents`).
+3. Emit `{"type":"theme_changed","theme_id":"<new_theme_id>"}` to switch live.
+
+Where backend events connect:
+
+- Event ingress: `godot_client/scripts/event_client.gd`
+- Event routing: `godot_client/scripts/scene_orchestrator.gd`
+- Contract doc: `godot_client/contracts/NEUTRAL_EVENT_CONTRACT.md`
+- Blueprint doc: `docs/GODOT_SCENE_THEME_BLUEPRINT.md`

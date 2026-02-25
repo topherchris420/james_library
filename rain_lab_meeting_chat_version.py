@@ -18,6 +18,8 @@ import logging
 
 import glob
 
+import json
+
 import os
 
 import random
@@ -425,6 +427,47 @@ class VoiceEngine:
 
 
 
+    @staticmethod
+    def estimate_duration_ms(text: str) -> int:
+
+        """Estimate speech duration for subtitle timing when no media metadata exists."""
+
+        words = max(1, len(text.split()))
+        words_per_minute = 165
+        duration_ms = int((words / words_per_minute) * 60_000)
+        return max(900, duration_ms)
+
+    def export_to_file(self, text: str, agent_name: Optional[str], output_path: Path) -> bool:
+
+        """Synthesize speech to a local WAV file for external visual clients."""
+
+        if pyttsx3 is None:
+            return False
+        if not text:
+            return False
+
+        try:
+
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            export_engine = pyttsx3.init()
+
+            target_voice = self._voice_for_agent(agent_name or "")
+            if target_voice:
+                export_engine.setProperty("voice", target_voice)
+
+            export_engine.save_to_file(text, str(output_path))
+            export_engine.runAndWait()
+            export_engine.stop()
+
+            return output_path.exists() and output_path.stat().st_size > 0
+
+        except Exception as e:
+
+            print(f"⚠️  Voice export failed: {e}")
+
+            return False
+
+
 # --- CONFIGURATION (RTX 4090 + RNJ-1 8B OPTIMIZED) ---
 
 @dataclass
@@ -506,6 +549,16 @@ class Config:
     # Output Settings
 
     verbose: bool = False  # Set to True to show detailed loading output
+
+    # Presentation/Event Layer Settings
+
+    emit_visual_events: bool = os.environ.get("RAIN_VISUAL_EVENTS", "0") == "1"
+
+    visual_events_log: str = os.environ.get("RAIN_VISUAL_EVENTS_LOG", "meeting_archives/godot_events.jsonl")
+
+    export_tts_audio: bool = os.environ.get("RAIN_EXPORT_TTS_AUDIO", "1") != "0"
+
+    tts_audio_dir: str = os.environ.get("RAIN_TTS_AUDIO_DIR", "meeting_archives/tts_audio")
 
 
 
@@ -1863,6 +1916,54 @@ SESSION ENDED
 
 
 
+class VisualEventLogger:
+
+    """Writes theme-agnostic conversation events for a Godot client bridge."""
+
+    def __init__(self, config: Config):
+
+        self.enabled = bool(config.emit_visual_events)
+        self.path = self._resolve_path(config.library_path, config.visual_events_log)
+
+        if self.enabled:
+
+            try:
+
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+
+            except Exception as e:
+
+                print(f"âš ï¸  Visual event logger unavailable: {e}")
+
+                self.enabled = False
+
+    @staticmethod
+    def _resolve_path(library_path: str, configured_path: str) -> Path:
+
+        raw = Path(configured_path).expanduser()
+        if raw.is_absolute():
+            return raw
+        return Path(library_path) / raw
+
+    def emit(self, payload: Dict):
+
+        if not self.enabled:
+            return
+
+        event = dict(payload)
+        event.setdefault("timestamp", datetime.utcnow().isoformat() + "Z")
+
+        try:
+
+            with open(self.path, "a", encoding="utf-8") as f:
+
+                f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+        except Exception as e:
+
+            print(f"âš ï¸  Visual event write failed: {e}")
+
+
 class Diplomat:
 
     """Simple file-based mailbox for external messages."""
@@ -1967,6 +2068,13 @@ class RainLabOrchestrator:
 
         self.voice_engine = VoiceEngine()
 
+        self.visual_event_logger = VisualEventLogger(config)
+        self.visual_conversation_id: Optional[str] = None
+        self.visual_conversation_active = False
+        self.tts_audio_dir = Path(config.library_path) / config.tts_audio_dir
+        if self.config.export_tts_audio:
+            self.tts_audio_dir.mkdir(parents=True, exist_ok=True)
+
         self.diplomat = Diplomat(base_path=self.config.library_path)
 
         self.hypergraph_manager = HypergraphManager(library_path=self.config.library_path)
@@ -2014,6 +2122,60 @@ class RainLabOrchestrator:
             sys.exit(1)
 
 
+
+    def _emit_visual_event(self, payload: Dict):
+
+        self.visual_event_logger.emit(payload)
+
+    def _start_visual_conversation(self, topic: str):
+
+        if not self.config.emit_visual_events:
+            return
+
+        self.visual_conversation_id = f"c_{uuid.uuid4().hex[:8]}"
+        self.visual_conversation_active = True
+
+        participants = [agent.name.lower() for agent in self.team]
+        self._emit_visual_event(
+            {
+                "type": "conversation_started",
+                "conversation_id": self.visual_conversation_id,
+                "topic": topic,
+                "participants": participants,
+            }
+        )
+
+    def _end_visual_conversation(self):
+
+        if not self.visual_conversation_active:
+            return
+
+        self._emit_visual_event(
+            {
+                "type": "conversation_ended",
+                "conversation_id": self.visual_conversation_id or "",
+            }
+        )
+        self.visual_conversation_active = False
+
+    def _export_audio_payload(self, turn_id: str, spoken_text: str, agent_name: str) -> Dict:
+
+        duration_ms = self.voice_engine.estimate_duration_ms(spoken_text)
+
+        if not self.config.export_tts_audio:
+            return {"mode": "synthetic", "duration_ms": duration_ms}
+
+        filename = f"{turn_id}_{agent_name.lower()}.wav"
+        output_path = self.tts_audio_dir / filename
+        exported = self.voice_engine.export_to_file(spoken_text, agent_name, output_path)
+        if exported:
+            return {
+                "mode": "file",
+                "path": output_path.resolve().as_posix(),
+                "duration_ms": duration_ms,
+            }
+
+        return {"mode": "synthetic", "duration_ms": duration_ms}
 
     def get_last_meeting_summary(self) -> str:
 
@@ -2328,6 +2490,7 @@ class RainLabOrchestrator:
         # Initialize log
 
         self.log_manager.initialize_log(topic, len(paper_list))
+        self._start_visual_conversation(topic)
 
         
 
@@ -2478,6 +2641,7 @@ class RainLabOrchestrator:
                                 self.metrics_tracker.finalize()
 
                             self.log_manager.finalize_log(self._generate_final_stats())
+                            self._end_visual_conversation()
 
                             return
 
@@ -2553,9 +2717,26 @@ class RainLabOrchestrator:
 
             print(f"{'─'*70}\033[0m")
 
+            spoken_text = f"{current_agent.name}: {clean_response}"
+            turn_id = f"t_{turn_count + 1:04d}"
+            audio_payload = self._export_audio_payload(turn_id, spoken_text, current_agent.name)
+
+            self._emit_visual_event(
+                {
+                    "type": "agent_utterance",
+                    "conversation_id": self.visual_conversation_id or "",
+                    "turn_id": turn_id,
+                    "agent_id": current_agent.name.lower(),
+                    "agent_name": current_agent.name,
+                    "text": clean_response,
+                    "tone": "neutral",
+                    "audio": audio_payload,
+                }
+            )
+
             self.voice_engine.speak(
 
-                f"{current_agent.name}: {clean_response}",
+                spoken_text,
 
                 agent_name=current_agent.name,
 
@@ -2660,6 +2841,7 @@ class RainLabOrchestrator:
         stats = self._generate_final_stats()
 
         self.log_manager.finalize_log(stats)
+        self._end_visual_conversation()
 
         
 
@@ -3777,6 +3959,60 @@ Examples:
 
     )
 
+    parser.add_argument(
+
+        '--emit-visual-events',
+
+        action='store_true',
+
+        help='Write neutral conversation events for Godot/WebSocket bridge clients'
+
+    )
+
+    parser.add_argument(
+
+        '--no-emit-visual-events',
+
+        action='store_true',
+
+        help='Disable neutral visual event output even if env enables it'
+
+    )
+
+    parser.add_argument(
+
+        '--visual-events-log',
+
+        type=str,
+
+        default=os.environ.get("RAIN_VISUAL_EVENTS_LOG", "meeting_archives/godot_events.jsonl"),
+
+        help='Path (relative to --library or absolute) for JSONL event output'
+
+    )
+
+    parser.add_argument(
+
+        '--tts-audio-dir',
+
+        type=str,
+
+        default=os.environ.get("RAIN_TTS_AUDIO_DIR", "meeting_archives/tts_audio"),
+
+        help='Directory (relative to --library or absolute) for per-turn TTS audio files'
+
+    )
+
+    parser.add_argument(
+
+        '--no-export-tts-audio',
+
+        action='store_true',
+
+        help='Disable per-turn TTS file export (keeps spoken audio behavior unchanged)'
+
+    )
+
     
 
     args, unknown = parser.parse_known_args()
@@ -3811,6 +4047,16 @@ def main():
 
         recursive_library_scan = False
 
+    emit_visual_events = os.environ.get("RAIN_VISUAL_EVENTS", "0") == "1"
+    if args.emit_visual_events:
+        emit_visual_events = True
+    if args.no_emit_visual_events:
+        emit_visual_events = False
+
+    export_tts_audio = os.environ.get("RAIN_EXPORT_TTS_AUDIO", "1") != "0"
+    if args.no_export_tts_audio:
+        export_tts_audio = False
+
 
 
     # Create config from args
@@ -3839,7 +4085,11 @@ def main():
 
         recursive_intellect=not args.no_recursive_intellect,
 
-        recursive_library_scan=recursive_library_scan
+        recursive_library_scan=recursive_library_scan,
+        emit_visual_events=emit_visual_events,
+        visual_events_log=args.visual_events_log,
+        export_tts_audio=export_tts_audio,
+        tts_audio_dir=args.tts_audio_dir,
 
     )
 

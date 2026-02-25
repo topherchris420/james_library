@@ -12,4 +12,5 @@ networkx==3.6.1; python_version >= "3.11"
 scikit-learn==1.7.0
 rich==14.3.2
 pyttsx3==2.99
+websockets==15.0.1
 PyYAML==6.0.2

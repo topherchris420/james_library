@@ -8,3 +8,5 @@ openclaw-main/
 vers3dynamics_lab/
 backups/
 meeting_archives/runtime_events.jsonl
+meeting_archives/godot_events.jsonl
+meeting_archives/tts_audio/
