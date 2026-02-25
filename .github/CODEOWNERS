@@ -1,0 +1,32 @@
+# Default owner for all files
+* @chumyin
+
+# Important functional modules
+/src/agent/** @theonlyhennygod
+/src/providers/** @theonlyhennygod
+/src/channels/** @theonlyhennygod
+/src/tools/** @theonlyhennygod
+/src/gateway/** @theonlyhennygod
+/src/runtime/** @theonlyhennygod
+/src/memory/** @theonlyhennygod
+/Cargo.toml @theonlyhennygod
+/Cargo.lock @theonlyhennygod
+
+# Security / tests / CI-CD ownership
+/src/security/** @chumyin
+/tests/** @chumyin
+/.github/** @chumyin
+/.github/workflows/** @chumyin
+/.github/codeql/** @chumyin
+/.github/dependabot.yml @chumyin
+/SECURITY.md @chumyin
+/docs/actions-source-policy.md @chumyin
+/docs/ci-map.md @chumyin
+
+# Docs & governance
+/docs/** @chumyin
+/AGENTS.md @chumyin
+/CLAUDE.md @chumyin
+/CONTRIBUTING.md @chumyin
+/docs/pr-workflow.md @chumyin
+/docs/reviewer-playbook.md @chumyin
