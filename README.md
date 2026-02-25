@@ -326,7 +326,7 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-## Brand
+## R.A.I.N. Lab
 
 **Vers3Dynamics** — Where autonomous local AI agents meet acoustic physics research.
 
