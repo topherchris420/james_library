@@ -7,7 +7,7 @@ without any Streamlit UI dependencies.
 
 Usage:
     python james_reader.py --topic "Scalar Resonance" --path ./downloads
-    python james_reader.py --topic "Havana Syndrome Mechanisms" --path "C:\Users\chris\Downloads\files" --model "google/gemini-2.0-flash-001"
+    python james_reader.py --topic "Havana Syndrome" --path "C:/Users/chris/Downloads/files"
 """
 
 import argparse
@@ -539,7 +539,7 @@ def main():
         epilog="""
 Examples:
   python james_reader.py --topic "Scalar Resonance" --path ./downloads
-  python james_reader.py --topic "Havana Syndrome" --path "C:\\Users\\chris\\Downloads\\files"
+  python james_reader.py --topic "Havana Syndrome" --path "C:/Users/chris/Downloads/files"
   python james_reader.py --topic "Coherence" --path ./library --model "google/gemini-2.0-flash-001"
 """
     )
