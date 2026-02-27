@@ -30,6 +30,12 @@ const DEFAULT_MAX_TOOL_ITERATIONS: usize = 10;
 /// Minimum user-message length (in chars) for auto-save to memory.
 /// Matches the channel-side constant in `channels/mod.rs`.
 const AUTOSAVE_MIN_MESSAGE_CHARS: usize = 20;
+const DEFAULT_TOOL_CALL_TIMEOUT: Duration = Duration::from_secs(2);
+const TOOL_RETRY_LIMIT: usize = 2;
+const TOOL_RETRY_BASE_BACKOFF_MS: u64 = 150;
+const MAX_MEMORY_RECALL_ENTRIES: usize = 8;
+const DEFAULT_MEMORY_RECALL_ENTRIES: usize = 5;
+const MEMORY_ENTRY_MAX_CHARS: usize = 240;
 
 static SENSITIVE_KEY_PATTERNS: LazyLock<RegexSet> = LazyLock::new(|| {
     RegexSet::new([
@@ -241,13 +247,24 @@ async fn auto_compact_history(
 /// prevent unrelated memories from bleeding into the conversation.
 async fn build_context(mem: &dyn Memory, user_msg: &str, min_relevance_score: f64) -> String {
     let mut context = String::new();
+    let explicit_memory_recall = user_msg_has_memory_signal(user_msg);
+    let recall_limit = if explicit_memory_recall {
+        MAX_MEMORY_RECALL_ENTRIES
+    } else {
+        DEFAULT_MEMORY_RECALL_ENTRIES
+    };
+    let effective_min_relevance = if explicit_memory_recall {
+        (min_relevance_score - 0.15).max(0.0)
+    } else {
+        min_relevance_score
+    };
 
     // Pull relevant memories for this message
-    if let Ok(entries) = mem.recall(user_msg, 5, None).await {
+    if let Ok(entries) = mem.recall(user_msg, recall_limit, None).await {
         let relevant: Vec<_> = entries
             .iter()
             .filter(|e| match e.score {
-                Some(score) => score >= min_relevance_score,
+                Some(score) => score >= effective_min_relevance,
                 None => true,
             })
             .collect();
@@ -258,7 +275,8 @@ async fn build_context(mem: &dyn Memory, user_msg: &str, min_relevance_score: f6
                 if memory::is_assistant_autosave_key(&entry.key) {
                     continue;
                 }
-                let _ = writeln!(context, "- {}: {}", entry.key, entry.content);
+                let summarized = truncate_with_ellipsis(&entry.content, MEMORY_ENTRY_MAX_CHARS);
+                let _ = writeln!(context, "- {}: {}", entry.key, summarized);
             }
             if context == "[Memory context]\n" {
                 context.clear();
@@ -269,6 +287,99 @@ async fn build_context(mem: &dyn Memory, user_msg: &str, min_relevance_score: f6
     }
 
     context
+}
+
+fn user_msg_has_memory_signal(user_msg: &str) -> bool {
+    let lower = user_msg.to_ascii_lowercase();
+    [
+        "remember",
+        "earlier",
+        "previous",
+        "last time",
+        "before",
+        "recall",
+    ]
+    .iter()
+    .any(|signal| lower.contains(signal))
+}
+
+fn effective_model_for_message(config: &Config, default_model: &str, user_msg: &str) -> String {
+    if let Some(decision) =
+        crate::agent::classifier::classify_with_decision(&config.query_classification, user_msg)
+    {
+        let has_route = config
+            .model_routes
+            .iter()
+            .any(|route| route.hint == decision.hint);
+        if has_route {
+            return format!("hint:{}", decision.hint);
+        }
+    }
+
+    default_model.to_string()
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+struct ChangeRequestArtifact {
+    request_type: &'static str,
+    requires_human_approval: bool,
+    reason: &'static str,
+    proposed_tool: String,
+    target: String,
+    proposal: serde_json::Value,
+}
+
+fn restricted_change_request_for_tool(
+    tool_name: &str,
+    call_arguments: &serde_json::Value,
+) -> Option<ChangeRequestArtifact> {
+    match tool_name {
+        "file_write" | "file_edit" => {
+            let path = call_arguments
+                .get("path")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
+            if path.is_empty() {
+                return None;
+            }
+
+            let normalized = path.trim_start_matches("./").to_ascii_lowercase();
+            let restricted = normalized.starts_with("src/")
+                || normalized.ends_with(".rs")
+                || normalized.ends_with(".toml")
+                || normalized.contains("config")
+                || normalized.contains("policy");
+
+            if restricted {
+                return Some(ChangeRequestArtifact {
+                    request_type: "change_request",
+                    requires_human_approval: true,
+                    reason: "Autonomous runtime/policy/config/code edits are forbidden.",
+                    proposed_tool: tool_name.to_string(),
+                    target: path.to_string(),
+                    proposal: serde_json::json!({
+                        "tool": tool_name,
+                        "arguments": call_arguments,
+                        "mode": "proposal_only"
+                    }),
+                });
+            }
+            None
+        }
+        "model_routing_config" | "proxy_config" => Some(ChangeRequestArtifact {
+            request_type: "change_request",
+            requires_human_approval: true,
+            reason: "Persistent runtime/policy/config mutations require explicit human approval.",
+            proposed_tool: tool_name.to_string(),
+            target: "runtime_config".to_string(),
+            proposal: serde_json::json!({
+                "tool": tool_name,
+                "arguments": call_arguments,
+                "mode": "proposal_only"
+            }),
+        }),
+        _ => None,
+    }
 }
 
 /// Build hardware datasheet context from RAG when peripherals are enabled.
@@ -387,7 +498,7 @@ fn parse_tool_call_value(value: &serde_json::Value) -> Option<ParsedToolCall> {
             return Some(ParsedToolCall {
                 name,
                 arguments,
-                tool_call_id: tool_call_id,
+                tool_call_id,
             });
         }
     }
@@ -409,7 +520,7 @@ fn parse_tool_call_value(value: &serde_json::Value) -> Option<ParsedToolCall> {
     Some(ParsedToolCall {
         name,
         arguments,
-        tool_call_id: tool_call_id,
+        tool_call_id,
     })
 }
 
@@ -1923,57 +2034,82 @@ async fn execute_one_tool(
         });
     };
 
-    let tool_future = tool.execute(call_arguments);
-    let tool_result = if let Some(token) = cancellation_token {
-        tokio::select! {
-            () = token.cancelled() => return Err(ToolLoopCancelled.into()),
-            result = tool_future => result,
-        }
-    } else {
-        tool_future.await
-    };
+    let mut last_error: Option<String> = None;
+    for attempt in 0..=TOOL_RETRY_LIMIT {
+        let tool_future = tool.execute(call_arguments.clone());
+        let timed_tool_future = tokio::time::timeout(DEFAULT_TOOL_CALL_TIMEOUT, tool_future);
+        let tool_result = if let Some(token) = cancellation_token {
+            tokio::select! {
+                () = token.cancelled() => return Err(ToolLoopCancelled.into()),
+                result = timed_tool_future => match result {
+                    Ok(result) => result,
+                    Err(_) => Err(anyhow::anyhow!(
+                        "tool call '{}' timed out after {}s",
+                        call_name,
+                        DEFAULT_TOOL_CALL_TIMEOUT.as_secs()
+                    )),
+                },
+            }
+        } else {
+            match timed_tool_future.await {
+                Ok(result) => result,
+                Err(_) => Err(anyhow::anyhow!(
+                    "tool call '{}' timed out after {}s",
+                    call_name,
+                    DEFAULT_TOOL_CALL_TIMEOUT.as_secs()
+                )),
+            }
+        };
 
-    match tool_result {
-        Ok(r) => {
-            let duration = start.elapsed();
-            observer.record_event(&ObserverEvent::ToolCall {
-                tool: call_name.to_string(),
-                duration,
-                success: r.success,
-            });
-            if r.success {
-                Ok(ToolExecutionOutcome {
-                    output: scrub_credentials(&r.output),
-                    success: true,
-                    error_reason: None,
+        match tool_result {
+            Ok(r) => {
+                let duration = start.elapsed();
+                observer.record_event(&ObserverEvent::ToolCall {
+                    tool: call_name.to_string(),
                     duration,
-                })
-            } else {
+                    success: r.success,
+                });
+                if r.success {
+                    return Ok(ToolExecutionOutcome {
+                        output: scrub_credentials(&r.output),
+                        success: true,
+                        error_reason: None,
+                        duration,
+                    });
+                }
+
                 let reason = r.error.unwrap_or(r.output);
-                Ok(ToolExecutionOutcome {
+                return Ok(ToolExecutionOutcome {
                     output: format!("Error: {reason}"),
                     success: false,
                     error_reason: Some(scrub_credentials(&reason)),
                     duration,
-                })
+                });
+            }
+            Err(e) => {
+                last_error = Some(format!("Error executing {call_name}: {e}"));
+                if attempt < TOOL_RETRY_LIMIT {
+                    let backoff_ms = TOOL_RETRY_BASE_BACKOFF_MS.saturating_mul(1_u64 << attempt);
+                    tokio::time::sleep(Duration::from_millis(backoff_ms)).await;
+                    continue;
+                }
             }
         }
-        Err(e) => {
-            let duration = start.elapsed();
-            observer.record_event(&ObserverEvent::ToolCall {
-                tool: call_name.to_string(),
-                duration,
-                success: false,
-            });
-            let reason = format!("Error executing {call_name}: {e}");
-            Ok(ToolExecutionOutcome {
-                output: reason.clone(),
-                success: false,
-                error_reason: Some(scrub_credentials(&reason)),
-                duration,
-            })
-        }
     }
+
+    let duration = start.elapsed();
+    observer.record_event(&ObserverEvent::ToolCall {
+        tool: call_name.to_string(),
+        duration,
+        success: false,
+    });
+    let reason = last_error.unwrap_or_else(|| format!("Error executing {call_name}"));
+    Ok(ToolExecutionOutcome {
+        output: reason.clone(),
+        success: false,
+        error_reason: Some(scrub_credentials(&reason)),
+        duration,
+    })
 }
 
 struct ToolExecutionOutcome {
@@ -2444,6 +2580,26 @@ pub(crate) async fn run_tool_call_loop(
             }
 
             // ── Approval hook ────────────────────────────────
+            if let Some(change_request) = restricted_change_request_for_tool(&tool_name, &tool_args)
+            {
+                let artifact = serde_json::to_string_pretty(&change_request)
+                    .unwrap_or_else(|_| "{\"request_type\":\"change_request\"}".to_string());
+                let blocked = format!(
+                    "Blocked without human approval. Proposed change request artifact:\n{artifact}"
+                );
+                ordered_results[idx] = Some((
+                    tool_name.clone(),
+                    call.tool_call_id.clone(),
+                    ToolExecutionOutcome {
+                        output: blocked.clone(),
+                        success: false,
+                        error_reason: Some("change request required".to_string()),
+                        duration: Duration::ZERO,
+                    },
+                ));
+                continue;
+            }
+
             if let Some(mgr) = approval {
                 if mgr.needs_approval(&tool_name) {
                     let request = ApprovalRequest {
@@ -3020,13 +3176,14 @@ pub async fn run(
             ChatMessage::user(&enriched),
         ];
 
+        let effective_model = effective_model_for_message(&config, model_name, &msg);
         let response = run_tool_call_loop(
             provider.as_ref(),
             &mut history,
             &tools_registry,
             observer.as_ref(),
             provider_name,
-            model_name,
+            &effective_model,
             temperature,
             false,
             approval_manager.as_ref(),
@@ -3142,13 +3299,14 @@ pub async fn run(
 
             history.push(ChatMessage::user(&enriched));
 
+            let effective_model = effective_model_for_message(&config, model_name, &user_input);
             let response = match run_tool_call_loop(
                 provider.as_ref(),
                 &mut history,
                 &tools_registry,
                 observer.as_ref(),
                 provider_name,
-                model_name,
+                &effective_model,
                 temperature,
                 false,
                 approval_manager.as_ref(),
@@ -3422,11 +3580,65 @@ mod tests {
         assert!(scrubbed.contains("\"api_key\": \"sk-1*[REDACTED]\""));
         assert!(scrubbed.contains("public"));
     }
-    use crate::memory::{Memory, MemoryCategory, SqliteMemory};
+    use crate::memory::{Memory, MemoryCategory, MemoryEntry, SqliteMemory};
     use crate::observability::NoopObserver;
     use crate::providers::traits::ProviderCapabilities;
     use crate::providers::ChatResponse;
     use tempfile::TempDir;
+
+    struct StaticMemory {
+        entries: Vec<MemoryEntry>,
+    }
+
+    #[async_trait]
+    impl Memory for StaticMemory {
+        fn name(&self) -> &str {
+            "static"
+        }
+
+        async fn store(
+            &self,
+            _key: &str,
+            _content: &str,
+            _category: MemoryCategory,
+            _session_id: Option<&str>,
+        ) -> anyhow::Result<()> {
+            Ok(())
+        }
+
+        async fn recall(
+            &self,
+            _query: &str,
+            limit: usize,
+            _session_id: Option<&str>,
+        ) -> anyhow::Result<Vec<MemoryEntry>> {
+            Ok(self.entries.iter().take(limit).cloned().collect())
+        }
+
+        async fn get(&self, _key: &str) -> anyhow::Result<Option<MemoryEntry>> {
+            Ok(None)
+        }
+
+        async fn list(
+            &self,
+            _category: Option<&MemoryCategory>,
+            _session_id: Option<&str>,
+        ) -> anyhow::Result<Vec<MemoryEntry>> {
+            Ok(self.entries.clone())
+        }
+
+        async fn forget(&self, _key: &str) -> anyhow::Result<bool> {
+            Ok(false)
+        }
+
+        async fn count(&self) -> anyhow::Result<usize> {
+            Ok(self.entries.len())
+        }
+
+        async fn health_check(&self) -> bool {
+            true
+        }
+    }
 
     struct NonVisionProvider {
         calls: Arc<AtomicUsize>,
@@ -3668,6 +3880,76 @@ mod tests {
             Ok(crate::tools::ToolResult {
                 success: true,
                 output: format!("ok:{value}"),
+                error: None,
+            })
+        }
+    }
+
+    struct FlakyTool {
+        name: String,
+        attempts: Arc<AtomicUsize>,
+        fail_until_attempt: usize,
+    }
+
+    struct SlowTool {
+        name: String,
+        attempts: Arc<AtomicUsize>,
+        delay_ms: u64,
+    }
+
+    #[async_trait]
+    impl Tool for SlowTool {
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn description(&self) -> &str {
+            "Sleeps past timeout budget"
+        }
+
+        fn parameters_schema(&self) -> serde_json::Value {
+            serde_json::json!({"type":"object"})
+        }
+
+        async fn execute(
+            &self,
+            _args: serde_json::Value,
+        ) -> anyhow::Result<crate::tools::ToolResult> {
+            self.attempts.fetch_add(1, Ordering::SeqCst);
+            tokio::time::sleep(Duration::from_millis(self.delay_ms)).await;
+            Ok(crate::tools::ToolResult {
+                success: true,
+                output: "slow-success".to_string(),
+                error: None,
+            })
+        }
+    }
+
+    #[async_trait]
+    impl Tool for FlakyTool {
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn description(&self) -> &str {
+            "Fails until bounded retry budget is consumed"
+        }
+
+        fn parameters_schema(&self) -> serde_json::Value {
+            serde_json::json!({"type":"object"})
+        }
+
+        async fn execute(
+            &self,
+            _args: serde_json::Value,
+        ) -> anyhow::Result<crate::tools::ToolResult> {
+            let attempt = self.attempts.fetch_add(1, Ordering::SeqCst) + 1;
+            if attempt <= self.fail_until_attempt {
+                anyhow::bail!("transient failure attempt {attempt}")
+            }
+            Ok(crate::tools::ToolResult {
+                success: true,
+                output: "recovered".to_string(),
                 error: None,
             })
         }
@@ -4058,6 +4340,189 @@ mod tests {
                 .all(|msg| !(msg.role == "user" && msg.content.starts_with("[Tool results]"))),
             "native mode should use role=tool history instead of prompt fallback wrapper"
         );
+    }
+
+    #[tokio::test]
+    async fn build_context_relaxes_relevance_threshold_for_explicit_memory_signal() {
+        let mem = StaticMemory {
+            entries: vec![MemoryEntry {
+                id: "id1".to_string(),
+                key: "user_msg_context".to_string(),
+                content: "Long context".to_string(),
+                category: MemoryCategory::Conversation,
+                timestamp: "2026-01-01T00:00:00Z".to_string(),
+                session_id: None,
+                score: Some(0.4),
+            }],
+        };
+
+        let regular = build_context(&mem, "status update", 0.5).await;
+        assert!(regular.is_empty());
+
+        let explicit = build_context(&mem, "remember our earlier status update", 0.5).await;
+        assert!(explicit.contains("user_msg_context"));
+    }
+
+    #[test]
+    fn effective_model_for_message_routes_by_explicit_classification_signal() {
+        let mut config = Config::default();
+        config.query_classification = crate::config::QueryClassificationConfig {
+            enabled: true,
+            rules: vec![crate::config::ClassificationRule {
+                hint: "fast".to_string(),
+                keywords: vec!["quick".to_string()],
+                ..Default::default()
+            }],
+        };
+        config.model_routes = vec![crate::config::ModelRouteConfig {
+            hint: "fast".to_string(),
+            provider: "openrouter".to_string(),
+            model: "router/fast-model".to_string(),
+            api_key: None,
+        }];
+
+        let effective = effective_model_for_message(&config, "default/model", "quick summary");
+        assert_eq!(effective, "hint:fast");
+    }
+
+    #[tokio::test]
+    async fn execute_one_tool_retries_with_backoff_then_succeeds() {
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let tools_registry: Vec<Box<dyn Tool>> = vec![Box::new(FlakyTool {
+            name: "flaky".to_string(),
+            attempts: Arc::clone(&attempts),
+            fail_until_attempt: 2,
+        })];
+        let observer = NoopObserver;
+
+        let outcome = execute_one_tool(
+            "flaky",
+            serde_json::json!({}),
+            &tools_registry,
+            &observer,
+            None,
+        )
+        .await
+        .expect("tool execution should not panic");
+
+        assert!(outcome.success);
+        assert_eq!(outcome.output, "recovered");
+        assert_eq!(attempts.load(Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn run_tool_call_loop_blocks_restricted_self_edit_without_human_gate() {
+        let provider = ScriptedProvider::from_text_responses(vec![
+            r#"<tool_call>
+{"name":"file_write","arguments":{"path":"src/main.rs","content":"fn main(){}"}}
+</tool_call>"#,
+            "done",
+        ]);
+        let invocations = Arc::new(AtomicUsize::new(0));
+        let tools_registry: Vec<Box<dyn Tool>> = vec![Box::new(CountingTool::new(
+            "file_write",
+            Arc::clone(&invocations),
+        ))];
+        let mut history = vec![ChatMessage::system("sys"), ChatMessage::user("edit source")];
+        let observer = NoopObserver;
+
+        let result = run_tool_call_loop(
+            &provider,
+            &mut history,
+            &tools_registry,
+            &observer,
+            "mock-provider",
+            "mock-model",
+            0.0,
+            true,
+            None,
+            "cli",
+            &crate::config::MultimodalConfig::default(),
+            4,
+            None,
+            None,
+            None,
+            &[],
+        )
+        .await
+        .expect("loop should still produce final answer");
+
+        assert_eq!(result, "done");
+        assert_eq!(invocations.load(Ordering::SeqCst), 0);
+        let tool_results = history
+            .iter()
+            .find(|msg| msg.role == "user" && msg.content.starts_with("[Tool results]"))
+            .expect("tool result payload should exist");
+        assert!(tool_results.content.contains("change_request"));
+        assert!(tool_results.content.contains("requires_human_approval"));
+    }
+
+    #[tokio::test]
+    async fn execute_one_tool_enforces_timeout_and_bounded_retries() {
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let tools_registry: Vec<Box<dyn Tool>> = vec![Box::new(SlowTool {
+            name: "slow_tool".to_string(),
+            attempts: Arc::clone(&attempts),
+            delay_ms: 2_300,
+        })];
+        let observer = NoopObserver;
+
+        let outcome = execute_one_tool(
+            "slow_tool",
+            serde_json::json!({}),
+            &tools_registry,
+            &observer,
+            None,
+        )
+        .await
+        .expect("timeout failures should be returned as structured outcome");
+
+        assert!(!outcome.success);
+        assert!(outcome.output.contains("timed out"));
+        assert_eq!(attempts.load(Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn run_tool_call_loop_fails_fast_when_iteration_budget_exhausted() {
+        let provider = ScriptedProvider::from_text_responses(vec![
+            r#"<tool_call>
+{"name":"count_tool","arguments":{"value":"A"}}
+</tool_call>"#,
+        ]);
+        let invocations = Arc::new(AtomicUsize::new(0));
+        let tools_registry: Vec<Box<dyn Tool>> = vec![Box::new(CountingTool::new(
+            "count_tool",
+            Arc::clone(&invocations),
+        ))];
+        let mut history = vec![ChatMessage::system("sys"), ChatMessage::user("loop")];
+        let observer = NoopObserver;
+
+        let err = run_tool_call_loop(
+            &provider,
+            &mut history,
+            &tools_registry,
+            &observer,
+            "mock-provider",
+            "mock-model",
+            0.0,
+            true,
+            None,
+            "cli",
+            &crate::config::MultimodalConfig::default(),
+            1,
+            None,
+            None,
+            None,
+            &[],
+        )
+        .await
+        .expect_err("tool loop should stop when max iterations reached");
+
+        assert!(
+            err.to_string().contains("maximum tool iterations"),
+            "expected explicit max-iteration error"
+        );
+        assert_eq!(invocations.load(Ordering::SeqCst), 1);
     }
 
     #[test]
