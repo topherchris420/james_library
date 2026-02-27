@@ -1,5 +1,6 @@
 use super::{kill_shared, new_shared_process, SharedProcess, Tunnel, TunnelProcess};
 use anyhow::{bail, Result};
+use std::ffi::OsString;
 use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
 
@@ -47,13 +48,28 @@ impl Tunnel for CustomTunnel {
             .replace("{port}", &local_port.to_string())
             .replace("{host}", local_host);
 
-        let parts: Vec<&str> = cmd.split_whitespace().collect();
-        if parts.is_empty() {
+        if cmd.trim().is_empty() {
             bail!("Custom tunnel start_command is empty");
         }
 
-        let mut child = Command::new(parts[0])
-            .args(&parts[1..])
+        #[cfg(windows)]
+        let mut child = {
+            let shell = std::env::var_os("COMSPEC").unwrap_or_else(|| OsString::from("cmd.exe"));
+            Command::new(shell)
+                .arg("/d")
+                .arg("/s")
+                .arg("/c")
+                .arg(&cmd)
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .kill_on_drop(true)
+                .spawn()?
+        };
+
+        #[cfg(not(windows))]
+        let mut child = Command::new("sh")
+            .arg("-lc")
+            .arg(&cmd)
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true)
@@ -148,6 +164,17 @@ impl Tunnel for CustomTunnel {
 mod tests {
     use super::*;
 
+    fn hold_command() -> &'static str {
+        #[cfg(windows)]
+        {
+            "ping 127.0.0.1 -n 2 > nul"
+        }
+        #[cfg(not(windows))]
+        {
+            "sleep 1"
+        }
+    }
+
     #[tokio::test]
     async fn start_with_empty_command_returns_error() {
         let tunnel = CustomTunnel::new("   ".into(), None, None);
@@ -162,7 +189,7 @@ mod tests {
 
     #[tokio::test]
     async fn start_without_pattern_returns_local_url() {
-        let tunnel = CustomTunnel::new("sleep 1".into(), None, None);
+        let tunnel = CustomTunnel::new(hold_command().into(), None, None);
 
         let url = tunnel.start("127.0.0.1", 4455).await.unwrap();
         assert_eq!(url, "http://127.0.0.1:4455");
@@ -210,7 +237,7 @@ mod tests {
     #[tokio::test]
     async fn health_check_with_unreachable_health_url_returns_false() {
         let tunnel = CustomTunnel::new(
-            "sleep 1".into(),
+            hold_command().into(),
             Some("http://127.0.0.1:9/healthz".into()),
             None,
         );

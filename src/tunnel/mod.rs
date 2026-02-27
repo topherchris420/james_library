@@ -130,6 +130,27 @@ mod tests {
     };
     use tokio::process::Command;
 
+    fn spawn_hold_child() -> tokio::process::Child {
+        #[cfg(windows)]
+        {
+            Command::new("cmd")
+                .args(["/d", "/s", "/c", "ping 127.0.0.1 -n 30 > nul"])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .expect("cmd ping should spawn for lifecycle test")
+        }
+        #[cfg(not(windows))]
+        {
+            Command::new("sleep")
+                .arg("30")
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .expect("sleep should spawn for lifecycle test")
+        }
+    }
+
     /// Helper: assert `create_tunnel` returns an error containing `needle`.
     fn assert_tunnel_err(cfg: &TunnelConfig, needle: &str) {
         match create_tunnel(cfg) {
@@ -328,12 +349,7 @@ mod tests {
     async fn kill_shared_terminates_and_clears_child() {
         let proc = new_shared_process();
 
-        let child = Command::new("sleep")
-            .arg("30")
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .spawn()
-            .expect("sleep should spawn for lifecycle test");
+        let child = spawn_hold_child();
 
         {
             let mut guard = proc.lock().await;

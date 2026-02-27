@@ -56,6 +56,7 @@ impl RuntimeAdapter for NativeRuntime {
             // Pass all environment variables for cross-platform compatibility
             process.envs(std::env::vars());
             process.arg("-c").arg(command);
+            process
         };
 
         process.current_dir(workspace_dir);

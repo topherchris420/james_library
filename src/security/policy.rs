@@ -149,7 +149,21 @@ impl Default for SecurityPolicy {
 }
 
 fn home_dir() -> Option<PathBuf> {
-    std::env::var_os("HOME").map(PathBuf::from)
+    std::env::var_os("HOME")
+        .filter(|value| !value.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| {
+            #[cfg(windows)]
+            {
+                std::env::var_os("USERPROFILE")
+                    .filter(|value| !value.is_empty())
+                    .map(PathBuf::from)
+            }
+            #[cfg(not(windows))]
+            {
+                None
+            }
+        })
 }
 
 fn expand_user_path(path: &str) -> PathBuf {
@@ -166,6 +180,10 @@ fn expand_user_path(path: &str) -> PathBuf {
     }
 
     PathBuf::from(path)
+}
+
+fn is_absolute_or_rooted(path: &Path) -> bool {
+    path.is_absolute() || path.has_root()
 }
 
 // ── Shell Command Parsing Utilities ───────────────────────────────────────
@@ -923,7 +941,7 @@ impl SecurityPolicy {
         let expanded_path = expand_user_path(path);
 
         // Block absolute paths when workspace_only is set
-        if self.workspace_only && expanded_path.is_absolute() {
+        if self.workspace_only && is_absolute_or_rooted(&expanded_path) {
             return false;
         }
 
@@ -1459,11 +1477,9 @@ mod tests {
         let workspace = PathBuf::from("/tmp/test-workspace");
         let policy = SecurityPolicy::from_config(&autonomy_config, &workspace);
 
-        let expected_home_root = if let Some(home) = std::env::var_os("HOME") {
-            PathBuf::from(home).join("Desktop")
-        } else {
-            PathBuf::from("~/Desktop")
-        };
+        let expected_home_root = std::env::var_os("HOME")
+            .or_else(|| std::env::var_os("USERPROFILE"))
+            .map_or_else(|| PathBuf::from("~/Desktop"), |home| PathBuf::from(home).join("Desktop"));
 
         assert_eq!(policy.allowed_roots[0], expected_home_root);
         assert_eq!(policy.allowed_roots[1], workspace.join("shared-data"));

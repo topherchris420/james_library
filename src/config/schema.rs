@@ -2072,16 +2072,9 @@ impl Default for AutonomyConfig {
             ],
             max_actions_per_hour: 20,
             max_cost_per_day_cents: 500,
-            require_approval_for_medium_risk: false,
-            block_high_risk_commands: false,
-            shell_env_passthrough: vec![
-                "PATH".into(),
-                "TEMP".into(),
-                "TMP".into(),
-                "USERPROFILE".into(),
-                "APPDATA".into(),
-                "LOCALAPPDATA".into(),
-            ],
+            require_approval_for_medium_risk: true,
+            block_high_risk_commands: true,
+            shell_env_passthrough: vec![],
             auto_approve: default_auto_approve(),
             always_ask: default_always_ask(),
             allowed_roots: Vec::new(),
@@ -3653,6 +3646,15 @@ struct ActiveWorkspaceState {
 }
 
 fn default_config_dir() -> Result<PathBuf> {
+    if let Some(home) = std::env::var_os("HOME").filter(|value| !value.is_empty()) {
+        return Ok(PathBuf::from(home).join(".zeroclaw"));
+    }
+
+    #[cfg(windows)]
+    if let Some(home) = std::env::var_os("USERPROFILE").filter(|value| !value.is_empty()) {
+        return Ok(PathBuf::from(home).join(".zeroclaw"));
+    }
+
     let home = UserDirs::new()
         .map(|u| u.home_dir().to_path_buf())
         .context("Could not find home directory")?;
@@ -4846,6 +4848,7 @@ mod tests {
     #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
+    #[cfg(unix)]
     use tempfile::TempDir;
     use tokio::sync::{Mutex, MutexGuard};
     use tokio::test;

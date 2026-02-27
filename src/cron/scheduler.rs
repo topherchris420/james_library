@@ -10,6 +10,8 @@ use crate::security::SecurityPolicy;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use futures_util::{stream, StreamExt};
+use std::ffi::OsString;
+use std::path::Path;
 use std::process::Stdio;
 use std::sync::Arc;
 use tokio::process::Command;
@@ -427,16 +429,13 @@ async fn run_job_command_with_timeout(
         );
     }
 
-    let child = match Command::new("sh")
-        .arg("-lc")
-        .arg(&job.command)
-        .current_dir(&config.workspace_dir)
+    let mut shell = build_shell_command(&job.command, &config.workspace_dir);
+    shell
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()
-    {
+        .kill_on_drop(true);
+    let child = match shell.spawn() {
         Ok(child) => child,
         Err(e) => return (false, format!("spawn error: {e}")),
     };
@@ -459,6 +458,26 @@ async fn run_job_command_with_timeout(
             format!("job timed out after {}s", timeout.as_secs_f64()),
         ),
     }
+}
+
+fn build_shell_command(command: &str, workspace_dir: &Path) -> Command {
+    #[cfg(windows)]
+    let mut shell = {
+        let comspec = std::env::var_os("COMSPEC").unwrap_or_else(|| OsString::from("cmd.exe"));
+        let mut process = Command::new(comspec);
+        process.arg("/d").arg("/s").arg("/c").arg(command);
+        process
+    };
+
+    #[cfg(not(windows))]
+    let mut shell = {
+        let mut process = Command::new("sh");
+        process.arg("-lc").arg(command);
+        process
+    };
+
+    shell.current_dir(workspace_dir);
+    shell
 }
 
 #[cfg(test)]
@@ -507,6 +526,50 @@ mod tests {
         }
     }
 
+    fn missing_path_command(path: &str) -> String {
+        #[cfg(windows)]
+        {
+            format!("dir {path}")
+        }
+        #[cfg(not(windows))]
+        {
+            format!("ls {path}")
+        }
+    }
+
+    fn missing_path_allowed_command() -> &'static str {
+        #[cfg(windows)]
+        {
+            "dir"
+        }
+        #[cfg(not(windows))]
+        {
+            "ls"
+        }
+    }
+
+    fn sleep_command(seconds: u64) -> String {
+        #[cfg(windows)]
+        {
+            format!("ping 127.0.0.1 -n {}", seconds + 1)
+        }
+        #[cfg(not(windows))]
+        {
+            format!("sleep {seconds}")
+        }
+    }
+
+    fn sleep_allowed_command() -> &'static str {
+        #[cfg(windows)]
+        {
+            "ping"
+        }
+        #[cfg(not(windows))]
+        {
+            "sleep"
+        }
+    }
+
     fn unique_component(prefix: &str) -> String {
         format!("{prefix}-{}", uuid::Uuid::new_v4())
     }
@@ -521,28 +584,36 @@ mod tests {
         let (success, output) = run_job_command(&config, &security, &job).await;
         assert!(success);
         assert!(output.contains("scheduler-ok"));
-        assert!(output.contains("status=exit status: 0"));
+        assert!(output.contains("status="));
+        assert!(output.contains('0'));
     }
 
     #[tokio::test]
     async fn run_job_command_failure() {
         let tmp = TempDir::new().unwrap();
-        let config = test_config(&tmp).await;
-        let job = test_job("ls definitely_missing_file_for_scheduler_test");
+        let mut config = test_config(&tmp).await;
+        config.autonomy.allowed_commands = vec![missing_path_allowed_command().into()];
+        let job = test_job(&missing_path_command("definitely_missing_file_for_scheduler_test"));
         let security = SecurityPolicy::from_config(&config.autonomy, &config.workspace_dir);
 
         let (success, output) = run_job_command(&config, &security, &job).await;
         assert!(!success);
+        #[cfg(windows)]
+        assert!(
+            output.contains("File Not Found") || output.contains("cannot find"),
+            "unexpected output: {output}"
+        );
+        #[cfg(not(windows))]
         assert!(output.contains("definitely_missing_file_for_scheduler_test"));
-        assert!(output.contains("status=exit status:"));
+        assert!(output.contains("status="));
     }
 
     #[tokio::test]
     async fn run_job_command_times_out() {
         let tmp = TempDir::new().unwrap();
         let mut config = test_config(&tmp).await;
-        config.autonomy.allowed_commands = vec!["sleep".into()];
-        let job = test_job("sleep 1");
+        config.autonomy.allowed_commands = vec![sleep_allowed_command().into()];
+        let job = test_job(&sleep_command(1));
         let security = SecurityPolicy::from_config(&config.autonomy, &config.workspace_dir);
 
         let (success, output) =
@@ -673,17 +744,36 @@ mod tests {
         let mut config = test_config(&tmp).await;
         config.reliability.scheduler_retries = 1;
         config.reliability.provider_backoff_ms = 1;
-        config.autonomy.allowed_commands = vec!["sh".into()];
-        let security = SecurityPolicy::from_config(&config.autonomy, &config.workspace_dir);
 
-        tokio::fs::write(
-            config.workspace_dir.join("retry-once.sh"),
-            "#!/bin/sh\nif [ -f retry-ok.flag ]; then\n  echo recovered\n  exit 0\nfi\ntouch retry-ok.flag\nexit 1\n",
-        )
-        .await
-        .unwrap();
+        #[cfg(windows)]
+        {
+            config.autonomy.allowed_commands = vec!["retry-once.cmd".into()];
+            tokio::fs::write(
+                config.workspace_dir.join("retry-once.cmd"),
+                "@echo off\r\nif exist retry-ok.flag (\r\n  echo recovered\r\n  exit /b 0\r\n)\r\ntype nul > retry-ok.flag\r\nexit /b 1\r\n",
+            )
+            .await
+            .unwrap();
+        }
+
+        #[cfg(not(windows))]
+        {
+            config.autonomy.allowed_commands = vec!["sh".into()];
+            tokio::fs::write(
+                config.workspace_dir.join("retry-once.sh"),
+                "#!/bin/sh\nif [ -f retry-ok.flag ]; then\n  echo recovered\n  exit 0\nfi\ntouch retry-ok.flag\nexit 1\n",
+            )
+            .await
+            .unwrap();
+        }
+
+        #[cfg(windows)]
+        let job = test_job("retry-once.cmd");
+
+        #[cfg(not(windows))]
         let job = test_job("sh ./retry-once.sh");
 
+        let security = SecurityPolicy::from_config(&config.autonomy, &config.workspace_dir);
         let (success, output) = execute_job_with_retry(&config, &security, &job).await;
         assert!(success);
         assert!(output.contains("recovered"));
@@ -695,12 +785,19 @@ mod tests {
         let mut config = test_config(&tmp).await;
         config.reliability.scheduler_retries = 1;
         config.reliability.provider_backoff_ms = 1;
+        config.autonomy.allowed_commands = vec![missing_path_allowed_command().into()];
         let security = SecurityPolicy::from_config(&config.autonomy, &config.workspace_dir);
 
-        let job = test_job("ls always_missing_for_retry_test");
+        let job = test_job(&missing_path_command("always_missing_for_retry_test"));
 
         let (success, output) = execute_job_with_retry(&config, &security, &job).await;
         assert!(!success);
+        #[cfg(windows)]
+        assert!(
+            output.contains("File Not Found") || output.contains("cannot find"),
+            "unexpected output: {output}"
+        );
+        #[cfg(not(windows))]
         assert!(output.contains("always_missing_for_retry_test"));
     }
 

@@ -506,10 +506,10 @@ fn render_skill_location(skill: &Skill, workspace_dir: &Path, prefer_relative: b
     let location = resolve_skill_location(skill, workspace_dir);
     if prefer_relative {
         if let Ok(relative) = location.strip_prefix(workspace_dir) {
-            return relative.display().to_string();
+            return relative.display().to_string().replace('\\', "/");
         }
     }
-    location.display().to_string()
+    location.display().to_string().replace('\\', "/")
 }
 
 /// Build the "Available Skills" system prompt section with full skill instructions.

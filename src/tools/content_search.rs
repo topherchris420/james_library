@@ -171,7 +171,8 @@ impl Tool for ContentSearchTool {
         }
 
         // --- Path security checks ---
-        if std::path::Path::new(search_path).is_absolute() {
+        let candidate = std::path::Path::new(search_path);
+        if candidate.is_absolute() || candidate.has_root() {
             return Ok(ToolResult {
                 success: false,
                 output: String::new(),

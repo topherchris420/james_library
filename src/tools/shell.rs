@@ -14,7 +14,16 @@ const MAX_OUTPUT_BYTES: usize = 1_048_576;
 /// Environment variables safe to pass to shell commands.
 /// Only functional variables are included — never API keys or secrets.
 const SAFE_ENV_VARS: &[&str] = &[
-    "PATH", "HOME", "TERM", "LANG", "LC_ALL", "LC_CTYPE", "USER", "SHELL", "TMPDIR",
+    "PATH",
+    "HOME",
+    "USERPROFILE",
+    "TERM",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "USER",
+    "SHELL",
+    "TMPDIR",
 ];
 
 /// Shell command execution tool with sandboxing
@@ -383,7 +392,7 @@ mod tests {
         Arc::new(SecurityPolicy {
             autonomy: AutonomyLevel::Supervised,
             workspace_dir: std::env::temp_dir(),
-            allowed_commands: vec!["env".into(), "echo".into()],
+            allowed_commands: vec![env_dump_command().into(), "echo".into()],
             ..SecurityPolicy::default()
         })
     }
@@ -392,10 +401,21 @@ mod tests {
         Arc::new(SecurityPolicy {
             autonomy: AutonomyLevel::Supervised,
             workspace_dir: std::env::temp_dir(),
-            allowed_commands: vec!["env".into()],
+            allowed_commands: vec![env_dump_command().into()],
             shell_env_passthrough: vars.iter().map(|v| (*v).to_string()).collect(),
             ..SecurityPolicy::default()
         })
+    }
+
+    fn env_dump_command() -> &'static str {
+        #[cfg(windows)]
+        {
+            "set"
+        }
+        #[cfg(not(windows))]
+        {
+            "env"
+        }
     }
 
     /// RAII guard that restores an environment variable to its original state on drop,
@@ -429,7 +449,7 @@ mod tests {
 
         let tool = ShellTool::new(test_security_with_env_cmd(), test_runtime());
         let result = tool
-            .execute(json!({"command": "env"}))
+            .execute(json!({"command": env_dump_command()}))
             .await
             .expect("env command execution should succeed");
         assert!(result.success);
@@ -448,17 +468,23 @@ mod tests {
         let tool = ShellTool::new(test_security_with_env_cmd(), test_runtime());
 
         let result = tool
-            .execute(json!({"command": "env"}))
+            .execute(json!({"command": env_dump_command()}))
             .await
             .expect("env command should succeed");
         assert!(result.success);
         assert!(
-            result.output.contains("HOME="),
-            "HOME should be available in shell environment"
-        );
-        assert!(
             result.output.contains("PATH="),
             "PATH should be available in shell environment"
+        );
+        #[cfg(windows)]
+        assert!(
+            result.output.contains("USERPROFILE=") || result.output.contains("HOME="),
+            "Windows shell environment should include USERPROFILE (or HOME if provided)"
+        );
+        #[cfg(not(windows))]
+        assert!(
+            result.output.contains("HOME="),
+            "HOME should be available in shell environment"
         );
     }
 
@@ -486,7 +512,7 @@ mod tests {
         );
 
         let result = tool
-            .execute(json!({"command": "env"}))
+            .execute(json!({"command": env_dump_command()}))
             .await
             .expect("env command execution should succeed");
         assert!(result.success);
@@ -517,14 +543,14 @@ mod tests {
     async fn shell_requires_approval_for_medium_risk_command() {
         let security = Arc::new(SecurityPolicy {
             autonomy: AutonomyLevel::Supervised,
-            allowed_commands: vec!["touch".into()],
+            allowed_commands: vec!["mkdir".into()],
             workspace_dir: std::env::temp_dir(),
             ..SecurityPolicy::default()
         });
 
         let tool = ShellTool::new(security.clone(), test_runtime());
         let denied = tool
-            .execute(json!({"command": "touch zeroclaw_shell_approval_test"}))
+            .execute(json!({"command": "mkdir zeroclaw_shell_approval_test"}))
             .await
             .expect("unapproved command should return a result");
         assert!(!denied.success);
@@ -536,7 +562,7 @@ mod tests {
 
         let allowed = tool
             .execute(json!({
-                "command": "touch zeroclaw_shell_approval_test",
+                "command": "mkdir zeroclaw_shell_approval_test",
                 "approved": true
             }))
             .await
@@ -544,7 +570,8 @@ mod tests {
         assert!(allowed.success);
 
         let _ =
-            tokio::fs::remove_file(std::env::temp_dir().join("zeroclaw_shell_approval_test")).await;
+            tokio::fs::remove_dir_all(std::env::temp_dir().join("zeroclaw_shell_approval_test"))
+                .await;
     }
 
     // ── §5.2 Shell timeout enforcement tests ─────────────────

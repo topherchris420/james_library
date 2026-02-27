@@ -523,7 +523,16 @@ async fn run_quick_setup_with_home(
     };
 
     config.save().await?;
-    persist_workspace_selection(&config.config_path).await?;
+    // Keep marker persistence aligned with the explicit home passed to quick-setup.
+    let original_home = std::env::var_os("HOME");
+    std::env::set_var("HOME", home);
+    let persist_result = persist_workspace_selection(&config.config_path).await;
+    if let Some(value) = original_home {
+        std::env::set_var("HOME", value);
+    } else {
+        std::env::remove_var("HOME");
+    }
+    persist_result?;
 
     // Scaffold minimal workspace files
     let default_ctx = ProjectContext {
