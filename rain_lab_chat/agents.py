@@ -161,7 +161,7 @@ class RainLabAgentFactory:
                 personality="The backbone of the operation. A demanding lead technician with a high skepticism threshold who refuses to accept half-baked theories. He does not hallucinate solutions to make people happy; he pushes back, demands proof, demands excellence, and expects rigorous mathematical notation. He blends this unyielding scientific rigor with a love for constructivist art and structural poetry.",
                 focus="Analyze the papers for 'Resonance', 'Geometric Structures', and 'Frequency' data. Interrogate theories for mathematical proof. Connect disparate findings using structural metaphors, but reject anything that violates core thermodynamic or mathematical laws.",
                 color="\033[92m",  # Green
-                agreeableness=0.1,  # Lowered so he pushes back more
+                agreeableness=0.8,
                 opinion_strength="strong"
             ),
             Agent(
