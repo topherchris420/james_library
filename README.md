@@ -40,7 +40,7 @@ The platform enables researchers to explore complex acoustic phenomena through A
 
 ```mermaid
 graph TB
-    subgraph "Vers3Dynamics Platform"
+    subgraph "Vers3Dynamics"
         subgraph "ZeroClaw - The Body"
             CLI[CLI / Gateway]
             Agent[Agent Orchestrator]
