@@ -7,11 +7,8 @@ Dependencies: hello_os.symbols, hello_os.utils
 
 from hello_os.symbols import (
     GPU_AVAILABLE,
-    HTML,
     SCIPY_AVAILABLE,
-    FancyArrowPatch,
     Optional,
-    animation,
     dataclass,
     deque,
     logger,

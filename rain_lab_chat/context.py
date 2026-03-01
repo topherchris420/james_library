@@ -1,18 +1,17 @@
 """Research paper context loading and citation verification."""
 
-import os
 import bisect
+import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from rain_lab_chat._sanitize import sanitize_text
 from rain_lab_chat.config import Config
 
+
 class ContextManager:
 
     """Reads and manages research paper context - FULL PAPER MODE"""
-
-    
 
     def __init__(self, config: Config):
 
@@ -29,8 +28,6 @@ class ContextManager:
         self.offset_keys: List[int] = []
 
         self.paper_list: List[str] = []
-
-    
 
     def _discover_files(self) -> List[Path]:
 
@@ -174,19 +171,13 @@ class ContextManager:
 
             print(f"\n📂 Accessing Research Library at: {self.lab_path}")
 
-        
-
         if not self.lab_path.exists():
 
             print(f"❌ Library path does not exist: {self.lab_path}")
 
             return "Library not accessible.", []
 
-        
-
         buffer = []
-
-        
 
         # Load all valid text files (recursive by default)
 
@@ -198,8 +189,6 @@ class ContextManager:
 
             print(f"   • Scan mode: {scope}; files discovered: {len(all_files)}")
 
-        
-
         if not all_files:
 
             print("⚠️  No research papers found in library.")
@@ -210,15 +199,11 @@ class ContextManager:
 
             print(f"   ✓ Found {len(all_files)} papers.\n")
 
-        
-
         total_chars = 0
 
         current_offset = 0
 
         index_parts = []
-
-        
 
         for filepath in all_files:
 
@@ -227,8 +212,6 @@ class ContextManager:
                 with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
 
                     content = f.read()
-
-                    
 
                     # Store FULL content for citation verification
 
@@ -248,13 +231,9 @@ class ContextManager:
 
                     current_offset += len(content_lower) + 1  # +1 for delimiter
 
-                    
-
                     # Include full paper up to snippet length (25k = essentially full)
 
                     remaining_budget = self.config.total_context_length - total_chars
-
-                    
 
                     if remaining_budget > 1000:
 
@@ -267,8 +246,6 @@ class ContextManager:
                         buffer.append(f"--- PAPER: {paper_ref} ---\n{safe_content[:to_include]}\n")
 
                         total_chars += to_include
-
-                        
 
                         # Show what percentage of paper was loaded
 
@@ -284,8 +261,6 @@ class ContextManager:
 
                             print(f"     ⚠ Skipped {paper_ref} (budget exhausted)")
 
-                    
-
             except Exception as e:
 
                 if verbose:
@@ -293,8 +268,6 @@ class ContextManager:
                     print(f"     ✗ Error reading {filepath.name}: {e}")
 
                 continue
-
-        
 
         # Finalize global index
 
@@ -304,19 +277,13 @@ class ContextManager:
 
         combined = "\n".join(buffer)
 
-        
-
         if verbose:
 
             print(f"\n   📊 Total context loaded: {len(combined):,} characters")
 
             print(f"   📊 Papers with full coverage: {len([p for p in self.loaded_papers.keys()])}")
 
-        
-
         return combined, self.paper_list
-
-    
 
     def verify_citation(self, quote: str, fuzzy: bool = True) -> Optional[str]:
 
@@ -324,15 +291,11 @@ class ContextManager:
 
         quote_clean = quote.strip().lower()
 
-        
-
         # Skip very short quotes
 
         if len(quote_clean.split()) < 3:
 
             return None
-
-        
 
         windows_to_check = []
 
@@ -393,8 +356,6 @@ class ContextManager:
             if 0 <= paper_idx < len(self.context_offsets):
 
                 return self.context_offsets[paper_idx][1]
-
-        
 
         return None
 

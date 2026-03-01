@@ -18,14 +18,12 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Literal, TypeAlias
 
 from docling.document_converter import DocumentConverter
 from google.genai import Client as GenAIClient
 from google.genai.types import Content, HttpOptions, Part
 from pydantic import BaseModel
-from typing import Literal, TypeAlias
-
 
 # =============================================================================
 # Configuration

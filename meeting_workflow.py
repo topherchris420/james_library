@@ -4,9 +4,9 @@ R.A.I.N. Lab Meeting Workflow Module
 Structured meeting phases for more productive research discussions.
 """
 
-from enum import Enum
-from typing import List, Dict, Callable, Optional
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List
 
 
 class MeetingPhase(Enum):

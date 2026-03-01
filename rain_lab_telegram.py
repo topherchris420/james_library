@@ -28,7 +28,6 @@ from telegram.ext import (
 
 from rain_lab import run_rain_lab
 
-
 # Telegram hard limit is 4096 characters. Keep a little safety margin.
 TELEGRAM_MESSAGE_LIMIT = 3900
 MAX_TEXT_MESSAGES_BEFORE_FILE = 3

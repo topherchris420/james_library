@@ -1,8 +1,7 @@
 
-import unittest
-import sys
 import os
-import re
+import sys
+import unittest
 from unittest.mock import MagicMock
 
 # Add parent directory to path
@@ -17,6 +16,7 @@ sys.argv = ["rain_lab_meeting_chat_version.py"]
 # Now import the module
 import rain_lab_meeting_chat_version as rlm
 from rain_lab_chat.guardrails import is_corrupted_response, strip_agent_prefix
+
 
 class TestRegexOptimization(unittest.TestCase):
     def test_extract_quotes(self):

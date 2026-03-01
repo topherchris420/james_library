@@ -1,10 +1,9 @@
-import sys
 import os
-import unittest
-import tempfile
 import shutil
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+import sys
+import tempfile
+import unittest
+from unittest.mock import MagicMock
 
 # Mock dependencies to avoid ImportErrors and side effects
 sys.modules["openai"] = MagicMock()
@@ -20,12 +19,12 @@ sys.path.insert(0, os.getcwd())
 
 try:
     import rain_lab_meeting_chat_version
-    from rain_lab_meeting_chat_version import Diplomat, ContextManager, Config, WebSearchManager
+    from rain_lab_meeting_chat_version import Config, ContextManager, Diplomat, WebSearchManager
 except ImportError:
     # Fallback if running from tests/ directory
     sys.path.insert(0, os.path.dirname(os.getcwd()))
     import rain_lab_meeting_chat_version
-    from rain_lab_meeting_chat_version import Diplomat, ContextManager, Config, WebSearchManager
+    from rain_lab_meeting_chat_version import Config, ContextManager, Diplomat, WebSearchManager
 
 class TestInputSanitization(unittest.TestCase):
     def setUp(self):

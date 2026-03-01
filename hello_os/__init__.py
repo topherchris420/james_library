@@ -18,8 +18,6 @@ Sub-modules
 __version__ = "0.1.0"
 
 # -- core public API (always available) -------------------------------------
-from hello_os.symbols import GPU_AVAILABLE, SCIPY_AVAILABLE  # noqa: F401
-from hello_os.utils import normalize, to_gpu, to_numpy  # noqa: F401
 from hello_os.core import (  # noqa: F401
     Activation,
     CognitiveState,
@@ -40,6 +38,8 @@ from hello_os.scroll import (  # noqa: F401
     CognitiveScroll,
     demonstrate_csl,
 )
+from hello_os.symbols import GPU_AVAILABLE, SCIPY_AVAILABLE  # noqa: F401
+from hello_os.utils import normalize, to_gpu, to_numpy  # noqa: F401
 
 __all__ = [
     # metadata

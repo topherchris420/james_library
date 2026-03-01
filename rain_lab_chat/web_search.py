@@ -37,8 +37,6 @@ class WebSearchManager:
 
     """Handles DuckDuckGo web searches for supplementary research context"""
 
-    
-
     def __init__(self, config: Config):
 
         self.config = config
@@ -50,8 +48,6 @@ class WebSearchManager:
         self.max_retries = 3
 
         self.retry_delay = 2.0  # seconds between retries
-
-    
 
     def search(self, query: str, verbose: bool = False) -> Tuple[str, List[Dict]]:
 
@@ -67,8 +63,6 @@ class WebSearchManager:
 
             return "", []
 
-        
-
         # Check cache
 
         if query in self.search_cache:
@@ -79,13 +73,9 @@ class WebSearchManager:
 
             return self._format_results(self.search_cache[query]), self.search_cache[query]
 
-        
-
         if verbose:
 
             print(f"\n🌐 Searching web for: '{query}'...")
-
-        
 
         # Retry loop with exponential backoff
 
@@ -94,8 +84,6 @@ class WebSearchManager:
             try:
 
                 results = []
-
-                
 
                 # Suppress any deprecation warnings during search
 
@@ -117,11 +105,7 @@ class WebSearchManager:
 
                             })
 
-                
-
                 self.search_cache[query] = results
-
-                
 
                 if results:
 
@@ -161,13 +145,9 @@ class WebSearchManager:
 
                         return "", []
 
-                    
-
             except Exception as e:
 
                 error_msg = str(e).lower()
-
-                
 
                 # Identify specific error types for better messaging
 
@@ -186,8 +166,6 @@ class WebSearchManager:
                 else:
 
                     reason = str(e)
-
-                
 
                 if attempt < self.max_retries - 1:
 
@@ -209,11 +187,7 @@ class WebSearchManager:
 
                     return "", []
 
-        
-
         return "", []
-
-    
 
     def _sanitize_text(self, text: str) -> str:
 
@@ -282,4 +256,3 @@ class WebSearchManager:
             if self.config.verbose:
                 print(f"   ⚠ Scrapling fetch failed for {url}: {e}")
             return ""
-

@@ -1,12 +1,14 @@
 import asyncio
 import os
-from tqdm.asyncio import tqdm as tqdm_async
 from dataclasses import dataclass
-import numpy as np
-from graphr1.utils import logger
-from ..base import BaseVectorStorage
 
+import numpy as np
 from pymilvus import MilvusClient
+from tqdm.asyncio import tqdm as tqdm_async
+
+from graphr1.utils import logger
+
+from ..base import BaseVectorStorage
 
 
 @dataclass

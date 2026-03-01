@@ -4,8 +4,22 @@
 Dependencies: hello_os.symbols, hello_os.utils, hello_os.core
 """
 
+from hello_os.core import (
+    Activation,
+    CognitiveState,
+    Compression,
+    CSLSentence,
+    Loop,
+    Memory,
+    OperatorRegistry,
+    Recursion,
+    Source,
+    Synthesis,
+    Thread,
+    Time,
+    Triad,
+)
 from hello_os.symbols import (
-    GPU_AVAILABLE,
     HTML,
     FancyArrowPatch,
     animation,
@@ -13,21 +27,6 @@ from hello_os.symbols import (
     plt,
 )
 from hello_os.utils import to_numpy
-from hello_os.core import (
-    Activation,
-    CSLSentence,
-    CognitiveState,
-    Memory,
-    OperatorRegistry,
-    Recursion,
-    Source,
-    Triad,
-    Compression,
-    Loop,
-    Time,
-    Thread,
-    Synthesis,
-)
 
 __all__ = [
     "CognitiveScroll",

@@ -3,14 +3,13 @@
 import random
 from typing import List
 
-from rain_lab_chat.config import Config
 from rain_lab_chat.agents import Agent
+from rain_lab_chat.config import Config
+
 
 class RainLabDirector:
 
     """Directs agents with dynamic, citation-focused instructions"""
-
-    
 
     def __init__(self, config: Config, paper_list: List[str]):
 
@@ -18,13 +17,9 @@ class RainLabDirector:
 
         self.paper_list = paper_list
 
-    
-
     def get_dynamic_instruction(self, agent: Agent, turn_count: int, topic: str) -> str:
 
         """Generate instructions that force citation"""
-
-        
 
         # Opening move
 
@@ -41,8 +36,6 @@ class RainLabDirector:
             if agent.name == "James":
 
                 return f"Focus specifically on '{random_paper}'. What does it say about '{topic}'? Quote directly."
-
-        
 
         # Research-Specific Instructions
 
@@ -98,13 +91,9 @@ class RainLabDirector:
 
         }
 
-        
-
         if agent.name in instructions:
 
             return random.choice(instructions[agent.name])
-
-        
 
         return f"Analyze '{topic}' strictly from the research papers. Quote your sources."
 

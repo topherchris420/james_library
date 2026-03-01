@@ -1,11 +1,12 @@
-﻿import openai
+﻿import datetime
+import io
 import json
-import datetime
+import os
+import random
 import sys
 import time
-import random
-import os
-import io
+
+import openai
 
 # --- 1. FORCE UTF-8 ---
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')

@@ -4,11 +4,10 @@ R.A.I.N. Lab External Integrations
 Tools for ArXiv, DOI lookup, and BibTeX generation.
 """
 
-import re
-import urllib.request
-import urllib.parse
 import json
-import os
+import re
+import urllib.parse
+import urllib.request
 
 
 def search_arxiv(query: str, max_results: int = 5) -> str:

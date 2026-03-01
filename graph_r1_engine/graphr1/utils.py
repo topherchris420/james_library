@@ -1,16 +1,16 @@
 import asyncio
+import csv
 import html
 import io
-import csv
 import json
 import logging
 import os
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from functools import wraps
 from hashlib import md5
-from typing import Any, Union, List, Optional
-import xml.etree.ElementTree as ET
+from typing import Any, List, Optional, Union
 
 import numpy as np
 import tiktoken

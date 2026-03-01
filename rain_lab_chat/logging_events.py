@@ -11,17 +11,14 @@ from typing import Dict, Optional
 from rain_lab_chat._sanitize import sanitize_text
 from rain_lab_chat.config import Config
 
+
 class LogManager:
 
     """Handles meeting transcription with metadata and log rotation"""
 
-    
-
     # Maximum log size before auto-rotation (150KB)
 
     MAX_LOG_SIZE_BYTES = 150_000
-
-    
 
     def __init__(self, config: Config):
 
@@ -31,13 +28,9 @@ class LogManager:
 
         self.archive_dir = Path(config.library_path) / "meeting_archives"
 
-        
-
         # Check if rotation needed on startup
 
         self._check_and_rotate()
-
-    
 
     def _check_and_rotate(self):
 
@@ -46,8 +39,6 @@ class LogManager:
         if not self.log_path.exists():
 
             return
-
-        
 
         try:
 
@@ -61,8 +52,6 @@ class LogManager:
 
             print(f"⚠️  Log rotation check failed: {e}")
 
-    
-
     def _rotate_log(self):
 
         """Move current log to archive with timestamp"""
@@ -73,8 +62,6 @@ class LogManager:
 
             self.archive_dir.mkdir(exist_ok=True)
 
-            
-
             # Generate archive filename with timestamp
 
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -83,27 +70,19 @@ class LogManager:
 
             archive_path = self.archive_dir / archive_name
 
-            
-
             # Move current log to archive
 
             import shutil
 
             shutil.move(str(self.log_path), str(archive_path))
 
-            
-
             print(f"📁 Log rotated to: {archive_path.name}")
 
             print(f"   Old log archived ({archive_path.stat().st_size // 1024}KB)")
 
-            
-
         except Exception as e:
 
             print(f"⚠️  Log rotation failed: {e}")
-
-    
 
     def archive_now(self):
 
@@ -118,8 +97,6 @@ class LogManager:
         else:
 
             print("ℹ️  No log to archive")
-
-    
 
     def initialize_log(self, topic: str, paper_count: int):
 
@@ -149,15 +126,11 @@ MODE: GENIUS
 
         self._append_to_log(header)
 
-    
-
     def log_statement(self, agent_name: str, content: str, metadata: Optional[Dict] = None):
 
         """Log with optional citation metadata"""
 
         entry = f"**{agent_name}:** {content}\n"
-
-        
 
         if metadata and metadata.get('verified'):
 
@@ -169,13 +142,9 @@ MODE: GENIUS
 
                 entry += f"      • \"{quote[:50]}...\" [from {source}]\n"
 
-        
-
         entry += "\n"
 
         self._append_to_log(entry)
-
-    
 
     def finalize_log(self, stats: str):
 
@@ -192,8 +161,6 @@ SESSION ENDED
 """
 
         self._append_to_log(footer)
-
-    
 
     def _append_to_log(self, text: str):
 

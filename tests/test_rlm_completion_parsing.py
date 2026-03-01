@@ -2,7 +2,6 @@ import importlib.util
 import sys
 from pathlib import Path
 
-
 MODULE_PATH = Path(__file__).resolve().parent.parent / "rlm-main" / "rlm-main" / "rlm" / "__init__.py"
 SPEC = importlib.util.spec_from_file_location("rain_local_rlm", MODULE_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)

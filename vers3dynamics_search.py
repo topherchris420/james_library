@@ -9,18 +9,18 @@ Author: Vers3Dynamics
 License: MIT
 """
 
-import numpy as np
-import plotly.graph_objects as go
-from flask import Flask, render_template_string, jsonify
-from flask_cors import CORS
-from threading import Thread, Lock
+import logging
 import time
 from collections import deque
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
-import json
 from datetime import datetime
-import logging
+from threading import Lock, Thread
+from typing import Dict, List, Tuple
+
+import numpy as np
+import plotly.graph_objects as go
+from flask import Flask, jsonify, render_template_string
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

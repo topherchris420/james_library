@@ -7,7 +7,7 @@ import numpy as np
 from sqlalchemy import create_engine, text
 from tqdm import tqdm
 
-from graphr1.base import BaseVectorStorage, BaseKVStorage
+from graphr1.base import BaseKVStorage, BaseVectorStorage
 from graphr1.utils import logger
 
 

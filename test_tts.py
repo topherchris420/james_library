@@ -3,7 +3,7 @@ Quick TTS Test Script
 Run this to test text-to-speech with agents
 """
 
-from tts_module import speak_agent, get_tts
+from tts_module import get_tts, speak_agent
 
 # Test each agent
 agents = ["James", "Jasmine", "Elena", "Luca", "Alex", "Sarah", "Diana", "Eve", "Ryan"]

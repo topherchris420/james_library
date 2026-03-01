@@ -1,10 +1,11 @@
-import anthropic
-import json
 import datetime
+import json
+import os
+import random
 import sys
 import time
-import random
-import os
+
+import anthropic
 
 # NOTE: DuckDuckGo search requires: pip install duckduckgo-search
 # If not available, the script will use a simulated search

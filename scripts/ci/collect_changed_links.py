@@ -9,7 +9,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 DOC_PATH_RE = re.compile(r"\.mdx?$")
 URL_RE = re.compile(r"https?://[^\s<>'\"]+")
 INLINE_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")

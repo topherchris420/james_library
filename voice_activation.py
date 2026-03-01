@@ -5,10 +5,9 @@ Wake word detection for hands-free operation.
 Supports: "Hey James" or custom wake words.
 """
 
+import queue
 import threading
 import time
-import queue
-
 
 # Try to import speech recognition
 try:

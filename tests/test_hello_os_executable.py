@@ -1,7 +1,9 @@
 import json
 import subprocess
 import sys
+
 import hello_os_executable as hoe
+
 
 def test_inspect_runs(repo_root):
     """hello_os_executable.py inspect must produce valid JSON."""

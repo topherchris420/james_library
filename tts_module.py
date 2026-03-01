@@ -5,11 +5,10 @@ Text-to-Speech for agent responses.
 Uses edge-tts for high-quality neural voices, falls back to pyttsx3.
 """
 
-import os
 import asyncio
-import threading
+import os
 import queue
-
+import threading
 
 # Try to import TTS libraries
 edge_tts = None

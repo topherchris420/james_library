@@ -9,7 +9,6 @@ Also confirms JSONL persistence and edge-case behaviour.
 """
 
 import json
-from pathlib import Path
 
 from rain_metrics import (
     MetricsTracker,

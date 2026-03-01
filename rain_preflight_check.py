@@ -3,11 +3,10 @@ R.A.I.N. LAB PRE-FLIGHT DIAGNOSTIC
 Verifies all prerequisites before running rain_lab_meeting.py
 """
 
-import sys
-import os
 import glob
-from pathlib import Path
 import io
+import os
+import sys
 
 # Force UTF-8 for Windows consoles
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -132,7 +131,7 @@ for rlm_path in rlm_paths:
         # Check if we can actually import it
         sys.path.insert(0, rlm_path)
         try:
-            from rlm import RLM
+            from rlm import RLM  # noqa: F401
             print_success(f"RLM module imports successfully (via: {rlm_path})")
             rlm_imported = True
             break
@@ -181,8 +180,9 @@ for package_name, import_names in dependency_groups.items():
 print(f"\n{BOLD}[6/7] Checking LM Studio API...{RESET}")
 
 try:
-    import requests
     import json
+
+    import requests
     
     api_url = "http://127.0.0.1:1234/v1/models"
     

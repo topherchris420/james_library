@@ -1,13 +1,14 @@
-import json
-from fastapi import FastAPI
-from pydantic import BaseModel
-import uvicorn
-import faiss
-from FlagEmbedding import FlagAutoModel
-from typing import List
 import argparse
-from graphr1 import GraphR1, QueryParam
 import asyncio
+import json
+from typing import List
+
+import faiss
+import uvicorn
+from fastapi import FastAPI
+from FlagEmbedding import FlagAutoModel
+from graphr1 import GraphR1, QueryParam
+from pydantic import BaseModel
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()

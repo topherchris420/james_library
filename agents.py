@@ -6,7 +6,7 @@ Defines the research agent personas and team creation.
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 
 @dataclass

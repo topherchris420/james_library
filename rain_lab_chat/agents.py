@@ -1,8 +1,9 @@
 """Research agent definitions and factory."""
 
-from pathlib import Path
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List
+
 
 @dataclass
 class Agent:
@@ -27,8 +28,6 @@ class Agent:
 
     _soul_cache: str = field(default="", repr=False)  # Cached soul content
 
-    
-
     def load_soul(self, library_path: str, verbose: bool = False) -> str:
 
         """Load soul from external file, with fallback to generated soul"""
@@ -36,8 +35,6 @@ class Agent:
         soul_filename = f"{self.name.upper()}_SOUL.md"
 
         soul_path = Path(library_path) / soul_filename
-
-        
 
         if soul_path.exists():
 
@@ -85,15 +82,11 @@ class Agent:
 
                 print(f"     ⚠️ No soul file found: {soul_filename} (using default)")
 
-        
-
         # Fallback to generated soul
 
         self._soul_cache = self._generated_soul()
 
         return self._soul_cache
-
-    
 
     def _generated_soul(self) -> str:
 
@@ -141,8 +134,6 @@ SCIENTIFIC FOCUS: {self.focus}
 
 """
 
-    
-
     @property
 
     def soul(self) -> str:
@@ -158,8 +149,6 @@ SCIENTIFIC FOCUS: {self.focus}
 class RainLabAgentFactory:
 
     """Factory for creating the Physics Research Team"""
-
-    
 
     @staticmethod
 
@@ -185,8 +174,6 @@ class RainLabAgentFactory:
 
             ),
 
-            
-
             Agent(
 
                 name="Jasmine",
@@ -205,8 +192,6 @@ class RainLabAgentFactory:
 
             ),
 
-            
-
             Agent(
 
                 name="Luca",
@@ -224,8 +209,6 @@ class RainLabAgentFactory:
                 opinion_strength="weak"
 
             ),
-
-            
 
             Agent(
 

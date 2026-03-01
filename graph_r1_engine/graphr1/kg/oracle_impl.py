@@ -1,20 +1,20 @@
+import array
 import asyncio
 
 # import html
 # import os
 from dataclasses import dataclass
 from typing import Union
-import numpy as np
-import array
 
-from ..utils import logger
+import numpy as np
+import oracledb
+
 from ..base import (
     BaseGraphStorage,
     BaseKVStorage,
     BaseVectorStorage,
 )
-
-import oracledb
+from ..utils import logger
 
 
 class OracleDB:

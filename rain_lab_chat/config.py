@@ -1,8 +1,8 @@
 """Centralized configuration for R.A.I.N. Lab meetings."""
 
 import os
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Tuple
 
 
@@ -13,7 +13,6 @@ def _parse_env_csv(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
         return default
     parsed = tuple(part.strip() for part in raw.split(",") if part.strip())
     return parsed or default
-
 
 DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent.parent)
 
@@ -35,7 +34,6 @@ DEFAULT_LIBRARY_EXCLUDE_DIRS = _parse_env_csv(
         "rlm-main",
     ),
 )
-
 
 @dataclass
 class Config:

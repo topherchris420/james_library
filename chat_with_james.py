@@ -1,6 +1,6 @@
-import sys
 import io
 import os
+import sys
 
 
 def sanitize_text(text: str) -> str:

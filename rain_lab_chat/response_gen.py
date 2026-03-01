@@ -1,19 +1,16 @@
 """Response generation pipeline: prompt building, LLM calls, refinement, and completion."""
 
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 
 import openai
 
 from rain_lab_chat.agents import Agent
 from rain_lab_chat.config import Config
 from rain_lab_chat.guardrails import (
-    clean_identity,
     complete_truncated,
     detect_repeated_intro,
-    is_corrupted_response,
 )
-
 
 # ---------------------------------------------------------------------------
 # Prompt construction
@@ -44,7 +41,6 @@ def build_style_instruction(agent: Agent, prev_speaker: str) -> str:
         f"- Add a NEW insight they didn't mention\n"
         f"- Extend their idea in a new direction"
     )
-
 
 def build_user_message(
     agent: Agent,
@@ -92,7 +88,6 @@ def build_user_message(
         )
 
     return msg
-
 
 # ---------------------------------------------------------------------------
 # LLM call with retry
@@ -162,7 +157,6 @@ def call_llm_with_retry(
 
     return None, None
 
-
 # ---------------------------------------------------------------------------
 # Post-processing pipeline
 # ---------------------------------------------------------------------------
@@ -191,7 +185,6 @@ def fix_repeated_intro(
         max_retries=1,
     )
     return corrected if corrected else content
-
 
 def refine_response(
     client: openai.OpenAI,
@@ -246,7 +239,6 @@ def refine_response(
 
     return content
 
-
 def handle_truncation(
     client: openai.OpenAI,
     config: Config,
@@ -281,7 +273,6 @@ def handle_truncation(
         pass
 
     return complete_truncated(content)
-
 
 # ---------------------------------------------------------------------------
 # Wrap-up instructions

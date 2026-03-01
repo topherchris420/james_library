@@ -1,11 +1,10 @@
 """Main meeting orchestrator with citation tracking and error handling."""
 
+import glob
 import os
-import re
 import sys
 import time
 import uuid
-import glob
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -26,20 +25,17 @@ except ImportError:
     MetricsTracker = None
 
 from graph_bridge import HypergraphManager
-
 from rain_lab_chat._sanitize import RE_WEB_SEARCH_COMMAND
-from rain_lab_chat.config import Config
 from rain_lab_chat.agents import Agent, RainLabAgentFactory
-from rain_lab_chat.context import ContextManager
-from rain_lab_chat.web_search import WebSearchManager, DDG_AVAILABLE
 from rain_lab_chat.citations import CitationAnalyzer
+from rain_lab_chat.config import Config
+from rain_lab_chat.context import ContextManager
 from rain_lab_chat.director import RainLabDirector
-from rain_lab_chat.logging_events import LogManager, VisualEventLogger, Diplomat
-from rain_lab_chat.voice import VoiceEngine
 from rain_lab_chat.guardrails import (
     is_corrupted_response,
     strip_agent_prefix,
 )
+from rain_lab_chat.logging_events import Diplomat, LogManager, VisualEventLogger
 from rain_lab_chat.response_gen import (
     build_user_message,
     call_llm_with_retry,
@@ -48,12 +44,13 @@ from rain_lab_chat.response_gen import (
     handle_truncation,
     refine_response,
 )
+from rain_lab_chat.voice import VoiceEngine
+from rain_lab_chat.web_search import DDG_AVAILABLE, WebSearchManager
+
 
 class RainLabOrchestrator:
 
     """Main orchestrator with enhanced citation tracking and error handling"""
-
-    
 
     def __init__(self, config: Config):
 
@@ -64,8 +61,6 @@ class RainLabOrchestrator:
         self.context_manager = ContextManager(config)
 
         self.log_manager = LogManager(config)
-
-        
 
         # Will be initialized after context loading
 
@@ -89,8 +84,6 @@ class RainLabOrchestrator:
         self.hypergraph_manager = HypergraphManager(library_path=self.config.library_path)
 
         self.hypergraph_manager.build()
-
-        
 
         # LLM client with extended timeout for large context processing
 
@@ -210,15 +203,11 @@ class RainLabOrchestrator:
 
             return ""
 
-    
-
     def test_connection(self) -> bool:
 
         """Test LM Studio connection with retry"""
 
         print(f"\n🔌 Testing connection to blacksite at {self.config.base_url}...")
-
-        
 
         for attempt in range(3):
 
@@ -268,8 +257,6 @@ class RainLabOrchestrator:
 
                     time.sleep(2)
 
-        
-
         return False
 
     def _animate_spinner(self, label: str, duration: float = 0.9, color: str = "\033[96m"):
@@ -294,13 +281,9 @@ class RainLabOrchestrator:
 
         print(f"\r{color}✓ {label}\033[0m{' ' * 18}")
 
-    
-
     def run_meeting(self, topic: str):
 
         """Run the research meeting"""
-
-        
 
         # UTF-8 setup
 
@@ -313,8 +296,6 @@ class RainLabOrchestrator:
             except Exception:  # Some runtimes lack reconfigure()
 
                 pass
-
-        
 
         # Header - 3D block ASCII Banner
 
@@ -330,15 +311,11 @@ class RainLabOrchestrator:
 
         print(f"📋 Topic: {topic}")
 
-        
-
         # Test connection
 
         if not self.test_connection():
 
             return
-
-        
 
         # Load context
 
@@ -364,15 +341,11 @@ class RainLabOrchestrator:
 
                 print(f"\r\033[K\033[91m✗\033[0m No papers found.")
 
-        
-
         if not paper_list:
 
             print("\n❌ No papers found. Cannot proceed.")
 
             return
-
-        
 
         # Initialize components that need context
 
@@ -400,8 +373,6 @@ class RainLabOrchestrator:
 
             self.metrics_tracker.set_corpus(self.context_manager.loaded_papers)
 
-        
-
         # Load agent souls from external files
 
         if verbose:
@@ -419,8 +390,6 @@ class RainLabOrchestrator:
         if not verbose:
 
             print(f"\r\033[K\033[92m✓\033[0m Agents ready")
-
-        
 
         # Perform web search for supplementary context
 
@@ -446,8 +415,6 @@ class RainLabOrchestrator:
 
             print("   Install with: pip install duckduckgo-search\n")
 
-        
-
         # Combine contexts
 
         full_context = context_block
@@ -455,8 +422,6 @@ class RainLabOrchestrator:
         if web_context:
 
             full_context = context_block + "\n\n" + web_context
-
-        
 
         # Store for use in agent responses
 
@@ -468,22 +433,16 @@ class RainLabOrchestrator:
 
             self.full_context += "\n### PREVIOUS MEETING CONTEXT\n" + previous_meeting_summary
 
-        
-
         # Initialize log
 
         self.log_manager.initialize_log(topic, len(paper_list))
         self._start_visual_conversation(topic)
-
-        
 
         # Meeting setup
 
         history_log = []
 
         turn_count = 0
-
-        
 
         print(f"\n🚀 TEAM MEETING")
 
@@ -495,23 +454,17 @@ class RainLabOrchestrator:
 
         print("="*70 + "\n")
 
-        
-
         # Track wrap-up phase
 
         in_wrap_up = False
 
         wrap_up_complete = False
 
-        
-
         # --- AUTONOMOUS LOOP WITH MANUAL INTERVENTION ---
 
         # Calculate when wrap-up should start
 
         wrap_up_start_turn = self.config.max_turns - self.config.wrap_up_turns
-
-        
 
         while turn_count < self.config.max_turns:
 
@@ -535,11 +488,7 @@ class RainLabOrchestrator:
 
                 print("="*70 + "\n")
 
-            
-
             current_agent = self.team[turn_count % len(self.team)]
-
-            
 
             # Check for user intervention with Windows-compatible key detection
 
@@ -548,8 +497,6 @@ class RainLabOrchestrator:
             print(f"\n{current_agent.color}▶ {current_agent.name}'s turn ({current_agent.role})\033[0m")
 
             print("\033[90m   [Press ENTER to speak, or wait...]\033[0m", end='', flush=True)
-
-            
 
             # Cross-platform: check for keypress during brief window
 
@@ -587,11 +534,7 @@ class RainLabOrchestrator:
 
                 time.sleep(0.05)  # Small sleep to prevent CPU spinning
 
-            
-
             print("\r" + " " * 50 + "\r", end='')  # Clear the "Press ENTER" prompt
-
-            
 
             # Handle user intervention
 
@@ -638,8 +581,6 @@ class RainLabOrchestrator:
 
                         break
 
-            
-
             # 2. Generate Response
 
             response, metadata = self._generate_agent_response(
@@ -658,15 +599,11 @@ class RainLabOrchestrator:
 
             )
 
-            
-
             if response is None:
 
                 print("❌ Failed to generate response after retries. Ending meeting.")
 
                 break
-
-            
 
             # 3. Analyze Citations
 
@@ -683,8 +620,6 @@ class RainLabOrchestrator:
                 metadata = citation_analysis
 
                 current_agent.citations_made += len(citation_analysis['verified'])
-
-            
 
             # 4. Output - Clean up any duplicate name prefixes from the response
 
@@ -753,8 +688,6 @@ class RainLabOrchestrator:
 
                         self.full_context += f"\n\n### LIVE WEB SEARCH\nQuery: {query}\n{web_note}"
 
-            
-
             # Show citation feedback
 
             if metadata and metadata.get('verified'):
@@ -764,8 +697,6 @@ class RainLabOrchestrator:
                 for quote, source in metadata['verified'][:1]:  # Show first citation
 
                     print(f"\033[90m      • \"{quote[:60]}...\" [from {source}]\033[0m")
-
-            
 
             # 5. Log
 
@@ -783,11 +714,7 @@ class RainLabOrchestrator:
 
                 )
 
-            
-
             turn_count += 1
-
-        
 
         # Meeting officially closed
 
@@ -801,8 +728,6 @@ class RainLabOrchestrator:
 
         self.log_manager.log_statement("James", "Meeting adjourned. Great discussion everyone!")
 
-        
-
         # Finalize
 
         if self.metrics_tracker is not None:
@@ -813,8 +738,6 @@ class RainLabOrchestrator:
 
         self.log_manager.finalize_log(stats)
         self._end_visual_conversation()
-
-        
 
         print("\n" + "="*70)
 

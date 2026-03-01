@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 import unittest
 from unittest.mock import MagicMock
 
@@ -14,11 +14,11 @@ sys.modules["graph_bridge"] = MagicMock()
 sys.path.insert(0, os.getcwd())
 
 try:
-    from rain_lab_meeting_chat_version import WebSearchManager, Config
+    from rain_lab_meeting_chat_version import Config, WebSearchManager
 except ImportError:
     # Fallback if running from tests/ directory
     sys.path.insert(0, os.path.dirname(os.getcwd()))
-    from rain_lab_meeting_chat_version import WebSearchManager, Config
+    from rain_lab_meeting_chat_version import Config, WebSearchManager
 
 class TestWebSanitization(unittest.TestCase):
     def setUp(self):

@@ -1,11 +1,12 @@
 """CLI interface and entry point for R.A.I.N. Lab meetings."""
 
+import argparse
 import os
 import sys
-import argparse
 
-from rain_lab_chat.config import Config, DEFAULT_LIBRARY_PATH, DEFAULT_MODEL_NAME, DEFAULT_RECURSIVE_LIBRARY_SCAN
+from rain_lab_chat.config import DEFAULT_LIBRARY_PATH, DEFAULT_MODEL_NAME, DEFAULT_RECURSIVE_LIBRARY_SCAN, Config
 from rain_lab_chat.orchestrator import RainLabOrchestrator
+
 
 def parse_args():
 
@@ -31,8 +32,6 @@ Examples:
 
     )
 
-    
-
     parser.add_argument(
 
         '--library',
@@ -44,8 +43,6 @@ Examples:
         help='Path to research library folder'
 
     )
-
-    
 
     parser.add_argument(
 
@@ -80,8 +77,6 @@ Examples:
         help='LM Studio OpenAI-compatible base URL'
 
     )
-
-    
 
     parser.add_argument(
 
@@ -137,8 +132,6 @@ Examples:
 
     )
 
-    
-
     parser.add_argument(
 
         '--max-turns',
@@ -150,8 +143,6 @@ Examples:
         help='Maximum conversation turns (default: 25)'
 
     )
-
-    
 
     parser.add_argument(
 
@@ -177,8 +168,6 @@ Examples:
 
     )
 
-    
-
     parser.add_argument(
 
         '--no-web',
@@ -188,8 +177,6 @@ Examples:
         help='Disable DuckDuckGo web search'
 
     )
-
-    
 
     parser.add_argument(
 
@@ -255,8 +242,6 @@ Examples:
 
     )
 
-    
-
     args, unknown = parser.parse_known_args()
 
     if unknown:
@@ -272,8 +257,6 @@ def main():
     """Main entry point"""
 
     args = parse_args()
-
-    
 
     recursive_library_scan = DEFAULT_RECURSIVE_LIBRARY_SCAN
 
@@ -329,8 +312,6 @@ def main():
 
     )
 
-    
-
     # Get topic
 
     if args.topic:
@@ -347,15 +328,11 @@ def main():
 
         topic = input("\n🔬 Research Topic: ").strip()
 
-    
-
     if not topic:
 
         print("❌ No topic provided. Exiting.")
 
         sys.exit(1)
-
-    
 
     # Run meeting
 

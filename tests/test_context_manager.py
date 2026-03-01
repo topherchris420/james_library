@@ -2,8 +2,11 @@
 import os
 import tempfile
 from pathlib import Path
+
 import pytest
-from rain_lab_meeting_chat_version import ContextManager, Config
+
+from rain_lab_meeting_chat_version import Config, ContextManager
+
 
 @pytest.fixture
 def temp_library():

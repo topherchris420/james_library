@@ -1,12 +1,12 @@
-import time
-import sys
 import os
+import sys
+import time
 
 # Add root to path
 sys.path.append(os.getcwd())
 
 try:
-    from rain_lab_meeting_chat_version import ContextManager, Config
+    from rain_lab_meeting_chat_version import Config, ContextManager
 except ImportError as e:
     print(f"Error: Could not import rain_lab_meeting_chat_version. Ensure you are running from repo root. Details: {e}")
     sys.exit(1)

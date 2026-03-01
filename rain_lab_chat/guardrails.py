@@ -1,13 +1,12 @@
 """Output guardrails: corruption detection, identity cleanup, and prefix stripping."""
 
 import re
-from typing import List, Tuple
+from typing import Tuple
 
 from rain_lab_chat._sanitize import RE_CORRUPTION_CAPS, RE_CORRUPTION_PATTERNS
 
 # Agent names used for identity-confusion filtering
 _KNOWN_AGENTS = ("James", "Jasmine", "Luca", "Elena")
-
 
 def is_corrupted_response(text: str) -> Tuple[bool, str]:
     """Detect corrupted/garbled LLM outputs using multiple heuristics.
@@ -46,7 +45,6 @@ def is_corrupted_response(text: str) -> Tuple[bool, str]:
 
     return False, ""
 
-
 def detect_repeated_intro(content: str) -> bool:
     """Return True if James is repeating his opening-meeting template on a later turn."""
     lowered = content.lower()
@@ -55,7 +53,6 @@ def detect_repeated_intro(content: str) -> bool:
         or "today we're looking into" in lowered
         or "today we're talking about" in lowered
     )
-
 
 def strip_agent_prefix(response: str, agent_name: str) -> str:
     """Strip duplicate agent name prefixes from the response.
@@ -68,7 +65,6 @@ def strip_agent_prefix(response: str, agent_name: str) -> str:
     pattern = rf'^{re.escape(agent_name)}\s*(?:\([^)]*\))?\s*:\s*'
     cleaned = re.sub(pattern, '', response, count=1)
     return cleaned.strip()
-
 
 def clean_identity(content: str, agent_name: str) -> str:
     """Remove self-prefix and lines where the agent speaks as OTHER team members."""
@@ -88,7 +84,6 @@ def clean_identity(content: str, agent_name: str) -> str:
             cleaned_lines.append(line)
 
     return '\n'.join(cleaned_lines).strip()
-
 
 def complete_truncated(content: str) -> str:
     """Try to end truncated content at the last complete sentence, or add ellipsis."""

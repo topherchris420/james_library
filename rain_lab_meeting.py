@@ -3,17 +3,16 @@ R.A.I.N. LAB
 
 """
 
-import sys
-import os
-import glob
+import concurrent.futures
 import io
+import os
+import sys
 import time
 import uuid
-import concurrent.futures
-from pathlib import Path
-from typing import List
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
+from typing import List
 
 # --- EVAL METRICS ---
 try:
@@ -56,8 +55,8 @@ except Exception:  # noqa: E722 — best-effort cache clear; safe to ignore
 RLM = None
 if "--help" not in sys.argv and "-h" not in sys.argv:
     try:
-        from rlm import RLM
         import rlm as _rlm_mod
+        from rlm import RLM
         print(f"Using RLM from: {_rlm_mod.__file__}")
     except ImportError as e:
         missing_dep = getattr(e, "name", None)

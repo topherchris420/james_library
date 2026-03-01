@@ -1,11 +1,11 @@
 import os
-from tqdm.asyncio import tqdm as tqdm_async
 from dataclasses import dataclass
-from pymongo import MongoClient
 
-from graphr1.utils import logger
+from pymongo import MongoClient
+from tqdm.asyncio import tqdm as tqdm_async
 
 from graphr1.base import BaseKVStorage
+from graphr1.utils import logger
 
 
 @dataclass

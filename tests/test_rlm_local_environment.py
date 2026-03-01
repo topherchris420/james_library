@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RLM_PATH = REPO_ROOT / "rlm-main" / "rlm-main"
 

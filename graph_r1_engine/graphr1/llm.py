@@ -4,37 +4,37 @@ import json
 import os
 import re
 import struct
+import sys
 from functools import lru_cache
-from typing import List, Dict, Callable, Any, Union, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
+
 import aioboto3
 import aiohttp
 import numpy as np
 import ollama
 import torch
 from openai import (
-    AsyncOpenAI,
     APIConnectionError,
+    AsyncAzureOpenAI,
+    AsyncOpenAI,
     RateLimitError,
     Timeout,
-    AsyncAzureOpenAI,
 )
 from pydantic import BaseModel, Field
 from tenacity import (
     retry,
+    retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
-    retry_if_exception_type,
 )
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from .utils import (
-    wrap_embedding_func_with_attrs,
     locate_json_string_body_from_string,
-    safe_unicode_decode,
     logger,
+    safe_unicode_decode,
+    wrap_embedding_func_with_attrs,
 )
-
-import sys
 
 if sys.version_info < (3, 9):
     from typing import AsyncIterator
@@ -348,7 +348,7 @@ def initialize_lmdeploy_pipeline(
     model_format="hf",
     quant_policy=0,
 ):
-    from lmdeploy import pipeline, ChatTemplateConfig, TurbomindEngineConfig
+    from lmdeploy import ChatTemplateConfig, TurbomindEngineConfig, pipeline
 
     lmdeploy_pipe = pipeline(
         model_path=model,
@@ -408,7 +408,7 @@ async def lmdeploy_model_if_cache(
     """
     try:
         import lmdeploy
-        from lmdeploy import version_info, GenerationConfig
+        from lmdeploy import GenerationConfig, version_info
     except Exception:
         raise ImportError("Please install lmdeploy before initialize lmdeploy backend.")
     kwargs.pop("hashing_kv", None)
