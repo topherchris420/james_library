@@ -86,6 +86,22 @@ graph TB
 - Python 3.10+
 - Optional: Miniconda for Python env management
 
+### 5-Minute LM Studio Path (Recommended)
+
+Linux/macOS:
+
+```bash
+bash scripts/quickstart_lmstudio.sh
+```
+
+Windows PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\quickstart_lmstudio.ps1
+```
+
+This path sets up a local virtual environment, installs dependencies, sets LM Studio defaults, and runs a health check.
+
 ### Full Setup
 
 ```bash
@@ -114,6 +130,18 @@ python rain_lab.py --mode rlm --topic "acoustic resonance phenomena"
 2) Wait for install to finish
 3) Launch R.A.I.N. Lab Chat from Desktop or Start Menu
 ```
+
+---
+
+## Download Binaries
+
+If you do not want to build from source, download prebuilt binaries from:
+
+- https://github.com/topherchris420/james_library/releases
+
+Supported release targets and extraction steps are documented in:
+
+- [docs/BINARY_RELEASES.md](docs/BINARY_RELEASES.md)
 
 ---
 
@@ -199,6 +227,8 @@ python rain_lab.py --mode chat --ui on --topic "your topic"
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [SECURITY.md](SECURITY.md)
 - [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md)
+- [docs/FIRST_RUN_CHECKLIST.md](docs/FIRST_RUN_CHECKLIST.md)
+- [docs/BINARY_RELEASES.md](docs/BINARY_RELEASES.md)
 
 ---
 
