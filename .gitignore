@@ -70,3 +70,7 @@ target/
 # Jupyter
 .ipynb_checkpoints/
 >>>>>>> 1145494aa9240155d5d88fdd62050cd53c475cab
+
+# Embedded dashboard fallback assets
+!web/dist/
+!web/dist/index.html
