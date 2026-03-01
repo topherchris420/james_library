@@ -222,31 +222,64 @@ class WebSearchManager:
         return sanitize_text(text)
 
     def _format_results(self, results: List[Dict]) -> str:
-
-        """Format results for agent context"""
-
+        """Format results for agent context, optionally enriching with full page content."""
         if not results:
-
             return ""
 
-        
-
         formatted = ["\n### WEB SEARCH RESULTS (cite as [from web: title])"]
-
         for r in results:
-
             safe_title = self._sanitize_text(r.get('title', ''))
-
             safe_body = self._sanitize_text(r.get('body', ''))
-
             formatted.append(f"**{safe_title}**")
-
             formatted.append(f"{safe_body}")
-
             formatted.append(f"Source: {r.get('href', '')}\n")
 
-        
+        # Scrapling: fetch full page content from top result for richer context
+        if SCRAPLING_AVAILABLE and results:
+            page_content = self._fetch_page_content(results[0].get('href', ''))
+            if page_content:
+                formatted.append("### FULL PAGE CONTENT (top result)")
+                formatted.append(page_content)
 
         return "\n".join(formatted)
 
-# --- CITATION ANALYZER ---
+    def _fetch_page_content(self, url: str, max_chars: int = 2000) -> str:
+        """Use Scrapling's StealthyFetcher to extract full page text from a URL.
+
+        Returns extracted text truncated to max_chars, or empty string on failure.
+        Only runs when scrapling is installed (SCRAPLING_AVAILABLE is True).
+        """
+        if not SCRAPLING_AVAILABLE or not StealthyFetcher or not url:
+            return ""
+
+        try:
+            page = StealthyFetcher.fetch(url)
+            # Extract text from body, stripping HTML
+            body = page.css_first("body")
+            if body is None:
+                return ""
+
+            # Remove script and style elements
+            for tag in body.css("script, style, nav, footer, header"):
+                tag.remove()
+
+            text = body.text(separator="\n", strip=True)
+            # Clean up excessive whitespace
+            lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
+            clean_text = "\n".join(lines)
+
+            if len(clean_text) > max_chars:
+                # Truncate at last sentence boundary within budget
+                truncated = clean_text[:max_chars]
+                last_period = truncated.rfind('.')
+                if last_period > max_chars * 0.5:
+                    truncated = truncated[:last_period + 1]
+                clean_text = truncated + "\n[...truncated]"
+
+            return self._sanitize_text(clean_text)
+
+        except Exception as e:
+            if self.config.verbose:
+                print(f"   ⚠ Scrapling fetch failed for {url}: {e}")
+            return ""
+

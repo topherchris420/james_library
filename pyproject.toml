@@ -11,18 +11,30 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Start conservatively: only catch real bugs and unused imports
-select = ["E", "F", "W"]
+# Bug detection + import ordering
+select = ["E", "F", "W", "I"]
 ignore = [
     "E501",   # line-length — many scripts exceed 120 today
     "E402",   # module-level import not at top — scripts do sys.path manipulation
-    "F401",   # unused imports — several are intentional try/except probes
     "F541",   # f-string without placeholders — cosmetic, not a bug
     "F841",   # local variable assigned but never used — clean up later
     "W291",   # trailing whitespace
     "W293",   # whitespace before a statement (blank lines with spaces)
     "W605",   # invalid escape sequence — raw-string Windows paths
     "E722",   # bare except — used intentionally in several scripts
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rain_lab_chat"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+exclude = [
+    "rlm-main/",
+    "hello_os\\.py",
 ]
 
 [tool.pytest.ini_options]

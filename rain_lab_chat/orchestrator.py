@@ -27,9 +27,7 @@ except ImportError:
 
 from graph_bridge import HypergraphManager
 
-from rain_lab_chat._sanitize import (
-    RE_CORRUPTION_CAPS, RE_CORRUPTION_PATTERNS, RE_WEB_SEARCH_COMMAND,
-)
+from rain_lab_chat._sanitize import RE_WEB_SEARCH_COMMAND
 from rain_lab_chat.config import Config
 from rain_lab_chat.agents import Agent, RainLabAgentFactory
 from rain_lab_chat.context import ContextManager
@@ -38,6 +36,18 @@ from rain_lab_chat.citations import CitationAnalyzer
 from rain_lab_chat.director import RainLabDirector
 from rain_lab_chat.logging_events import LogManager, VisualEventLogger, Diplomat
 from rain_lab_chat.voice import VoiceEngine
+from rain_lab_chat.guardrails import (
+    is_corrupted_response,
+    strip_agent_prefix,
+)
+from rain_lab_chat.response_gen import (
+    build_user_message,
+    call_llm_with_retry,
+    fix_repeated_intro,
+    get_wrap_up_instruction,
+    handle_truncation,
+    refine_response,
+)
 
 class RainLabOrchestrator:
 
@@ -815,851 +825,114 @@ class RainLabOrchestrator:
         print(f"\n✅ Session saved to: {self.log_manager.log_path}\n")
 
     def _generate_agent_response(
-
-        self, 
-
-        agent: Agent, 
-
-        context_block: str, 
-
-        history_log: List[str], 
-
-        turn_count: int, 
-
+        self,
+        agent: Agent,
+        context_block: str,
+        history_log: List[str],
+        turn_count: int,
         topic: str,
-
-        is_wrap_up: bool = False
-
+        is_wrap_up: bool = False,
     ) -> Tuple[Optional[str], Optional[Dict]]:
-
-        """Generate agent response with robust error handling and retries"""
-
-        
-
+        """Generate agent response: build prompt, call LLM, refine, validate."""
         recent_chat = "\n".join(history_log[-self.config.recent_history_window:]) if history_log else "[Meeting Start]"
 
-        
-
-        # Use wrap-up instructions or normal mission
-
+        # Choose mission
         if is_wrap_up:
-
-            mission = self._get_wrap_up_instruction(agent, topic)
-
+            mission = get_wrap_up_instruction(agent, topic)
         else:
-
             mission = self.director.get_dynamic_instruction(agent, turn_count, topic)
 
-        
-
-        # Get previous speaker for conversational context
-
+        # Determine previous speaker
         prev_speaker = None
-
         if history_log:
-
             last_entry = history_log[-1]
-
             if ":" in last_entry:
-
                 prev_speaker = last_entry.split(":")[0].strip()
 
-        
+        # Build messages
+        graph_findings = None
+        if agent.name == "Luca":
+            graph_findings = self.hypergraph_manager.query(topic=topic)
 
-        # ENHANCED PROMPT - CONVERSATIONAL TEAM MEETING STYLE
-
-        conversational_instruction = ""
-
-        if prev_speaker and prev_speaker != agent.name:
-
-            conversational_instruction = f"""
-
-CONVERSATIONAL CONTEXT:
-
-{prev_speaker} just spoke. You are in a LIVE TEAM MEETING. You must:
-
-1. FIRST: Directly respond to what {prev_speaker} said (agree, disagree, add nuance, ask a follow-up question)
-
-2. THEN: Add your own perspective related to the mission below
-
-3. Use phrases like "Building on what {prev_speaker} said...", "I disagree with...", "That's interesting, but have you considered...", "To add to that point..."
-
-"""
-
-        
-
-        prompt = f"""### SHARED RESEARCH DATABASE (YOUR ONLY FACTUAL SOURCE)
-
-{context_block}
-
-### MEETING TRANSCRIPT (Recent Discussion)
-
-{recent_chat}
-
-### YOUR PROFILE
-
-{agent.soul}
-
-{conversational_instruction}
-
-### CURRENT TASK
-
-{mission}
-
-CRITICAL RULES:
-
-- You are in a TEAM MEETING - respond to colleagues, don't just monologue
-
-- Use "exact quotes" from the papers when citing data
-
-- Mention which paper you're quoting: [from filename.md]
-
-- If you must speculate, prefix with [SPECULATION]
-
-- CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
-
-- Keep response under 150 words
-
-{agent.name}:"""
+        user_msg = build_user_message(agent, recent_chat, mission, prev_speaker, graph_findings)
+        system_msg = f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"
 
         self._animate_spinner(f"{agent.name} analyzing", duration=1.0, color=agent.color)
 
-        
-
-        # RETRY LOGIC
-
+        # Call LLM with retry
         for attempt in range(self.config.max_retries):
-
-            try:
-
-                # Build conversational user message based on agreeableness
-
-                if prev_speaker and prev_speaker != agent.name and prev_speaker != "FOUNDER":
-
-                    # Agreeableness-based response style with explicit agree/disagree
-
-                    if agent.agreeableness < 0.3:
-
-                        style_instruction = f"""STYLE: You STRONGLY DISAGREE with {prev_speaker}. Be direct and combative:
-
-- Challenge their assumptions or data interpretation
-
-- Point out flaws in their reasoning or missing considerations"""
-
-                    elif agent.agreeableness < 0.5:
-
-                        style_instruction = f"""STYLE: You're SKEPTICAL of what {prev_speaker} said. Question their claims:
-
-- Demand evidence or point out logical gaps
-
-- Ask probing questions about feasibility or rigor"""
-
-                    elif agent.agreeableness < 0.7:
-
-                        style_instruction = f"""STYLE: You PARTIALLY AGREE with {prev_speaker} but add nuance:
-
-- Acknowledge one valid point then offer a different angle
-
-- Redirect the discussion toward your specialty"""
-
-                    else:
-
-                        style_instruction = f"""STYLE: You AGREE with {prev_speaker} and BUILD on it:
-
-- Add a NEW insight they didn't mention
-
-- Extend their idea in a new direction"""
-
-                    
-
-                    user_msg = f"""LIVE TEAM MEETING - Your turn to speak.
-
-RECENT DISCUSSION:
-
-{recent_chat}
-
-{style_instruction}
-
-=== CRITICAL RULES (MUST FOLLOW) ===
-
-1. YOU ARE {agent.name.upper()} - Never speak as another person or quote what others "would say"
-
-2. DO NOT REPEAT phrases others just said - use completely different wording
-
-3. ADVANCE the discussion - raise a NEW point, question, or angle not yet discussed
-
-4. Focus on YOUR specialty: {agent.focus}
-
-5. Keep response under 80 words - be concise
-
-6. CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
-
-Your task: {mission}
-
-Respond as {agent.name} only:"""
-
-                else:
-
-                    # First speaker or after FOUNDER - open the discussion naturally
-
-                    user_msg = f"""You are {agent.name}, STARTING a team meeting discussion.
-
-Previous context: {recent_chat}
-
-=== YOUR INSTRUCTIONS ===
-
-1. Open casually and introduce the topic briefly
-
-2. Share ONE specific observation from the papers
-
-3. End with a question to spark discussion
-
-4. Keep it under 80 words
-
-Your specialty: {agent.focus}
-
-Your task: {mission}
-
-Respond as {agent.name} only:"""
-
-                if agent.name == "Luca":
-
-                    graph_findings = self.hypergraph_manager.query(topic=topic)
-
-                    user_msg += f"""
-
-HIDDEN CONNECTIONS (KNOWLEDGE HYPERGRAPH):
-
-{graph_findings}
-
-Use these links to propose creative cross-paper insights if relevant.
-
-"""
-
-                
-
-                # Use system message for static context (better caching)
-
-                response = self.client.chat.completions.create(
-
-                    model=self.config.model_name,
-
-                    messages=[
-
-                        {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
-
-                        {"role": "user", "content": user_msg}
-
-                    ],
-
-                    temperature=self.config.temperature,
-
-                    max_tokens=self.config.max_tokens
-
-                )
-
-                
-
-                content = response.choices[0].message.content.strip()
-
-                # Guardrail: some local models collapse back to James' opener template
-
-                # on later turns, which appears in LM Studio logs as repeated intros.
-
-                if turn_count >= 1 and agent.name == "James":
-
-                    lowered = content.lower()
-
-                    repeated_intro = (
-
-                        lowered.startswith("hey team")
-
-                        or "today we're looking into" in lowered
-
-                        or "today we're talking about" in lowered
-
-                    )
-
-                    if repeated_intro:
-
-                        correction = self.client.chat.completions.create(
-
-                            model=self.config.model_name,
-
-                            messages=[
-
-                                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
-
-                                {"role": "user", "content": (
-
-                                    "You are in mid-meeting, not opening the session. "
-
-                                    "Do NOT use intro phrases like 'Hey team' or restate the topic. "
-
-                                    "React to the previous speaker by name in the first sentence, "
-
-                                    "add one new concrete paper-grounded point, and end with a question. "
-
-                                    "Keep under 80 words."
-
-                                )}
-
-                            ],
-
-                            temperature=self.config.temperature,
-
-                            max_tokens=self.config.max_tokens
-
-                        )
-
-                        corrected = correction.choices[0].message.content.strip()
-
-                        if corrected:
-
-                            content = corrected
-
-                # Optional recursive refinement: critique + revise in short internal loops
-
-                if self.config.recursive_intellect and self.config.recursive_depth > 0 and content:
-
-                    for _ in range(self.config.recursive_depth):
-
-                        pre_critique_text = content  # snapshot for metrics
-
-                        critique = self.client.chat.completions.create(
-
-                            model=self.config.model_name,
-
-                            messages=[
-
-                                {"role": "system", "content": f"You are a strict research editor for {agent.name}."},
-
-                                {"role": "user", "content": (
-
-                                    "Review this draft and return a compact critique with exactly 3 bullets: "
-
-                                    "(1) factual grounding to provided papers, (2) novelty vs prior turns, "
-
-                                    "(3) clarity under 80 words.\n\n"
-
-                                    f"DRAFT:\n{content}\n\n"
-
-                                    "If there are no issues, still return 3 bullets and say what is strong."
-
-                                )}
-
-                            ],
-
-                            temperature=0.2,
-
-                            max_tokens=120
-
-                        )
-
-                        critique_text = critique.choices[0].message.content.strip()
-
-                        refined = self.client.chat.completions.create(
-
-                            model=self.config.model_name,
-
-                            messages=[
-
-                                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
-
-                                {"role": "user", "content": (
-
-                                    f"Revise this response as {agent.name} using critique below. "
-
-                                    "Keep it under 80 words, add one concrete paper-grounded point, "
-
-                                    "avoid repetition, and respond in first person only.\n\n"
-
-                                    f"ORIGINAL:\n{content}\n\n"
-
-                                    f"CRITIQUE:\n{critique_text}"
-
-                                )}
-
-                            ],
-
-                            temperature=self.config.temperature,
-
-                            max_tokens=self.config.max_tokens
-
-                        )
-
-                        content = refined.choices[0].message.content.strip() or content
-
-                        # Record critique pair for eval metrics
-
-                        if self.metrics_tracker is not None:
-
-                            self.metrics_tracker.record_critique(
-
-                                pre_critique_text, content
-
-                            )
-
-                
-
-                # Clean up response - remove agent speaking as self
-
-                if content.startswith(f"{agent.name}:"):
-
-                    content = content.replace(f"{agent.name}:", "", 1).strip()
-
-                
-
-                # Remove lines where agent speaks as OTHER team members (identity confusion)
-
-                other_agents = ["James", "Jasmine", "Luca", "Elena"]
-
-                cleaned_lines = []
-
-                for line in content.split('\n'):
-
-                    # Check if line starts with another agent's name followed by colon
-
-                    is_other_agent_line = False
-
-                    for other in other_agents:
-
-                        if other != agent.name and line.strip().startswith(f"{other}:"):
-
-                            is_other_agent_line = True
-
-                            break
-
-                    if not is_other_agent_line:
-
-                        cleaned_lines.append(line)
-
-                content = '\n'.join(cleaned_lines).strip()
-
-                
-
-                # Check if response was truncated (doesn't end with sentence-ending punctuation)
-
-                finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
-
-                is_truncated = finish_reason == "length" or (
-
-                    content and 
-
-                    not content.endswith(('.', '!', '?', '"', "'", ')')) and
-
-                    len(content) > 50  # Only check longer responses
-
-                )
-
-                
-
-                if is_truncated:
-
-                    print("(completing...)", end=' ', flush=True)
-
-                    # Request continuation
-
-                    try:
-
-                        continuation = self.client.chat.completions.create(
-
-                            model=self.config.model_name,
-
-                            messages=[
-
-                                {"role": "system", "content": f"{agent.soul}"},
-
-                                {"role": "user", "content": f"Complete this thought in ONE sentence. Keep it brief:\n\n{content}"}
-
-                            ],
-
-                            temperature=self.config.temperature,
-
-                            max_tokens=60  # Just enough to finish the thought
-
-                        )
-
-                        
-
-                        cont_text = continuation.choices[0].message.content.strip()
-
-                        
-
-                        # Clean continuation - remove if it starts with the same text
-
-                        if cont_text and not cont_text.startswith(content[:20]):
-
-                            # Check if continuation is a complete sentence fragment
-
-                            if not cont_text[0].isupper():
-
-                                content = content + " " + cont_text
-
-                            else:
-
-                                # Model restarted - just ensure we end cleanly
-
-                                # Find last complete sentence in original
-
-                                for end in ['. ', '! ', '? ']:
-
-                                    if end in content:
-
-                                        last_end = content.rfind(end)
-
-                                        if last_end > len(content) * 0.5:  # Last sentence in second half
-
-                                            content = content[:last_end + 1]
-
-                                            break
-
-                                else:
-
-                                    # No good sentence end found, append ellipsis
-
-                                    content = content.rstrip(',;:') + "..."
-
-                    except Exception:
-
-                        # Continuation failed - try to end gracefully
-
-                        for end in ['. ', '! ', '? ']:
-
-                            if end in content:
-
-                                last_end = content.rfind(end)
-
-                                if last_end > len(content) * 0.5:
-
-                                    content = content[:last_end + 1]
-
-                                    break
-
-                        else:
-
-                            content = content.rstrip(',;:') + "..."
-
-                
-
-                # CORRUPTION CHECK - validate response before accepting
-
-                is_corrupted, corruption_reason = self._is_corrupted_response(content)
-
-                if is_corrupted:
-
-                    print(f"\n⚠️  Corrupted response detected ({corruption_reason})")
-
-                    if attempt < self.config.max_retries - 1:
-
-                        print("   Regenerating...")
-
-                        time.sleep(1)
-
-                        continue  # Retry
-
-                    else:
-
-                        print("   Falling back to placeholder response.")
-
-                        content = f"[{agent.name} is processing... Let me gather my thoughts on this topic.]"
-
-                
-
-                print("✓")
-
-                return content, {}
-
-            
-
-            except openai.APITimeoutError:
-
-                print(f"\n⏱️  Timeout (attempt {attempt+1}/{self.config.max_retries})")
-
+            content, finish_reason = call_llm_with_retry(
+                self.client, self.config, system_msg, user_msg, max_retries=1,
+            )
+            if content is None:
                 if attempt < self.config.max_retries - 1:
-
-                    print("   Retrying in 2 seconds...")
-
-                    time.sleep(2)
-
-                else:
-
-                    print("\n💡 The model might be overloaded. Try:")
-
-                    print("   1. Reducing max_tokens in Config")
-
-                    print("   2. Checking LM Studio's server logs")
-
-                    return None, None
-
-                
-
-            except openai.APIConnectionError as e:
-
-                print(f"\n❌ Connection Lost (attempt {attempt+1}/{self.config.max_retries})")
-
-                if attempt < self.config.max_retries - 1:
-
-                    print("   Retrying in 3 seconds...")
-
-                    time.sleep(3)
-
-                else:
-
-                    print("\n💡 Connection failed after retries. Check:")
-
-                    print("   1. Is LM Studio still running?")
-
-                    print("   2. Did the model unload? (Check LM Studio model tab)")
-
-                    print("   3. Try reloading the model in LM Studio")
-
-                    return None, None
-
-                    
-
-            except openai.APIError as e:
-
-                print(f"\n❌ API Error: {e}")
-
-                if attempt < self.config.max_retries - 1:
-
-                    time.sleep(2)
-
-                else:
-
-                    return None, None
-
-                    
-
-            except Exception as e:
-
-                print(f"\n❌ Unexpected Error: {e}")
-
+                    continue
                 return None, None
 
-        
+            # Guardrail: fix repeated intro on later James turns
+            if turn_count >= 1 and agent.name == "James":
+                content = fix_repeated_intro(
+                    self.client, self.config, agent, content, context_block,
+                )
+
+            # Recursive self-reflection
+            content = refine_response(
+                self.client, self.config, agent, content, context_block,
+                metrics_tracker=self.metrics_tracker,
+            )
+
+            # Identity cleanup
+            from rain_lab_chat.guardrails import clean_identity
+            content = clean_identity(content, agent.name)
+
+            # Handle truncation
+            content = handle_truncation(
+                self.client, self.config, agent, content, finish_reason,
+            )
+
+            # Corruption check
+            corrupted, reason = is_corrupted_response(content)
+            if corrupted:
+                print(f"\n\u26a0\ufe0f  Corrupted response detected ({reason})")
+                if attempt < self.config.max_retries - 1:
+                    print("   Regenerating...")
+                    import time as _t
+                    _t.sleep(1)
+                    continue
+                else:
+                    print("   Falling back to placeholder response.")
+                    content = f"[{agent.name} is processing... Let me gather my thoughts on this topic.]"
+
+            print("\u2713")
+            return content, {}
 
         return None, None
 
-    
-
-    def _is_corrupted_response(self, text: str) -> Tuple[bool, str]:
-
-        """
-
-        Detect corrupted/garbled LLM outputs using multiple heuristics.
-
-        Returns (is_corrupted, reason) tuple.
-
-        """
-
-        if not text or len(text.strip()) < 10:
-
-            return True, "Response too short"
-
-        
-
-        # Heuristic 1: Too many consecutive uppercase letters (token corruption)
-
-        # Pattern like "AIVERCREDREDRIECKERE" is a sign of corruption
-
-        if RE_CORRUPTION_CAPS.search(text):
-
-            return True, "Excessive consecutive capitals detected"
-
-        
-
-        # Heuristic 2: High ratio of special characters (gibberish)
-
-        special_chars = sum(1 for c in text if c in ':;/\\|<>{}[]()@#$%^&*+=~`')
-
-        if len(text) > 20 and special_chars / len(text) > 0.15:
-
-            return True, "Too many special characters"
-
-        
-
-        # Heuristic 3: Common corruption patterns
-
-        for pattern in RE_CORRUPTION_PATTERNS:
-
-            if pattern.search(text):
-
-                return True, f"Corruption pattern detected: {pattern.pattern[:20]}"
-
-        
-
-        # Heuristic 4: Too many empty lines or lines with just punctuation
-
-        lines = text.split('\n')
-
-        empty_lines = sum(1 for line in lines if len(line.strip()) <= 2)
-
-        if len(lines) > 5 and empty_lines / len(lines) > 0.5:
-
-            return True, "Too many empty lines"
-
-        
-
-        # Heuristic 5: Average word length too high (concatenated garbage)
-
-        words = text.split()
-
-        if words:
-
-            avg_word_len = sum(len(w) for w in words) / len(words)
-
-            if avg_word_len > 15:
-
-                return True, "Average word length too high (likely corrupted)"
-
-        
-
-        return False, ""
-
-    
-
-    def _get_wrap_up_instruction(self, agent: Agent, topic: str) -> str:
-
-        """Get wrap-up phase instructions for each agent to close the meeting naturally"""
-
-        wrap_up_instructions = {
-
-            "James": f"""WRAP-UP TIME: You are closing the meeting. As lead scientist:
-
-- Summarize the KEY TAKEAWAY about '{topic}' from today's discussion
-
-- Mention 1-2 specific insights from your colleagues that stood out
-
-- Suggest ONE concrete next step or action item for the team
-
-- End with something like 'Good discussion today' or 'Let's pick this up next time'
-
-Keep it under 80 words - this is a quick closing summary.""",
-
-            
-
-            "Jasmine": f"""WRAP-UP TIME: Give your closing thoughts on '{topic}':
-
-- State your MAIN CONCERN or practical challenge going forward
-
-- Acknowledge if any colleague made a good point about feasibility
-
-- Mention what you'd need to see before moving forward
-
-Keep it under 60 words - be direct and practical as always.""",
-
-            
-
-            "Luca": f"""WRAP-UP TIME: Give your closing synthesis on '{topic}':
-
-- Find the COMMON GROUND between what everyone said
-
-- Highlight how different perspectives complemented each other
-
-- Express optimism about where the research is heading
-
-Keep it under 60 words - stay diplomatic and unifying.""",
-
-            
-
-            "Elena": f"""WRAP-UP TIME: Give your final assessment of '{topic}':
-
-- State the most important MATHEMATICAL or THEORETICAL point established
-
-- Note any concerns about rigor that still need addressing
-
-- Acknowledge good work from colleagues if warranted
-
-Keep it under 60 words - maintain your standards but be collegial."""
-
-        }
-
-        
-
-        return wrap_up_instructions.get(agent.name, f"Provide your closing thoughts on '{topic}' in under 60 words.")
-
-    
-
     def _generate_final_stats(self) -> str:
-
-        """Generate final statistics"""
-
-        stats_lines = [
-
-            "SESSION STATISTICS",
-
-            "─" * 70,
-
-        ]
-
-        
+        """Generate final statistics."""
+        stats_lines = ["SESSION STATISTICS", "\u2500" * 70]
 
         if self.citation_analyzer:
-
             stats_lines.append(self.citation_analyzer.get_stats())
-
             stats_lines.append("")
-
-        
 
         stats_lines.append("AGENT PERFORMANCE:")
-
         for agent in self.team:
-
-            stats_lines.append(f"  • {agent.name}: {agent.citations_made} verified citations")
-
-        # Append eval-framework metrics when available
+            stats_lines.append(f"  \u2022 {agent.name}: {agent.citations_made} verified citations")
 
         if self.metrics_tracker is not None:
-
             m = self.metrics_tracker.summary()
-
             stats_lines.append("")
-
             stats_lines.append("EVAL METRICS:")
-
-            stats_lines.append(f"  • Citation accuracy:    {m['citation_accuracy']:.2f}")
-
-            stats_lines.append(f"  • Novel-claim density:  {m['novel_claim_density']:.2f}")
-
-            stats_lines.append(f"  • Critique change rate: {m['critique_change_rate']:.2f}")
-
-        
+            stats_lines.append(f"  \u2022 Citation accuracy:    {m['citation_accuracy']:.2f}")
+            stats_lines.append(f"  \u2022 Novel-claim density:  {m['novel_claim_density']:.2f}")
+            stats_lines.append(f"  \u2022 Critique change rate: {m['critique_change_rate']:.2f}")
 
         return "\n".join(stats_lines)
 
-    
-
     def _strip_agent_prefix(self, response: str, agent_name: str) -> str:
+        """Delegate to guardrails.strip_agent_prefix."""
+        return strip_agent_prefix(response, agent_name)
 
-        """Strip duplicate agent name prefixes from the response.
-
-        
-
-        Handles patterns like:
-
-        - "James: ..."
-
-        - "James (R.A.I.N. Lab Lead): ..."
-
-        - "James (R.A.I.N. Lab): ..."
-
-        """
-
-        
-
-        # Pattern: agent name followed by optional parenthetical text, then colon
-
-        # Examples: "James:", "James (R.A.I.N. Lab Lead):", "James (anything):"
-
-        pattern = rf'^{re.escape(agent_name)}\s*(?:\([^)]*\))?\s*:\s*'
-
-        
-
-        cleaned = re.sub(pattern, '', response, count=1)
-
-        return cleaned.strip()
-
+# --- CLI INTERFACE ---
 # --- CLI INTERFACE ---

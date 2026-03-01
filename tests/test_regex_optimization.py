@@ -16,6 +16,7 @@ sys.argv = ["rain_lab_meeting_chat_version.py"]
 
 # Now import the module
 import rain_lab_meeting_chat_version as rlm
+from rain_lab_chat.guardrails import is_corrupted_response, strip_agent_prefix
 
 class TestRegexOptimization(unittest.TestCase):
     def test_extract_quotes(self):
@@ -45,53 +46,47 @@ class TestRegexOptimization(unittest.TestCase):
         self.assertEqual(expected_multi, actual_multi)
 
     def test_is_corrupted_response(self):
-        # Call as unbound method
-        is_corrupted = rlm.RainLabOrchestrator._is_corrupted_response
-
         # Normal text
         text = "This is a normal response with enough length and normal characters."
-        is_corr, reason = is_corrupted(None, text)
+        is_corr, reason = is_corrupted_response(text)
         self.assertFalse(is_corr, f"Should be valid: {reason}")
 
         # Caps corruption
         text_caps = "This is CORRUPTEDTEXTHERE because of caps."
-        is_corr, reason = is_corrupted(None, text_caps)
+        is_corr, reason = is_corrupted_response(text_caps)
         self.assertTrue(is_corr, "Should detect caps corruption")
         self.assertIn("consecutive capitals", reason)
 
         # Pattern corruption
         text_pattern = "Some text with |eoc_fim| inside."
-        is_corr, reason = is_corrupted(None, text_pattern)
+        is_corr, reason = is_corrupted_response(text_pattern)
         self.assertTrue(is_corr, "Should detect pattern corruption")
         self.assertIn("Corruption pattern", reason)
 
         # Case insensitive pattern
         text_pattern_case = "Some text with arilex inside."
-        is_corr, reason = is_corrupted(None, text_pattern_case)
+        is_corr, reason = is_corrupted_response(text_pattern_case)
         self.assertTrue(is_corr, "Should detect case-insensitive corruption")
 
     def test_strip_agent_prefix(self):
-        # Call as unbound method
-        strip = rlm.RainLabOrchestrator._strip_agent_prefix
-
         # Simple case
         text = "James: Hello world."
-        cleaned = strip(None, text, "James")
+        cleaned = strip_agent_prefix(text, "James")
         self.assertEqual(cleaned, "Hello world.")
 
         # With parentheses
         text_paren = "James (Lead Scientist): Hello world."
-        cleaned = strip(None, text_paren, "James")
+        cleaned = strip_agent_prefix(text_paren, "James")
         self.assertEqual(cleaned, "Hello world.")
 
         # No prefix
         text_none = "Hello world."
-        cleaned = strip(None, text_none, "James")
+        cleaned = strip_agent_prefix(text_none, "James")
         self.assertEqual(cleaned, "Hello world.")
 
         # Wrong agent
         text_wrong = "Elena: Hello world."
-        cleaned = strip(None, text_wrong, "James")
+        cleaned = strip_agent_prefix(text_wrong, "James")
         self.assertEqual(cleaned, "Elena: Hello world.")
 
 if __name__ == '__main__':
