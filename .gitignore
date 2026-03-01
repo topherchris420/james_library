@@ -45,6 +45,7 @@ htmlcov/
 Thumbs.db
 
 # Project-specific
+james_library-main/
 openclaw-main/
 vers3dynamics_lab/
 backups/

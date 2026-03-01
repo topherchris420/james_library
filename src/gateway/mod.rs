@@ -35,7 +35,7 @@ use axum::{
     Router,
 };
 use parking_lot::Mutex;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -83,13 +83,17 @@ fn hash_webhook_secret(value: &str) -> String {
 
 /// How often the rate limiter sweeps stale IP entries from its map.
 const RATE_LIMITER_SWEEP_INTERVAL_SECS: u64 = 300; // 5 minutes
+/// Lower bound for idempotency stale-key sweeps.
+const IDEMPOTENCY_SWEEP_MIN_MILLIS: u64 = 250;
+/// Upper bound for idempotency stale-key sweeps.
+const IDEMPOTENCY_SWEEP_MAX_SECS: u64 = 30;
 
 #[derive(Debug)]
 struct SlidingWindowRateLimiter {
     limit_per_window: u32,
     window: Duration,
     max_keys: usize,
-    requests: Mutex<(HashMap<String, Vec<Instant>>, Instant)>,
+    requests: Mutex<(HashMap<String, VecDeque<Instant>>, Instant)>,
 }
 
 impl SlidingWindowRateLimiter {
@@ -102,9 +106,15 @@ impl SlidingWindowRateLimiter {
         }
     }
 
-    fn prune_stale(requests: &mut HashMap<String, Vec<Instant>>, cutoff: Instant) {
+    fn prune_timestamps(timestamps: &mut VecDeque<Instant>, cutoff: Instant) {
+        while matches!(timestamps.front(), Some(ts) if *ts <= cutoff) {
+            timestamps.pop_front();
+        }
+    }
+
+    fn prune_stale(requests: &mut HashMap<String, VecDeque<Instant>>, cutoff: Instant) {
         requests.retain(|_, timestamps| {
-            timestamps.retain(|t| *t > cutoff);
+            Self::prune_timestamps(timestamps, cutoff);
             !timestamps.is_empty()
         });
     }
@@ -134,7 +144,7 @@ impl SlidingWindowRateLimiter {
             if requests.len() >= self.max_keys {
                 let evict_key = requests
                     .iter()
-                    .min_by_key(|(_, timestamps)| timestamps.last().copied().unwrap_or(cutoff))
+                    .min_by_key(|(_, timestamps)| timestamps.back().copied().unwrap_or(cutoff))
                     .map(|(k, _)| k.clone());
                 if let Some(evict_key) = evict_key {
                     requests.remove(&evict_key);
@@ -143,13 +153,13 @@ impl SlidingWindowRateLimiter {
         }
 
         let entry = requests.entry(key.to_owned()).or_default();
-        entry.retain(|instant| *instant > cutoff);
+        Self::prune_timestamps(entry, cutoff);
 
         if entry.len() >= self.limit_per_window as usize {
             return false;
         }
 
-        entry.push(now);
+        entry.push_back(now);
         true
     }
 }
@@ -183,6 +193,7 @@ pub struct IdempotencyStore {
     ttl: Duration,
     max_keys: usize,
     keys: Mutex<HashMap<String, Instant>>,
+    last_sweep: Mutex<Instant>,
 }
 
 impl IdempotencyStore {
@@ -191,7 +202,15 @@ impl IdempotencyStore {
             ttl,
             max_keys: max_keys.max(1),
             keys: Mutex::new(HashMap::new()),
+            last_sweep: Mutex::new(Instant::now()),
         }
+    }
+
+    fn sweep_interval(&self) -> Duration {
+        self.ttl.clamp(
+            Duration::from_millis(IDEMPOTENCY_SWEEP_MIN_MILLIS),
+            Duration::from_secs(IDEMPOTENCY_SWEEP_MAX_SECS),
+        )
     }
 
     /// Returns true if this key is new and is now recorded.
@@ -199,10 +218,20 @@ impl IdempotencyStore {
         let now = Instant::now();
         let mut keys = self.keys.lock();
 
-        keys.retain(|_, seen_at| now.duration_since(*seen_at) < self.ttl);
+        // Fast-path duplicate check: avoid full-map cleanup on every request.
+        if let Some(seen_at) = keys.get(key).copied() {
+            if now.duration_since(seen_at) < self.ttl {
+                return false;
+            }
+            keys.remove(key);
+        }
 
-        if keys.contains_key(key) {
-            return false;
+        {
+            let mut last_sweep = self.last_sweep.lock();
+            if last_sweep.elapsed() >= self.sweep_interval() {
+                keys.retain(|_, seen_at| now.duration_since(*seen_at) < self.ttl);
+                *last_sweep = now;
+            }
         }
 
         if keys.len() >= self.max_keys {

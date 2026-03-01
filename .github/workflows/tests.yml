@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Repository integrity guard
+        run: python scripts/ci/repo_integrity_guard.py
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
