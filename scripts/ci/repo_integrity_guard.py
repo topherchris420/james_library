@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Repository integrity checks for CI."""
 
-from __future__ import annotations
-
 import pathlib
-
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC_DUPLICATE_TREE = REPO_ROOT / "src" / "src"
