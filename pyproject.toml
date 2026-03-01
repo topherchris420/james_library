@@ -1,0 +1,29 @@
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+# Exclude vendored / generated code that we don't own
+exclude = [
+    "rlm-main/",
+    "hello_os.py",       # 53k-line Colab export — not maintained here
+    ".git",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+# Start conservatively: only catch real bugs and unused imports
+select = ["E", "F", "W"]
+ignore = [
+    "E501",   # line-length — many scripts exceed 120 today
+    "E402",   # module-level import not at top — scripts do sys.path manipulation
+    "F401",   # unused imports — several are intentional try/except probes
+    "F541",   # f-string without placeholders — cosmetic, not a bug
+    "F841",   # local variable assigned but never used — clean up later
+    "W291",   # trailing whitespace
+    "W293",   # whitespace before a statement (blank lines with spaces)
+    "W605",   # invalid escape sequence — raw-string Windows paths
+    "E722",   # bare except — used intentionally in several scripts
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

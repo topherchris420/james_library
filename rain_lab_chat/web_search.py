@@ -1,0 +1,252 @@
+"""DuckDuckGo web search with optional Scrapling integration."""
+
+import time
+import warnings
+from typing import Dict, List, Tuple
+
+from rain_lab_chat._sanitize import sanitize_text
+from rain_lab_chat.config import Config
+
+# Optional: DuckDuckGo search support
+DDG_AVAILABLE = False
+DDG_PACKAGE = None
+DDGS = None
+try:
+    from ddgs import DDGS
+    DDG_AVAILABLE = True
+    DDG_PACKAGE = "ddgs"
+except ImportError:
+    try:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=".*renamed.*")
+            from duckduckgo_search import DDGS
+        DDG_AVAILABLE = True
+        DDG_PACKAGE = "duckduckgo_search"
+    except ImportError:
+        pass
+
+# Optional: Scrapling for full-content fetching
+SCRAPLING_AVAILABLE = False
+try:
+    from scrapling.fetchers import StealthyFetcher
+    SCRAPLING_AVAILABLE = True
+except ImportError:
+    StealthyFetcher = None
+
+class WebSearchManager:
+
+    """Handles DuckDuckGo web searches for supplementary research context"""
+
+    
+
+    def __init__(self, config: Config):
+
+        self.config = config
+
+        self.search_cache: Dict[str, List[Dict]] = {}
+
+        self.enabled = config.enable_web_search and DDG_AVAILABLE
+
+        self.max_retries = 3
+
+        self.retry_delay = 2.0  # seconds between retries
+
+    
+
+    def search(self, query: str, verbose: bool = False) -> Tuple[str, List[Dict]]:
+
+        """Search DuckDuckGo and return formatted results plus raw data"""
+
+        if not self.enabled:
+
+            if self.config.enable_web_search and verbose:
+
+                print(f"\n⚠️  Web search disabled: No DDG package installed")
+
+                print("   Install with: pip install ddgs")
+
+            return "", []
+
+        
+
+        # Check cache
+
+        if query in self.search_cache:
+
+            if verbose:
+
+                print(f"\n🔄 Using cached web results for: '{query}'")
+
+            return self._format_results(self.search_cache[query]), self.search_cache[query]
+
+        
+
+        if verbose:
+
+            print(f"\n🌐 Searching web for: '{query}'...")
+
+        
+
+        # Retry loop with exponential backoff
+
+        for attempt in range(self.max_retries):
+
+            try:
+
+                results = []
+
+                
+
+                # Suppress any deprecation warnings during search
+
+                with warnings.catch_warnings():
+
+                    warnings.filterwarnings("ignore")
+
+                    with DDGS() as ddgs:
+
+                        for r in ddgs.text(query, max_results=self.config.web_search_results):
+
+                            results.append({
+
+                                'title': r.get('title', ''),
+
+                                'body': r.get('body', ''),
+
+                                'href': r.get('href', '')
+
+                            })
+
+                
+
+                self.search_cache[query] = results
+
+                
+
+                if results:
+
+                    if verbose:
+
+                        print(f"   ✓ Found {len(results)} web results")
+
+                        for i, r in enumerate(results, 1):
+
+                            title_preview = r['title'][:60] + '...' if len(r['title']) > 60 else r['title']
+
+                            print(f"      {i}. {title_preview}")
+
+                    return self._format_results(results), results
+
+                else:
+
+                    # No results but no error - may be rate limited or bad query
+
+                    if attempt < self.max_retries - 1:
+
+                        delay = self.retry_delay * (attempt + 1)
+
+                        if verbose:
+
+                            print(f"   ⚠ No results (attempt {attempt + 1}/{self.max_retries}), retrying in {delay:.1f}s...")
+
+                        time.sleep(delay)
+
+                    else:
+
+                        if verbose:
+
+                            print(f"   ⚠ No web results found after {self.max_retries} attempts")
+
+                            print("   💡 Possible causes: rate limiting, network issues, or overly specific query")
+
+                        return "", []
+
+                    
+
+            except Exception as e:
+
+                error_msg = str(e).lower()
+
+                
+
+                # Identify specific error types for better messaging
+
+                if "ratelimit" in error_msg or "429" in error_msg:
+
+                    reason = "Rate limited by DuckDuckGo"
+
+                elif "timeout" in error_msg:
+
+                    reason = "Request timed out"
+
+                elif "connection" in error_msg or "network" in error_msg:
+
+                    reason = "Network connection error"
+
+                else:
+
+                    reason = str(e)
+
+                
+
+                if attempt < self.max_retries - 1:
+
+                    delay = self.retry_delay * (attempt + 1)
+
+                    if verbose:
+
+                        print(f"   ⚠ {reason} (attempt {attempt + 1}/{self.max_retries}), retrying in {delay:.1f}s...")
+
+                    time.sleep(delay)
+
+                else:
+
+                    if verbose:
+
+                        print(f"   ⚠ Web search failed after {self.max_retries} attempts: {reason}")
+
+                        print("   💡 Meeting will proceed with local papers only")
+
+                    return "", []
+
+        
+
+        return "", []
+
+    
+
+    def _sanitize_text(self, text: str) -> str:
+
+        """Sanitize web content to prevent prompt injection and control token attacks"""
+
+        return sanitize_text(text)
+
+    def _format_results(self, results: List[Dict]) -> str:
+
+        """Format results for agent context"""
+
+        if not results:
+
+            return ""
+
+        
+
+        formatted = ["\n### WEB SEARCH RESULTS (cite as [from web: title])"]
+
+        for r in results:
+
+            safe_title = self._sanitize_text(r.get('title', ''))
+
+            safe_body = self._sanitize_text(r.get('body', ''))
+
+            formatted.append(f"**{safe_title}**")
+
+            formatted.append(f"{safe_body}")
+
+            formatted.append(f"Source: {r.get('href', '')}\n")
+
+        
+
+        return "\n".join(formatted)
+
+# --- CITATION ANALYZER ---

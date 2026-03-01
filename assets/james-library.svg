@@ -1,0 +1,26 @@
+<svg width="800" height="560" viewBox="0 0 800 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="James Library logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1327"/>
+      <stop offset="100%" stop-color="#111b33"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d5fa7"/>
+      <stop offset="100%" stop-color="#59d0ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="560" fill="url(#bg)"/>
+
+  <g fill="none" stroke="url(#stroke)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" transform="translate(0,10)">
+    <path d="M285 190 L390 120 L390 290 L285 220 Z"/>
+    <path d="M515 190 L410 120 L410 290 L515 220 Z"/>
+    <path d="M400 120 L400 300"/>
+    <path d="M285 220 Q340 240 390 300"/>
+    <path d="M515 220 Q460 240 410 300"/>
+    <circle cx="355" cy="205" r="8" fill="#59d0ff"/>
+    <circle cx="445" cy="205" r="8" fill="#59d0ff"/>
+  </g>
+
+  <text x="400" y="430" fill="#ecf2f4" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="72" text-anchor="middle" letter-spacing="3">JAMES LIBRARY</text>
+</svg>
