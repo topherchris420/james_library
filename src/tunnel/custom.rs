@@ -1,5 +1,6 @@
 use super::{kill_shared, new_shared_process, SharedProcess, Tunnel, TunnelProcess};
 use anyhow::{bail, Result};
+#[cfg(windows)]
 use std::ffi::OsString;
 use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
