@@ -1,4 +1,4 @@
-# Vers3Dynamics
+# Vers3Dynamics 🐙
 
 <p align="center">
   <img src="assets/rain_lab_logo.png" alt="R.A.I.N. Lab logo" width="900" />
