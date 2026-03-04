@@ -1,5 +1,4 @@
 use super::traits::RuntimeAdapter;
-use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
 /// Native runtime — full access, runs on Mac/Linux/Docker/Raspberry Pi
