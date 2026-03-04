@@ -21,14 +21,12 @@ import os
 import platform
 import shutil
 import stat
-import sys
 import zipfile
 from pathlib import Path
-from typing import Optional
 
 try:
-    import urllib.request
     import urllib.error
+    import urllib.request
     HAS_URLLIB = True
 except ImportError:
     HAS_URLLIB = False

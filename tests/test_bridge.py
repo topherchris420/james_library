@@ -3,13 +3,12 @@
 import json
 import threading
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import pytest
 
 import rain_bridge_protocol as proto
-
 
 # ═══════════════════════════════════════════════════════════════════
 # Protocol tests
@@ -101,8 +100,9 @@ class TestProtocolEvents:
 # Bridge server tests
 # ═══════════════════════════════════════════════════════════════════
 
-from rain_bridge_server import MeetingRunner, BridgeHandler
 from http.server import HTTPServer
+
+from rain_bridge_server import BridgeHandler, MeetingRunner
 
 
 @pytest.fixture()

@@ -15,7 +15,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-
 # ── Event type constants ─────────────────────────────────────────
 # These MUST match the Rust enum variants in src/gateway/meeting.rs
 

@@ -31,7 +31,7 @@ def _run_preflight(repo_root: Path) -> subprocess.CompletedProcess[str]:
 def _check_godot(repo_root: Path) -> bool:
     """Check if Godot is available and offer to install if not."""
     try:
-        from godot_setup import check_godot_status, download_godot, DEFAULT_GODOT_VERSION
+        from godot_setup import DEFAULT_GODOT_VERSION, check_godot_status, download_godot
     except ImportError:
         return False
 
