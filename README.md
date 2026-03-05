@@ -23,7 +23,7 @@
 
 ## Mission
 
-Vers3Dynamics R.A.I.N. Lab is an R&D platform for non-linear wave interactions and bio-acoustic phenomena.
+Vers3Dynamics R.A.I.N. Lab🐙 is an R&D platform for non-linear wave interactions and bio-acoustic phenomena.
 
 The system combines:
 
