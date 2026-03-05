@@ -70,8 +70,8 @@ Examples:
     parser.add_argument(
         "--max-tokens",
         type=int,
-        default=int(os.environ.get("RAIN_MAX_TOKENS", "120")),
-        help="Max tokens per response (default: 120)",
+        default=int(os.environ.get("RAIN_MAX_TOKENS", "500")),
+        help="Max tokens per response (default: 500)",
     )
 
     parser.add_argument(
@@ -194,9 +194,8 @@ def main():
         topic = input("\n🔬 Research Topic: ").strip()
 
     if not topic:
-        print("❌ No topic provided. Exiting.")
-
-        sys.exit(1)
+        topic = "Open research discussion"
+        print(f"💡 No topic specified — defaulting to: {topic}")
 
     # Run meeting
 

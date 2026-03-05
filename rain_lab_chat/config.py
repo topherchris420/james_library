@@ -70,7 +70,7 @@ class Config:
 
     # Conversation Settings
     max_turns: int = 25
-    wrap_up_turns: int = 15
+    wrap_up_turns: int = 4
     recent_history_window: int = 2
 
     # Context Settings

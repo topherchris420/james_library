@@ -17,6 +17,8 @@ try:
 except ImportError:
     select = None
 
+import threading
+
 import openai
 
 try:
@@ -61,6 +63,43 @@ from rain_lab_chat.response_gen import (
 )
 from rain_lab_chat.voice import VoiceEngine
 from rain_lab_chat.web_search import DDG_AVAILABLE, WebSearchManager
+
+try:
+    from rich_ui import (
+        agent_banner,
+        color,
+        meeting_header,
+        print_panel,
+        print_progress,
+        status_indicator,
+        strip_ansi,
+        supports_ansi,
+        AGENT_COLORS,
+        COLORS,
+    )
+    _RICH_UI = True
+    _ANSI_OK = supports_ansi()
+except ImportError:
+    _RICH_UI = False
+    _ANSI_OK = True  # assume True when rich_ui is absent (legacy behavior)
+
+
+def _a(code: str) -> str:
+    """Return *code* only when ANSI is supported; empty string otherwise."""
+    return code if _ANSI_OK else ""
+
+
+# Commonly used ANSI shortcuts (empty when unsupported)
+_RST = _a("\033[0m")
+_DIM = _a("\033[90m")
+_RED = _a("\033[91m")
+_GRN = _a("\033[92m")
+_YLW = _a("\033[93m")
+_BLU = _a("\033[94m")
+_MAG = _a("\033[95m")
+_CYN = _a("\033[96m")
+_WHT = _a("\033[97m")
+_CLR = _a("\033[K")
 
 
 class RainLabOrchestrator:
@@ -239,12 +278,15 @@ class RainLabOrchestrator:
 
         return False
 
-    def _animate_spinner(self, label: str, duration: float = 0.9, color: str = "\033[96m"):
+    def _animate_spinner(self, label: str, duration: float = 0.9, color: str = ""):
         """Display short terminal feedback for an active step."""
 
         if not sys.stdout.isatty():
             print(f"{label}...", flush=True)
             return
+
+        if not color:
+            color = _CYN
 
         frames = ["|", "/", "-", "\\"]
 
@@ -255,13 +297,51 @@ class RainLabOrchestrator:
         while time.time() < end_time:
             frame = frames[index % len(frames)]
 
-            print(f"\r{color}{frame} {label}\033[0m", end="", flush=True)
+            print(f"\r{color}{frame} {label}{_RST}", end="", flush=True)
 
             time.sleep(0.08)
 
             index += 1
 
-        print(f"\r{color}OK {label}\033[0m{' ' * 18}")
+        print(f"\r{color}OK {label}{_RST}{' ' * 18}")
+
+    class _LiveSpinner:
+        """Context manager that shows an elapsed-time spinner in a background thread."""
+
+        def __init__(self, label: str, color: str = ""):
+            self._label = label
+            self._color = color or _CYN
+            self._stop = threading.Event()
+            self._thread: threading.Thread | None = None
+
+        def __enter__(self):
+            if not sys.stdout.isatty():
+                print(f"{self._label}...", flush=True)
+                return self
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+            return self
+
+        def __exit__(self, *_exc):
+            self._stop.set()
+            if self._thread is not None:
+                self._thread.join(timeout=2)
+            # Clear the spinner line
+            print(f"\r{' ' * 60}\r", end="", flush=True)
+
+        def _run(self):
+            frames = ["|", "/", "-", "\\"]
+            start = time.time()
+            idx = 0
+            while not self._stop.is_set():
+                elapsed = time.time() - start
+                frame = frames[idx % len(frames)]
+                print(
+                    f"\r{self._color}{frame} {self._label} ({elapsed:.0f}s){_RST}   ",
+                    end="", flush=True,
+                )
+                idx += 1
+                self._stop.wait(0.15)
 
     def run_meeting(self, topic: str):
         """Run the research meeting"""
@@ -275,19 +355,20 @@ class RainLabOrchestrator:
             except Exception:  # Some runtimes lack reconfigure()
                 pass
 
-        # Header - 3D block ASCII Banner
+        # Header
 
-        banner = r"""
+        if _RICH_UI:
+            print(meeting_header(topic))
+        else:
+            banner = r"""
 
 ▒▓█  V E R S 3 D Y N A M I C S   R . A . I . N .   L A B  █▓▒
 
 ░▒▓███    Recursive Architecture Intelligence Nexus    ███▓▒░
 
 """
-
-        print(f"\033[96m{banner}\033[0m")
-
-        print(f"📋 Topic: {topic}")
+            print(f"{_CYN}{banner}{_RST}")
+            print(f"📋 Topic: {topic}")
 
         # Test connection
 
@@ -308,10 +389,12 @@ class RainLabOrchestrator:
 
         if not verbose:
             if paper_list:
-                print(f"\r\033[K\033[92m✓\033[0m Scanned {len(paper_list)} papers")
+                indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
+                print(f"\r{_CLR}{indicator} Scanned {len(paper_list)} papers")
 
             else:
-                print(f"\r\033[K\033[91m✗\033[0m No papers found.")
+                indicator = status_indicator("error") if _RICH_UI else f"{_RED}✗{_RST}"
+                print(f"\r{_CLR}{indicator} No papers found.")
 
         if not paper_list:
             print("\n❌ No papers found. Cannot proceed.")
@@ -350,7 +433,8 @@ class RainLabOrchestrator:
             agent.load_soul(self.config.library_path, verbose=verbose)
 
         if not verbose:
-            print(f"\r\033[K\033[92m✓\033[0m Agents ready")
+            indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
+            print(f"\r{_CLR}{indicator} Agents ready")
 
         # Perform web search for supplementary context
 
@@ -364,8 +448,8 @@ class RainLabOrchestrator:
 
             if not verbose:
                 count = len(results) if results else 0
-
-                print(f"\r\033[K\033[92m✓\033[0m Web search ({count} results)")
+                indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
+                print(f"\r{_CLR}{indicator} Web search ({count} results)")
 
         elif self.config.enable_web_search and not DDG_AVAILABLE and verbose:
             print("\n⚠️  Web search disabled: duckduckgo-search not installed")
@@ -399,25 +483,33 @@ class RainLabOrchestrator:
         effective_max_turns = max(self.config.max_turns, len(self.team))
         if effective_max_turns != self.config.max_turns:
             print(
-                f"\033[90m   Note: raised max turns to {effective_max_turns} so every agent can speak at least once.\033[0m"
+                f"{_DIM}   Note: raised max turns to {effective_max_turns} so every agent can speak at least once.{_RST}"
             )
 
-        print(f"\n🚀 TEAM MEETING")
-
-        print(f"💡 Press Ctrl+C at any time to intervene as founder")
-
-        print(f"💡 Welcome to the Vers3Dynamics Chatroom")
-
         discussion_turns = max(0, effective_max_turns - self.config.wrap_up_turns)
-        print(f"💡 Meeting will wrap up after {discussion_turns} discussion turns\n")
-
-        print("=" * 70 + "\n")
+        if _RICH_UI:
+            meeting_info = (
+                "Press Ctrl+C at any time to intervene as founder\n"
+                "Welcome to the Vers3Dynamics Chatroom\n"
+                f"Meeting will wrap up after {discussion_turns} discussion turns"
+            )
+            print_panel("TEAM MEETING", meeting_info)
+        else:
+            print(f"\n🚀 TEAM MEETING")
+            print(f"💡 Press Ctrl+C at any time to intervene as founder")
+            print(f"💡 Welcome to the Vers3Dynamics Chatroom")
+            print(f"💡 Meeting will wrap up after {discussion_turns} discussion turns\n")
+            print("=" * 70 + "\n")
 
         kickoff_agent = next((member for member in self.team if member.name == "James"), self.team[0])
         kickoff_greeting = f"Hey team, let's talk about {topic}."
-        print(f"\n{kickoff_agent.color}{'─' * 70}")
-        print(f"{kickoff_agent.name}: {kickoff_greeting}")
-        print(f"{'─' * 70}\033[0m")
+        if _RICH_UI:
+            print(agent_banner(kickoff_agent.name, kickoff_agent.role))
+            print(f"  {kickoff_greeting}\n")
+        else:
+            print(f"\n{_a(kickoff_agent.color)}{'─' * 70}")
+            print(f"{kickoff_agent.name}: {kickoff_greeting}")
+            print(f"{'─' * 70}{_RST}")
         self.voice_engine.speak(kickoff_greeting, agent_name=kickoff_agent.name)
         history_log = [f"{kickoff_agent.name}: {kickoff_greeting}"]
 
@@ -437,7 +529,7 @@ class RainLabOrchestrator:
             external_message = self.diplomat.check_inbox()
 
             if external_message:
-                print(f"\n\033[93m{external_message}\033[0m")
+                print(f"\n{_YLW}{external_message}{_RST}")
 
                 history_log.append(external_message)
 
@@ -458,13 +550,17 @@ class RainLabOrchestrator:
 
             user_wants_to_speak = False
 
-            print(f"\n{current_agent.color}▶ {current_agent.name}'s turn ({current_agent.role})\033[0m")
+            if _RICH_UI:
+                print_progress(turn_count, effective_max_turns, prefix="Meeting")
+                print(agent_banner(current_agent.name, current_agent.role))
+            else:
+                print(f"\n{_a(current_agent.color)}▶ {current_agent.name}'s turn ({current_agent.role}){_RST}")
 
-            print("\033[90m   [Press ENTER to speak, or wait...]\033[0m", end="", flush=True)
+            print(f"{_DIM}   [Press ENTER to speak, or wait...]{_RST}", end="", flush=True)
 
             # Cross-platform: check for keypress during brief window
 
-            intervention_window = 0.0 if turn_count == 0 else 0.6  # seconds to wait for user input
+            intervention_window = 0.0 if turn_count == 0 else 2.5  # seconds to wait for user input
 
             start_time = time.time()
 
@@ -497,14 +593,14 @@ class RainLabOrchestrator:
             # Handle user intervention
 
             if user_wants_to_speak:
-                print(f"\n\033[97m🎤 FOUNDER INTERVENTION (type 'done' to resume, 'quit' to end):\033[0m")
+                print(f"\n{_WHT}🎤 FOUNDER INTERVENTION (type 'done' to resume, 'quit' to end):{_RST}")
 
                 while True:
                     try:
                         user_input = input("🎤 FOUNDER: ").strip()
 
                         if user_input.lower() in ["done", "continue", "resume", ""]:
-                            print("\n\033[90m▶ Resuming automatic discussion...\033[0m\n")
+                            print(f"\n{_DIM}▶ Resuming automatic discussion...{_RST}\n")
 
                             break
 
@@ -520,14 +616,14 @@ class RainLabOrchestrator:
                             return
 
                         else:
-                            print(f"\n\033[97m💬 [FOUNDER]: {user_input}\033[0m\n")
+                            print(f"\n{_WHT}💬 [FOUNDER]: {user_input}{_RST}\n")
 
                             self.log_manager.log_statement("FOUNDER", user_input)
 
                             history_log.append(f"FOUNDER: {user_input}")
 
                     except (EOFError, KeyboardInterrupt):
-                        print("\n\033[90m▶ Resuming automatic discussion...\033[0m\n")
+                        print(f"\n{_DIM}▶ Resuming automatic discussion...{_RST}\n")
 
                         break
 
@@ -560,11 +656,13 @@ class RainLabOrchestrator:
 
             clean_response = self._strip_agent_prefix(response, current_agent.name)
 
-            print(f"\n{current_agent.color}{'─' * 70}")
-
-            print(f"{current_agent.name}: {clean_response}")
-
-            print(f"{'─' * 70}\033[0m")
+            if _RICH_UI:
+                agent_color_name = AGENT_COLORS.get(current_agent.name, "white")
+                print(f"\n  {color(current_agent.name + ':', agent_color_name)} {clean_response}\n")
+            else:
+                print(f"\n{_a(current_agent.color)}{'─' * 70}")
+                print(f"{current_agent.name}: {clean_response}")
+                print(f"{'─' * 70}{_RST}")
 
             spoken_text = clean_response
             if self.config.emit_visual_events:
@@ -594,12 +692,12 @@ class RainLabOrchestrator:
                 query = search_match.group(1).strip()
 
                 if query:
-                    print(f"\033[94m🌐 Active Web Search requested: {query}\033[0m")
+                    print(f"{_BLU}🌐 Active Web Search requested: {query}{_RST}")
 
                     web_note, web_results = self.web_search_manager.search(query, verbose=verbose)
 
                     if web_note:
-                        print("\033[94m📎 Web Search Result:\033[0m")
+                        print(f"{_BLU}📎 Web Search Result:{_RST}")
 
                         print(web_note)
 
@@ -608,7 +706,7 @@ class RainLabOrchestrator:
                     else:
                         no_result_note = f"No web results returned for query: {query}"
 
-                        print(f"\033[94m📎 Web Search Result: {no_result_note}\033[0m")
+                        print(f"{_BLU}📎 Web Search Result: {no_result_note}{_RST}")
 
                         history_log.append(f"SYSTEM: {no_result_note}")
 
@@ -618,10 +716,13 @@ class RainLabOrchestrator:
             # Show citation feedback
 
             if metadata and metadata.get("verified"):
-                print(f"\033[90m   ✓ {len(metadata['verified'])} citation(s) verified\033[0m")
+                if _RICH_UI:
+                    print(f"  {status_indicator('ok')} {len(metadata['verified'])} citation(s) verified")
+                else:
+                    print(f"{_DIM}   ✓ {len(metadata['verified'])} citation(s) verified{_RST}")
 
                 for quote, source in metadata["verified"][:1]:  # Show first citation
-                    print(f'\033[90m      • "{quote[:60]}..." [from {source}]\033[0m')
+                    print(f'{_DIM}      • "{quote[:60]}..." [from {source}]{_RST}')
 
             # 5. Log
 
@@ -638,13 +739,13 @@ class RainLabOrchestrator:
 
         # Meeting officially closed
 
-        print("\n" + "=" * 70)
-
-        print("👋 MEETING ADJOURNED")
-
-        print("=" * 70)
-
-        print("\n\033[92mJames: Alright team, great discussion today! Let's reconvene soon.\033[0m")
+        if _RICH_UI:
+            print_panel("MEETING ADJOURNED", "Great discussion today! Let's reconvene soon.")
+        else:
+            print("\n" + "=" * 70)
+            print("👋 MEETING ADJOURNED")
+            print("=" * 70)
+            print(f"\n{_GRN}James: Alright team, great discussion today! Let's reconvene soon.{_RST}")
 
         self.log_manager.log_statement("James", "Meeting adjourned. Great discussion everyone!")
 
@@ -699,18 +800,16 @@ class RainLabOrchestrator:
         user_msg = build_user_message(agent, recent_chat, mission, prev_speaker, graph_findings)
         system_msg = f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"
 
-        self._animate_spinner(f"{agent.name} analyzing", duration=1.0, color=agent.color)
-        print(f"\033[90m   {agent.name} is thinking...\033[0m", flush=True)
-
         # Call LLM with retry
         for attempt in range(self.config.max_retries):
-            content, finish_reason = call_llm_with_retry(
-                self.client,
-                self.config,
-                system_msg,
-                user_msg,
-                max_retries=1,
-            )
+            with self._LiveSpinner(f"{agent.name} is thinking", color=_a(agent.color)):
+                content, finish_reason = call_llm_with_retry(
+                    self.client,
+                    self.config,
+                    system_msg,
+                    user_msg,
+                    max_retries=1,
+                )
             if content is None:
                 if attempt < self.config.max_retries - 1:
                     continue
@@ -839,5 +938,4 @@ class RainLabOrchestrator:
         return strip_agent_prefix(response, agent_name)
 
 
-# --- CLI INTERFACE ---
 # --- CLI INTERFACE ---

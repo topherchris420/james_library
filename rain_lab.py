@@ -158,9 +158,9 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--mode",
-        choices=["rlm", "chat", "godot", "hello-os", "compile", "preflight", "backup", "first-run"],
+        choices=["rlm", "chat", "james-chat", "godot", "hello-os", "compile", "preflight", "backup", "first-run"],
         default="chat",
-        help="Which engine to run: rlm (tool-exec), chat (multi-agent meeting), godot (chat + visual events), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), backup (local snapshot), or first-run (guided onboarding)",
+        help="Which engine to run: rlm (tool-exec), chat (multi-agent meeting), james-chat (1:1 with James via RLM), godot (chat + visual events), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), backup (local snapshot), or first-run (guided onboarding)",
     )
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
     parser.add_argument(
@@ -361,6 +361,12 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
         target = repo_root / "hello_os_executable.py"
         cmd = [sys.executable, str(target)]
         cmd.extend(passthrough if passthrough else ["inspect"])
+        return cmd
+
+    if args.mode == "james-chat":
+        target = repo_root / "chat_with_james.py"
+        cmd = [sys.executable, str(target)]
+        cmd.extend(passthrough)
         return cmd
 
     if args.mode == "rlm":
@@ -790,7 +796,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_banner()
 
     # Interactive prompt if topic is missing (and not asking for help)
-    if args.mode not in {"hello-os", "compile", "preflight", "backup", "first-run"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
+    if args.mode not in {"hello-os", "compile", "preflight", "backup", "first-run", "james-chat"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
         print(f"\n{ANSI_YELLOW}Research Topic needed.{ANSI_RESET}")
         print(f"{ANSI_DIM}Example: 'Guarino paper', 'Quantum Resonance', 'The nature of time'{ANSI_RESET}")
         try:

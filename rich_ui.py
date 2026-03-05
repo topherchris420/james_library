@@ -1,46 +1,104 @@
-"""
-R.A.I.N. Lab Rich UI Module
+"""R.A.I.N. Lab Rich UI Module
 
 Terminal UI enhancements using ANSI codes (no external dependencies).
 """
 
+import os
+import re
+import sys
+
+
+def supports_ansi() -> bool:
+    """Detect whether the current terminal supports ANSI escape codes."""
+    # Explicit override via env var
+    env_flag = os.environ.get("RAIN_FORCE_COLOR", "").strip().lower()
+    if env_flag in ("1", "true", "yes", "on"):
+        return True
+    if env_flag in ("0", "false", "no", "off"):
+        return False
+
+    # Not a TTY (e.g. piped output) — no color
+    if not hasattr(sys.stdout, "isatty") or not sys.stdout.isatty():
+        return False
+
+    # Windows: modern Windows Terminal and ConEmu set specific env vars
+    if sys.platform == "win32":
+        # Windows Terminal, VS Code, ConEmu all support ANSI
+        if os.environ.get("WT_SESSION") or os.environ.get("ConEmuANSI") == "ON":
+            return True
+        # Windows 10+ cmd.exe supports ANSI via VT processing
+        try:
+            import ctypes
+            kernel32 = ctypes.windll.kernel32
+            # Enable ANSI on stdout handle (-11)
+            handle = kernel32.GetStdHandle(-11)
+            mode = ctypes.c_ulong()
+            if kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+                # ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+                if not (mode.value & 0x0004):
+                    kernel32.SetConsoleMode(handle, mode.value | 0x0004)
+                return True
+        except Exception:
+            pass
+        return False
+
+    # Unix/macOS — TTY is present, assume ANSI support
+    return True
+
+
+_ANSI_RE = re.compile(r"\033\[[0-9;]*m")
+
+
+def strip_ansi(text: str) -> str:
+    """Remove all ANSI escape sequences from text."""
+    return _ANSI_RE.sub("", text)
+
+
+_ANSI_SUPPORTED = supports_ansi()
+
+
+def _code(seq: str) -> str:
+    """Return the ANSI sequence if supported, otherwise empty string."""
+    return seq if _ANSI_SUPPORTED else ""
+
+
 # Color codes
 COLORS = {
-    "reset": "\033[0m",
-    "bold": "\033[1m",
-    "dim": "\033[2m",
-    "italic": "\033[3m",
-    "underline": "\033[4m",
+    "reset": _code("\033[0m"),
+    "bold": _code("\033[1m"),
+    "dim": _code("\033[2m"),
+    "italic": _code("\033[3m"),
+    "underline": _code("\033[4m"),
 
     # Foreground colors
-    "black": "\033[30m",
-    "red": "\033[31m",
-    "green": "\033[32m",
-    "yellow": "\033[33m",
-    "blue": "\033[34m",
-    "magenta": "\033[35m",
-    "cyan": "\033[36m",
-    "white": "\033[37m",
+    "black": _code("\033[30m"),
+    "red": _code("\033[31m"),
+    "green": _code("\033[32m"),
+    "yellow": _code("\033[33m"),
+    "blue": _code("\033[34m"),
+    "magenta": _code("\033[35m"),
+    "cyan": _code("\033[36m"),
+    "white": _code("\033[37m"),
 
     # Bright foreground
-    "bright_black": "\033[90m",
-    "bright_red": "\033[91m",
-    "bright_green": "\033[92m",
-    "bright_yellow": "\033[93m",
-    "bright_blue": "\033[94m",
-    "bright_magenta": "\033[95m",
-    "bright_cyan": "\033[96m",
-    "bright_white": "\033[97m",
+    "bright_black": _code("\033[90m"),
+    "bright_red": _code("\033[91m"),
+    "bright_green": _code("\033[92m"),
+    "bright_yellow": _code("\033[93m"),
+    "bright_blue": _code("\033[94m"),
+    "bright_magenta": _code("\033[95m"),
+    "bright_cyan": _code("\033[96m"),
+    "bright_white": _code("\033[97m"),
 
     # Background colors
-    "bg_black": "\033[40m",
-    "bg_red": "\033[41m",
-    "bg_green": "\033[42m",
-    "bg_yellow": "\033[43m",
-    "bg_blue": "\033[44m",
-    "bg_magenta": "\033[45m",
-    "bg_cyan": "\033[46m",
-    "bg_white": "\033[47m",
+    "bg_black": _code("\033[40m"),
+    "bg_red": _code("\033[41m"),
+    "bg_green": _code("\033[42m"),
+    "bg_yellow": _code("\033[43m"),
+    "bg_blue": _code("\033[44m"),
+    "bg_magenta": _code("\033[45m"),
+    "bg_cyan": _code("\033[46m"),
+    "bg_white": _code("\033[47m"),
 }
 
 # Agent colors
