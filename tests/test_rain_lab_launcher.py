@@ -122,6 +122,24 @@ def test_build_command_chat_forwards_runtime_flags(repo_root):
     assert "--recursive-depth" in cmd and "4" in cmd
 
 
+def test_build_command_chat_forwards_resume_and_checkpoint(repo_root):
+    args, pt = parse_args(
+        [
+            "--mode",
+            "chat",
+            "--topic",
+            "x",
+            "--resume",
+            "meeting_archives/latest_session_checkpoint.json",
+            "--checkpoint-path",
+            "meeting_archives/custom_checkpoint.json",
+        ]
+    )
+    cmd = build_command(args, pt, repo_root)
+    assert "--resume" in cmd and "meeting_archives/latest_session_checkpoint.json" in cmd
+    assert "--checkpoint-path" in cmd and "meeting_archives/custom_checkpoint.json" in cmd
+
+
 def test_build_command_chat_no_recursive_flag(repo_root):
     args, pt = parse_args(["--mode", "chat", "--topic", "x", "--no-recursive-intellect", "--recursive-depth", "9"])
     cmd = build_command(args, pt, repo_root)
@@ -287,6 +305,13 @@ def test_build_command_preflight(repo_root):
     args, pt = parse_args(["--mode", "preflight"])
     cmd = build_command(args, pt, repo_root)
     assert "rain_preflight_check.py" in cmd[1]
+
+
+def test_build_command_doctor(repo_root):
+    args, pt = parse_args(["--mode", "doctor", "--timeout", "12"])
+    cmd = build_command(args, pt, repo_root)
+    assert "rain_doctor.py" in cmd[1]
+    assert "--timeout" in cmd and "12.0" in cmd
 
 
 def test_build_command_backup(repo_root):

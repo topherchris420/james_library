@@ -9,6 +9,8 @@ import os
 import sys
 from urllib.parse import urlparse, urlunparse
 
+from rain_lab_chat.doctor import diagnose_lm_studio
+
 # Force UTF-8 for Windows consoles
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
@@ -220,47 +222,34 @@ for package_name, import_names in dependency_groups.items():
 # =============================================================================
 print(f"\n{BOLD}[6/7] Checking LM Studio API...{RESET}")
 
-try:
-    import json
+base_url = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
+configured_model = os.environ.get("LM_STUDIO_MODEL", "").strip()
+diagnostics = diagnose_lm_studio(base_url, configured_model, timeout_s=5.0)
 
-    import requests
-    
-    base_url = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1")
-    api_url = _models_endpoint_from_base_url(base_url)
-    
-    try:
-        response = requests.get(api_url, timeout=5)
-        
-        if response.status_code == 200:
-            print_success("LM Studio API is running")
-            
-            try:
-                data = response.json()
-                if "data" in data and len(data["data"]) > 0:
-                    model_name = data["data"][0].get("id", "unknown")
-                    print_success(f"Model loaded: {model_name}")
-                else:
-                    print_warning("API responding but no model loaded")
-                    print_info("Load a model in LM Studio (13B+ recommended)")
-            except json.JSONDecodeError:
-                print_warning("API responding but returned invalid JSON")
-        else:
-            print_error(f"LM Studio API returned status {response.status_code}")
-            all_checks_passed = False
-    
-    except requests.exceptions.ConnectionError:
-        print_error(f"Cannot connect to LM Studio at {api_url}")
-        print_info("Start LM Studio and ensure the Local Server is enabled")
-        print_info("If needed, set LM_STUDIO_BASE_URL to match your LM Studio server URL")
-        all_checks_passed = False
-    
-    except requests.exceptions.Timeout:
-        print_error("LM Studio API request timed out")
-        all_checks_passed = False
-
-except ImportError:
+if not diagnostics.get("requests_available"):
     print_warning("'requests' library not installed - skipping API check")
     print_info("Install with: pip install requests")
+else:
+    api_url = _models_endpoint_from_base_url(base_url)
+    if diagnostics.get("reachable"):
+        print_success("LM Studio API is running")
+        if diagnostics.get("latency_ms") is not None:
+            print_info(f"/v1/models latency: {diagnostics['latency_ms']} ms")
+        loaded_models = diagnostics.get("loaded_models") or []
+        if loaded_models:
+            print_success(f"Loaded model(s): {', '.join(loaded_models)}")
+            if configured_model and diagnostics.get("model_loaded"):
+                print_success(f"Configured model available: {configured_model}")
+            elif configured_model and not diagnostics.get("model_loaded"):
+                print_warning(f"Configured model not loaded: {configured_model}")
+        else:
+            print_warning("API responding but no model loaded")
+    else:
+        print_error(diagnostics.get("error") or f"Cannot connect to LM Studio at {api_url}")
+        all_checks_passed = False
+
+    for action in diagnostics.get("actions", [])[:3]:
+        print_info(action)
 
 # =============================================================================
 # CHECK 7: UTF-8 ENCODING TEST

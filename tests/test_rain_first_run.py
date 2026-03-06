@@ -38,4 +38,5 @@ def test_main_failure_prints_retry_guidance(monkeypatch, capsys):
 
     assert rc == 1
     assert "Preflight reported actionable issues" in out
+    assert "--mode doctor" in out
     assert "--mode first-run" in out

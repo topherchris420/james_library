@@ -67,6 +67,7 @@ class Config:
     # File Settings
     library_path: str = DEFAULT_LIBRARY_PATH
     meeting_log: str = "RAIN_LAB_MEETING_LOG.md"
+    checkpoint_path: str = os.environ.get("RAIN_SESSION_CHECKPOINT", "meeting_archives/latest_session_checkpoint.json")
 
     # Conversation Settings
     max_turns: int = 25

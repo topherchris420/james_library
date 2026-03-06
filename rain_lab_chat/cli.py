@@ -121,11 +121,18 @@ Examples:
     )
 
     parser.add_argument(
+        "--checkpoint-path",
+        type=str,
+        default=os.environ.get("RAIN_SESSION_CHECKPOINT", "meeting_archives/latest_session_checkpoint.json"),
+        help="Path (relative to --library or absolute) for structured JSON session checkpoints",
+    )
+
+    parser.add_argument(
         "--resume",
         type=str,
         default=None,
         metavar="LOG_PATH",
-        help="Resume a previous meeting from its log file (topic and history are restored)",
+        help="Resume a previous meeting from a JSON checkpoint or markdown meeting log",
     )
 
     args, unknown = parser.parse_known_args()
@@ -186,18 +193,26 @@ def main():
         visual_events_log=args.visual_events_log,
         export_tts_audio=export_tts_audio,
         tts_audio_dir=args.tts_audio_dir,
+        checkpoint_path=args.checkpoint_path,
     )
 
     # Handle resume mode
 
     prior_history = None
+    resume_state = None
     if args.resume:
-        resume_data = parse_log_for_resume(args.resume)
+        resume_path = args.resume
+        if not os.path.isabs(resume_path):
+            library_relative = os.path.join(args.library, resume_path)
+            if os.path.exists(library_relative):
+                resume_path = library_relative
+        resume_data = parse_log_for_resume(resume_path)
         if not resume_data or not resume_data.get("topic"):
             print(f"❌ Could not parse log for resume: {args.resume}")
             sys.exit(1)
         topic = resume_data["topic"]
         prior_history = resume_data["history"]
+        resume_state = resume_data
         print(f"🔄 Resuming topic: {topic}  ({len(prior_history)} prior turns loaded)")
     else:
         # Get topic
@@ -222,7 +237,7 @@ def main():
 
     orchestrator = RainLabOrchestrator(config)
 
-    orchestrator.run_meeting(topic, prior_history=prior_history)
+    orchestrator.run_meeting(topic, prior_history=prior_history, resume_state=resume_state)
 
 
 if __name__ == "__main__":

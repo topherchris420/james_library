@@ -124,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         if result.stderr.strip():
             print(result.stderr.strip())
         print("\n[first-run] Fix the checks above, then re-run:")
+        print("  python rain_lab.py --mode doctor")
         print("  python rain_lab.py --mode first-run")
         return 1
 

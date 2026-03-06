@@ -156,6 +156,81 @@ SESSION ENDED
             log.warning("Logging error: %s", e)
 
 
+class CheckpointManager:
+    def __init__(self, config: Config):
+
+        self.config = config
+
+        raw = Path(config.checkpoint_path).expanduser()
+
+        self.path = raw if raw.is_absolute() else Path(config.library_path) / raw
+
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+
+        except Exception as e:
+            log.warning("Checkpoint directory unavailable: %s", e)
+
+    def save(self, payload: Dict):
+
+        tmp_path = self.path.with_suffix(self.path.suffix + ".tmp")
+
+        try:
+            tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            tmp_path.replace(self.path)
+
+        except Exception as e:
+            log.warning("Checkpoint write failed: %s", e)
+
+
+def _parse_checkpoint_for_resume(path: Path) -> dict:
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+
+    except Exception:
+        return {}
+
+    if not isinstance(payload, dict):
+        return {}
+
+    history = payload.get("history")
+    if not isinstance(history, list):
+        return {}
+
+    topic = str(payload.get("topic", "")).strip()
+    normalized_history = [str(item).strip() for item in history if str(item).strip()]
+    turn_count = payload.get("turn_count", len(normalized_history))
+
+    try:
+        turn_count = int(turn_count)
+
+    except (TypeError, ValueError):
+        turn_count = len(normalized_history)
+
+    citation_counts = payload.get("citation_counts")
+    if not isinstance(citation_counts, dict):
+        citation_counts = {}
+
+    metrics_state = payload.get("metrics_state")
+    if not isinstance(metrics_state, dict):
+        metrics_state = None
+
+    if not topic:
+        return {}
+
+    return {
+        "topic": topic,
+        "history": normalized_history,
+        "turn_count": max(0, turn_count),
+        "citation_counts": citation_counts,
+        "metrics_state": metrics_state,
+        "status": str(payload.get("status", "running")),
+        "source": "checkpoint",
+    }
+
+
 def parse_log_for_resume(log_path: str) -> dict:
     """Parse an existing meeting log to extract topic and conversation history.
 
@@ -167,6 +242,10 @@ def parse_log_for_resume(log_path: str) -> dict:
     path = Path(log_path)
     if not path.exists():
         return {}
+
+    checkpoint_data = _parse_checkpoint_for_resume(path)
+    if checkpoint_data:
+        return checkpoint_data
 
     try:
         text = path.read_text(encoding="utf-8")
@@ -191,6 +270,10 @@ def parse_log_for_resume(log_path: str) -> dict:
         "topic": topic,
         "history": history,
         "turn_count": len(history),
+        "citation_counts": {},
+        "metrics_state": None,
+        "status": "parsed_log",
+        "source": "log",
     }
 
 

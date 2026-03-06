@@ -26,6 +26,9 @@ class TestSyntax:
     def test_rain_preflight_check_compiles(self):
         _compile_check(REPO_ROOT / "rain_preflight_check.py")
 
+    def test_rain_doctor_compiles(self):
+        _compile_check(REPO_ROOT / "rain_doctor.py")
+
     def test_rain_lab_meeting_compiles(self):
         _compile_check(REPO_ROOT / "rain_lab_meeting.py")
 

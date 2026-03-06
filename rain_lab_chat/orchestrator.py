@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -42,17 +43,19 @@ except ImportError:
         def query(self, **_kw):
             return None
 
+from rain_lab_chat._logging import clear_terminal_overlay, set_terminal_overlay, terminal_output_lock
 from rain_lab_chat._sanitize import RE_WEB_SEARCH_COMMAND
 from rain_lab_chat.agents import Agent, RainLabAgentFactory
 from rain_lab_chat.citations import CitationAnalyzer
 from rain_lab_chat.config import Config
 from rain_lab_chat.context import ContextManager
 from rain_lab_chat.director import RainLabDirector
+from rain_lab_chat.doctor import collect_lm_studio_diagnostics
 from rain_lab_chat.guardrails import (
     is_corrupted_response,
     strip_agent_prefix,
 )
-from rain_lab_chat.logging_events import Diplomat, LogManager, VisualEventLogger
+from rain_lab_chat.logging_events import CheckpointManager, Diplomat, LogManager, VisualEventLogger
 from rain_lab_chat.response_gen import (
     build_user_message,
     call_llm_with_retry,
@@ -131,6 +134,7 @@ class RainLabOrchestrator:
         self.context_manager = ContextManager(config)
 
         self.log_manager = LogManager(config)
+        self.checkpoint_manager = CheckpointManager(config)
 
         # Will be initialized after context loading
 
@@ -232,6 +236,90 @@ class RainLabOrchestrator:
 
         return {"mode": "synthetic", "duration_ms": duration_ms}
 
+    def _metrics_checkpoint_state(self) -> Optional[Dict]:
+
+        if self.metrics_tracker is None:
+            return None
+
+        return {
+            "session_id": self.metrics_tracker.session_id,
+            "topic": self.metrics_tracker.topic,
+            "model": self.metrics_tracker.model,
+            "recursive_depth": self.metrics_tracker.recursive_depth,
+            "turn_count": self.metrics_tracker._turn_count,
+            "all_quotes": list(self.metrics_tracker._all_quotes),
+            "all_claims": list(self.metrics_tracker._all_claims),
+            "critique_pairs": [list(pair) for pair in self.metrics_tracker._critique_pairs],
+        }
+
+    def _restore_metrics_checkpoint_state(self, payload: Optional[Dict]):
+
+        if self.metrics_tracker is None or not payload:
+            return
+
+        turn_count = payload.get("turn_count", self.metrics_tracker._turn_count)
+        try:
+            turn_count = int(turn_count)
+        except (TypeError, ValueError):
+            turn_count = self.metrics_tracker._turn_count
+
+        self.metrics_tracker.session_id = str(payload.get("session_id", self.metrics_tracker.session_id))
+        self.metrics_tracker.topic = str(payload.get("topic", self.metrics_tracker.topic))
+        self.metrics_tracker.model = str(payload.get("model", self.metrics_tracker.model))
+
+        recursive_depth = payload.get("recursive_depth", self.metrics_tracker.recursive_depth)
+        try:
+            self.metrics_tracker.recursive_depth = int(recursive_depth)
+        except (TypeError, ValueError):
+            pass
+
+        self.metrics_tracker._turn_count = max(0, turn_count)
+        self.metrics_tracker._all_quotes = [str(item) for item in payload.get("all_quotes", [])]
+        self.metrics_tracker._all_claims = [str(item) for item in payload.get("all_claims", [])]
+
+        critique_pairs = []
+        for pair in payload.get("critique_pairs", []):
+            if isinstance(pair, (list, tuple)) and len(pair) == 2:
+                critique_pairs.append((str(pair[0]), str(pair[1])))
+        self.metrics_tracker._critique_pairs = critique_pairs
+
+    def _save_session_checkpoint(
+        self,
+        topic: str,
+        history_log: List[str],
+        turn_count: int,
+        paper_list: List[str],
+        status: str,
+    ):
+
+        payload = {
+            "version": 1,
+            "kind": "rain_lab_checkpoint",
+            "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "status": status,
+            "topic": topic,
+            "turn_count": max(0, int(turn_count)),
+            "history": list(history_log),
+            "paper_count": len(paper_list),
+            "paper_list": list(paper_list),
+            "loaded_papers": sorted(self.context_manager.loaded_papers.keys()),
+            "citation_counts": {agent.name: agent.citations_made for agent in self.team},
+            "metrics_state": self._metrics_checkpoint_state(),
+            "config": {
+                "model_name": self.config.model_name,
+                "base_url": self.config.base_url,
+                "timeout": self.config.timeout,
+                "max_turns": self.config.max_turns,
+                "wrap_up_turns": self.config.wrap_up_turns,
+                "recursive_depth": self.config.recursive_depth,
+                "recursive_intellect": self.config.recursive_intellect,
+                "enable_web_search": self.config.enable_web_search,
+            },
+            "visual_conversation_id": self.visual_conversation_id,
+        }
+
+        self.checkpoint_manager.save(payload)
+
     def get_last_meeting_summary(self) -> str:
         """Load the tail of the newest archived meeting summary."""
 
@@ -256,7 +344,13 @@ class RainLabOrchestrator:
     def test_connection(self) -> bool:
         """Test LM Studio connection with retry"""
 
-        print(f"\n🔌 Testing connection to blacksite at {self.config.base_url}...")
+        print(f"\n🔌 Testing LM Studio connection...")
+        print(f"{_DIM}   Base URL: {self.config.base_url}{_RST}")
+        print(f"{_DIM}   Model: {self.config.model_name}{_RST}")
+        print(f"{_DIM}   Timeout: {self.config.timeout:.0f}s | Retries: 3{_RST}")
+
+        last_error = ""
+        saw_timeout = False
 
         for attempt in range(3):
             try:
@@ -269,29 +363,52 @@ class RainLabOrchestrator:
                 return True
 
             except openai.APITimeoutError:
+                saw_timeout = True
                 print(f"   ⏱️  Timeout (attempt {attempt + 1}/3)")
 
                 if attempt < 2:
                     time.sleep(2)
 
             except Exception as e:
+                last_error = str(e)
                 print(f"   ✗ Connection failed: {e}")
 
-                if attempt == 2:
-                    print("\n💡 Troubleshooting:")
-
-                    print("   1. Is LM Studio running?")
-
-                    print("   2. Is the server started? (green 'Server Running' button)")
-
-                    print(f"   3. Is model '{self.config.model_name}' loaded?")
-
-                    print(f"   4. Is it listening on {self.config.base_url}?")
-
-                    print("   5. Try clicking 'Reload Model' in LM Studio\n")
-
-                else:
+                if attempt < 2:
                     time.sleep(2)
+
+        diagnostics = collect_lm_studio_diagnostics(
+            self.config.base_url,
+            self.config.model_name,
+            api_key=self.config.api_key,
+            timeout_s=min(max(2.0, self.config.timeout), 10.0),
+            include_completion_probe=False,
+        )
+        endpoint = diagnostics["endpoint"]
+        print("\n💡 Diagnostics:")
+        if endpoint.get("latency_ms") is not None:
+            print(f"   /v1/models latency: {endpoint['latency_ms']} ms")
+        loaded_models = endpoint.get("loaded_models") or []
+        if loaded_models:
+            print(f"   Loaded models: {', '.join(loaded_models)}")
+        else:
+            print("   Loaded models: none detected")
+        if endpoint.get("error"):
+            print(f"   Endpoint status: {endpoint['error']}")
+        if saw_timeout:
+            print(f"   Completion probe timed out after 3 attempts at {self.config.timeout:.0f}s.")
+        elif last_error:
+            print(f"   Last completion error: {last_error}")
+        actions = list(diagnostics.get("actions", []))
+        if saw_timeout:
+            actions.insert(0, f"Increase RAIN_LM_TIMEOUT above {self.config.timeout:.0f}s if the model is slow.")
+        if actions:
+            print("\n🔧 Recommended actions:")
+            seen = set()
+            for action in actions:
+                if action not in seen:
+                    seen.add(action)
+                    print(f"   - {action}")
+        print("")
 
         return False
 
@@ -330,11 +447,13 @@ class RainLabOrchestrator:
             self._color = color or _CYN
             self._stop = threading.Event()
             self._thread: threading.Thread | None = None
+            self._last_frame = ""
 
         def __enter__(self):
             if not sys.stdout.isatty():
                 print(f"{self._label}...", flush=True)
                 return self
+            set_terminal_overlay(self._clear_line, self._redraw_line)
             self._thread = threading.Thread(target=self._run, daemon=True)
             self._thread.start()
             return self
@@ -343,8 +462,16 @@ class RainLabOrchestrator:
             self._stop.set()
             if self._thread is not None:
                 self._thread.join(timeout=2)
-            # Clear the spinner line
+            with terminal_output_lock():
+                clear_terminal_overlay()
+                self._clear_line()
+
+        def _clear_line(self):
             print(f"\r{' ' * 60}\r", end="", flush=True)
+
+        def _redraw_line(self):
+            if self._last_frame:
+                print(self._last_frame, end="", flush=True)
 
         def _run(self):
             frames = ["|", "/", "-", "\\"]
@@ -353,16 +480,25 @@ class RainLabOrchestrator:
             while not self._stop.is_set():
                 elapsed = time.time() - start
                 frame = frames[idx % len(frames)]
-                print(
-                    f"\r{self._color}{frame} {self._label} ({elapsed:.0f}s){_RST}   ",
-                    end="", flush=True,
-                )
+                with terminal_output_lock():
+                    self._last_frame = f"\r{self._color}{frame} {self._label} ({elapsed:.0f}s){_RST}   "
+                    print(self._last_frame, end="", flush=True)
                 idx += 1
                 self._stop.wait(0.15)
 
-    def run_meeting(self, topic: str, prior_history: Optional[List[str]] = None):
+    def run_meeting(
+        self,
+        topic: str,
+        prior_history: Optional[List[str]] = None,
+        resume_state: Optional[Dict] = None,
+    ):
         """Run the research meeting.  If *prior_history* is provided, the
         conversation resumes with those turns already in context."""
+
+        if resume_state and not prior_history:
+            restored_history = resume_state.get("history")
+            if isinstance(restored_history, list):
+                prior_history = [str(item) for item in restored_history if str(item).strip()]
 
         # UTF-8 setup
 
@@ -438,6 +574,17 @@ class RainLabOrchestrator:
             )
 
             self.metrics_tracker.set_corpus(self.context_manager.loaded_papers)
+
+        if resume_state:
+            citation_counts = resume_state.get("citation_counts")
+            if isinstance(citation_counts, dict):
+                for agent in self.team:
+                    count = citation_counts.get(agent.name, 0)
+                    try:
+                        agent.citations_made = max(0, int(count))
+                    except (TypeError, ValueError):
+                        agent.citations_made = 0
+            self._restore_metrics_checkpoint_state(resume_state.get("metrics_state"))
 
         # Load agent souls from external files
 
@@ -522,9 +669,14 @@ class RainLabOrchestrator:
         kickoff_agent = next((member for member in self.team if member.name == "James"), self.team[0])
 
         if prior_history:
-            # Resuming — pre-seed history and skip the kickoff greeting
             history_log = list(prior_history)
-            turn_count = len(prior_history)
+            resume_turn_count = len(prior_history)
+            if resume_state:
+                try:
+                    resume_turn_count = int(resume_state.get("turn_count", resume_turn_count))
+                except (TypeError, ValueError):
+                    resume_turn_count = len(prior_history)
+            turn_count = max(0, resume_turn_count)
             print(f"{_DIM}  Resumed with {len(prior_history)} prior turns in context.{_RST}\n")
         else:
             kickoff_greeting = f"Hey team, let's talk about {topic}."
@@ -538,6 +690,8 @@ class RainLabOrchestrator:
             self.voice_engine.speak(kickoff_greeting, agent_name=kickoff_agent.name)
             history_log = [f"{kickoff_agent.name}: {kickoff_greeting}"]
 
+        self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "running")
+
         # Track wrap-up phase
 
         in_wrap_up = False
@@ -547,23 +701,42 @@ class RainLabOrchestrator:
         # Calculate when wrap-up should start
 
         wrap_up_start_turn = max(0, effective_max_turns - self.config.wrap_up_turns)
+        session_state = {"turn_count": turn_count}
 
         try:
-          self._run_meeting_loop(
-              effective_max_turns, wrap_up_start_turn, history_log, topic, verbose,
-              in_wrap_up, turn_count,
-          )
+            stopped_early = self._run_meeting_loop(
+                effective_max_turns,
+                wrap_up_start_turn,
+                history_log,
+                topic,
+                verbose,
+                in_wrap_up,
+                turn_count,
+                paper_list,
+                session_state,
+            )
         except KeyboardInterrupt:
-            # Reset terminal line, save progress, exit cleanly
+            turn_count = int(session_state.get("turn_count", turn_count))
             print(f"\r{' ' * 60}\r", end="", flush=True)
             print(f"\n{_RST}{_YLW}⚠ Meeting interrupted by Ctrl+C.{_RST}")
             print(f"{_DIM}  Saving session log...{_RST}")
             self.log_manager.log_statement("SYSTEM", "Meeting interrupted by user (Ctrl+C).")
+            self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "interrupted")
             if self.metrics_tracker is not None:
                 self.metrics_tracker.finalize()
             self.log_manager.finalize_log(self._generate_final_stats())
             self._end_visual_conversation()
             print(f"  ✅ Session saved to: {self.log_manager.log_path}\n")
+            return
+
+        turn_count = int(session_state.get("turn_count", turn_count))
+        if stopped_early:
+            self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "stopped")
+            if self.metrics_tracker is not None:
+                self.metrics_tracker.finalize()
+            self.log_manager.finalize_log(self._generate_final_stats())
+            self._end_visual_conversation()
+            print(f"\n{_GRN}✅ Session saved to: {self.log_manager.log_path}{_RST}\n")
             return
 
         # Meeting officially closed
@@ -586,6 +759,7 @@ class RainLabOrchestrator:
         stats = self._generate_final_stats()
 
         self.log_manager.finalize_log(stats)
+        self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "completed")
         self._end_visual_conversation()
 
         if _RICH_UI:
@@ -606,7 +780,9 @@ class RainLabOrchestrator:
         verbose: bool,
         in_wrap_up: bool,
         turn_count: int,
-    ):
+        paper_list: List[str],
+        session_state: Dict,
+    ) -> bool:
         """Inner meeting loop, separated so KeyboardInterrupt can be caught cleanly."""
         while turn_count < effective_max_turns:
             external_message = self.diplomat.check_inbox()
@@ -615,6 +791,7 @@ class RainLabOrchestrator:
                 print(f"\n{_YLW}{external_message}{_RST}")
 
                 history_log.append(external_message)
+                self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "running")
 
             # Check if we should enter wrap-up phase
 
@@ -689,14 +866,8 @@ class RainLabOrchestrator:
 
                         elif user_input.lower() in ["quit", "exit", "stop"]:
                             print("\n👋 Meeting ended by FOUNDER.")
-
-                            if self.metrics_tracker is not None:
-                                self.metrics_tracker.finalize()
-
-                            self.log_manager.finalize_log(self._generate_final_stats())
-                            self._end_visual_conversation()
-
-                            return
+                            session_state["turn_count"] = turn_count
+                            return True
 
                         else:
                             print(f"\n{_WHT}💬 [FOUNDER]: {user_input}{_RST}\n")
@@ -704,6 +875,7 @@ class RainLabOrchestrator:
                             self.log_manager.log_statement("FOUNDER", user_input)
 
                             history_log.append(f"FOUNDER: {user_input}")
+                            self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "running")
 
                     except (EOFError, KeyboardInterrupt):
                         print(f"\n{_DIM}▶ Resuming automatic discussion...{_RST}\n")
@@ -819,6 +991,11 @@ class RainLabOrchestrator:
                 self.metrics_tracker.record_turn(current_agent.name, response, metadata)
 
             turn_count += 1
+            session_state["turn_count"] = turn_count
+            self._save_session_checkpoint(topic, history_log, turn_count, paper_list, "running")
+
+        session_state["turn_count"] = turn_count
+        return False
 
     def _generate_agent_response(
         self,

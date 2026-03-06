@@ -158,11 +158,23 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     )
     parser.add_argument(
         "--mode",
-        choices=["rlm", "chat", "james-chat", "godot", "hello-os", "compile", "preflight", "backup", "first-run"],
+        choices=["rlm", "chat", "james-chat", "godot", "hello-os", "compile", "preflight", "doctor", "backup", "first-run"],
         default="chat",
-        help="Which engine to run: rlm (tool-exec), chat (multi-agent meeting), james-chat (1:1 with James via RLM), godot (chat + visual events), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), backup (local snapshot), or first-run (guided onboarding)",
+        help="Which engine to run: rlm (tool-exec), chat (multi-agent meeting), james-chat (1:1 with James via RLM), godot (chat + visual events), hello-os (single executable), compile (build knowledge artifacts), preflight (environment checks), doctor (LM Studio diagnostics), backup (local snapshot), or first-run (guided onboarding)",
     )
     parser.add_argument("--topic", type=str, default=None, help="Meeting topic")
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Chat/Godot modes: resume from a JSON checkpoint or markdown meeting log",
+    )
+    parser.add_argument(
+        "--checkpoint-path",
+        type=str,
+        default=os.environ.get("RAIN_SESSION_CHECKPOINT", "meeting_archives/latest_session_checkpoint.json"),
+        help="Chat/Godot modes: structured JSON checkpoint path",
+    )
     parser.add_argument(
         "--library",
         type=str,
@@ -349,6 +361,14 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
         cmd.extend(passthrough)
         return cmd
 
+    if args.mode == "doctor":
+        target = repo_root / "rain_doctor.py"
+        cmd = [sys.executable, str(target)]
+        if args.timeout is not None:
+            cmd.extend(["--timeout", str(args.timeout)])
+        cmd.extend(passthrough)
+        return cmd
+
     if args.mode == "backup":
         target = repo_root / "rain_lab_backup.py"
         cmd = [sys.executable, str(target)]
@@ -398,6 +418,10 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
             cmd.extend(["--topic", args.topic])
         if args.library:
             cmd.extend(["--library", args.library])
+        if args.resume:
+            cmd.extend(["--resume", args.resume])
+        if args.checkpoint_path:
+            cmd.extend(["--checkpoint-path", args.checkpoint_path])
         if args.turns is not None:
             cmd.extend(["--max-turns", str(args.turns)])
         if args.timeout is not None:
@@ -801,11 +825,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{ANSI_DIM}          --mode james-chat   1:1 conversation with James via RLM{ANSI_RESET}")
         print(f"{ANSI_DIM}          --mode godot        Chat + Godot visual avatars{ANSI_RESET}")
         print(f"{ANSI_DIM}          --mode preflight    Environment health checks{ANSI_RESET}")
+        print(f"{ANSI_DIM}          --mode doctor       LM Studio diagnostics and repair hints{ANSI_RESET}")
         print(f"{ANSI_DIM}          --mode first-run    Guided onboarding{ANSI_RESET}")
         print(f"{ANSI_DIM}          Run with --help for all options{ANSI_RESET}")
 
     # Interactive prompt if topic is missing (and not asking for help)
-    if args.mode not in {"hello-os", "compile", "preflight", "backup", "first-run", "james-chat"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
+    if args.mode not in {"hello-os", "compile", "preflight", "doctor", "backup", "first-run", "james-chat"} and not args.topic and "-h" not in passthrough and "--help" not in passthrough:
         print(f"\n{ANSI_YELLOW}Research Topic needed.{ANSI_RESET}")
         print(f"{ANSI_DIM}Example: 'Guarino paper', 'Quantum Resonance', 'The nature of time'{ANSI_RESET}")
         try:
