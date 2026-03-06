@@ -236,3 +236,7 @@ python rain_lab.py --mode chat --ui on --topic "your topic"
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+## Acknowledgement 
+
+James Library is proudly built on the foundation of ZeroClaw. Huge thanks to their team for creating such a high-performance, lightweight agent runtime that made this Vers3Dynamics project possible.
