@@ -12,6 +12,7 @@ def test_main_success_prints_next_steps(monkeypatch, capsys):
         return subprocess.CompletedProcess(args=["preflight"], returncode=0, stdout="ok", stderr="")
 
     monkeypatch.setattr(rain_first_run, "_run_preflight", _ok)
+    monkeypatch.setattr(rain_first_run, "_mark_first_run_complete", lambda _repo_root: None)
     # Stub _check_godot so it doesn't prompt for input during tests
     monkeypatch.setattr(rain_first_run, "_check_godot", lambda _repo_root: False)
     rc = rain_first_run.main(["--topic", "resonance"])
@@ -21,6 +22,28 @@ def test_main_success_prints_next_steps(monkeypatch, capsys):
     assert "Preflight passed" in out
     assert '--mode chat' in out
     assert "resonance" in out
+
+
+def test_main_success_launches_chat_when_requested(monkeypatch, capsys):
+    def _ok(_repo_root):  # noqa: ARG001
+        return subprocess.CompletedProcess(args=["preflight"], returncode=0, stdout="ok", stderr="")
+
+    launched: list[str] = []
+    monkeypatch.setattr(rain_first_run, "_run_preflight", _ok)
+    monkeypatch.setattr(rain_first_run, "_mark_first_run_complete", lambda _repo_root: None)
+    monkeypatch.setattr(rain_first_run, "_check_godot", lambda _repo_root: False)
+    monkeypatch.setattr(
+        rain_first_run,
+        "_launch_chat",
+        lambda _repo_root, topic: launched.append(topic) or 0,
+    )
+
+    rc = rain_first_run.main(["--launch-chat", "--topic", "resonance"])
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert launched == ["resonance"]
+    assert "Launching chat" in out
 
 
 def test_main_failure_prints_retry_guidance(monkeypatch, capsys):

@@ -128,7 +128,8 @@ python rain_lab.py --mode rlm --topic "acoustic resonance phenomena"
 ```text
 1) Double-click INSTALL_RAIN.cmd
 2) Wait for install to finish
-3) Launch R.A.I.N. Lab Chat from Desktop or Start Menu
+3) Double-click R.A.I.N. Lab from your Desktop or Start Menu
+4) On first launch, guided setup runs automatically and then opens chat
 ```
 
 ---

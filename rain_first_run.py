@@ -28,13 +28,21 @@ def _green(text: str) -> str:
     return text
 
 
+DEFAULT_STARTER_TOPIC = "local-first AI research"
+
+
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Guided first-run onboarding for R.A.I.N. Lab.")
     parser.add_argument(
         "--topic",
         type=str,
-        default="local-first AI research",
+        default=DEFAULT_STARTER_TOPIC,
         help="Starter topic to include in the suggested first chat command.",
+    )
+    parser.add_argument(
+        "--launch-chat",
+        action="store_true",
+        help="Launch chat automatically after successful onboarding.",
     )
     return parser.parse_args(argv)
 
@@ -46,6 +54,23 @@ def _run_preflight(repo_root: Path) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         text=True,
     )
+
+
+def _startup_marker_path(repo_root: Path) -> Path:
+    return repo_root / "meeting_archives" / ".first_run_complete"
+
+
+def _mark_first_run_complete(repo_root: Path) -> None:
+    marker = _startup_marker_path(repo_root)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("first_run_completed=1\n", encoding="utf-8")
+
+
+def _launch_chat(repo_root: Path, topic: str) -> int:
+    cmd = [sys.executable, str(repo_root / "rain_lab.py"), "--mode", "chat", "--ui", "auto"]
+    if topic.strip() and topic != DEFAULT_STARTER_TOPIC:
+        cmd.extend(["--topic", topic])
+    return subprocess.run(cmd, cwd=str(repo_root)).returncode
 
 
 def _check_godot(repo_root: Path) -> bool:
@@ -114,6 +139,10 @@ def main(argv: list[str] | None = None) -> int:
     if result.returncode == 0:
         print(_green("[first-run] Preflight passed."))
         godot_ok = _check_godot(repo_root)
+        _mark_first_run_complete(repo_root)
+        if args.launch_chat:
+            print(_dim("[first-run] Launching chat..."))
+            return _launch_chat(repo_root, args.topic)
         _print_next_steps(args.topic, godot_ok)
         return 0
 

@@ -65,6 +65,7 @@ Fix:
 - Recreate shortcuts only:
   - `powershell -NoProfile -ExecutionPolicy Bypass -File .\INSTALL_RAIN.ps1 -SkipPreflight`
 - If needed, run launcher directly:
+  - `RAIN_Lab_Start.cmd`
   - `RAIN_Lab_Chat.cmd`
 
 ### 7) Health check reports launcher log not found

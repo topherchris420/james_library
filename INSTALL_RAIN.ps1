@@ -62,12 +62,16 @@ if ($LASTEXITCODE -ne 0) {
 if (-not $NoShortcuts) {
     $desktopPath = [Environment]::GetFolderPath("Desktop")
     $startMenuRoot = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\R.A.I.N. Lab"
+    $startCmd = Join-Path $repoRoot "RAIN_Lab_Start.cmd"
     $chatCmd = Join-Path $repoRoot "RAIN_Lab_Chat.cmd"
     $firstRunCmd = Join-Path $repoRoot "RAIN_Lab_First_Run.cmd"
     $healthCmd = Join-Path $repoRoot "RAIN_Lab_Health_Check.cmd"
     $iconPath = Join-Path $env:SystemRoot "System32\shell32.dll"
     $iconLocation = "$iconPath,220"
 
+    if (-not (Test-Path $startCmd)) {
+        throw "Missing launcher script: $startCmd"
+    }
     if (-not (Test-Path $chatCmd)) {
         throw "Missing launcher script: $chatCmd"
     }
@@ -80,14 +84,21 @@ if (-not $NoShortcuts) {
 
     if (-not $NoDesktopShortcut) {
         New-RainShortcut `
-            -ShortcutPath (Join-Path $desktopPath "R.A.I.N. Lab Chat.lnk") `
-            -TargetPath $chatCmd `
+            -ShortcutPath (Join-Path $desktopPath "R.A.I.N. Lab.lnk") `
+            -TargetPath $startCmd `
             -WorkingDirectory $repoRoot `
-            -Description "Launch R.A.I.N. Lab chat mode (auto UI)." `
+            -Description "Start R.A.I.N. Lab with guided setup on first launch." `
             -IconLocation $iconLocation
     }
 
     if (-not $NoStartMenuShortcut) {
+        New-RainShortcut `
+            -ShortcutPath (Join-Path $startMenuRoot "R.A.I.N. Lab.lnk") `
+            -TargetPath $startCmd `
+            -WorkingDirectory $repoRoot `
+            -Description "Start R.A.I.N. Lab with guided setup on first launch." `
+            -IconLocation $iconLocation
+
         New-RainShortcut `
             -ShortcutPath (Join-Path $startMenuRoot "R.A.I.N. Lab Chat.lnk") `
             -TargetPath $chatCmd `
@@ -115,4 +126,4 @@ if (-not $NoShortcuts) {
 
 Write-Host ""
 Write-Host "[installer] Success." -ForegroundColor Green
-Write-Host "[installer] Next: double-click 'R.A.I.N. Lab Chat' on your Desktop or Start Menu." -ForegroundColor Green
+Write-Host "[installer] Next: double-click 'R.A.I.N. Lab' on your Desktop or Start Menu." -ForegroundColor Green
