@@ -4,8 +4,6 @@
   <img src="assets/rain_lab_logo.png" alt="R.A.I.N. Lab logo" width="900" />
 </p>
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/topherchris420/james_library)
-
 A lightweight framework for building modular AI systems,
 experimental agent architectures, and research prototypes.
 
