@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import mimetypes
 import os
 import re
 import signal
@@ -12,6 +14,13 @@ import sys
 import threading
 import time
 from pathlib import Path
+from typing import Optional
+
+try:
+    import speech_recognition as sr
+    _SR_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _SR_AVAILABLE = False
 
 DEFAULT_PATTERNS = [
     r"traceback",
@@ -108,6 +117,106 @@ class OpenClawHeartbeat(threading.Thread):
             data = handle.read()
             self._offsets[file_path] = handle.tell()
         return data
+
+
+# ── File-extension sets used by the incoming-message handler ────
+_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+_AUDIO_EXTENSIONS = {".mp3", ".ogg"}
+
+# Regex that matches [IMAGE:/absolute/path] or [AUDIO:/absolute/path] markers
+# produced by the Rust channel gateway.
+_MARKER_RE = re.compile(
+    r"\[(IMAGE|AUDIO):(/[^\]]+)\]",
+)
+
+
+def _mime_for_image(path: Path) -> str:
+    """Return a MIME type suitable for a data-URI from an image path."""
+    ext = path.suffix.lower()
+    mapping = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }
+    guess = mimetypes.guess_type(str(path))[0]
+    return mapping.get(ext) or guess or "application/octet-stream"
+
+
+def format_image_for_vision(file_path: Path) -> str:
+    """Read an image file and return a ``[IMAGE:data:…;base64,…]`` marker.
+
+    This is the multimodal vision payload format that the ZeroClaw
+    provider layer (``compatible.rs``, ``bedrock.rs``, etc.) expects.
+    """
+    data = file_path.read_bytes()
+    encoded = base64.b64encode(data).decode("ascii")
+    mime = _mime_for_image(file_path)
+    return f"[IMAGE:data:{mime};base64,{encoded}]"
+
+
+def transcribe_audio_file(file_path: Path) -> Optional[str]:
+    """Transcribe an audio file using *speech_recognition*.
+
+    Returns the recognised text, or ``None`` when the library is
+    unavailable or recognition fails.
+    """
+    if not _SR_AVAILABLE:
+        return None
+    recognizer = sr.Recognizer()
+    try:
+        with sr.AudioFile(str(file_path)) as source:
+            audio = recognizer.record(source)
+        return recognizer.recognize_google(audio)
+    except Exception:
+        return None
+
+
+def handle_incoming_message(text: str) -> str:
+    """Pre-process an incoming message from the Rust channel gateway.
+
+    Scans *text* for ``[IMAGE:/path]`` and ``[AUDIO:/path]`` markers
+    that reference absolute local files:
+
+    * **Images** (``.jpg``, ``.png``, ``.webp``): the marker is
+      replaced with the base-64 encoded multimodal vision payload
+      expected by the agent providers.
+    * **Audio** (``.mp3``, ``.ogg``): the file is transcribed via
+      ``speech_recognition`` and the resulting text is appended to
+      the message (the original marker is removed).
+
+    Markers whose paths do not exist on disk or whose extensions are
+    not in the supported set are left untouched.
+    """
+    audio_transcriptions: list[str] = []
+
+    def _replace(match: re.Match[str]) -> str:
+        kind = match.group(1)   # IMAGE or AUDIO
+        raw_path = match.group(2)
+        file_path = Path(raw_path)
+        ext = file_path.suffix.lower()
+
+        if not file_path.is_absolute() or not file_path.is_file():
+            return match.group(0)  # leave marker unchanged
+
+        if kind == "IMAGE" and ext in _IMAGE_EXTENSIONS:
+            return format_image_for_vision(file_path)
+
+        if kind == "AUDIO" and ext in _AUDIO_EXTENSIONS:
+            transcript = transcribe_audio_file(file_path)
+            if transcript:
+                audio_transcriptions.append(transcript)
+            return ""  # strip the marker; text appended later
+
+        return match.group(0)
+
+    result = _MARKER_RE.sub(_replace, text)
+
+    if audio_transcriptions:
+        sep = " " if result and not result.endswith(" ") else ""
+        result = result + sep + " ".join(audio_transcriptions)
+
+    return result.strip()
 
 
 def pick_headless_python() -> str:
