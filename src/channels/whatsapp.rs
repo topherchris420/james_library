@@ -31,7 +31,7 @@ fn mime_to_extension(mime: &str) -> &str {
         "audio/amr" => "amr",
         _ => {
             // Fall back to subtype (e.g. "image/bmp" → "bmp")
-            mime.split('/').nth(1).unwrap_or("bin")
+            mime.split('/').nth(1).and_then(|s| s.split(';').next()).unwrap_or("bin")
         }
     }
 }
