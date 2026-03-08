@@ -13,8 +13,6 @@ import numpy as np
 warnings.filterwarnings("ignore")
 
 # ---------------------------------------------------------------------------
-# Optional heavy deps (Colab / interactive environments)
-# ---------------------------------------------------------------------------
 try:
     from scipy.fftpack import fftn, fftshift
     _SCIPY_FFT = True
