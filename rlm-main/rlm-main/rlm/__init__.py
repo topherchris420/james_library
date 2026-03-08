@@ -1,6 +1,6 @@
 """Minimal local RLM compatibility layer.
 
-This repository previously relied on an external `rlm` package that is not vendored
+This repo previously relied on an external `rlm` package that is not vendored
 here.  The launcher scripts only need a small subset of that API:
 
 - `from rlm import RLM`
