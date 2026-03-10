@@ -6,7 +6,7 @@
 
 <p align="center" dir="rtl">
   <strong>صفر عبء. صفر تنازلات. 100% Rust. 100% محايد.</strong><br>
-  <strong dir="ltr">⚡️ Runs on $10 hardware with <5MB RAM: That's 99% less memory than OpenClaw and 98% cheaper than a Mac mini!</strong>
+  <strong dir="ltr">⚡️ يعمل على أجهزة بقيمة $10 بأقل من 5MB RAM: ذاكرة أقل بنسبة 99% من OpenClaw وأرخص بنسبة 98% من Mac mini!</strong>
 </p>
 
 <p align="center">

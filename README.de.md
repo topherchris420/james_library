@@ -66,6 +66,10 @@ Erstellt von Studenten und Mitgliedern der Harvard, MIT und Sundai.Club Gemeinsc
 </p>
 
 <p align="center">
+  <em>📝 Hinweis: Die Dokumentationslinks verweisen auf die englischsprachige Dokumentation. Lokalisierte Dokumentation für Deutsch ist noch nicht verfügbar.</em>
+</p>
+
+<p align="center">
   <strong>Schnellzugriffe:</strong>
   <a href="docs/reference/README.md">Referenz</a> ·
   <a href="docs/operations/README.md">Betrieb</a> ·

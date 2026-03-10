@@ -850,7 +850,7 @@ Een oprechte dankjewel aan de gemeenschappen en instellingen die dit open-source
 
 We bouwen in open source omdat de beste ideeën van overal komen. Als je dit leest, ben je er deel van. Welkom. 🦀❤️
 
-## ⚠️ Officiële Repository en Implantatie Waarschuwing
+## ⚠️ Officiële Repository en Waarschuwing voor Imitatie
 
 **Dit is de enige officiële ZeroClaw repository:**
 

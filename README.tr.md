@@ -647,7 +647,7 @@ zeroclaw pairing rotate  # Yeni bir sır oluşturur ve eskisini geçersiz kılar
 ### Kum Alanı
 
 - **Docker Çalışma Zamanı** — ayrı dosya sistemleri ve ağlarla tam konteyner yalıtımı
-- **Yerel Çalışma Zamanı** — kullanıcı süreci olarak çalışır. varsayılan olarak çalışma alanına kapsamlı
+- **Yerel Çalışma Zamanı** — kullanıcı süreci olarak çalışır; varsayılan olarak çalışma alanıyla sınırlıdır
 
 ### İzin Listeleri
 
