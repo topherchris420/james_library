@@ -1,4 +1,4 @@
-# Vers3Dynamics
+# Vers3Dynamics' R.A.I.N. Lab🐙
 
 <p align="center">
   <img src="assets/rain_lab_logo.png" alt="R.A.I.N. Lab logo" width="900" />
@@ -32,7 +32,7 @@ agents, modules, and tools without heavyweight frameworks.
 
 ## Mission
 
-Vers3Dynamics R.A.I.N. Lab🐙 is an R&D platform for non-linear wave interactions and bio-acoustic phenomena.
+The R.A.I.N. Lab🐙 is an R&D lab for non-linear wave interactions and bio-acoustic experiments.
 
 The system combines:
 

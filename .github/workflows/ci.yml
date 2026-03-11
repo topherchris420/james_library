@@ -3,9 +3,9 @@ permissions:
   contents: read
 on:
   push:
-    branches: [main]
+    branches: [dev, main]
   pull_request:
-    branches: [main]
+    branches: [dev, main]
 
 jobs:
   lint-and-test:
