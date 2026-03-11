@@ -6,9 +6,22 @@ RLM agent tools for research: web search, paper reading, library search, RAG.
 
 
 
+import os
+import sys
+
 def get_setup_code() -> str:
     """Returns the setup code that gets injected into RLM agent context."""
-    return r'''
+    with open(__file__, "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    if "# --- SETUP CODE BEGINS HERE ---" in content and "# --- SETUP CODE ENDS HERE ---" in content:
+        setup_block = content.split("# --- SETUP CODE BEGINS HERE ---", 1)[1].split("# --- SETUP CODE ENDS HERE ---", 1)[0]
+        # Auto-execute initialization inside RLM context
+        return setup_block + "\n\n_run_initialization()\n"
+    return ""
+
+# --- SETUP CODE BEGINS HERE ---
+
 
 import os
 import glob
@@ -1157,4 +1170,6 @@ except BaseException as e:
 if collection and collection.count() == 0:
     print("Empty library detected. Indexing now...")
     index_library()
-'''
+
+# --- SETUP CODE ENDS HERE ---
+
