@@ -1,8 +1,11 @@
 import os
-from unittest.mock import MagicMock, patch
 
-# Ensure we're targeting the papers directory for the mock setup
+# Set env vars BEFORE any other imports so _init_rag() is never triggered
+# by the module-level tools.py init block or the RLM setup_code execution.
 os.environ["RLM_REQUIRE_WEB"] = "0"
+os.environ["RAIN_SKIP_RAG"] = "1"
+
+from unittest.mock import MagicMock, patch
 
 from rain_lab_meeting import ResearchCouncil
 from tools import get_setup_code

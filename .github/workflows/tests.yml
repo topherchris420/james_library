@@ -35,5 +35,8 @@ jobs:
             pip install -r requirements-dev.txt
           fi
 
+      - name: Lint (ruff)
+        run: python -m ruff check . --select E,F,W,I
+
       - name: Run tests
         run: pytest -q

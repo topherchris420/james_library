@@ -6,7 +6,6 @@ Tools for ArXiv, DOI lookup, BibTeX generation, and Context Hub (API documentati
 
 import json
 import re
-import subprocess
 import urllib.parse
 import urllib.request
 
