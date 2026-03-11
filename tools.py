@@ -1177,5 +1177,191 @@ if collection and collection.count() == 0:
     print("Empty library detected. Indexing now...")
     index_library()
 
+
+# =============================================================================
+# CONTEXT HUB TOOLS — curated, versioned API docs via chub CLI
+# https://github.com/andrewyng/context-hub
+# =============================================================================
+
+import shutil
+import subprocess
+
+_CHUB_ALLOWED_LANGS = {"py", "js", "ts", "go", "rust"}
+_CHUB_DOC_ID_RE = re.compile(r"^[a-zA-Z0-9/_-]{1,120}$")
+_chub_checked = False
+_chub_present = False
+
+
+def _chub_available():
+    """Return True if the 'chub' CLI is available on PATH (cached)."""
+    global _chub_checked, _chub_present
+    if _chub_checked:
+        return _chub_present
+    _chub_checked = True
+    _chub_present = shutil.which("chub") is not None
+    return _chub_present
+
+
+def _chub_run(args, timeout=30):
+    """Run a chub sub-command safely (no shell=True). Returns (stdout, stderr, returncode)."""
+    cmd = ["chub"] + [str(a) for a in args]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        return result.stdout, result.stderr, result.returncode
+    except FileNotFoundError:
+        return "", "chub not found", 127
+    except subprocess.TimeoutExpired:
+        return "", "chub timed out", 1
+
+
+def fetch_api_docs(doc_id, lang="py"):
+    """Fetch curated API documentation via context-hub (chub).
+
+    Use this before writing code that calls an external API to get the
+    current, accurate docs — reducing hallucinated calls.
+
+    Args:
+        doc_id: Context-hub document ID, e.g. "openai/chat" or "stripe/api".
+        lang:   Language variant: "py" (default), "js", "ts", "go", or "rust".
+
+    Returns:
+        Fetched documentation string, or an error message.
+
+    Examples:
+        fetch_api_docs("openai/chat")
+        fetch_api_docs("stripe/api", lang="js")
+    """
+    doc_id = (doc_id or "").strip().replace("\n", "").replace("\r", "")
+    lang = (lang or "py").strip().lower().replace("\n", "")
+
+    _trace_event("call", "fetch_api_docs", {"doc_id": doc_id[:200], "lang": lang})
+
+    if not _chub_available():
+        msg = (
+            "[fetch_api_docs] chub CLI not installed. "
+            "Run: npm install -g @aisuite/chub"
+        )
+        _trace_event("return", "fetch_api_docs", {"status": "unavailable"})
+        return msg
+
+    if not _CHUB_DOC_ID_RE.match(doc_id):
+        msg = f"[fetch_api_docs] Invalid doc_id '{doc_id[:60]}'. Use format: 'provider/topic'."
+        _trace_event("return", "fetch_api_docs", {"status": "invalid_doc_id"})
+        return msg
+
+    if lang not in _CHUB_ALLOWED_LANGS:
+        msg = f"[fetch_api_docs] Unsupported lang '{lang}'. Choose from: {sorted(_CHUB_ALLOWED_LANGS)}."
+        _trace_event("return", "fetch_api_docs", {"status": "invalid_lang"})
+        return msg
+
+    print(f"📄 FETCH API DOCS: {doc_id} ({lang})...")
+    stdout, stderr, code = _chub_run(["get", doc_id, "--lang", lang])
+
+    if code != 0:
+        msg = f"[fetch_api_docs] chub error (exit {code}): {stderr.strip()[:500]}"
+        _trace_event("return", "fetch_api_docs", {"status": "error", "code": code})
+        return msg
+
+    result = sanitize_text(stdout)
+    _trace_event("return", "fetch_api_docs", {"status": "ok", "chars": len(result)})
+    print(result)
+    return result
+
+
+def search_api_docs(query):
+    """Search context-hub for available API documentation packages.
+
+    Args:
+        query: Search term, e.g. "stripe payments" or "openai embeddings".
+
+    Returns:
+        List of matching doc IDs and descriptions, or an error message.
+    """
+    query = (query or "").strip()
+    print(f"🔍 SEARCH API DOCS: {query}...")
+
+    allowed, reason = _policy_guard("search_api_docs", query)
+    if not allowed:
+        _trace_event("blocked", "search_api_docs", {"reason": reason})
+        return reason
+
+    _trace_event("call", "search_api_docs", {"query": query[:400]})
+
+    if not _chub_available():
+        msg = (
+            "[search_api_docs] chub CLI not installed. "
+            "Run: npm install -g @aisuite/chub"
+        )
+        _trace_event("return", "search_api_docs", {"status": "unavailable"})
+        return msg
+
+    stdout, stderr, code = _chub_run(["search", query])
+
+    if code != 0:
+        msg = f"[search_api_docs] chub error (exit {code}): {stderr.strip()[:500]}"
+        _trace_event("return", "search_api_docs", {"status": "error", "code": code})
+        return msg
+
+    result = sanitize_text(stdout)
+    _trace_event("return", "search_api_docs", {"status": "ok", "chars": len(result)})
+    print(result)
+    return result
+
+
+def annotate_api_docs(doc_id, note):
+    """Attach a local annotation to a context-hub doc — persists across sessions.
+
+    Use this when you discover a gap, gotcha, or workaround while using an API.
+    The note will automatically appear on future fetch_api_docs() calls.
+
+    Args:
+        doc_id: Context-hub document ID, e.g. "openai/chat".
+        note:   Short note to attach, e.g. "Needs raw body for webhook verification".
+
+    Returns:
+        Confirmation string, or an error message.
+    """
+    doc_id = (doc_id or "").strip().replace("\n", "").replace("\r", "")
+    note = (note or "").strip()
+
+    allowed, reason = _policy_guard("annotate_api_docs", note)
+    if not allowed:
+        _trace_event("blocked", "annotate_api_docs", {"reason": reason})
+        return reason
+
+    _trace_event("call", "annotate_api_docs", {"doc_id": doc_id[:200], "note_len": len(note)})
+
+    if not _chub_available():
+        msg = (
+            "[annotate_api_docs] chub CLI not installed. "
+            "Run: npm install -g @aisuite/chub"
+        )
+        _trace_event("return", "annotate_api_docs", {"status": "unavailable"})
+        return msg
+
+    if not _CHUB_DOC_ID_RE.match(doc_id):
+        msg = f"[annotate_api_docs] Invalid doc_id '{doc_id[:60]}'. Use format: 'provider/topic'."
+        _trace_event("return", "annotate_api_docs", {"status": "invalid_doc_id"})
+        return msg
+
+    print(f"📝 ANNOTATE API DOCS: {doc_id}...")
+    stdout, stderr, code = _chub_run(["annotate", doc_id, note])
+
+    if code != 0:
+        msg = f"[annotate_api_docs] chub error (exit {code}): {stderr.strip()[:500]}"
+        _trace_event("return", "annotate_api_docs", {"status": "error", "code": code})
+        return msg
+
+    result = sanitize_text(stdout) or f"✓ Annotation saved for '{doc_id}'."
+    _trace_event("return", "annotate_api_docs", {"status": "ok"})
+    print(result)
+    return result
+
+
 # --- SETUP CODE ENDS HERE ---
 

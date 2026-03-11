@@ -1,0 +1,22 @@
+{"ts": "2026-03-11T18:53:26.692560+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "nonexistent/doc", "lang": "py"}}
+{"ts": "2026-03-11T18:53:26.697099+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "error", "code": 1}}
+{"ts": "2026-03-11T18:53:26.727506+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "lang": "py"}}
+{"ts": "2026-03-11T18:53:26.731459+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "unavailable"}}
+{"ts": "2026-03-11T18:53:26.752699+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "; rm -rf /", "lang": "py"}}
+{"ts": "2026-03-11T18:53:26.755648+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "invalid_doc_id"}}
+{"ts": "2026-03-11T18:53:26.773484+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "lang": "bash"}}
+{"ts": "2026-03-11T18:53:26.775742+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "invalid_lang"}}
+{"ts": "2026-03-11T18:53:26.785328+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "lang": "py"}}
+{"ts": "2026-03-11T18:53:26.789585+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok", "chars": 54}}
+{"ts": "2026-03-11T18:53:26.800299+00:00", "event": "call", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"query": "stripe payments"}}
+{"ts": "2026-03-11T18:53:26.801426+00:00", "event": "return", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "unavailable"}}
+{"ts": "2026-03-11T18:53:26.816411+00:00", "event": "blocked", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"reason": "Policy block: meta-instruction / injection attempt detected."}}
+{"ts": "2026-03-11T18:53:26.833467+00:00", "event": "call", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"query": "openai"}}
+{"ts": "2026-03-11T18:53:26.835808+00:00", "event": "return", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok", "chars": 72}}
+{"ts": "2026-03-11T18:53:26.861478+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "note_len": 27}}
+{"ts": "2026-03-11T18:53:26.865713+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "unavailable"}}
+{"ts": "2026-03-11T18:53:26.880639+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "../../etc/passwd", "note_len": 4}}
+{"ts": "2026-03-11T18:53:26.882304+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "invalid_doc_id"}}
+{"ts": "2026-03-11T18:53:26.889118+00:00", "event": "blocked", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"reason": "Input too long. Please shorten the query."}}
+{"ts": "2026-03-11T18:53:26.904370+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "note_len": 40}}
+{"ts": "2026-03-11T18:53:26.907711+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok"}}

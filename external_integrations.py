@@ -1,11 +1,12 @@
 """
 R.A.I.N. Lab External Integrations
 
-Tools for ArXiv, DOI lookup, and BibTeX generation.
+Tools for ArXiv, DOI lookup, BibTeX generation, and Context Hub (API documentation).
 """
 
 import json
 import re
+import subprocess
 import urllib.parse
 import urllib.request
 
