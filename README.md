@@ -13,10 +13,9 @@ hero:
       link: https://rainlabteam.vercel.app/
       icon: material/arrow-left
 ---
-
-# the engine room
-
 # Vers3Dynamics' R.A.I.N. Lab🐙
+
+## the engine room
 
 <p align="center">
   <img src="assets/rain_lab_logo.png" alt="R.A.I.N. Lab logo" width="900" />
