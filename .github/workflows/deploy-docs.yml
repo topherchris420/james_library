@@ -1,4 +1,4 @@
-name: Deploy Documentation to GitHub Page
+name: Deploy Documentation to GitHub Pages
 
 on:
   push:
@@ -43,8 +43,8 @@ jobs:
 
       - name: Stage documentation files
         run: |
-          # Create subdirectories in the docs folder
-          mkdir -p docs/agents docs/papers docs/records
+          # Create subdirectories in the docs folder (Added docs/assets here)
+          mkdir -p docs/agents docs/papers docs/records docs/assets
           
           # Copy the root README to be the homepage
           cp README.md docs/index.md
@@ -63,6 +63,9 @@ jobs:
           # Copy the logs and roadmaps
           cp RAIN_LAB_MEETING_LOG.md docs/records/
           cp PRODUCT_ROADMAP.md docs/records/
+          
+          # Copy the assets folder so the logo and images load
+          cp -r assets/* docs/assets/
 
       - name: Build static site
         run: mkdocs build
