@@ -1,0 +1,30 @@
+# Pinned dependency versions for reproducible installs.
+# Generated from the development environment.
+# Usage: pip install -r requirements-lock.txt
+#
+# To update: pip install -r requirements.txt && pip freeze > requirements-lock.txt
+
+# ── Core ────────────────────────────────────────────────────
+openai==2.16.0
+requests==2.32.5
+numpy==2.3.5
+networkx==3.6.1
+rich==14.3.2
+websockets==15.0.1
+PyYAML==6.0.2
+
+# ── Optional: search ────────────────────────────────────────
+duckduckgo-search==8.1.1
+ddgs==9.10.0
+
+# ── Optional: tts ───────────────────────────────────────────
+pyttsx3==2.99
+edge-tts==7.2.7
+
+# ── Optional: science ───────────────────────────────────────
+scikit-learn==1.7.0
+
+# ── Dev ─────────────────────────────────────────────────────
+pytest==9.0.2
+pytest-cov==7.0.0
+ruff==0.15.2

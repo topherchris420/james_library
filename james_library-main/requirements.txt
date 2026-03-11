@@ -1,0 +1,15 @@
+# Core dependencies — always needed
+openai>=1.0.0
+requests>=2.28.0
+numpy>=1.24.0
+networkx>=3.0
+rich>=13.0.0
+websockets>=12.0
+PyYAML>=6.0
+SpeechRecognition>=3.10.0
+# Optional features — install individually or use: pip install -e ".[all]"
+# Search:    pip install -e ".[search]"    → duckduckgo-search
+# Scraping:  pip install -e ".[scraping]"  → scrapling
+# TTS:       pip install -e ".[tts]"       → pyttsx3
+# Science:   pip install -e ".[science]"   → scikit-learn
+# Everything: pip install -e ".[all]"

@@ -1,0 +1,118 @@
+# Vers3Dynamics Configuration Template
+# Copy this file to config.toml and fill in your credentials
+# DO NOT commit config.toml to version control (already in .gitignore)
+
+# =============================================================================
+# Core Settings
+# =============================================================================
+
+# API Key - Replace with YOUR_API_KEY_HERE or set ZEROCLAW_API_KEY env var
+api_key = "YOUR_API_KEY_HERE"
+
+# Provider configuration
+# Options: "openrouter", "ollama", "anthropic", "openai"
+default_provider = "openrouter"
+default_model = "anthropic/claude-sonnet-4-6"
+default_temperature = 0.7
+
+# Optional: Override API base URL (e.g., for local Ollama)
+# api_url = "http://localhost:11434"
+
+# =============================================================================
+# Environment Variables (optional overrides)
+# =============================================================================
+# ZEROCLAW_API_KEY      - Override api_key
+# ZEROCLAW_WORKSPACE   - Override workspace_dir
+# MINICONDA_PYTHON     - Path to Miniconda python.exe (research.ps1)
+# JAMES_LIBRARY_PATH   - Path to rain_lab.py (research.ps1)
+
+# =============================================================================
+# Workspace (cross-platform compatible paths)
+# =============================================================================
+# Use ~ for home directory (works on Windows, macOS, Linux)
+# Or set environment variable ZEROCLAW_WORKSPACE
+workspace_dir = "~/zeroclaw-data/workspace"
+config_path = "~/.zeroclaw/config.toml"
+
+# =============================================================================
+# Gateway (webhook server)
+# =============================================================================
+[gateway]
+port = 42617
+host = "[::]"
+allow_public_bind = false
+
+# =============================================================================
+# Autonomy & Security Policy
+# =============================================================================
+# Relaxed for autonomous research operations
+
+[autonomy]
+# Relaxed for automated research - no approval prompts
+require_approval_for_medium_risk = false
+block_high_risk_commands = false
+
+# Critical environment variables for Windows execution
+shell_env_passthrough = [
+    "PATH",
+    "TEMP",
+    "TMP",
+    "USERPROFILE",
+    "APPDATA",
+    "LOCALAPPDATA",
+]
+
+# Auto-approve research tools
+auto_approve = [
+    "shell",
+    "file_read",
+    "file_write",
+    "memory",
+]
+
+# Rate limiting
+max_actions_per_hour = 100
+max_cost_per_day_cents = 10000
+
+# =============================================================================
+# Runtime Configuration
+# =============================================================================
+[runtime]
+# Options: "native" (local shell), "docker"
+kind = "native"
+
+# =============================================================================
+# Model Providers (multi-provider setup)
+# =============================================================================
+# Add additional provider configurations here
+
+# [model_providers.ollama]
+# api_url = "http://localhost:11434"
+# default_model = "llama3.2"
+
+# [model_providers.openrouter]
+# api_key = "YOUR_OPENROUTER_KEY_HERE"
+
+# =============================================================================
+# Security
+# =============================================================================
+[security]
+# Pairing secret (change this!)
+pairing_secret = "CHANGE_ME_IN_PRODUCTION"
+
+# =============================================================================
+# Reliability & Fallback
+# =============================================================================
+[reliability]
+# Enable automatic provider failover
+enable_provider_fallback = true
+
+# =============================================================================
+# Agent Orchestration
+# =============================================================================
+[agent]
+# Maximum concurrent tool executions
+max_concurrent_tools = 5
+
+# Tool execution timeout (seconds)
+tool_timeout_seconds = 300

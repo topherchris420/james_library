@@ -1,0 +1,29 @@
+# VCS and CI metadata
+.git
+.githooks
+.github
+
+# Build outputs and local artifacts
+target
+.tmp_*
+
+# Local databases and journals
+*.db
+*.db-journal
+
+# Docs and media not needed for image build
+docs
+examples
+tests
+*.md
+*.png
+
+# Local/system noise
+.DS_Store
+
+# Sensitive/local config
+.env
+
+# Repository metadata not required in container
+deny.toml
+LICENSE

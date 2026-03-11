@@ -1,0 +1,301 @@
+{
+  "repo_notes": [
+    {
+      "content": ""
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "Introduce R.A.I.N. Lab (Recursive Architecture of Intelligent Nexus), explaining the dual-architecture system (ZeroClaw + James Library), its purpose for AI research and autonomous agents, and high-level capabilities",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "Guide users through initial setup, from installation to first successful run",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Installation",
+      "purpose": "Explain installation process for Windows (INSTALL_RAIN.ps1, shortcuts) and manual setup (Python venv, dependencies, Rust build)",
+      "parent": "Getting Started",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "First Run Setup",
+      "purpose": "Detail the guided onboarding process, including preflight checks, environment validation, and Godot client installation prompts",
+      "parent": "Getting Started",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Configuration",
+      "purpose": "Explain the centralized configuration system, environment variables (LM_STUDIO_*, RAIN_*), Config dataclass, and priority hierarchy",
+      "parent": "Getting Started",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Core Architecture",
+      "purpose": "Explain the system's fundamental design: ZeroClaw (Rust runtime) for performance and James Library (Python) for research intelligence",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "System Overview",
+      "purpose": "Provide architectural overview showing how ZeroClaw and James Library interact, shared infrastructure, and data flow patterns",
+      "parent": "Core Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "ZeroClaw (Rust Runtime)",
+      "purpose": "Document the Rust-based runtime components: agent orchestrator, channel management, model providers, gateway, and memory systems",
+      "parent": "Core Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "James Library (Python)",
+      "purpose": "Document the Python research system: RainLabOrchestrator, RLM (Recursive Lab Meeting), research corpus, and agent personalities",
+      "parent": "Core Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Service Supervision",
+      "purpose": "Explain openclaw_service.py's role as a watchdog process: heartbeat monitoring, crash detection, automatic restarts, and task.json commands",
+      "parent": "Core Architecture",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Launcher System",
+      "purpose": "Document the unified launcher (rain_lab.py) that routes to different operational modes and manages sidecar processes",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Unified Launcher",
+      "purpose": "Explain rain_lab.py's architecture: mode resolution, sidecar management (Godot bridge, client), and process supervision loops",
+      "parent": "Launcher System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Operational Modes",
+      "purpose": "Document all available modes: chat, rlm, godot, james-chat, compile, preflight, doctor, backup, first-run, and their use cases",
+      "parent": "Launcher System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "CLI Interface",
+      "purpose": "Detail command-line argument parsing, configuration options, resume functionality, and passthrough arguments",
+      "parent": "Launcher System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Meeting System",
+      "purpose": "Explain how the multi-agent meeting system works: orchestration, turn-taking, agent personalities, and response generation",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Meeting Orchestration",
+      "purpose": "Document RainLabOrchestrator's lifecycle: initialization, turn-based loop, context management, user intervention, and wrap-up phase",
+      "parent": "Meeting System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Agent Personalities",
+      "purpose": "Explain the agent system: soul files, agreeableness traits, conversational styles, and how personalities shape responses",
+      "parent": "Meeting System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Response Generation Pipeline",
+      "purpose": "Detail the LLM interaction pipeline: prompt construction, retry logic, recursive refinement, guardrails, and truncation handling",
+      "parent": "Meeting System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Session Examples",
+      "purpose": "Showcase real meeting transcripts from RAIN_LAB_MEETING_LOG.md demonstrating multi-agent discussions, topic evolution, and system behavior",
+      "parent": "Meeting System",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Communication Channels",
+      "purpose": "Document the messaging channel integrations that enable external communication via WhatsApp and Telegram",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Channel Architecture",
+      "purpose": "Explain the Channel trait, webhook vs. polling models, authentication patterns, and common interfaces",
+      "parent": "Communication Channels",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "WhatsApp Integration",
+      "purpose": "Document WhatsAppChannel: webhook payload parsing, media download, allowed numbers, and message sending",
+      "parent": "Communication Channels",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Telegram Integration",
+      "purpose": "Document TelegramChannel: long-polling, pairing system, streaming updates, draft management, and voice transcription",
+      "parent": "Communication Channels",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Multimodal Processing",
+      "purpose": "Explain media handling: image encoding for vision payloads, audio transcription, attachment markers, and content transformations",
+      "parent": "Communication Channels",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Data Management",
+      "purpose": "Document persistence systems: logging, checkpointing, metrics collection, and session state management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Logging System",
+      "purpose": "Explain LogManager, VisualEventLogger, and Diplomat: Markdown transcripts, JSONL event streams, log rotation, and file-based IPC",
+      "parent": "Data Management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Checkpointing & Resume",
+      "purpose": "Document CheckpointManager: session state snapshots, atomic writes, parse_log_for_resume, and continuation from JSON or Markdown",
+      "parent": "Data Management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Metrics & Analytics",
+      "purpose": "Explain MetricsTracker and metrics_log.jsonl: citation accuracy, novel claim density, critique change rate, and session statistics",
+      "parent": "Data Management",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Extended Features",
+      "purpose": "Document optional capabilities that enhance the meeting experience: voice output, visual avatars, and web search",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    },
+    {
+      "title": "Voice & TTS",
+      "purpose": "Document VoiceEngine: pyttsx3 integration, character voice mapping, fallback mechanisms, subprocess isolation, and audio export",
+      "parent": "Extended Features",
+      "page_notes": [
+        {
+          "content": ""
+        }
+      ]
+    }
+  ]
+}the file creation.

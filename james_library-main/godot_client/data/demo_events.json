@@ -1,0 +1,91 @@
+{
+  "events": [
+    {
+      "delay_s": 0.5,
+      "event": {
+        "type": "conversation_started",
+        "conversation_id": "demo_001",
+        "participants": [
+          {"agent_id": "james", "display_name": "James"},
+          {"agent_id": "jasmine", "display_name": "Jasmine"},
+          {"agent_id": "elena", "display_name": "Elena"},
+          {"agent_id": "luca", "display_name": "Luca"}
+        ]
+      }
+    },
+    {
+      "delay_s": 0.4,
+      "event": {
+        "type": "agent_utterance",
+        "turn_id": "t_001",
+        "agent_id": "james",
+        "agent_name": "James",
+        "text": "Welcome team. We are testing a neutral event stream rendered through a retro RPG scene.",
+        "tone": "curious",
+        "audio": {
+          "mode": "synthetic",
+          "duration_ms": 3200
+        }
+      }
+    },
+    {
+      "delay_s": 0.7,
+      "event": {
+        "type": "agent_utterance",
+        "turn_id": "t_002",
+        "agent_id": "jasmine",
+        "agent_name": "Jasmine",
+        "text": "The backend logic is unchanged. The Godot client just maps events to visuals and audio behavior.",
+        "tone": "focused",
+        "audio": {
+          "mode": "synthetic",
+          "duration_ms": 3400
+        }
+      }
+    },
+    {
+      "delay_s": 0.6,
+      "event": {
+        "type": "theme_changed",
+        "theme_id": "lab"
+      }
+    },
+    {
+      "delay_s": 0.4,
+      "event": {
+        "type": "agent_utterance",
+        "turn_id": "t_003",
+        "agent_id": "elena",
+        "agent_name": "Elena",
+        "text": "Same conversation, different environment. Background, UI skin, ambience, and sprite palettes all changed.",
+        "tone": "neutral",
+        "audio": {
+          "mode": "synthetic",
+          "duration_ms": 3800
+        }
+      }
+    },
+    {
+      "delay_s": 0.7,
+      "event": {
+        "type": "agent_utterance",
+        "turn_id": "t_004",
+        "agent_id": "luca",
+        "agent_name": "Luca",
+        "text": "During each utterance, the active speaker animates while everyone else stays visible in the same scene.",
+        "tone": "excited",
+        "audio": {
+          "mode": "synthetic",
+          "duration_ms": 3600
+        }
+      }
+    },
+    {
+      "delay_s": 1.0,
+      "event": {
+        "type": "conversation_ended",
+        "conversation_id": "demo_001"
+      }
+    }
+  ]
+}

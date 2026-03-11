@@ -1,0 +1,22 @@
+# Dependencies for James Reader - Headless CLI
+# Install with: 
+
+pip install -r requirements-reader.txt
+
+# Document parsing
+docling>=2.55.0
+
+# Database (for future indexing support)
+duckdb>=1.0.0
+
+# Google Gemini API client
+google-genai>=1.55.0
+
+# Async support
+llama-index-workflows>=2.11.5
+
+# Environment variables
+python-dotenv>=1.0.0
+
+# Data validation
+pydantic>=2.0.0
