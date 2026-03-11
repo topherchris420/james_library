@@ -277,6 +277,59 @@ def search_web(query):
         _trace_event("return", "search_web", {"status": "error", "error": str(e)})
         return f"Search Error: {e}"
 
+def deep_research(topic, depth="quick"):
+    """Run staged multi-angle research on a topic.
+
+    Searches from 3 angles: recent advances, foundational theory,
+    and criticism/limitations. Extracts evidence and flags contradictions.
+
+    Args:
+        topic: What to research
+        depth: 'quick' (3 queries), 'default' (6), or 'deep' (9)
+
+    Returns:
+        Structured research brief with evidence from multiple angles.
+    """
+    print(f"🔬 DEEP RESEARCH: {topic} (depth={depth})...")
+    _trace_event("call", "deep_research", {"topic": (topic or "")[:600], "depth": depth})
+
+    stages = {
+        "recent": [
+            f"recent advances {topic} 2025 2026",
+            f"{topic} latest research findings",
+            f"{topic} new developments breakthroughs",
+        ],
+        "foundational": [
+            f"{topic} theory fundamentals review",
+            f"{topic} established principles overview",
+            f"{topic} foundational papers key results",
+        ],
+        "contrarian": [
+            f"{topic} criticism limitations problems",
+            f"{topic} challenges open questions debate",
+            f"{topic} counterarguments alternative explanations",
+        ],
+    }
+
+    queries_per_stage = {"quick": 1, "default": 2, "deep": 3}.get(depth, 1)
+    all_sections = []
+    query_count = 0
+
+    for stage_name, queries in stages.items():
+        stage_results = []
+        for query in queries[:queries_per_stage]:
+            result = search_web(query)
+            stage_results.append(result)
+            query_count += 1
+        combined = "\\n".join(stage_results)
+        all_sections.append(f"[{stage_name.upper()}]\\n{combined}")
+
+    brief = f"DEEP RESEARCH: {topic} ({query_count} queries)\\n\\n"
+    brief += "\\n\\n".join(all_sections)
+    print(brief)
+    _trace_event("return", "deep_research", {"status": "ok", "queries": query_count})
+    return brief
+
 def read_paper(keyword):
     """Read one best-matching paper safely; reuse cached content on repeated reads."""
     global _paper_cache

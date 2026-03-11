@@ -9,6 +9,7 @@ from rain_lab_chat.director import RainLabDirector
 from rain_lab_chat.logging_events import Diplomat, LogManager, VisualEventLogger
 from rain_lab_chat.orchestrator import RainLabOrchestrator
 from rain_lab_chat.voice import VoiceEngine
+from rain_lab_chat.deep_research import DeepResearchEngine
 from rain_lab_chat.web_search import WebSearchManager
 
 __all__ = [
@@ -17,6 +18,7 @@ __all__ = [
     "Agent",
     "RainLabAgentFactory",
     "ContextManager",
+    "DeepResearchEngine",
     "WebSearchManager",
     "CitationAnalyzer",
     "RainLabDirector",

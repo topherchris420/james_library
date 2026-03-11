@@ -759,20 +759,44 @@ class RainLabOrchestrator:
             indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
             print(f"\r{_CLR}{indicator} Agents ready")
 
-        # Perform web search for supplementary context
+        # Perform web search / deep research for supplementary context
 
         web_context = ""
 
         if self.web_search_manager.enabled:
-            if not verbose:
-                print("🌐 Searching web...", end="", flush=True)
+            if self.config.enable_deep_research:
+                # Staged multi-angle deep research
+                if not verbose:
+                    print("🔬 Running deep research...", end="", flush=True)
 
-            web_context, results = self.web_search_manager.search(topic, verbose=verbose)
+                from rain_lab_chat.deep_research import DeepResearchEngine
 
-            if not verbose:
-                count = len(results) if results else 0
-                indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
-                print(f"\r{_CLR}{indicator} Web search ({count} results)")
+                engine = DeepResearchEngine(self.web_search_manager, self.config)
+                brief = engine.research(
+                    topic, depth=self.config.deep_research_depth
+                )
+                web_context = brief.summary
+
+                if not verbose:
+                    indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
+                    print(
+                        f"\r{_CLR}{indicator} Deep research "
+                        f"({brief.query_count} queries, "
+                        f"{len(brief.evidence)} evidence items)"
+                    )
+            else:
+                # Simple single-query web search (original behavior)
+                if not verbose:
+                    print("🌐 Searching web...", end="", flush=True)
+
+                web_context, results = self.web_search_manager.search(
+                    topic, verbose=verbose
+                )
+
+                if not verbose:
+                    count = len(results) if results else 0
+                    indicator = status_indicator("ok") if _RICH_UI else f"{_GRN}✓{_RST}"
+                    print(f"\r{_CLR}{indicator} Web search ({count} results)")
 
         elif self.config.enable_web_search and not DDG_AVAILABLE and verbose:
             print("\n⚠️  Web search disabled: duckduckgo-search not installed")

@@ -91,6 +91,10 @@ class Config:
     enable_web_search: bool = True
     web_search_results: int = 3
 
+    # Deep Research Settings
+    enable_deep_research: bool = os.environ.get("RAIN_DEEP_RESEARCH", "1") == "1"
+    deep_research_depth: str = os.environ.get("RAIN_DEEP_RESEARCH_DEPTH", "default")
+
     # Output Settings
     verbose: bool = False
 
