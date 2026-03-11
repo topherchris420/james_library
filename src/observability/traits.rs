@@ -65,6 +65,16 @@ pub enum ObserverEvent {
         /// Human-readable error description. Must not contain secrets or tokens.
         message: String,
     },
+    /// A new plan was created.
+    PlanCreated { plan_id: String, title: String },
+    /// A task was added to a plan.
+    PlanTaskAdded { plan_id: String, task_id: String },
+    /// A task status was updated.
+    PlanTaskUpdated {
+        plan_id: String,
+        task_id: String,
+        status: String,
+    },
 }
 
 /// Numeric metrics emitted by the agent runtime.

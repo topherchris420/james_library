@@ -251,6 +251,11 @@ impl Observer for PrometheusObserver {
             } => {
                 self.errors.with_label_values(&[component]).inc();
             }
+            ObserverEvent::PlanCreated { .. }
+            | ObserverEvent::PlanTaskAdded { .. }
+            | ObserverEvent::PlanTaskUpdated { .. } => {
+                // Plan events could be tracked with metrics if needed in the future
+            }
         }
     }
 

@@ -283,6 +283,7 @@ impl Agent {
             &config.agents,
             config.api_key.as_deref(),
             config,
+            &observer,
         );
 
         let provider_name = config.default_provider.as_deref().unwrap_or("openrouter");
@@ -351,25 +352,39 @@ impl Agent {
             return;
         }
 
-        let mut system_messages = Vec::new();
-        let mut other_messages = Vec::new();
+        // Drain current history for local processing
+        let history: Vec<ConversationMessage> = self.history.drain(..).collect();
 
-        for msg in self.history.drain(..) {
+        // Split into system messages and non-system messages in original order
+        let mut system_messages: Vec<ConversationMessage> = Vec::new();
+        let mut non_system: Vec<ConversationMessage> = Vec::new();
+        for msg in history {
             match &msg {
                 ConversationMessage::Chat(chat) if chat.role == "system" => {
                     system_messages.push(msg);
                 }
-                _ => other_messages.push(msg),
+                _ => non_system.push(msg),
             }
         }
 
-        if other_messages.len() > max {
-            let drop_count = other_messages.len() - max;
-            other_messages.drain(0..drop_count);
+        // Build the new history with a hard cap of `max` items, prioritizing system messages
+        let mut kept: Vec<ConversationMessage> = Vec::with_capacity(max);
+
+        // Take as many system messages as fit
+        for m in system_messages.into_iter() {
+            if kept.len() >= max {
+                break;
+            }
+            kept.push(m);
         }
 
-        self.history = system_messages;
-        self.history.extend(other_messages);
+        // Then fill with non-system messages, in their original order
+        if kept.len() < max {
+            let remaining = max - kept.len();
+            kept.extend(non_system.into_iter().take(remaining));
+        }
+
+        self.history = kept;
     }
 
     fn build_system_prompt(&self) -> Result<String> {

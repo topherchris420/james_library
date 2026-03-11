@@ -45,6 +45,7 @@ pub mod memory_recall;
 pub mod memory_store;
 pub mod model_routing_config;
 pub mod pdf_read;
+pub mod plan;
 pub mod proxy_config;
 pub mod pushover;
 pub mod schedule;
@@ -208,6 +209,7 @@ pub fn all_tools_with_runtime(
     agents: &HashMap<String, DelegateAgentConfig>,
     fallback_api_key: Option<&str>,
     root_config: &crate::config::Config,
+    observer: &Arc<dyn Observer>,
 ) -> Vec<Box<dyn Tool>> {
     let mut tool_arcs: Vec<Arc<dyn Tool>> = vec![
         Arc::new(ShellTool::new(security.clone(), runtime)),
@@ -238,6 +240,11 @@ pub fn all_tools_with_runtime(
         Arc::new(PushoverTool::new(
             security.clone(),
             workspace_dir.to_path_buf(),
+        )),
+        Arc::new(PlanTool::new(
+            memory.clone(),
+            security.clone(),
+            observer.clone(),
         )),
     ];
 
@@ -581,9 +588,10 @@ mod tests {
             },
         );
 
-        let tools = all_tools(
+        let tools = tools::all_tools_with_runtime(
             Arc::new(Config::default()),
             &security,
+            mem,
             mem,
             None,
             None,
@@ -592,7 +600,7 @@ mod tests {
             &crate::config::WebFetchConfig::default(),
             tmp.path(),
             &agents,
-            Some("delegate-test-credential"),
+            None,
             &cfg,
         );
         let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();

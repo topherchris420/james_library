@@ -50,6 +50,15 @@ impl Observer for LogObserver {
             ObserverEvent::Error { component, message } => {
                 info!(component = %component, error = %message, "error");
             }
+            ObserverEvent::PlanCreated { plan_id, title } => {
+                info!(plan_id = %plan_id, title = %title, "plan.created");
+            }
+            ObserverEvent::PlanTaskAdded { plan_id, task_id } => {
+                info!(plan_id = %plan_id, task_id = %task_id, "plan.task_added");
+            }
+            ObserverEvent::PlanTaskUpdated { plan_id, task_id, status } => {
+                info!(plan_id = %plan_id, task_id = %task_id, status = %status, "plan.task_updated");
+            }
             ObserverEvent::LlmRequest {
                 provider,
                 model,
