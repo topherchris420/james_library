@@ -1,0 +1,25 @@
+name: Deploy R.A.I.N. Lab Engine
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Remote Deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/james_library
+            git pull origin main
+            
+            # Rebuild and restart the containers in the background
+            docker-compose -f docker-compose.yml down
+            docker-compose -f docker-compose.yml build
+            docker-compose -f docker-compose.yml up -d
