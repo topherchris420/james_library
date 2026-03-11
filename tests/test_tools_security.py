@@ -1,6 +1,6 @@
 import os
-import unittest
 import sys
+import unittest
 from pathlib import Path
 
 # Add repo root to path for imports
@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 os.environ["JAMES_LIBRARY_PATH"] = str(REPO_ROOT)
 
 from tools import _policy_guard, export_to_file, generate_html
+
 
 class TestToolsSecurity(unittest.TestCase):
     def test_policy_guard_schemes(self):

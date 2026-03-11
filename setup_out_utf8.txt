@@ -1,0 +1,5 @@
+﻿[SETUP] tools ready
+[ERROR] RAG Initialization Failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\chris\miniconda3\Lib\site-packages\torch\lib\c10.dll" or one of its dependencies.
+   (Proceeding without semantic search capabilities)
+--- SETUP CODE START ---
+Error: 'charmap' codec can't encode character '\u23f3' in position 6012: character maps to <undefined>

@@ -1,5 +1,7 @@
 import unittest
+
 from rain_lab_chat._sanitize import sanitize_text, sanitize_url
+
 
 class TestSanitizeHardening(unittest.TestCase):
     def test_llama_mistral_tokens(self):

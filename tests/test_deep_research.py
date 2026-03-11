@@ -4,8 +4,7 @@ Tests the staged search, evidence extraction, contradiction detection,
 and synthesis without making real network requests.
 """
 
-import re
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -13,11 +12,9 @@ from rain_lab_chat.config import Config
 from rain_lab_chat.deep_research import (
     DeepResearchEngine,
     EvidenceItem,
-    ResearchBrief,
     _detect_contradictions,
     _extract_evidence_from_text,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

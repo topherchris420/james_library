@@ -80,7 +80,7 @@ def sanitize_text(text: str) -> str:
     text = text.replace("[SEARCH:", "[SEARCH;")
 
     # 5. Neutralize role simulation headers
-    text = _RE_ROLE_SIMULATION.sub(r"[ROLE_BLOCKED] \1:", text)
+    text = _RE_ROLE_SIMULATION.sub(r"[ROLE_BLOCKED] [\1]", text)
 
     return text.strip()
 

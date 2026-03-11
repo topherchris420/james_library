@@ -5,32 +5,33 @@ RLM agent tools for research: web search, paper reading, library search, RAG.
 """
 
 
-
 import os
-import sys
+
 
 def get_setup_code() -> str:
     """Returns the setup code that gets injected into RLM agent context."""
     with open(__file__, "r", encoding="utf-8") as f:
         content = f.read()
     
-    if "# --- SETUP CODE BEGINS HERE ---" in content and "# --- SETUP CODE ENDS HERE ---" in content:
-        setup_block = content.split("# --- SETUP CODE BEGINS HERE ---", 1)[1].split("# --- SETUP CODE ENDS HERE ---", 1)[0]
+    start_tok = "# ---" + " SETUP CODE BEGINS HERE ---"
+    end_tok = "# ---" + " SETUP CODE ENDS HERE ---"
+    
+    if start_tok in content and end_tok in content:
+        setup_block = content.split(start_tok)[1].split(end_tok)[0]
         # Auto-execute initialization inside RLM context
-        return setup_block + "\n\n_run_initialization()\n"
+        return setup_block + "\n\n_init_rag()\n"
     return ""
 
 # --- SETUP CODE BEGINS HERE ---
 
-
 import os
 import glob
-import re
 import json
+import re
 from datetime import datetime, timezone
 
 # PATH TO USER LIBRARY (Use forward slashes to avoid escape issues)
-LIBRARY_PATH = os.environ.get("JAMES_LIBRARY_PATH", os.getcwd())
+LIBRARY_PATH = os.path.join(os.environ.get("JAMES_LIBRARY_PATH", os.getcwd()), "papers")
 
 # GLOBAL TOPIC VARIABLE (Injected by the agent's first turn or host env)
 TOPIC = os.environ.get("RLM_TOPIC", "RESEARCH_TOPIC")
@@ -133,7 +134,8 @@ def _init_rag():
     global embedder, collection, _rag_failed
     if _rag_failed:
         return False
-    if embedder is not None: return True # Already initialized
+    if embedder is not None:
+        return True # Already initialized
 
     try:
         # --- ROBUST WINDOWS FIX FOR [WinError 1114] ---
@@ -141,9 +143,9 @@ def _init_rag():
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
         # 2. Locate and add paths
-        import sys
-        import site
         import ctypes
+        import site
+        import sys
 
         paths_to_add = []
 
@@ -165,7 +167,8 @@ def _init_rag():
                     torch_lib = tlib
                     paths_to_add.append(tlib)
                     break
-        except Exception: pass
+        except Exception:
+            pass
 
         # Add to PATH (Prepend to ensure priority)
         if paths_to_add:
@@ -174,17 +177,22 @@ def _init_rag():
         # Add to DLL Directory (Python 3.8+)
         if hasattr(os, 'add_dll_directory'):
             for p in paths_to_add:
-                try: os.add_dll_directory(p)
-                except Exception: pass
+                try:
+                    os.add_dll_directory(p)
+                except Exception:
+                    pass
 
         # 3. EXPLICIT PRE-LOADING (The Nuclear Option)
         # Pre-load dependencies to ensure they are in memory before c10.dll tries to load
         def force_load(name, directory):
-            if not directory: return
+            if not directory:
+                return
             path = os.path.join(directory, name)
             if os.path.exists(path):
-                try: ctypes.CDLL(path)
-                except Exception: pass
+                try:
+                    ctypes.CDLL(path)
+                except Exception:
+                    pass
 
         force_load("msvcp140.dll", conda_lib)
         force_load("vcruntime140.dll", conda_lib)
@@ -196,8 +204,6 @@ def _init_rag():
         # ----------------------------------------------
 
         # Exclusive import of torch to ensure DLLs are loaded
-        import torch
-
         import chromadb
         from sentence_transformers import SentenceTransformer
 
@@ -227,11 +233,13 @@ def index_library():
     print("📚 Indexing library...")
     count = 0
     for file_path in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")):
-        if "SOUL" in file_path or "LOG" in file_path: continue
+        if "SOUL" in file_path or "LOG" in file_path:
+            continue
         try:
             with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
                 text = f.read()
-                if not text.strip(): continue
+                if not text.strip():
+                    continue
 
                 # Naive upsert
                 embedding = embedder.encode(text).tolist()
@@ -424,7 +432,8 @@ def search_library(query):
 
     # Split query into keywords (ignore small words)
     keywords = [k.lower() for k in query.split() if len(k) > 3]
-    if not keywords: keywords = [query.lower()]
+    if not keywords:
+        keywords = [query.lower()]
 
     for file_path in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")):
         basename = os.path.basename(file_path)

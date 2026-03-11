@@ -84,11 +84,12 @@ def _host_has_web_search() -> bool:
         return False
 
 # --- FORCE UTF-8 ---
-for _name in ("stdout", "stderr"):
-    _obj = getattr(sys, _name, None)
-    _buffer = getattr(_obj, "buffer", None)
-    if _buffer is not None:
-        setattr(sys, _name, io.TextIOWrapper(_buffer, encoding='utf-8'))
+if 'pytest' not in sys.modules:
+    for _name in ("stdout", "stderr"):
+        _obj = getattr(sys, _name, None)
+        _buffer = getattr(_obj, "buffer", None)
+        if _buffer is not None:
+            setattr(sys, _name, io.TextIOWrapper(_buffer, encoding='utf-8', errors='replace'))
 
 
 def sanitize_text(text: str) -> str:

@@ -16,7 +16,6 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from rain_lab_chat._logging import get_logger
-from rain_lab_chat._sanitize import sanitize_text
 from rain_lab_chat.config import Config
 
 log = get_logger(__name__)

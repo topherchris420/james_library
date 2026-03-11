@@ -1,0 +1,120 @@
+E701 Multiple statements on one line (colon)
+   --> tools.py:135:28
+    |
+133 |     if _rag_failed:
+134 |         return False
+135 |     if embedder is not None: return True # Already initialized
+    |                            ^
+136 |
+137 |     try:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:167:25
+    |
+165 |                     paths_to_add.append(tlib)
+166 |                     break
+167 |         except Exception: pass
+    |                         ^
+168 |
+169 |         # Add to PATH (Prepend to ensure priority)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:176:20
+    |
+174 |         if hasattr(os, 'add_dll_directory'):
+175 |             for p in paths_to_add:
+176 |                 try: os.add_dll_directory(p)
+    |                    ^
+177 |                 except Exception: pass
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:177:33
+    |
+175 |             for p in paths_to_add:
+176 |                 try: os.add_dll_directory(p)
+177 |                 except Exception: pass
+    |                                 ^
+178 |
+179 |         # 3. EXPLICIT PRE-LOADING (The Nuclear Option)
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:182:29
+    |
+180 |         # Pre-load dependencies to ensure they are in memory before c10.dll tries to load
+181 |         def force_load(name, directory):
+182 |             if not directory: return
+    |                             ^
+183 |             path = os.path.join(directory, name)
+184 |             if os.path.exists(path):
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:185:20
+    |
+183 |             path = os.path.join(directory, name)
+184 |             if os.path.exists(path):
+185 |                 try: ctypes.CDLL(path)
+    |                    ^
+186 |                 except Exception: pass
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:186:33
+    |
+184 |             if os.path.exists(path):
+185 |                 try: ctypes.CDLL(path)
+186 |                 except Exception: pass
+    |                                 ^
+187 |
+188 |         force_load("msvcp140.dll", conda_lib)
+    |
+
+F401 `torch` imported but unused; consider using `importlib.util.find_spec` to test for availability
+   --> tools.py:199:16
+    |
+197 |         # Exclusive import of torch to ensure DLLs are loaded
+198 |         import chromadb
+199 |         import torch
+    |                ^^^^^
+200 |         from sentence_transformers import SentenceTransformer
+    |
+help: Remove unused import: `torch`
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:228:53
+    |
+226 |     count = 0
+227 |     for file_path in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")):
+228 |         if "SOUL" in file_path or "LOG" in file_path: continue
+    |                                                     ^
+229 |         try:
+230 |             with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:232:36
+    |
+230 |             with open(file_path, 'r', encoding='utf-8-sig', errors='ignore') as f:
+231 |                 text = f.read()
+232 |                 if not text.strip(): continue
+    |                                    ^
+233 |
+234 |                 # Naive upsert
+    |
+
+E701 Multiple statements on one line (colon)
+   --> tools.py:425:20
+    |
+423 |     # Split query into keywords (ignore small words)
+424 |     keywords = [k.lower() for k in query.split() if len(k) > 3]
+425 |     if not keywords: keywords = [query.lower()]
+    |                    ^
+426 |
+427 |     for file_path in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")):
+    |
+
+Found 11 errors.

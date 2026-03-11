@@ -1,0 +1,38 @@
+﻿[SETUP] tools ready
+[ERROR] RAG Initialization Failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\chris\miniconda3\Lib\site-packages\torch\lib\c10.dll" or one of its dependencies.
+   (Proceeding without semantic search capabilities)
+--- SETUP CODE START (First 1000 chars) ---
+
+
+import os
+import glob
+import json
+import re
+from datetime import datetime, timezone
+
+# PATH TO USER LIBRARY (Use forward slashes to avoid escape issues)
+LIBRARY_PATH = os.path.join(os.environ.get("JAMES_LIBRARY_PATH", os.getcwd()), "papers")
+
+# GLOBAL TOPIC VARIABLE (Injected by the agent's first turn or host env)
+TOPIC = os.environ.get("RLM_TOPIC", "RESEARCH_TOPIC")
+
+# --- LAZY IMPORT HELPERS & GLOBALS ---
+embedder = None
+collection = None
+_web_search_ready = False
+_rag_failed = False
+_paper_cache = {}
+HELLO_OS_PATH = os.path.join(LIBRARY_PATH, "hello_os.py")
+HELLO_OS_PKG = os.path.join(LIBRARY_PATH, "hello_os")
+
+
+def sanitize_text(text):
+    """Sanitize external content to reduce prompt injection/control token risks."""
+    if not text:
+        return ""
+    for token in ["<|endoftext|>", "<|im_start|>", "<|im_end|>", "|eoc_fim|"]:
+        text = text.replace(token, "[TOKEN_REMOVED]")
+    text = text.replace("###", ">>>")
+    text = text.replace("[SEARCH:", "[SEARCH;")
+    return t
+--- SETUP CODE END ---
