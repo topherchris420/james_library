@@ -20,3 +20,25 @@
 {"ts": "2026-03-11T18:53:26.889118+00:00", "event": "blocked", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"reason": "Input too long. Please shorten the query."}}
 {"ts": "2026-03-11T18:53:26.904370+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "note_len": 40}}
 {"ts": "2026-03-11T18:53:26.907711+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok"}}
+{"ts": "2026-03-11T19:37:00.857528+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "nonexistent/doc", "lang": "py"}}
+{"ts": "2026-03-11T19:37:00.858057+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "error", "code": 1}}
+{"ts": "2026-03-11T19:37:00.860721+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "lang": "py"}}
+{"ts": "2026-03-11T19:37:00.860896+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "unavailable"}}
+{"ts": "2026-03-11T19:37:00.863178+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "; rm -rf /", "lang": "py"}}
+{"ts": "2026-03-11T19:37:00.863329+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "invalid_doc_id"}}
+{"ts": "2026-03-11T19:37:00.865411+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "lang": "bash"}}
+{"ts": "2026-03-11T19:37:00.865573+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "invalid_lang"}}
+{"ts": "2026-03-11T19:37:00.868343+00:00", "event": "call", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "lang": "py"}}
+{"ts": "2026-03-11T19:37:00.868609+00:00", "event": "return", "tool": "fetch_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok", "chars": 54}}
+{"ts": "2026-03-11T19:37:00.871354+00:00", "event": "call", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"query": "stripe payments"}}
+{"ts": "2026-03-11T19:37:00.871495+00:00", "event": "return", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "unavailable"}}
+{"ts": "2026-03-11T19:37:00.873595+00:00", "event": "blocked", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"reason": "Policy block: meta-instruction / injection attempt detected."}}
+{"ts": "2026-03-11T19:37:00.876407+00:00", "event": "call", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"query": "openai"}}
+{"ts": "2026-03-11T19:37:00.876620+00:00", "event": "return", "tool": "search_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok", "chars": 72}}
+{"ts": "2026-03-11T19:37:00.879132+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "note_len": 27}}
+{"ts": "2026-03-11T19:37:00.879270+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "unavailable"}}
+{"ts": "2026-03-11T19:37:00.881457+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "../../etc/passwd", "note_len": 4}}
+{"ts": "2026-03-11T19:37:00.881608+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "invalid_doc_id"}}
+{"ts": "2026-03-11T19:37:00.883604+00:00", "event": "blocked", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"reason": "Input too long. Please shorten the query."}}
+{"ts": "2026-03-11T19:37:00.886470+00:00", "event": "call", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"doc_id": "openai/chat", "note_len": 40}}
+{"ts": "2026-03-11T19:37:00.886720+00:00", "event": "return", "tool": "annotate_api_docs", "topic": "RESEARCH_TOPIC", "payload": {"status": "ok"}}

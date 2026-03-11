@@ -172,9 +172,12 @@ class TTSEngine:
 
         # Play the audio
         if os.name == 'nt':
-            os.system(f'start "" "{temp_file}"')
+            if hasattr(os, 'startfile'):
+                await asyncio.to_thread(os.startfile, temp_file)
+            else:
+                await asyncio.create_subprocess_exec('cmd', '/c', 'start', '', temp_file)
         else:
-            os.system(f"afplay {temp_file} &")
+            await asyncio.create_subprocess_exec('afplay', temp_file)
 
     def _rate_to_edge_format(self, rate: int) -> str:
         """Convert pyttsx3 rate (words per minute) to edge-tts format (+X%)."""
