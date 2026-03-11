@@ -5,9 +5,6 @@ RLM agent tools for research: web search, paper reading, library search, RAG.
 """
 
 
-import os
-
-
 def get_setup_code() -> str:
     """Returns the setup code that gets injected into RLM agent context."""
     with open(__file__, "r", encoding="utf-8") as f:
@@ -24,9 +21,9 @@ def get_setup_code() -> str:
 
 # --- SETUP CODE BEGINS HERE ---
 
-import os
 import glob
 import json
+import os
 import re
 from datetime import datetime, timezone
 

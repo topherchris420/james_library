@@ -1,12 +1,12 @@
-import pytest
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # Ensure we're targeting the papers directory for the mock setup
 os.environ["RLM_REQUIRE_WEB"] = "0"
 
+from rain_lab_meeting import ResearchCouncil
 from tools import get_setup_code
-from rain_lab_meeting import ResearchCouncil, Agent
+
 
 class TestIntegrationFlow:
     @patch('rain_lab_meeting.RLM.completion')
