@@ -2,6 +2,8 @@ site_name: R.A.I.N. Lab Documentation
 site_description: Enterprise-grade epistemic laboratory and multi-agent architecture.
 theme:
   name: material
+  logo: assets/rain_lab_logo.png
+  favicon: assets/rain_lab_logo.png
   palette:
     scheme: slate
   features:
