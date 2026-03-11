@@ -14,9 +14,8 @@ hero:
       icon: material/arrow-left
 ---
 
-# Welcome to the Engine Room
+# the engine room
 
-*(Your existing README content goes here...)*
 # Vers3Dynamics' R.A.I.N. Lab🐙
 
 <p align="center">
