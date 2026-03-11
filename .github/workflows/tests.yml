@@ -36,7 +36,7 @@ jobs:
           fi
 
       - name: Lint (ruff)
-        run: python -m ruff check . --select E,F,W,I
+        run: python -m ruff check .
 
       - name: Run tests
         run: pytest -q
