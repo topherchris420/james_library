@@ -3,18 +3,42 @@ site_description: Enterprise-grade epistemic laboratory and multi-agent architec
 theme:
   name: material
   palette:
-    scheme: slate # Gives it a sleek dark mode perfect for dev tools
+    scheme: slate
   features:
     - navigation.tabs
+    - navigation.sections
     - search.suggest
     - search.highlight
 
-# Point it to where your markdown files live
-docs_dir: docs 
+docs_dir: docs
 
 nav:
-  - Home: index.md
-  - Architecture: ARCHITECTURE.md
-  - Tool Integration: plan-tool-integration.md
-  - Security: SECURITY.md
-  - Production Readiness: PRODUCTION_READINESS.md
+  - Welcome: 
+      - Home: index.md
+      - Roadmap: records/PRODUCT_ROADMAP.md
+      - Meeting Archives: records/RAIN_LAB_MEETING_LOG.md
+  - System Architecture:
+      - Core Engine: ARCHITECTURE.md
+      - Planning & Tool Integration: plan-tool-integration.md
+      - Bounded Adaptation Policy: BOUNDED_ADAPTATION_POLICY.md
+      - Security & Hardening: SECURITY.md
+      - Godot Theme Blueprint: GODOT_SCENE_THEME_BLUEPRINT.md
+  - R.A.I.N. Lab Agents:
+      - Team Overview: agents/overview.md
+      - James (Director): agents/JAMES_SOUL.md
+      - Elena (Systems Architect): agents/ELENA_SOUL.md
+      - Luca (Theoretical Physicist): agents/LUCA_SOUL.md
+      - Jasmine (Communications): agents/JASMINE_SOUL.md
+  - Theoretical Framework:
+      - Dynamic Resonance Rooting: papers/Dynamic Resonance Rooting (Friction Mechanism).md
+      - Recursive Resonance Stabilization: papers/Recursive Resonance Stabilization.md
+      - Discrete Celestial Holography: papers/Discrete Celestial Holography.md
+      - Coherence Depth: papers/Coherence Depth.md
+      - Location is a Dynamic Variable: papers/Location is a Dynamic Variable.md
+      - Geometric Reality: papers/Reality Built on a Finite Set of Geometric Instructions.md
+      - Temporal Re-Localization: papers/Temporal Re-Localization via Scalar Resonance.md
+  - Operations & Guides:
+      - First Run Checklist: FIRST_RUN_CHECKLIST.md
+      - Production Readiness: PRODUCTION_READINESS.md
+      - Backup & Restore: BACKUP_RESTORE.md
+      - Troubleshooting: TROUBLESHOOTING.md
