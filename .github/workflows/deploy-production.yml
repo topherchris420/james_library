@@ -1,25 +1,54 @@
-name: Deploy R.A.I.N. Lab Engine
+name: GitHub Page
 
 on:
   push:
     branches:
       - main
+    paths:
+      - 'docs/**'      # Only run when docs change
+      - 'mkdocs.yml'   # Or when the config changes
+  workflow_dispatch:   # Allows manual trigger
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Remote Deployment
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/james_library
-            git pull origin main
-            
-            # Rebuild and restart the containers in the background
-            docker-compose -f docker-compose.yml down
-            docker-compose -f docker-compose.yml build
-            docker-compose -f docker-compose.yml up -d
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install mkdocs-material
+
+      - name: Build static site
+        run: mkdocs build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site' # This is where MkDocs outputs the HTML
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
