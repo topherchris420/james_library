@@ -1,0 +1,20 @@
+site_name: R.A.I.N. Lab Documentation
+site_description: Enterprise-grade epistemic laboratory and multi-agent architecture.
+theme:
+  name: material
+  palette:
+    scheme: slate # Gives it a sleek dark mode perfect for dev tools
+  features:
+    - navigation.tabs
+    - search.suggest
+    - search.highlight
+
+# Point it to where your markdown files live
+docs_dir: docs 
+
+nav:
+  - Home: index.md
+  - Architecture: ARCHITECTURE.md
+  - Tool Integration: plan-tool-integration.md
+  - Security: SECURITY.md
+  - Production Readiness: PRODUCTION_READINESS.md
