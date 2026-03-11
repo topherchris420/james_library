@@ -84,9 +84,13 @@ def _policy_guard(tool_name, user_text):
         "developer message",
         "chain-of-thought",
         "show hidden",
+        "javascript:",
+        "data:text/html",
+        "vbscript:",
+        "file://",
     ]
     if any(p in t for p in blocked_phrases):
-        return False, "Policy block: meta-instruction / prompt-leak attempt detected."
+        return False, "Policy block: meta-instruction / injection attempt detected."
     return True, ""
 
 
@@ -263,7 +267,7 @@ def search_web(query):
              # Fallback for older versions or if context manager fails
              results = list(DDGS().text(query, max_results=5))
 
-        result = "\\n".join([f"{r['title']}: {r['body']}" for r in results])
+        result = "\n".join([f"{r['title']}: {r['body']}" for r in results])
         result = sanitize_text(result)
         print(result)
         _trace_event("return", "search_web", {"status": "ok", "chars": len(result)})
@@ -321,11 +325,11 @@ def deep_research(topic, depth="quick"):
             result = search_web(query)
             stage_results.append(result)
             query_count += 1
-        combined = "\\n".join(stage_results)
-        all_sections.append(f"[{stage_name.upper()}]\\n{combined}")
+        combined = "\n".join(stage_results)
+        all_sections.append(f"[{stage_name.upper()}]\n{combined}")
 
-    brief = f"DEEP RESEARCH: {topic} ({query_count} queries)\\n\\n"
-    brief += "\\n\\n".join(all_sections)
+    brief = f"DEEP RESEARCH: {topic} ({query_count} queries)\n\n"
+    brief += "\n\n".join(all_sections)
     print(brief)
     _trace_event("return", "deep_research", {"status": "ok", "queries": query_count})
     return brief
@@ -446,11 +450,11 @@ def search_library(query):
             keyword_hint = filename.split('.')[0] # simplified keyword
             snippet += f" -> USE read_paper('{keyword_hint}')"
             output.append(snippet)
-        result = "\\n".join(output)
+        result = "\n".join(output)
     else:
         # Auto-list papers if search fails
         all_files = [os.path.basename(f) for f in glob.glob(os.path.join(LIBRARY_PATH, "*.md")) + glob.glob(os.path.join(LIBRARY_PATH, "*.txt")) if not os.path.basename(f).startswith("_") and "SOUL" not in os.path.basename(f).upper() and "LOG" not in os.path.basename(f).upper()]
-        result = f"No direct matches for '{query}'.\\nAVAILABLE PAPERS:\\n" + ", ".join(all_files) + "\\n\\nSYSTEM ADVICE: Pick a filename from above and use read_paper() on it."
+        result = f"No direct matches for '{query}'.\nAVAILABLE PAPERS:\n" + ", ".join(all_files) + "\n\nSYSTEM ADVICE: Pick a filename from above and use read_paper() on it."
 
     print(result)
     _trace_event("return", "search_library", {"status": "ok", "chars": len(result)})
@@ -744,78 +748,6 @@ def create_comparison_table(items: list, criteria: list, values: dict) -> str:
 # VISUALIZATION TOOLS
 # =============================================================================
 
-def visualize_concepts(concepts: list, relationships: dict = None) -> str:
-    """Generate ASCII visualization of concept relationships.
-
-    Args:
-        concepts: List of concept names
-        relationships: Optional dict mapping concept -> [related_concepts]
-
-    Returns:
-        ASCII diagram string
-    """
-    if not concepts:
-        return "No concepts to visualize."
-
-    # Build simple relationship map
-    rel_map = relationships or {}
-    for c in concepts:
-        if c not in rel_map:
-            rel_map[c] = []
-
-    # Generate ASCII diagram
-    lines = []
-    lines.append("=" * 50)
-    lines.append("CONCEPT MAP")
-    lines.append("=" * 50)
-
-    # Simple node visualization
-    for i, concept in enumerate(concepts[:8]):  # Limit to 8 concepts
-        related = rel_map.get(concept, [])
-        node = f"[{i+1}] {concept}"
-        if related:
-            node += f" --> {', '.join(related[:3])}"
-        lines.append(node)
-
-    if len(concepts) > 8:
-        lines.append(f"... and {len(concepts) - 8} more concepts")
-
-    lines.append("=" * 50)
-    result = "\n".join(lines)
-    print(result)
-    return result
-
-
-def generate_mermaid(diagram_code: str) -> str:
-    """Generate Mermaid.js diagram from diagram code.
-
-    Args:
-        diagram_code: Mermaid diagram definition (e.g., "graph TD; A-->B")
-
-    Returns:
-        Markdown-formatted diagram block
-    """
-    if not diagram_code:
-        return "No diagram code provided."
-
-    # Validate it's mermaid-like
-    valid_starts = ["graph", "flowchart", "sequenceDiagram", "classDiagram",
-                    "stateDiagram", "erDiagram", "gantt", "pie", "mindmap"]
-
-    is_valid = any(diagram_code.strip().startswith(s) for s in valid_starts)
-
-    if not is_valid:
-        # Try to wrap in graph TD
-        diagram_code = f"graph TD;\n{diagram_code}"
-
-    result = f"""
-```mermaid
-{diagram_code}
-```
-"""
-    print(result)
-    return result
-
 
 def visualize_resonance_pattern(frequencies: list, amplitude: float = 1.0) -> str:
     """Generate ASCII visualization of resonance pattern.
@@ -955,6 +887,8 @@ def export_to_markdown(topic: str, agent_responses: list, metadata: dict = None)
 
 def generate_html(topic: str, agent_responses: list, metadata: dict = None) -> str:
     """Export meeting to HTML format."""
+    import html as html_lib
+    topic_safe = html_lib.escape(str(topic))
     colors = {
         "James": "#4ade80", "Jasmine": "#facc15", "Elena": "#c084fc",
         "Luca": "#22d3ee", "Marcus": "#f87171", "Dr_Sarah": "#60a5fa",
@@ -964,7 +898,7 @@ def generate_html(topic: str, agent_responses: list, metadata: dict = None) -> s
     html = f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>R.A.I.N. Lab: {topic}</title>
+    <title>R.A.I.N. Lab: {topic_safe}</title>
     <style>
         body {{ font-family: system-ui, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
         h1 {{ color: #1f2937; }}
@@ -973,20 +907,22 @@ def generate_html(topic: str, agent_responses: list, metadata: dict = None) -> s
 </head>
 <body>
     <h1>🔬 R.A.I.N. Lab Research</h1>
-    <h2>Topic: {topic}</h2>
+    <h2>Topic: {topic_safe}</h2>
 """
 
     if metadata:
         html += '<div class="metadata"><h3>Metadata</h3><ul>'
         for k, v in metadata.items():
-            html += f'<li><strong>{k}</strong>: {v}</li>'
+            html += f'<li><strong>{html_lib.escape(str(k))}</strong>: {html_lib.escape(str(v))}</li>'
         html += '</ul></div>'
 
     html += '<h3>Discussion</h3>'
     for agent, response in agent_responses:
         color = colors.get(agent, "#e5e7eb")
+        agent_safe = html_lib.escape(str(agent))
+        response_safe = html_lib.escape(str(response)).replace(chr(10), "<br>")
         html += f'<div class="agent" style="background: {color}33; border-left: 4px solid {color};">'
-        html += f'<h4>{agent}</h4><p>{response.replace(chr(10), "<br>")}</p></div>'
+        html += f'<h4>{agent_safe}</h4><p>{response_safe}</p></div>'
 
     html += "</body></html>"
     print("HTML generated. Use export_to_file() to save.")
@@ -995,6 +931,13 @@ def generate_html(topic: str, agent_responses: list, metadata: dict = None) -> s
 
 def export_to_file(filename: str, content: str) -> str:
     """Export content to file."""
+    import os
+    # Prevent path traversal vulnerabilities
+    if ".." in filename or os.path.isabs(filename) or "/" in filename or "\\" in filename:
+        msg = f"Export failed: Invalid filename '{filename}' (path traversal prevented)"
+        print(msg)
+        return msg
+
     try:
         archives_dir = os.path.join(LIBRARY_PATH, "meeting_archives")
         os.makedirs(archives_dir, exist_ok=True)
@@ -1029,7 +972,7 @@ def _load_memory():
                 data = json.load(f)
                 _entities = data.get('entities', {})
                 _topics = data.get('topics', [])
-    except Exception:
+    except (OSError, ValueError):
         pass
 
 
@@ -1040,7 +983,7 @@ def _save_memory():
         import json
         with open(_memory_file, 'w') as f:
             json.dump({'entities': _entities, 'topics': _topics}, f)
-    except Exception:
+    except (OSError, ValueError):
         pass
 
 
