@@ -1162,18 +1162,18 @@ def SHOW_VARS(*args, **kwargs):
     raise NameError("SHOW_VARS does not exist! Use print() instead.")
 
 # Initialize on startup (best effort)
+# Set RAIN_SKIP_RAG=1 to suppress auto-init (e.g. during tests or lightweight imports).
 REQUIRE_WEB = os.environ.get("RLM_REQUIRE_WEB", "1") == "1"
+SKIP_RAG = os.environ.get("RAIN_SKIP_RAG", "0") == "1"
 try:
     if REQUIRE_WEB:
         _require_web_search()
-    _init_rag()
+    if not SKIP_RAG:
+        _init_rag()
 except BaseException as e:
     print(f"[ERROR] Setup initialization failed: {e}")
 
-# Trigger one-time index if possible?
-# For now, we trust the agent or user to call index_library() if needed,
-# OR we just do a quick check.
-if collection and collection.count() == 0:
+if not SKIP_RAG and collection and collection.count() == 0:
     print("Empty library detected. Indexing now...")
     index_library()
 

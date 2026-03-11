@@ -1,3 +1,11 @@
+import os
+
+# Guard against tools.py module-level _init_rag() loading torch/sentence_transformers
+# during test collection, which causes a Windows access violation and kills pytest.
+# These must be set before any import of tools, rain_lab_meeting, etc.
+os.environ.setdefault("RAIN_SKIP_RAG", "1")
+os.environ.setdefault("RLM_REQUIRE_WEB", "0")
+
 from pathlib import Path
 
 import pytest
