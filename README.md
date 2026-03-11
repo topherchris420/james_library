@@ -1,3 +1,22 @@
+---
+hide:
+  - navigation
+  - toc
+hero:
+  title: The R.A.I.N. Lab Documentation
+  subtitle: The official technical reference for the enterprise-grade epistemic laboratory and multi-agent architecture.
+  actions:
+    - name: System Architecture
+      link: ARCHITECTURE/
+      icon: material/cpu-64-bit
+    - name: Back to Main Site
+      link: https://rainlabteam.vercel.app/
+      icon: material/arrow-left
+---
+
+# Welcome to the Engine Room
+
+*(Your existing README content goes here...)*
 # Vers3Dynamics' R.A.I.N. Lab🐙
 
 <p align="center">
