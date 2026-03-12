@@ -94,3 +94,42 @@ pytest tests/ -v
 # Lint
 ruff check .
 ```
+
+## Contributor Onboarding (Low-Friction Path)
+
+If this is your first PR, pick one lane and keep scope small:
+
+1. **Docs lane (fastest)**
+   - Good first files: `README.md`, `docs/FIRST_RUN_CHECKLIST.md`, `docs/TROUBLESHOOTING.md`
+   - Validation: preview markdown + run any link checks you use locally
+2. **Python lane**
+   - Good first files: `rain_lab.py`, `hello_os/core.py`, `hello_os/utils.py`
+   - Validation: `ruff check .` and `pytest tests/ -q`
+3. **Rust lane**
+   - Good first files: `src/main.rs`, `src/providers/`, `src/tools/`
+   - Validation:
+     - `cargo fmt --all -- --check`
+     - `cargo clippy --all-targets -- -D warnings`
+     - `cargo test`
+
+### Practical discoverability commands
+
+Use these to find the right edit target before changing code:
+
+```bash
+# Locate launcher mode handling
+rg "--mode|mode" rain_lab.py hello_os src/main.rs
+
+# Locate provider/tool extension points
+rg "Provider|Tool|factory|register" src/providers src/tools src/main.rs
+
+# Locate tests near the code you changed
+rg "pytest|#[ ]*test|mod tests" tests src
+```
+
+### PR checklist (first-time friendly)
+
+- [ ] Keep the PR focused on one concern
+- [ ] Run the smallest relevant validation set for the files you touched
+- [ ] Describe what changed, why, and any non-goals
+- [ ] Note rollback strategy for behavior-changing patches

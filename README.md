@@ -184,6 +184,56 @@ python rain_lab.py --mode onboard
 python rain_lab.py --mode gateway
 ```
 
+### Contributor Fast Path (30-Minute Onboarding)
+
+If you want to contribute quickly without learning every subsystem first, use this path:
+
+```bash
+git clone https://github.com/topherchris420/james_library.git
+cd james_library
+
+# Python-first setup for docs/tests and launcher checks
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# Baseline checks most small PRs should run
+ruff check .
+pytest tests/ -q
+```
+
+Then choose one entry point:
+
+- Docs/navigation improvements: edit `README.md`, `CONTRIBUTING.md`, or files under `docs/`.
+- Python launcher flow: start in `rain_lab.py` and related modules in `hello_os/`.
+- Rust runtime integration: start in `src/main.rs`, then trace into `src/agent/`, `src/providers/`, and `src/tools/`.
+
+Before opening a PR, run the checks relevant to your change and include command output in the PR description.
+
+### First Contribution Map (Practical Discoverability)
+
+Use this map to avoid "where do I start?" friction:
+
+| Goal | Best first file(s) | Why this is a good starting point |
+|---|---|---|
+| Improve onboarding docs | `README.md`, `docs/FIRST_RUN_CHECKLIST.md`, `CONTRIBUTING.md` | High visibility and low risk |
+| Add/adjust launcher behavior | `rain_lab.py`, `hello_os/core.py` | Fast feedback loop from CLI modes |
+| Improve troubleshooting guidance | `docs/TROUBLESHOOTING.md`, `docs/PRODUCTION_READINESS.md` | Direct user impact, easy to validate |
+| Work on provider/tool runtime behavior | `src/providers/`, `src/tools/`, `src/agent/` | Core multi-agent orchestration paths |
+
+Recommended discovery commands:
+
+```bash
+# Find mode entry points and command handlers
+rg "--mode|mode" rain_lab.py hello_os src/main.rs
+
+# Find where providers/tools are wired
+rg "mod providers|mod tools|factory|Provider|Tool" src
+
+# Find tests close to touched code
+rg "pytest|#[ ]*test|mod tests" tests src
+```
+
 ---
 
 ## Download Binaries
