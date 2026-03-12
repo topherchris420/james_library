@@ -116,3 +116,17 @@ max_concurrent_tools = 5
 
 # Tool execution timeout (seconds)
 tool_timeout_seconds = 300
+
+
+# =============================================================================
+# Identity System
+# =============================================================================
+# format:
+# - "openclaw" (default): read workspace markdown identity files
+#   (IDENTITY.md, SOUL.md, USER.md, AGENTS.md)
+# - "aieos": read AIEOS JSON identity payload
+
+[identity]
+format = "openclaw"
+# aieos_path = "identity.json"
+# aieos_inline = '{"identity": {"names": {"first": "ZeroClawAgent"}}}'
