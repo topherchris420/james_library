@@ -67,7 +67,7 @@ Anyone can use this in minutes. Start with the **Quick Start for Everyone** sect
 
 ---
 
-## Quick Start for Everyone (5–10 minutes)
+## Quick Start for Everyone (5 minutes)
 
 ### Simplest Way (Just Run This!)
 
