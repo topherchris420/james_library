@@ -56,7 +56,7 @@ The system combines:
 
 - **ZeroClaw (runtime package / crate name)**: Rust agent runtime for orchestration, tools, channels, and policy enforcement.
 - **James Library (repository name)**: Python research workflows for resonance, recursive meetings, and synthesis.
-- **R.A.I.N. Lab (product name)**: integrated developer/research experience powered by both layers.
+- **R.A.I.N. Lab**: integrated developer/research experience powered by both layers.
 
 Contributor naming hierarchy (quick reference):
 
