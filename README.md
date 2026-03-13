@@ -321,4 +321,4 @@ The R.A.I.N. Lab is proudly built on the foundation of ZeroClaw and MIT CSAIL. H
 
 ## 🐙 R.A.I.N. Lab
 
-[![Star History Chart](https://api.star-history.com/image?repos=topherchris420/james_library&type=date&legend=top-left)](https://www.star-history.com/?repos=topherchris420%2Fjames_library&type=date&legend=top-left))
+[![Star History Chart](https://api.star-history.com/image?repos=topherchris420/james_library&type=date&theme=dark)](https://star-history.com/#topherchris420/james_library&Date)
