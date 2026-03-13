@@ -142,8 +142,8 @@ class TTSEngine:
                     voices = engine.getProperty('voices')
                     if voice_id < len(voices):
                         engine.setProperty('voice', voices[voice_id].id)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"pyttsx3 voice warning: {e}")
 
                 # Set rate and volume from config or defaults
                 rate = config.get("rate", 180)
@@ -221,8 +221,8 @@ class TTSEngine:
         if self._pyttsx3_engine:
             try:
                 self._pyttsx3_engine.stop()
-            except:
-                pass
+            except Exception as e:
+                print(f"pyttsx3 stop warning: {e}")
 
 
 # Global TTS instance
@@ -267,7 +267,8 @@ def list_voices() -> list:
             engine = pyttsx3.init()
             voices = engine.getProperty('voices')
             return [(v.id, v.name) for v in voices]
-        except:
+        except Exception as e:
+            print(f"pyttsx3 list voices warning: {e}")
             return []
     return []
 
