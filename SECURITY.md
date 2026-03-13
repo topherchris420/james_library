@@ -1,93 +1,60 @@
 # Security Policy
 
-## Supported Versions
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-
 ## Reporting a Vulnerability
 
-**Please do NOT open a public GitHub issue for security vulnerabilities.**
+If you discover a security vulnerability in R.A.I.N. Lab, report it by opening an issue on this repository:
 
-Instead, please report them responsibly:
+**https://github.com/MultiplicityFoundation/R.A.I.N./issues**
 
-1. **Email**: Send details to the maintainers via GitHub private vulnerability reporting
-2. **GitHub**: Use [GitHub Security Advisories](https://github.com/theonlyhennygod/zeroclaw/security/advisories/new)
+### What to include
 
-### What to Include
+Include the following information in your report:
 
-- Description of the vulnerability
-- Steps to reproduce
-- Impact assessment
-- Suggested fix (if any)
+1. **Description**: A clear description of the vulnerability
+2. **Impact**: The potential security impact (data exposure, privilege escalation, etc.)
+3. **Reproduction Steps**: Detailed steps to reproduce the issue
+4. **Affected Components**: Which parts of Phase Mirror are affected (mirror-dissonance, Terraform configs, API endpoints, etc.)
+5. **Suggested Fix**: If you have one (optional but appreciated)
 
-### Response Timeline
+### Severity Classifications
 
-- **Acknowledgment**: Within 48 hours
-- **Assessment**: Within 1 week
-- **Fix**: Within 2 weeks for critical issues
+| Severity | Response Time | Examples |
+|----------|--------------|----------|
+| **Critical** | 24-48 hours | RCE, authentication bypass, data exfiltration |
+| **High** | 7 days | Privilege escalation, sensitive data exposure |
+| **Medium** | 30 days | Information disclosure, CSRF |
+| **Low** | 90 days | Minor information leaks, best practice violations |
 
-## Security Architecture
+### Labels
 
-ZeroClaw implements defense-in-depth security:
+When opening a security issue, add the label `security` if available. If not, prefix the issue title with `[SECURITY]`.
 
-### Autonomy Levels
-- **ReadOnly** — Agent can only read, no shell or write access
-- **Supervised** — Agent can act within allowlists (default)
-- **Full** — Agent has full access within workspace sandbox
+### What to Expect
 
-### Sandboxing Layers
-1. **Workspace isolation** — All file operations confined to workspace directory
-2. **Path traversal blocking** — `..` sequences and absolute paths rejected
-3. **Command allowlisting** — Only explicitly approved commands can execute
-4. **Forbidden path list** — Critical system paths (`/etc`, `/root`, `~/.ssh`) always blocked
-5. **Rate limiting** — Max actions per hour and cost per day caps
+- **Acknowledgment**: Within 48 hours of your report
+- **Initial Assessment**: Within 7 business days
+- **Resolution Timeline**: Dependent on severity (see below)
+- **Credit**: Public acknowledgment in release notes (unless you prefer anonymity)
 
-### What We Protect Against
-- Path traversal attacks (`../../../etc/passwd`)
-- Command injection (`rm -rf /`, `curl | sh`)
-- Workspace escape via symlinks or absolute paths
-- Runaway cost from LLM API calls
-- Unauthorized shell command execution
+## Scope
 
-## Security Testing
+This policy covers all code in the `MultiplicityFoundation/R.A.I.N.` repository, including:
 
-All security mechanisms are covered by automated tests (129 tests):
+- Python scripts (`rain_lab.py`, `rain_lab_meeting.py`, `rain_lab_meeting_chat_version.py`, `hello_os.py`)
+- Agent soul files (`*_SOUL.md`)
+- Configuration and preflight tooling (`rain_preflight_check.py`)
 
-```bash
-cargo test -- security
-cargo test -- tools::shell
-cargo test -- tools::file_read
-cargo test -- tools::file_write
-```
+## Known Patterns
 
-## Container Security
+R.A.I.N. Lab runs local-first with a local OpenAI-compatible endpoint. Primary attack surfaces include:
 
-ZeroClaw Docker images follow CIS Docker Benchmark best practices:
+- **Path manipulation** — `sys.path` modifications that could allow module shadowing (mitigated in PR #25).
+- **Prompt injection** — Malicious content in loaded `.md`/`.txt` corpus files that could alter agent behavior.
+- **Unvalidated web search results** — When web search is enabled, returned content enters agent context without sanitization.
 
-| Control | Implementation |
-|---------|----------------|
-| **4.1 Non-root user** | Container runs as UID 65534 (distroless nonroot) |
-| **4.2 Minimal base image** | `gcr.io/distroless/cc-debian12:nonroot` — no shell, no package manager |
-| **4.6 HEALTHCHECK** | Not applicable (stateless CLI/gateway) |
-| **5.25 Read-only filesystem** | Supported via `docker run --read-only` with `/workspace` volume |
+## Supported Versions
 
-### Verifying Container Security
-
-```bash
-# Build and verify non-root user
-docker build -t zeroclaw .
-docker inspect --format='{{.Config.User}}' zeroclaw
-# Expected: 65534:65534
-
-# Run with read-only filesystem (production hardening)
-docker run --read-only -v /path/to/workspace:/workspace zeroclaw gateway
-```
-
-### CI Enforcement
-
-The `docker` job in `.github/workflows/ci.yml` automatically verifies:
-1. Container does not run as root (UID 0)
-2. Runtime stage uses `:nonroot` variant
-3. Explicit `USER` directive with numeric UID exists
+| Version | Supported |
+|---|---|
+| `main` branch (HEAD) | Yes |
+| All other branches | No |
