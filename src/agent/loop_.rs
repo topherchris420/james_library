@@ -387,7 +387,7 @@ fn parse_tool_call_value(value: &serde_json::Value) -> Option<ParsedToolCall> {
             return Some(ParsedToolCall {
                 name,
                 arguments,
-                tool_call_id: tool_call_id,
+                tool_call_id,
             });
         }
     }
@@ -409,7 +409,7 @@ fn parse_tool_call_value(value: &serde_json::Value) -> Option<ParsedToolCall> {
     Some(ParsedToolCall {
         name,
         arguments,
-        tool_call_id: tool_call_id,
+        tool_call_id,
     })
 }
 
@@ -2625,15 +2625,13 @@ pub(crate) async fn run_tool_call_loop(
             ordered_results[*idx] = Some((call.name.clone(), call.tool_call_id.clone(), outcome));
         }
 
-        for entry in ordered_results {
-            if let Some((tool_name, tool_call_id, outcome)) = entry {
-                individual_results.push((tool_call_id, outcome.output.clone()));
-                let _ = writeln!(
-                    tool_results,
-                    "<tool_result name=\"{}\">\n{}\n</tool_result>",
-                    tool_name, outcome.output
-                );
-            }
+        for (tool_name, tool_call_id, outcome) in ordered_results.into_iter().flatten() {
+            individual_results.push((tool_call_id, outcome.output.clone()));
+            let _ = writeln!(
+                tool_results,
+                "<tool_result name=\"{}\">\n{}\n</tool_result>",
+                tool_name, outcome.output
+            );
         }
 
         // Add assistant message with tool calls + tool results to history.
@@ -2785,7 +2783,7 @@ pub async fn run(
     );
 
     let peripheral_tools: Vec<Box<dyn Tool>> =
-        crate::peripherals::create_peripheral_tools(&config.peripherals).await?;
+        crate::peripherals::create_peripheral_tools(&config.peripherals)?;
     if !peripheral_tools.is_empty() {
         tracing::info!(count = peripheral_tools.len(), "Peripheral tools added");
         tools_registry.extend(peripheral_tools);
@@ -3252,7 +3250,7 @@ pub async fn process_message(config: Config, message: &str) -> Result<String> {
         &config,
     );
     let peripheral_tools: Vec<Box<dyn Tool>> =
-        crate::peripherals::create_peripheral_tools(&config.peripherals).await?;
+        crate::peripherals::create_peripheral_tools(&config.peripherals)?;
     tools_registry.extend(peripheral_tools);
 
     let provider_name = config.default_provider.as_deref().unwrap_or("openrouter");

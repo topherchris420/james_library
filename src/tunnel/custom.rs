@@ -1,5 +1,6 @@
 use super::{kill_shared, new_shared_process, SharedProcess, Tunnel, TunnelProcess};
 use anyhow::{bail, Result};
+#[cfg(windows)]
 use std::ffi::OsString;
 use tokio::io::AsyncBufReadExt;
 use tokio::process::Command;
@@ -68,7 +69,7 @@ impl Tunnel for CustomTunnel {
 
         #[cfg(not(windows))]
         let mut child = Command::new("sh")
-            .arg("-lc")
+            .arg("-c")
             .arg(&cmd)
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())

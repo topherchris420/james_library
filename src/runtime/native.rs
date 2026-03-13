@@ -1,4 +1,5 @@
 use super::traits::RuntimeAdapter;
+#[cfg(windows)]
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 

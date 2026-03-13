@@ -1,3 +1,15 @@
+fn floor_char_boundary_compat(text: &str, mut index: usize) -> usize {
+    if index >= text.len() {
+        return text.len();
+    }
+
+    while !text.is_char_boundary(index) {
+        index -= 1;
+    }
+
+    index
+}
+
 use super::traits::{Tool, ToolResult};
 use crate::security::SecurityPolicy;
 use async_trait::async_trait;
@@ -173,7 +185,7 @@ impl ScreenshotTool {
                 let size = bytes.len();
                 let mut encoded = base64::engine::general_purpose::STANDARD.encode(&bytes);
                 let truncated = if encoded.len() > MAX_BASE64_BYTES {
-                    encoded.truncate(encoded.floor_char_boundary(MAX_BASE64_BYTES));
+                    encoded.truncate(floor_char_boundary_compat(&encoded, MAX_BASE64_BYTES));
                     true
                 } else {
                     false

@@ -226,7 +226,7 @@ pub async fn create_peripheral_tools(config: &PeripheralsConfig) -> Result<Vec<B
 }
 
 #[cfg(not(feature = "hardware"))]
-pub async fn create_peripheral_tools(_config: &PeripheralsConfig) -> Result<Vec<Box<dyn Tool>>> {
+pub fn create_peripheral_tools(_config: &PeripheralsConfig) -> Result<Vec<Box<dyn Tool>>> {
     Ok(Vec::new())
 }
 
@@ -301,7 +301,7 @@ mod tests {
             boards: vec![],
             datasheet_dir: None,
         };
-        let tools = create_peripheral_tools(&config).await.unwrap();
+        let tools = create_peripheral_tools(&config).unwrap();
         assert!(
             tools.is_empty(),
             "disabled peripherals should produce no tools"

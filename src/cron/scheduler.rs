@@ -10,6 +10,7 @@ use crate::security::SecurityPolicy;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use futures_util::{stream, StreamExt};
+#[cfg(windows)]
 use std::ffi::OsString;
 use std::path::Path;
 use std::process::Stdio;
@@ -472,7 +473,7 @@ fn build_shell_command(command: &str, workspace_dir: &Path) -> Command {
     #[cfg(not(windows))]
     let mut shell = {
         let mut process = Command::new("sh");
-        process.arg("-lc").arg(command);
+        process.arg("-c").arg(command);
         process
     };
 

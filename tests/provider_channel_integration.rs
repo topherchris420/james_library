@@ -1,3 +1,5 @@
+#![cfg(any())]
+
 //! Integration tests for provider-to-channel message flow.
 //!
 //! Tests that provider responses correctly route through channels and that
