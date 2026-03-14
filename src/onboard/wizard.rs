@@ -427,7 +427,7 @@ fn resolve_quick_setup_dirs_with_home(home: &Path) -> (PathBuf, PathBuf) {
     if let Ok(custom_workspace) = std::env::var("ZEROCLAW_WORKSPACE") {
         let trimmed = custom_workspace.trim();
         if !trimmed.is_empty() {
-            return crate::config::schema::resolve_config_dir_for_workspace(&PathBuf::from(
+            return crate::config::loader::resolve_config_dir_for_workspace(&PathBuf::from(
                 trimmed,
             ));
         }
@@ -2064,7 +2064,7 @@ async fn persist_workspace_selection(config_path: &Path) -> Result<()> {
     let config_dir = config_path
         .parent()
         .context("Config path must have a parent directory")?;
-    crate::config::schema::persist_active_workspace_config_dir(config_dir)
+    crate::config::loader::persist_active_workspace_config_dir(config_dir)
         .await
         .with_context(|| {
             format!(
@@ -2078,7 +2078,7 @@ async fn persist_workspace_selection(config_path: &Path) -> Result<()> {
 
 async fn setup_workspace() -> Result<(PathBuf, PathBuf)> {
     let (default_config_dir, default_workspace_dir) =
-        crate::config::schema::resolve_runtime_dirs_for_onboarding().await?;
+        crate::config::loader::resolve_runtime_dirs_for_onboarding().await?;
 
     print_bullet(&format!(
         "Default location: {}",
@@ -2097,7 +2097,7 @@ async fn setup_workspace() -> Result<(PathBuf, PathBuf)> {
             .with_prompt("  Enter workspace path")
             .interact_text()?;
         let expanded = shellexpand::tilde(&custom).to_string();
-        crate::config::schema::resolve_config_dir_for_workspace(&PathBuf::from(expanded))
+        crate::config::loader::resolve_config_dir_for_workspace(&PathBuf::from(expanded))
     };
 
     let config_path = config_dir.join("config.toml");
