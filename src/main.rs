@@ -791,7 +791,7 @@ async fn main() -> Result<()> {
         .map(|_| ()),
 
         Commands::Gateway { port, host } => {
-            let port = port.unwrap_or(config.gateway.port);
+            let port = port.unwrap_or(JAMES_BODY_DAEMON_DEFAULT_PORT);
             let host = host.unwrap_or_else(|| config.gateway.host.clone());
             enforce_estop_allows_runtime_start(&config)?;
             if port == 0 {
