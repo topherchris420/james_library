@@ -1,226 +1,180 @@
-"""
-R.A.I.N. Lab Meeting Workflow Module
+"""R.A.I.N. Lab 5-stage peer critique workflow."""
 
-Structured meeting phases for more productive research discussions.
-"""
+from __future__ import annotations
 
-from enum import Enum
-from typing import List, Dict, Callable, Optional
 from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 
-class MeetingPhase(Enum):
-    """Meeting phase enumeration."""
-    OPENING = "opening"           # Topic framing + paper survey
-    INVESTIGATION = "investigation"  # Deep dives into specific papers
-    DEBATE = "debate"            # Organized pro/con discussions
-    SYNTHESIS = "synthesis"       # Integration of viewpoints
-    ACTION_ITEMS = "action"       # Specific next steps
+class MeetingStage(Enum):
+    """Strict research state machine stages."""
+
+    HYPOTHESIS = "hypothesis"
+    SIMULATION = "simulation"
+    SYNTHESIS = "synthesis"
+    PEER_CRITIQUE = "peer_critique"
+    DISCOVERY = "discovery"
 
 
 @dataclass
-class PhaseConfig:
-    """Configuration for a meeting phase."""
+class StageConfig:
+    """Configuration and prompt contract for each stage."""
+
     name: str
     description: str
-    turns: int
     prompt_template: str
-    required_tools: List[str] = field(default_factory=list)
+    required_tools: list[str] = field(default_factory=list)
+    allow_interruptions: bool = True
 
 
-# Default phase configurations
-PHASE_CONFIGS = {
-    MeetingPhase.OPENING: PhaseConfig(
-        name="Opening",
-        description="Topic framing and initial paper survey",
-        turns=2,
-        prompt_template="""
-PHASE: OPENING
-
-The meeting has just begun. Your task is to:
-1. Frame the topic for the team
-2. Survey available literature quickly
-3. Identify key papers or resources
-4. Open the discussion naturally
-
-Format your response as a meeting opener.
-Start with: "Hey team, today we're looking into..."
-""",
-        required_tools=["list_papers", "search_library", "read_paper"]
+STAGE_CONFIGS: dict[MeetingStage, StageConfig] = {
+    MeetingStage.HYPOTHESIS: StageConfig(
+        name="Stage 1: Hypothesis",
+        description="Propose specific acoustic resonance parameters.",
+        prompt_template=(
+            "STAGE 1 — HYPOTHESIS\n"
+            "Propose concrete resonance parameters (frequency, amplitude, geometry, medium).\n"
+            "Be specific and measurable."
+        ),
     ),
-    MeetingPhase.INVESTIGATION: PhaseConfig(
-        name="Investigation",
-        description="Deep dives into specific papers and data",
-        turns=4,
-        prompt_template="""
-PHASE: INVESTIGATION
-
-Dive deeper into specific papers or concepts. Your task is to:
-1. Read and analyze specific papers in detail
-2. Extract key findings, metrics, or claims
-3. Compare across sources
-4. Identify connections to the topic
-
-Use tools extensively. Be specific about what you find.
-""",
-        required_tools=["read_paper", "search_web", "semantic_search"]
+    MeetingStage.SIMULATION: StageConfig(
+        name="Stage 2: Simulation",
+        description="Verify the hypothesis via Godot/local physics tools.",
+        prompt_template=(
+            "STAGE 2 — SIMULATION\n"
+            "Run simulation checks against the current hypothesis.\n"
+            "Trigger Godot visualization and capture raw outputs."
+        ),
+        required_tools=["godot_event_bridge", "physics_tools"],
     ),
-    MeetingPhase.DEBATE: PhaseConfig(
-        name="Debate",
-        description="Organized discussion of different viewpoints",
-        turns=4,
-        prompt_template="""
-PHASE: DEBATE
-
-Engage in structured debate. Your task is to:
-1. Present your perspective on the topic
-2. Agree or disagree with previous points
-3. Bring evidence to support your position
-4. Challenge weak arguments
-
-Focus on substantive disagreement, not nitpicking.
-""",
-        required_tools=[]
+    MeetingStage.SYNTHESIS: StageConfig(
+        name="Stage 3: Synthesis",
+        description="Compile raw outputs into a structured research summary.",
+        prompt_template=(
+            "STAGE 3 — SYNTHESIS\n"
+            "Summarize method, observations, quantitative outputs, and limitations."
+        ),
     ),
-    MeetingPhase.SYNTHESIS: PhaseConfig(
-        name="Synthesis",
-        description="Integration of different viewpoints",
-        turns=2,
-        prompt_template="""
-PHASE: SYNTHESIS
-
-Integrate the discussion. Your task is to:
-1. Summarize key points from the discussion
-2. Identify areas of consensus
-3. Highlight remaining disagreements
-4. Connect different perspectives
-
-What do we collectively understand now that we didn't before?
-""",
-        required_tools=[]
+    MeetingStage.PEER_CRITIQUE: StageConfig(
+        name="Stage 4: Peer Critique",
+        description="Secondary agent scores physical viability, novelty, and coherence.",
+        prompt_template=(
+            "STAGE 4 — PEER CRITIQUE\n"
+            "Reviewer MUST produce a score from 1 to 10 with rationale for:\n"
+            "- physical viability\n"
+            "- novelty\n"
+            "- coherence"
+        ),
     ),
-    MeetingPhase.ACTION_ITEMS: PhaseConfig(
-        name="Action Items",
-        description="Specific next steps and follow-ups",
-        turns=2,
-        prompt_template="""
-PHASE: ACTION ITEMS
-
-Define next steps. Your task is to:
-1. Summarize key conclusions
-2. Identify specific follow-up actions
-3. Note papers to read later
-4. Suggest future meeting topics
-
-Be concrete and actionable.
-""",
-        required_tools=[]
+    MeetingStage.DISCOVERY: StageConfig(
+        name="Stage 5: Discovery",
+        description="Gate outcomes to truth layer + P2P publish or loopback mutation.",
+        prompt_template=(
+            "STAGE 5 — DISCOVERY\n"
+            "If score >= 8: persist discovery and notify human.\n"
+            "If score < 8: mutate hypothesis and repeat from Stage 1."
+        ),
     ),
 }
 
 
 @dataclass
+class CycleRecord:
+    """Data accumulated across one critique loop iteration."""
+
+    iteration: int = 1
+    hypothesis: str = ""
+    simulation_data: dict[str, Any] = field(default_factory=dict)
+    synthesis_summary: str = ""
+    reviewer: str = ""
+    critique_score: int | None = None
+    critique_feedback: str = ""
+    discovery_accepted: bool = False
+    mutation_notes: str = ""
+
+
+@dataclass
 class MeetingWorkflow:
-    """Manages structured meeting workflow."""
+    """State manager for the strict 5-stage peer critique pipeline."""
 
-    current_phase: MeetingPhase = MeetingPhase.OPENING
-    phase_turn: int = 0
-    phase_configs: Dict[MeetingPhase, PhaseConfig] = field(default_factory=dict)
-    phase_history: List[Dict] = field(default_factory=list)
+    current_stage: MeetingStage = MeetingStage.HYPOTHESIS
+    stage_configs: dict[MeetingStage, StageConfig] = field(default_factory=lambda: STAGE_CONFIGS.copy())
+    history: list[dict[str, Any]] = field(default_factory=list)
+    record: CycleRecord = field(default_factory=CycleRecord)
 
-    def __post_init__(self):
-        """Initialize with default configs."""
-        self.phase_configs = PHASE_CONFIGS.copy()
+    def get_current_stage_config(self) -> StageConfig:
+        return self.stage_configs[self.current_stage]
 
-    def get_current_phase_config(self) -> PhaseConfig:
-        """Get configuration for current phase."""
-        return self.phase_configs.get(self.current_phase)
+    def get_stage_prompt(self) -> str:
+        return self.get_current_stage_config().prompt_template
 
-    def advance_phase(self):
-        """Move to the next phase."""
-        phases = list(MeetingPhase)
-        try:
-            current_idx = phases.index(self.current_phase)
-            if current_idx < len(phases) - 1:
-                self.current_phase = phases[current_idx + 1]
-                self.phase_turn = 0
-        except ValueError:
-            pass
+    def can_interrupt(self) -> bool:
+        return self.get_current_stage_config().allow_interruptions
 
-    def should_advance_phase(self) -> bool:
-        """Check if it's time to advance to next phase."""
-        config = self.get_current_phase_config()
-        if config:
-            return self.phase_turn >= config.turns
+    def set_hypothesis(self, hypothesis: str) -> None:
+        self.record.hypothesis = hypothesis.strip()
+        self.current_stage = MeetingStage.SIMULATION
+
+    def set_simulation_data(self, payload: dict[str, Any]) -> None:
+        self.record.simulation_data = payload
+        self.current_stage = MeetingStage.SYNTHESIS
+
+    def set_synthesis(self, summary: str) -> None:
+        self.record.synthesis_summary = summary.strip()
+        self.current_stage = MeetingStage.PEER_CRITIQUE
+
+    def set_peer_critique(self, reviewer: str, score: int, feedback: str) -> None:
+        normalized = int(score)
+        if normalized < 1 or normalized > 10:
+            raise ValueError("Peer critique score must be between 1 and 10")
+        self.record.reviewer = reviewer.strip()
+        self.record.critique_score = normalized
+        self.record.critique_feedback = feedback.strip()
+        self.current_stage = MeetingStage.DISCOVERY
+
+    def finalize_discovery_gate(self) -> bool:
+        """Return True when accepted (score >= 8), else False and loop to hypothesis."""
+
+        score = self.record.critique_score
+        if score is None:
+            raise ValueError("Cannot gate discovery before peer critique score is set")
+
+        accepted = score >= 8
+        self.record.discovery_accepted = accepted
+        self.history.append(
+            {
+                "iteration": self.record.iteration,
+                "hypothesis": self.record.hypothesis,
+                "score": score,
+                "accepted": accepted,
+                "reviewer": self.record.reviewer,
+            }
+        )
+
+        if accepted:
+            return True
+
+        self.record.iteration += 1
+        self.record.mutation_notes = self.record.critique_feedback
+        self.current_stage = MeetingStage.HYPOTHESIS
         return False
 
-    def advance_turn(self):
-        """Advance the turn counter and check for phase change."""
-        self.phase_turn += 1
-
-        if self.should_advance_phase():
-            # Record phase in history
-            self.phase_history.append({
-                "phase": self.current_phase.value,
-                "turns": self.phase_turn
-            })
-            self.advance_phase()
-
-    def get_phase_prompt(self) -> str:
-        """Get the prompt for current phase."""
-        config = self.get_current_phase_config()
-        if config:
-            return config.prompt_template
-        return ""
-
     def get_meeting_summary(self) -> str:
-        """Get summary of the meeting workflow."""
-        lines = ["MEETING PHASES:", "=" * 40]
-        for phase in MeetingPhase:
-            config = self.phase_configs.get(phase)
-            if config:
-                marker = "→ " if phase == self.current_phase else "   "
-                lines.append(f"{marker}{config.name}: {config.description}")
+        lines = ["RESEARCH PIPELINE:", "=" * 40]
+        for stage in MeetingStage:
+            config = self.stage_configs[stage]
+            marker = "→ " if stage == self.current_stage else "   "
+            lines.append(f"{marker}{config.name}: {config.description}")
         return "\n".join(lines)
 
 
-def create_workflow(mode: str = "standard") -> MeetingWorkflow:
-    """Create a meeting workflow based on mode.
+def create_workflow(mode: str = "strict") -> MeetingWorkflow:
+    """Create a strict 5-stage workflow.
 
     Args:
-        mode: Workflow mode ('standard', 'quick', 'deep', 'debate')
-
-    Returns:
-        Configured MeetingWorkflow
+        mode: Reserved for compatibility with older callers.
     """
-    workflow = MeetingWorkflow()
 
-    if mode == "quick":
-        # Short meeting: skip some phases
-        workflow.phase_configs = {
-            MeetingPhase.OPENING: PhaseConfig("Opening", "Quick topic framing", 1, ""),
-            MeetingPhase.INVESTIGATION: PhaseConfig("Investigation", "Quick scan", 1, ""),
-            MeetingPhase.SYNTHESIS: PhaseConfig("Synthesis", "Quick summary", 1, ""),
-        }
-    elif mode == "deep":
-        # Extended meeting: more investigation
-        workflow.phase_configs = {
-            MeetingPhase.OPENING: PhaseConfig("Opening", "Topic framing", 2, ""),
-            MeetingPhase.INVESTIGATION: PhaseConfig("Investigation", "Deep analysis", 6, ""),
-            MeetingPhase.DEBATE: PhaseConfig("Debate", "Extended debate", 4, ""),
-            MeetingPhase.SYNTHESIS: PhaseConfig("Synthesis", "Full synthesis", 2, ""),
-            MeetingPhase.ACTION_ITEMS: PhaseConfig("Action Items", "Next steps", 2, ""),
-        }
-    elif mode == "debate":
-        # Debate-focused: more debate time
-        workflow.phase_configs = {
-            MeetingPhase.OPENING: PhaseConfig("Opening", "Topic framing", 1, ""),
-            MeetingPhase.INVESTIGATION: PhaseConfig("Investigation", "Background", 2, ""),
-            MeetingPhase.DEBATE: PhaseConfig("Debate", "Extended debate", 6, ""),
-            MeetingPhase.SYNTHESIS: PhaseConfig("Synthesis", "Resolution", 2, ""),
-        }
-    else:
-        # Standard workflow
-        workflow.phase_configs = PHASE_CONFIGS.copy()
-
-    return workflow
+    _ = mode
+    return MeetingWorkflow()

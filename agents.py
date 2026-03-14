@@ -1,12 +1,42 @@
-"""
-R.A.I.N. Lab Agents Module
+"""R.A.I.N. Lab Agents Module.
 
-Defines the research agent personas and team creation.
+Defines research agent personas and stage-aware prompt scaffolding.
 """
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List
+
+
+STAGE_PROTOCOL = """
+# 5-STAGE RESEARCH PROTOCOL (MANDATORY)
+The meeting follows this strict sequence:
+1) HYPOTHESIS: propose concrete resonance parameters.
+2) SIMULATION: trigger Godot/local physics verification.
+3) SYNTHESIS: produce structured summary from raw data.
+4) PEER CRITIQUE: secondary reviewer scores 1-10.
+5) DISCOVERY: score >=8 persists; score <8 mutates hypothesis.
+
+Human interruptions are always allowed. Keep conversational tone while still satisfying stage outputs.
+"""
+
+
+PEER_REVIEW_PROTOCOL = """
+# PEER REVIEWER MODE (STAGE 4)
+When assigned as reviewer, output format is mandatory:
+- reviewer: <your name>
+- score: <integer 1-10>
+- physical_viability: <short assessment>
+- novelty: <short assessment>
+- coherence: <short assessment>
+- verdict: <accept if >=8 else reject>
+- required_mutations: <what must change when score <8>
+
+Anti-grade-inflation rules:
+- Do not assign >=8 without concrete support in simulation and synthesis evidence.
+- Penalize missing quantitative evidence.
+- Penalize contradictions or vague claims.
+"""
 
 
 @dataclass
@@ -19,14 +49,13 @@ class Agent:
     _soul_cache: str = field(default="", repr=False)
 
     def load_soul(self, library_path: str) -> str:
-        """Load soul from external .md file"""
+        """Load soul from external .md file."""
         soul_path = Path(library_path) / f"{self.name.upper()}_SOUL.md"
 
         if soul_path.exists():
-            with open(soul_path, 'r', encoding='utf-8-sig') as f:
-                external_soul = f.read()
+            with open(soul_path, "r", encoding="utf-8-sig") as file:
+                external_soul = file.read()
 
-            # RLM code execution rules
             rlm_rules = f"""
 
 # CODE EXECUTION
@@ -44,20 +73,23 @@ mermaid = generate_mermaid("graph TD; A-->B") # Generate diagrams
 memory = remember_entity("name", "desc") # Remember entities across sessions
 ```
 
+{STAGE_PROTOCOL}
+
+{PEER_REVIEW_PROTOCOL}
+
 {self.tool_instruction}
 
 RULES:
 - You are ONLY {self.name}. Never speak as another team member.
-- Be concise: 80-120 words max per response.
+- Be concise: 80-120 words max per response unless structured output requires more.
 - When you need data, write code to get it.
-- Use ONLY research papers from this library (e.g., Coherence Depth, Discrete Celestial Holography, Location is a Dynamic Variable) and web search.
+- Use ONLY research papers from this library and web search.
 - Only use: read_paper(), search_web(), list_papers(), search_library(), semantic_search(), visualize_concepts(), generate_mermaid(), remember_entity(), recall_entity()
 """
             self._soul_cache = external_soul + rlm_rules
             print(f"     Soul loaded: {self.name.upper()}_SOUL.md")
             return self._soul_cache
 
-        # Fallback: use built-in personality if no soul file
         return self._build_default_personality()
 
     def _build_default_personality(self) -> str:
@@ -66,11 +98,15 @@ RULES:
 
 {self.focus}
 
+{STAGE_PROTOCOL}
+
+{PEER_REVIEW_PROTOCOL}
+
 {self.tool_instruction}
 
 RULES:
 - You are ONLY {self.name}. Never speak as another team member.
-- Be concise: 80-120 words max per response.
+- Be concise: 80-120 words max per response unless structured output requires more.
 - Use ONLY research papers from this library and web search for evidence.
 - Use tools when needed: read_paper(), search_web(), list_papers(), search_library(), semantic_search()
 """
@@ -81,109 +117,116 @@ RULES:
 
 
 def create_team(mode: str = "standard") -> List[Agent]:
-    """Create the research council. Modes: 'standard', 'extended', 'critique', 'synthesis'"""
+    """Create the research council. Modes: standard, extended, critique, synthesis."""
     if mode == "extended":
         return create_extended_team()
-    elif mode == "critique":
+    if mode == "critique":
         return create_critique_team()
-    elif mode == "synthesis":
+    if mode == "synthesis":
         return create_synthesis_team()
-    else:
-        return create_standard_team()
+    return create_standard_team()
 
 
 def create_standard_team() -> List[Agent]:
-    """Create the 4-agent research council (default)"""
+    """Create the 4-agent research council (default)."""
     return [
         Agent(
             name="James",
             role="Lead Scientist/Technician",
             focus="Physics simulations and research analysis",
-            color="\033[92m",  # Green
+            color="\033[92m",
             tool_instruction="""
 AVAILABLE: read_paper(), search_web(), list_papers()
 BANNED: llm_query(), FINAL_VAR(), FINAL(), SHOW_VARS(), context
 RESPOND: 50-100 words, conversational, as a scientist.
-"""
+""",
         ),
         Agent(
             name="Jasmine",
             role="Hardware Architect",
-            focus="Check 'Feasibility', 'Energy Requirements', 'Material Constraints'. Can we build this?",
-            color="\033[93m",  # Yellow
-            tool_instruction="JASMINE: You MUST use search_web() to find real-world energy constraints and hardware specifications."
+            focus="Check feasibility, energy requirements, and material constraints.",
+            color="\033[93m",
+            tool_instruction=(
+                "JASMINE: In Stage 4 peer critique, score strictly and reduce points for unsupported hardware claims. "
+                "Outside Stage 4, use search_web() for real-world constraints and hardware specs."
+            ),
         ),
         Agent(
             name="Elena",
             role="Quantum Information Theorist",
-            focus="Check 'Information Bounds', 'Computational Limits'. Demand mathematical rigor.",
-            color="\033[95m",  # Magenta
-            tool_instruction="ELENA: Audit the code for computational feasibility. Challenge hand-waving with math."
+            focus="Check information bounds and computational limits with mathematical rigor.",
+            color="\033[95m",
+            tool_instruction="ELENA: Audit computational feasibility. Challenge hand-waving with math.",
         ),
         Agent(
             name="Luca",
             role="Field Tomographer / Theorist",
-            focus="Analyze 'Topology', 'Fields', 'Gradients'. Describe geometry of the theory.",
-            color="\033[96m",  # Cyan
-            tool_instruction="LUCA: Audit the theoretical consistency. Look for mathematical beauty in the structure."
+            focus="Analyze topology, fields, and gradients for theoretical consistency.",
+            color="\033[96m",
+            tool_instruction=(
+                "LUCA: In Stage 4 peer critique, avoid grade inflation and justify every point with evidence. "
+                "Outside Stage 4, audit theoretical consistency and structure."
+            ),
         ),
     ]
 
 
 def create_extended_team() -> List[Agent]:
-    """Create the 7-agent extended research council with new roles"""
+    """Create the 7-agent extended research council with new roles."""
     base = create_standard_team()
-    base.extend([
-        Agent(
-            name="Alex",
-            role="External Reviewer / Skeptic",
-            focus="Brings outside perspective, challenges assumptions, represents peer review",
-            color="\033[91m",  # Red
-            tool_instruction="ALEX: Act as a peer reviewer. Challenge assumptions, identify gaps, question methodology."
-        ),
-        Agent(
-            name="Sarah",
-            role="Experimentalist",
-            focus="Lab feasibility, measurement methodologies, data validation, practical testing",
-            color="\033[94m",  # Blue
-            tool_instruction="SARAH: Focus on experimental validation. How would we measure this? What controls are needed?"
-        ),
-        Agent(
-            name="Diana",
-            role="Futurist",
-            focus="Projects applications 10-50 years out, speculative scenarios, long-term impact",
-            color="\033[97m",  # White
-            tool_instruction="DIANA: Project into the future. What are the long-term implications? How might this evolve?"
-        ),
-    ])
+    base.extend(
+        [
+            Agent(
+                name="Alex",
+                role="External Reviewer / Skeptic",
+                focus="Brings outside perspective and challenges assumptions.",
+                color="\033[91m",
+                tool_instruction="ALEX: Act as a peer reviewer. Challenge assumptions, identify gaps, question methodology.",
+            ),
+            Agent(
+                name="Sarah",
+                role="Experimentalist",
+                focus="Lab feasibility, measurement methodology, and practical testing design.",
+                color="\033[94m",
+                tool_instruction="SARAH: Focus on experimental validation. Define measurements and controls.",
+            ),
+            Agent(
+                name="Diana",
+                role="Futurist",
+                focus="Projects long-term applications and impact scenarios.",
+                color="\033[97m",
+                tool_instruction="DIANA: Project long-term implications while preserving evidence-grounded claims.",
+            ),
+        ]
+    )
     return base
 
 
 def create_critique_team() -> List[Agent]:
-    """Create a critique-focused team with Devil's Advocate"""
+    """Create a critique-focused team with Devil's Advocate."""
     base = create_standard_team()
     base.append(
         Agent(
             name="Eve",
             role="Devil's Advocate",
-            focus="Systematically tears down proposals to find weaknesses",
-            color="\033[90m",  # Gray
-            tool_instruction="EVE: Find every flaw. Challenge every assumption. What could possibly go wrong?"
+            focus="Systematically tears down proposals to find weaknesses.",
+            color="\033[90m",
+            tool_instruction="EVE: Find every flaw. Challenge every assumption. Stress-test methodology and evidence.",
         )
     )
     return base
 
 
 def create_synthesis_team() -> List[Agent]:
-    """Create a synthesis-focused team with integrator"""
+    """Create a synthesis-focused team with integrator."""
     base = create_standard_team()
     base.append(
         Agent(
             name="Ryan",
             role="The Synthesizer",
-            focus="Combines viewpoints, identifies consensus, highlights disagreements",
-            color="\033[93m",  # Bright Yellow
-            tool_instruction="RYAN: Integrate perspectives. What do agents agree on? Where do they disagree? Connect the dots."
+            focus="Combines viewpoints, identifies consensus, and highlights disagreements.",
+            color="\033[93m",
+            tool_instruction="RYAN: Integrate perspectives and produce structured synthesis summaries.",
         )
     )
     return base
