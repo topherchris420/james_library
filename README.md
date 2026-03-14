@@ -14,34 +14,14 @@ hero:
       icon: material/arrow-left
 ---
 
-# Vers3Dynamics 
+# R.A.I.N. Lab
 
 <p align="center">
   <img src="assets/rain_lab_logo.png" alt="R.A.I.N. Lab logo" width="900" />
 </p>
 
-A local-first AI research workspace for running guided chat, experiments, and autonomous research flows without heavy setup.
-
-Anyone can use this in minutes. Start with the **Quick Start for Everyone** section below.
-
----
-
-## One-Minute Summary
-
-**What it does:** R.A.I.N. Lab 🐙 is like having an AI research assistant that talks with you about your ideas, checks if your discoveries are actually new, and helps organize your research.
-
-**Why use it:** Regular AI can "discover" things you already know. This tool checks your internal knowledge and online sources to make sure you're exploring genuinely new territory.
-
-**Who it's for:** Researchers, students, and curious minds exploring physics, sound, resonance, or any complex topics.
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/topherchris420/james_library)
-
-## What is this?
-
 <p align="center">
-  <strong>
-    R.A.I.N. Lab helps you run AI-assisted research conversations and experiment workflows from one launcher.
-  </strong>
+  <strong>A local-first AI research workspace for guided chat, experiments, and autonomous research flows.</strong>
 </p>
 
 <p align="center">
@@ -51,110 +31,48 @@ Anyone can use this in minutes. Start with the **Quick Start for Everyone** sect
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License" />
 </p>
 
----
+<p align="center">
+  <a href="https://deepwiki.com/topherchris420/james_library"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
+</p>
 
-### Best for
+R.A.I.N. Lab is an AI research assistant that talks with you about your ideas, checks if your discoveries are actually new, and helps organize your research. Regular AI can "discover" things you already know — R.A.I.N. Lab checks your internal knowledge and online sources to make sure you're exploring genuinely new territory.
 
-- Researchers and students exploring ideas with AI
-- Builders who want local/offline-friendly workflows
-- Teams who want both a guided launcher and advanced developer tooling
-
-### Includes
-
-- **Simple launcher** (`rain_lab.py`) for chat, setup, status, and validation
-- **ZeroClaw runtime (Rust)** for fast and stable orchestration
-- **James Library workflows (Python)** for research and synthesis flows
+**Best for:** Researchers, students, and curious minds exploring physics, sound, resonance, or any complex topic.
 
 ---
 
-## Quick Start for Everyone (5 minutes)
+## How the Pieces Fit Together
 
-### Simplest Way (Just Run This!)
+This repository ships one product (**R.A.I.N. Lab**) built from two layers:
+
+| Layer | What it does | Language | Entry point |
+|-------|-------------|----------|-------------|
+| **ZeroClaw** | Agent runtime — orchestration, tools, channels, memory, security | Rust | `zeroclaw` binary |
+| **James Library** | Research workflows — recursive lab meetings, synthesis, acoustic physics | Python | `rain_lab.py` |
+
+You interact with **R.A.I.N. Lab** as a single product. Under the hood, `rain_lab.py` drives the Python research layer and delegates to the ZeroClaw runtime for fast orchestration. Python research flows work standalone; the Rust runtime adds speed, channels, and tool execution.
+
+---
+
+## Quick Start
 
 ```bash
 python rain_lab.py
 ```
 
-That's it! The wizard will guide you through the rest.
+The interactive wizard handles first-time setup, model detection, and chat. That's all you need.
 
----
-
-### Alternative: Command Line
-
-If you know what you want:
+For specific tasks:
 
 ```bash
-# First-time setup
-python rain_lab.py --mode first-run
-
-# Chat with AI
+python rain_lab.py --mode first-run     # guided setup
 python rain_lab.py --mode chat --topic "your research topic"
-
-# Check if system is ready
-python rain_lab.py --mode validate
-```
-
----
-
-### Full Setup (Optional)
-
-If you want the complete setup:
-
-#### Linux/macOS
-
-```bash
-bash scripts/quickstart_lmstudio.sh
-```
-
-#### Windows (PowerShell)
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\quickstart_lmstudio.ps1
-```
-```
-
-That is enough to get a working first experience.
-
-### For Non-Technical Users: One Safe Entry Point
-
-Use only:
-
-```bash
-python rain_lab.py
-```
-
-You can ignore most other top-level scripts unless a maintainer asks you to run one directly.
-
----
-
-## What to run next
-
-```bash
-python rain_lab.py              # Interactive wizard (recommended!)
-python rain_lab.py --mode validate    # checks readiness and common issues
-python rain_lab.py --mode status      # shows environment + runtime status
-python rain_lab.py --mode models      # lists detected models/providers
+python rain_lab.py --mode validate      # readiness check
+python rain_lab.py --mode status        # environment + runtime status
+python rain_lab.py --mode models        # detected models/providers
 ```
 
 If Rust is not installed yet, core Python research flows still work.
-
----
-
-## Mission
-
-The R.A.I.N. Lab🐙 is an R&D lab for non-linear wave interactions and bio-acoustic experiments.
-
-The system combines:
-
-- **ZeroClaw (runtime package / crate name)**: Rust agent runtime for orchestration, tools, channels, and policy enforcement.
-- **James Library (repository name)**: Python research workflows for resonance, recursive meetings, and synthesis.
-- **R.A.I.N. Lab**: integrated developer/research experience powered by both layers.
-
-Contributor naming hierarchy (quick reference):
-
-1. Product UX/docs: **R.A.I.N. Lab**
-2. Rust runtime internals: **ZeroClaw** (`zeroclaw` crate/binary)
-3. Python orchestration/research scripts: **James Library**
 
 ---
 
@@ -162,8 +80,8 @@ Contributor naming hierarchy (quick reference):
 
 ```mermaid
 graph TB
-    subgraph "Vers3Dynamics Platform"
-        subgraph "ZeroClaw - The Body"
+    subgraph "R.A.I.N. Lab"
+        subgraph "ZeroClaw (Rust Runtime)"
             CLI[CLI and Gateway]
             Agent[Agent Orchestrator]
             Providers[Model Providers]
@@ -171,7 +89,7 @@ graph TB
             Memory[Memory System]
         end
 
-        subgraph "James Library - The Mind"
+        subgraph "James Library (Python Research)"
             RLM[Recursive Lab Meeting]
             RainLab[rain_lab.py]
             Physics[Acoustic Physics]
@@ -204,84 +122,39 @@ graph TB
 
 ---
 
-## Developer Quick Start
+## Developer Setup
 
-### Prerequisites
-
-- Python 3.10+ (required)
-- LM Studio for the recommended local-first path
-- Rust 1.87+ (recommended for local ZeroClaw builds and development)
-- Optional: Miniconda for Python env management
-
-### Recommended Local-First Path (LM Studio)
-
-Linux/macOS:
-
-```bash
-bash scripts/quickstart_lmstudio.sh
-```
-
-Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\quickstart_lmstudio.ps1
-```
-
-This path bootstraps `.venv`, installs Python dependencies, prepares the embedded ZeroClaw runtime when Cargo is available, and runs a launcher health snapshot.
-
-Canonical next steps:
-
-```bash
-python rain_lab.py --mode validate
-python rain_lab.py --mode first-run
-python rain_lab.py --mode status
-python rain_lab.py --mode models
-python rain_lab.py --mode chat --ui auto --topic "your research question"
-```
-
-If Rust or a prebuilt `zeroclaw` binary is not available yet, Python research flows still work. Rust-side launcher modes become available after you install Rust or point `--zeroclaw-bin` at a prebuilt runtime.
-
-### Full Setup / Development
+**Prerequisites:** Python 3.10+ (required), Rust 1.87+ (recommended), LM Studio (recommended for local-first path).
 
 ```bash
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
 
 python bootstrap_local.py
-cargo build --release --locked
+cargo build --release --locked    # optional — Python flows work without Rust
 python rain_lab.py --mode first-run
 ```
 
-### Python-First Research Flow
+Platform-specific bootstrap scripts are also available:
+
+| Platform | Command |
+|----------|---------|
+| Linux/macOS | `bash scripts/quickstart_lmstudio.sh` |
+| Windows (PowerShell) | `powershell -ExecutionPolicy Bypass -File .\scripts\quickstart_lmstudio.ps1` |
+| Windows (one-click) | Double-click `INSTALL_RAIN.cmd` |
+
+### All Launcher Modes
 
 ```bash
-python rain_lab.py --mode first-run
-python rain_lab.py --mode chat --topic "your research question"
-python rain_lab.py --mode rlm --topic "acoustic resonance phenomena"
-```
-
-### Windows Installer
-
-```text
-1) Double-click INSTALL_RAIN.cmd
-2) Wait for install to finish
-3) Double-click R.A.I.N. Lab from your Desktop or Start Menu
-4) Optional: run "R.A.I.N. Lab Validate" from the Start Menu for a full readiness check
-5) Optional: run "R.A.I.N. Lab Health Snapshot" for a quick one-screen status view
-6) On first launch, guided setup runs automatically and then opens chat
-```
-
-### Useful Launcher Modes
-
-```bash
-python rain_lab.py --mode health
-python rain_lab.py --mode validate
-python rain_lab.py --mode first-run
-python rain_lab.py --mode status
-python rain_lab.py --mode models
-python rain_lab.py --mode providers
-python rain_lab.py --mode onboard
-python rain_lab.py --mode gateway
+python rain_lab.py --mode first-run    # guided setup
+python rain_lab.py --mode chat         # research conversation
+python rain_lab.py --mode rlm          # recursive lab meeting
+python rain_lab.py --mode validate     # readiness check
+python rain_lab.py --mode status       # environment info
+python rain_lab.py --mode models       # detected models
+python rain_lab.py --mode providers    # configured providers
+python rain_lab.py --mode health       # health snapshot
+python rain_lab.py --mode gateway      # start gateway server
 ```
 
 ---
@@ -389,46 +262,17 @@ python rain_lab.py --mode chat --ui on --topic "your topic"
 
 MIT License. See [LICENSE](LICENSE).
 
-## Acknowledgement 
+## Acknowledgements
 
-The R.A.I.N. Lab is proudly built on the foundation of ZeroClaw and MIT CSAIL. Huge thanks to both teams for creating such a high-performance, lightweight agent runtime that made this Vers3Dynamics lab possible.
+R.A.I.N. Lab is a [Vers3Dynamics](https://rainlabteam.vercel.app/) project, built on the ZeroClaw runtime with inspiration from MIT CSAIL research. Huge thanks to both teams for creating such a high-performance, lightweight agent runtime that made this lab possible.
 
-## 📊 Benchmark Snapshot: R.A.I.N. Lab vs AutoResearch
+## Benchmarks
 
-> Comparative snapshot across 8 technical dimensions. This section is intended as a transparent, reproducible reference, not a universal ranking.
-
-Methodology and reproducibility:
-
-- Scoring rubric + dataset: [`benchmark_data/rain_vs_autoresearch.csv`](benchmark_data/rain_vs_autoresearch.csv)
-- Reproduction script: [`scripts/benchmark/reproduce_readme_benchmark.py`](scripts/benchmark/reproduce_readme_benchmark.py)
-- Recompute summary table locally:
+For a reproducible feature comparison against other research automation tools, see [`benchmark_data/`](benchmark_data/) and the reproduction script:
 
 ```bash
 python scripts/benchmark/reproduce_readme_benchmark.py
 ```
-
-### Bar Chart
-
-![R.A.I.N. Lab vs AutoResearch — Technical Benchmark](assets/benchmark_chart.png)
-
-### Radar Chart
-
-![R.A.I.N. Lab vs AutoResearch — Radar Benchmark](assets/benchmark_radar.png)
-
-| Metric | R.A.I.N. Lab | AutoResearch |
-|---|---|---|
-| Average Score | **9.1** | 3.6 |
-| Peak Score | **10** | 8 |
-| Categories Won | **8 / 8** | 0 / 8 |
-| Released | **Feb 2026** | Mar 7, 2026 |
-| Runtime | **Rust + Python** | Python only |
-| Local / Offline | **✅ Yes** | ❌ No |
-| Multi-Agent | **✅ Yes** | ❌ No |
-| Visualization | **✅ Godot 3D** | ❌ None |
-
-> **Note:** R.A.I.N. Lab was released ~18 days before AutoResearch. These projects were built independently and serve different domains — R.A.I.N. Lab for autonomous acoustic physics research, AutoResearch for ML training automation.
-
-## 🐙 R.A.I.N. Lab
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=topherchris420/james_library&type=Date&theme=dark&v=1">
