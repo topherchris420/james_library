@@ -588,6 +588,7 @@ impl Agent {
                 }
             };
             println!("\n{response}\n");
+            crate::p2p::publish_advisory_result(&response).await;
         }
 
         listen_handle.abort();
@@ -634,6 +635,7 @@ pub async fn run(
     if let Some(msg) = message {
         let response = agent.run_single(&msg).await?;
         println!("{response}");
+        crate::p2p::publish_advisory_result(&response).await;
     } else {
         agent.run_interactive().await?;
     }
