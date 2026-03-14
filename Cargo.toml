@@ -24,6 +24,7 @@ clap_complete = "4.5"
 tokio = { version = "1.42", default-features = false, features = ["rt-multi-thread", "macros", "time", "net", "io-util", "sync", "process", "io-std", "fs", "signal"] }
 tokio-util = { version = "0.7", default-features = false }
 tokio-stream = { version = "0.1.18", default-features = false, features = ["fs", "sync"] }
+futures = { version = "0.3", default-features = false }
 
 # HTTP client - minimal features
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking", "multipart", "stream", "socks"] }
@@ -123,6 +124,7 @@ which = "8.0"
 # WebSocket client channels (Discord/Lark/DingTalk/Nostr)
 tokio-tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
+libp2p = { version = "0.55", default-features = false, features = ["tokio", "tcp", "noise", "yamux", "gossipsub", "kad", "macros"] }
 nostr-sdk = { version = "0.44", default-features = false, features = ["nip04", "nip59"] }
 regex = "1.10"
 hostname = "0.4.2"
