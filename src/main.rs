@@ -203,8 +203,8 @@ Examples:
 Start the gateway server (webhooks, websockets).
 
 Runs the HTTP/WebSocket gateway that accepts incoming webhook events \
-and WebSocket connections. Bind address defaults to the values in \
-your config file (gateway.host / gateway.port).
+and WebSocket connections. Bind host/port default to your config file \
+(gateway.host / gateway.port).
 
 Examples:
   zeroclaw gateway                  # use config defaults
@@ -792,6 +792,7 @@ async fn main() -> Result<()> {
         Commands::Gateway { port, host } => {
             let port = port.unwrap_or(config.gateway.port);
             let host = host.unwrap_or_else(|| config.gateway.host.clone());
+            enforce_estop_allows_runtime_start(&config)?;
             if port == 0 {
                 info!("🚀 Starting ZeroClaw Gateway on {host} (random port)");
             } else {
@@ -803,6 +804,7 @@ async fn main() -> Result<()> {
         Commands::Daemon { port, host } => {
             let port = port.unwrap_or(config.gateway.port);
             let host = host.unwrap_or_else(|| config.gateway.host.clone());
+            enforce_estop_allows_runtime_start(&config)?;
             if port == 0 {
                 info!("🧠 Starting ZeroClaw Daemon on {host} (random port)");
             } else {
@@ -1038,6 +1040,37 @@ async fn main() -> Result<()> {
             }
         },
     }
+}
+
+fn enforce_estop_allows_runtime_start(config: &Config) -> Result<()> {
+    if !config.security.estop.enabled {
+        return Ok(());
+    }
+
+    let config_dir = config
+        .config_path
+        .parent()
+        .context("Config path must have a parent directory")?;
+    let manager = security::EstopManager::load(&config.security.estop, config_dir)?;
+    let state = manager.status();
+
+    if !state.is_engaged() {
+        return Ok(());
+    }
+
+    if state.kill_all {
+        bail!(
+            "Emergency stop is engaged (kill-all); refusing to start gateway/daemon until resumed"
+        );
+    }
+
+    if state.network_kill {
+        bail!(
+            "Emergency stop is engaged (network-kill); refusing to start gateway/daemon until resumed"
+        );
+    }
+
+    Ok(())
 }
 
 fn handle_estop_command(

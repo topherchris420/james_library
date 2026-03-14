@@ -165,7 +165,7 @@ DEFAULT_LIBRARY_EXCLUDE_DIRS = _parse_env_csv(
 
 )
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 
 from dataclasses import dataclass, field
 
@@ -559,6 +559,11 @@ class Config:
     export_tts_audio: bool = os.environ.get("RAIN_EXPORT_TTS_AUDIO", "1") != "0"
 
     tts_audio_dir: str = os.environ.get("RAIN_TTS_AUDIO_DIR", "meeting_archives/tts_audio")
+
+    # Rust daemon bridge settings (PR B)
+    use_rust_daemon: bool = os.environ.get("RAIN_USE_RUST_DAEMON", "0") == "1"
+    rust_daemon_api_url: str = os.environ.get("RAIN_RUST_DAEMON_API_URL", "http://127.0.0.1:4200")
+    rust_daemon_timeout: float = float(os.environ.get("RAIN_RUST_DAEMON_TIMEOUT", "120"))
 
 
 
@@ -2038,6 +2043,58 @@ class Diplomat:
 
 
 
+
+class RustDaemonClient:
+    """HTTP bridge client for local Rust daemon orchestration."""
+
+    def __init__(self, base_url: str, timeout_s: float):
+        import httpx
+
+        self.base_url = base_url.rstrip("/")
+        self.client = httpx.Client(timeout=httpx.Timeout(timeout_s, connect=min(10.0, timeout_s)))
+
+    def request_agent_response(
+        self,
+        *,
+        agent_name: str,
+        topic: str,
+        context_block: str,
+        recent_chat: str,
+        mission: str,
+        max_tokens: int,
+        temperature: float,
+    ) -> str:
+        payload = {
+            "agent": agent_name,
+            "topic": topic,
+            "context": context_block,
+            "recent_chat": recent_chat,
+            "mission": mission,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        response = self.client.post(f"{self.base_url}/v1/agents/respond", json=payload)
+        response.raise_for_status()
+        data = response.json()
+        content = (data.get("content") or "").strip()
+        if not content:
+            raise RuntimeError("Rust daemon returned empty content")
+        return content
+
+    def poll_events(self) -> List[Dict[str, Any]]:
+        try:
+            response = self.client.get(f"{self.base_url}/v1/events/poll")
+            if response.status_code >= 400:
+                return []
+            data = response.json()
+            events = data.get("events", [])
+            if isinstance(events, list):
+                return [event for event in events if isinstance(event, dict)]
+            return []
+        except Exception:
+            return []
+
+
 # --- MAIN ORCHESTRATOR ---
 
 class RainLabOrchestrator:
@@ -2083,45 +2140,57 @@ class RainLabOrchestrator:
 
         
 
+        self.rust_daemon_client: Optional[RustDaemonClient] = None
+
         # LLM client with extended timeout for large context processing
 
-        try:
+        if self.config.use_rust_daemon:
+            try:
+                self.rust_daemon_client = RustDaemonClient(
+                    base_url=self.config.rust_daemon_api_url,
+                    timeout_s=self.config.rust_daemon_timeout,
+                )
+                self.client = None
+                print(f"🦀 Rust daemon mode enabled: {self.config.rust_daemon_api_url}")
+            except Exception as e:
+                print(f"❌ Failed to initialize Rust daemon client: {e}")
+                sys.exit(1)
+        else:
+            try:
 
-            import httpx
+                import httpx
 
-            # Allow configurable read timeout for slower local models / larger contexts
+                # Allow configurable read timeout for slower local models / larger contexts
 
-            connect_timeout = min(15.0, self.config.timeout)
+                connect_timeout = min(15.0, self.config.timeout)
 
-            custom_timeout = httpx.Timeout(
+                custom_timeout = httpx.Timeout(
 
-                connect_timeout,
+                    connect_timeout,
 
-                read=self.config.timeout,
+                    read=self.config.timeout,
 
-                write=connect_timeout,
+                    write=connect_timeout,
 
-                connect=connect_timeout,
+                    connect=connect_timeout,
 
-            )
+                )
 
-            self.client = openai.OpenAI(
+                self.client = openai.OpenAI(
 
-                base_url=config.base_url, 
+                    base_url=config.base_url, 
 
-                api_key=config.api_key,
+                    api_key=config.api_key,
 
-                timeout=custom_timeout
+                    timeout=custom_timeout
 
-            )
+                )
 
-        except Exception as e:
+            except Exception as e:
 
-            print(f"❌ Failed to initialize OpenAI client: {e}")
+                print(f"❌ Failed to initialize OpenAI client: {e}")
 
-            sys.exit(1)
-
-
+                sys.exit(1)
 
     def _emit_visual_event(self, payload: Dict):
 
@@ -2855,6 +2924,54 @@ class RainLabOrchestrator:
 
 
 
+    def _poll_daemon_events(self):
+        if not self.rust_daemon_client:
+            return
+
+        for event in self.rust_daemon_client.poll_events():
+            self._emit_visual_event(event)
+            if str(event.get("type", "")) == "agent_utterance":
+                text = sanitize_text(str(event.get("content", "")))
+                agent_name = str(event.get("agent_name", "")) or None
+                if text:
+                    self.voice_engine.speak(text, agent_name=agent_name)
+
+    def _create_response_content(
+        self,
+        *,
+        agent: Agent,
+        topic: str,
+        context_block: str,
+        recent_chat: str,
+        mission: str,
+        user_msg: str,
+    ) -> Tuple[str, Optional[str]]:
+        if self.rust_daemon_client is not None:
+            self._poll_daemon_events()
+            content = self.rust_daemon_client.request_agent_response(
+                agent_name=agent.name,
+                topic=topic,
+                context_block=context_block,
+                recent_chat=recent_chat,
+                mission=mission,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+            )
+            return content, None
+
+        response = self.client.chat.completions.create(
+            model=self.config.model_name,
+            messages=[
+                {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
+                {"role": "user", "content": user_msg}
+            ],
+            temperature=self.config.temperature,
+            max_tokens=self.config.max_tokens
+        )
+        content = response.choices[0].message.content.strip()
+        finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], "finish_reason") else None
+        return content, finish_reason
+
     def _generate_agent_response(
 
         self, 
@@ -3108,32 +3225,15 @@ HIDDEN CONNECTIONS (KNOWLEDGE HYPERGRAPH):
 Use these links to propose creative cross-paper insights if relevant.
 
 """
-
-                
-
-                # Use system message for static context (better caching)
-
-                response = self.client.chat.completions.create(
-
-                    model=self.config.model_name,
-
-                    messages=[
-
-                        {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
-
-                        {"role": "user", "content": user_msg}
-
-                    ],
-
-                    temperature=self.config.temperature,
-
-                    max_tokens=self.config.max_tokens
-
+                # Use daemon bridge or direct provider call for primary generation
+                content, finish_reason = self._create_response_content(
+                    agent=agent,
+                    topic=topic,
+                    context_block=context_block,
+                    recent_chat=recent_chat,
+                    mission=mission,
+                    user_msg=user_msg,
                 )
-
-                
-
-                content = response.choices[0].message.content.strip()
 
 
 
@@ -3321,7 +3421,6 @@ Use these links to propose creative cross-paper insights if relevant.
 
                 # Check if response was truncated (doesn't end with sentence-ending punctuation)
 
-                finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
 
                 is_truncated = finish_reason == "length" or (
 
