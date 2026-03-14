@@ -74,6 +74,11 @@ wiremock = { version = "0.6", optional = true }
 anyhow = "1.0"
 thiserror = "2.0"
 
+# James Library body-daemon transition notes:
+# The external kernel/api/memory/skills/channels crates are integrated as part
+# of the runtime migration plan. The current repository keeps backward-compatible
+# wiring in src/main.rs while workspace crate import paths are finalized.
+
 # UUID generation
 uuid = { version = "1.11", default-features = false, features = ["v4", "std"] }
 
