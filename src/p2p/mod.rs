@@ -15,7 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::mpsc;
 
 pub const RESEARCH_TOPIC: &str = "research/acoustic-physics";
-const DEFAULT_LISTEN_ADDR: &str = "/ip4/0.0.0.0/tcp/0";
+const DEFAULT_LISTEN_ADDR: &str = "/ip4/127.0.0.1/tcp/0";
 
 static PUBLISHER: OnceLock<mpsc::Sender<String>> = OnceLock::new();
 static STARTED: OnceLock<()> = OnceLock::new();
