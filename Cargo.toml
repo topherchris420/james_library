@@ -123,6 +123,7 @@ which = "8.0"
 # WebSocket client channels (Discord/Lark/DingTalk/Nostr)
 tokio-tungstenite = { version = "0.28", features = ["rustls-tls-webpki-roots"] }
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
+libp2p = { version = "0.55", default-features = false, features = ["tokio", "tcp", "noise", "yamux", "gossipsub", "kad", "macros"], optional = true }
 nostr-sdk = { version = "0.44", default-features = false, features = ["nip04", "nip59"] }
 regex = "1.10"
 hostname = "0.4.2"
@@ -217,6 +218,8 @@ whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-pr
 benchmarks = ["dep:criterion"]
 # Opt-in integration tests that require wiremock.
 test-wiremock = ["dep:wiremock"]
+# p2p = opt-in libp2p gossip + kademlia runtime
+p2p = ["dep:libp2p"]
 
 [profile.release]
 opt-level = "z"      # Optimize for size

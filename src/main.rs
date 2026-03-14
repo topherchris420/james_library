@@ -72,6 +72,8 @@ mod migration;
 mod multimodal;
 mod observability;
 mod onboard;
+#[cfg(feature = "p2p")]
+mod p2p;
 mod peripherals;
 mod providers;
 mod runtime;

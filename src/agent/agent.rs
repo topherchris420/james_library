@@ -1,3 +1,4 @@
+use crate::agent::advisory::{self, AdvisoryPublisher};
 use crate::agent::dispatcher::{
     NativeToolDispatcher, ParsedToolCall, ToolDispatcher, ToolExecutionResult, XmlToolDispatcher,
 };
@@ -37,6 +38,7 @@ pub struct Agent {
     classification_config: crate::config::QueryClassificationConfig,
     available_hints: Vec<String>,
     route_model_by_hint: HashMap<String, String>,
+    advisory_publisher: Arc<dyn AdvisoryPublisher>,
 }
 
 pub struct AgentBuilder {
@@ -58,6 +60,7 @@ pub struct AgentBuilder {
     classification_config: Option<crate::config::QueryClassificationConfig>,
     available_hints: Option<Vec<String>>,
     route_model_by_hint: Option<HashMap<String, String>>,
+    advisory_publisher: Option<Arc<dyn AdvisoryPublisher>>,
 }
 
 impl AgentBuilder {
@@ -81,6 +84,7 @@ impl AgentBuilder {
             classification_config: None,
             available_hints: None,
             route_model_by_hint: None,
+            advisory_publisher: None,
         }
     }
 
@@ -180,6 +184,11 @@ impl AgentBuilder {
         self
     }
 
+    pub fn advisory_publisher(mut self, advisory_publisher: Arc<dyn AdvisoryPublisher>) -> Self {
+        self.advisory_publisher = Some(advisory_publisher);
+        self
+    }
+
     pub fn build(self) -> Result<Agent> {
         let tools = self
             .tools
@@ -223,6 +232,9 @@ impl AgentBuilder {
             classification_config: self.classification_config.unwrap_or_default(),
             available_hints: self.available_hints.unwrap_or_default(),
             route_model_by_hint: self.route_model_by_hint.unwrap_or_default(),
+            advisory_publisher: self
+                .advisory_publisher
+                .unwrap_or_else(advisory::build_publisher),
         })
     }
 }
@@ -588,6 +600,7 @@ impl Agent {
                 }
             };
             println!("\n{response}\n");
+            self.advisory_publisher.publish(&response);
         }
 
         listen_handle.abort();
@@ -634,6 +647,7 @@ pub async fn run(
     if let Some(msg) = message {
         let response = agent.run_single(&msg).await?;
         println!("{response}");
+        agent.advisory_publisher.publish(&response);
     } else {
         agent.run_interactive().await?;
     }

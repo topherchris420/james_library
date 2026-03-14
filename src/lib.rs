@@ -59,6 +59,8 @@ pub(crate) mod migration;
 pub(crate) mod multimodal;
 pub mod observability;
 pub(crate) mod onboard;
+#[cfg(feature = "p2p")]
+pub mod p2p;
 pub mod peripherals;
 pub mod providers;
 pub mod rag;
