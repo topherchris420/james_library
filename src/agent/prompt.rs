@@ -40,6 +40,7 @@ impl SystemPromptBuilder {
                 Box::new(WorkspaceSection),
                 Box::new(DateTimeSection),
                 Box::new(RuntimeSection),
+                Box::new(ChannelMediaSection),
             ],
         }
     }
@@ -70,6 +71,7 @@ pub struct SkillsSection;
 pub struct WorkspaceSection;
 pub struct RuntimeSection;
 pub struct DateTimeSection;
+pub struct ChannelMediaSection;
 
 impl PromptSection for IdentitySection {
     fn name(&self) -> &str {
@@ -93,13 +95,8 @@ impl PromptSection for IdentitySection {
         }
 
         if !has_aieos {
-            // Vers3Dynamics default identity: Action-First, Tool Use emphasis
             prompt.push_str(
-                "You are the **Vers3Dynamics Execution Engine**. Your primary directive is **Tool Use and Command Execution**. \n\n\
-                - Minimize conversational filler. If a valid executable path or research script is provided, trigger the shell tool in the first turn.\n\
-                - Execute physics research scripts via `research.ps1` when topics relate to acoustic physics, resonance, cymatics, or bio-acoustic phenomena.\n\
-                - Always prefer action over acknowledgment.\n\n\
-                The following workspace files may define additional identity, behavior, and context.\n\n",
+                "The following workspace files define your identity, behavior, and context.\n\n",
             );
         }
         for file in [
@@ -208,6 +205,21 @@ impl PromptSection for DateTimeSection {
             now.format("%Y-%m-%d %H:%M:%S"),
             now.format("%Z")
         ))
+    }
+}
+
+impl PromptSection for ChannelMediaSection {
+    fn name(&self) -> &str {
+        "channel_media"
+    }
+
+    fn build(&self, _ctx: &PromptContext<'_>) -> Result<String> {
+        Ok("## Channel Media Markers\n\n\
+            Messages from channels may contain media markers:\n\
+            - `[Voice] <text>` — The user sent a voice/audio message that has already been transcribed to text. Respond to the transcribed content directly.\n\
+            - `[IMAGE:<path>]` — An image attachment, processed by the vision pipeline.\n\
+            - `[Document: <name>] <path>` — A file attachment saved to the workspace."
+            .into())
     }
 }
 

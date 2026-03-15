@@ -1,31 +1,110 @@
-use std::fs;
 use std::path::Path;
-
-const PLACEHOLDER_INDEX_HTML: &str = r#"<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ZeroClaw Dashboard</title>
-</head>
-<body>
-  <div id="app">Dashboard assets are not built yet. Run the web build to replace this placeholder.</div>
-</body>
-</html>
-"#;
+use std::process::Command;
 
 fn main() {
-    let dist_dir = Path::new("web").join("dist");
-    let index_path = dist_dir.join("index.html");
+    let dist_dir = Path::new("web/dist");
+    let web_dir = Path::new("web");
 
+    // Tell Cargo to re-run this script when web source files change.
+    println!("cargo:rerun-if-changed=web/src");
+    println!("cargo:rerun-if-changed=web/index.html");
+    println!("cargo:rerun-if-changed=web/package.json");
+    println!("cargo:rerun-if-changed=web/vite.config.ts");
+
+    // Attempt to build the web frontend if npm is available and web/dist is
+    // missing or stale.  The build is best-effort: when Node.js is not
+    // installed (e.g. CI containers, cross-compilation, minimal dev setups)
+    // we fall back to the existing stub/empty dist directory so the Rust
+    // build still succeeds.
+    let needs_build = !dist_dir.join("index.html").exists();
+
+    if needs_build && web_dir.join("package.json").exists() {
+        if let Ok(npm) = which_npm() {
+            eprintln!("cargo:warning=Building web frontend (web/dist is missing or stale)...");
+
+            // npm ci / npm install
+            let install_status = Command::new(&npm)
+                .args(["ci", "--ignore-scripts"])
+                .current_dir(web_dir)
+                .status();
+
+            match install_status {
+                Ok(s) if s.success() => {}
+                Ok(s) => {
+                    // Fall back to `npm install` if `npm ci` fails (no lockfile, etc.)
+                    eprintln!("cargo:warning=npm ci exited with {s}, trying npm install...");
+                    let fallback = Command::new(&npm)
+                        .args(["install"])
+                        .current_dir(web_dir)
+                        .status();
+                    if !matches!(fallback, Ok(s) if s.success()) {
+                        eprintln!("cargo:warning=npm install failed — skipping web build");
+                        ensure_dist_dir(dist_dir);
+                        return;
+                    }
+                }
+                Err(e) => {
+                    eprintln!("cargo:warning=Could not run npm: {e} — skipping web build");
+                    ensure_dist_dir(dist_dir);
+                    return;
+                }
+            }
+
+            // npm run build
+            let build_status = Command::new(&npm)
+                .args(["run", "build"])
+                .current_dir(web_dir)
+                .status();
+
+            match build_status {
+                Ok(s) if s.success() => {
+                    eprintln!("cargo:warning=Web frontend built successfully.");
+                }
+                Ok(s) => {
+                    eprintln!(
+                        "cargo:warning=npm run build exited with {s} — web dashboard may be unavailable"
+                    );
+                }
+                Err(e) => {
+                    eprintln!(
+                        "cargo:warning=Could not run npm build: {e} — web dashboard may be unavailable"
+                    );
+                }
+            }
+        }
+    }
+
+    ensure_dist_dir(dist_dir);
+}
+
+/// Ensure the dist directory exists so `rust-embed` does not fail at compile
+/// time even when the web frontend is not built.
+fn ensure_dist_dir(dist_dir: &Path) {
     if !dist_dir.exists() {
-        fs::create_dir_all(&dist_dir).expect("failed to create web/dist");
+        std::fs::create_dir_all(dist_dir).expect("failed to create web/dist/");
     }
+}
 
-    if !index_path.exists() {
-        fs::write(&index_path, PLACEHOLDER_INDEX_HTML)
-            .expect("failed to write web/dist/index.html");
-    }
+/// Locate the `npm` binary on the system PATH.
+fn which_npm() -> Result<String, ()> {
+    let cmd = if cfg!(target_os = "windows") {
+        "where"
+    } else {
+        "which"
+    };
 
-    println!("cargo:rerun-if-changed=web/dist");
+    Command::new(cmd)
+        .arg("npm")
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                String::from_utf8(output.stdout)
+                    .ok()
+                    .map(|s| s.lines().next().unwrap_or("npm").trim().to_string())
+            } else {
+                None
+            }
+        })
+        .ok_or(())
 }

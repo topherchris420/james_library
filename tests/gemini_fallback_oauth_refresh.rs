@@ -1,12 +1,13 @@
 //! E2E test for Gemini fallback with OAuth token refresh.
 //!
 //! This test validates that when:
-//! 1. Primary provider (OpenAI Codex) fails
-//! 2. Fallback to Gemini is triggered
-//! 3. Gemini OAuth tokens are expired (we manually expire them)
+//!  1. Primary provider (OpenAI Codex) fails
+//!  2. Fallback to Gemini is triggered
+//!  3. Gemini OAuth tokens are expired (we manually expire them)
+//!
 //! Then:
-//! - Gemini provider's warmup() automatically refreshes the tokens
-//! - The fallback request succeeds
+//!  - Gemini provider's warmup() automatically refreshes the tokens
+//!  - The fallback request succeeds
 //!
 //! Requires:
 //! - Live Gemini OAuth profile in `~/.zeroclaw/auth-profiles.json` with refresh_token

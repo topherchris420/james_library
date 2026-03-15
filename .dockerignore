@@ -1,29 +1,66 @@
-# VCS and CI metadata
+# Git history (may contain old secrets)
 .git
+.gitignore
 .githooks
-.github
 
-# Build outputs and local artifacts
+# Rust build artifacts (can be multiple GB)
 target
-.tmp_*
 
-# Local databases and journals
-*.db
-*.db-journal
-
-# Docs and media not needed for image build
+# Documentation and examples (not needed for runtime)
 docs
 examples
 tests
+
+# Markdown files (README, CHANGELOG, etc.)
 *.md
+
+# Images (unnecessary for build)
 *.png
+*.svg
+*.jpg
+*.jpeg
+*.gif
 
-# Local/system noise
+# SQLite databases (conversation history, cron jobs)
+*.db
+*.db-journal
+
+# macOS artifacts
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# Sensitive/local config
-.env
+# CI/CD configs (not needed in image)
+.github
 
-# Repository metadata not required in container
+# Cargo deny config (lint tool, not runtime)
 deny.toml
+
+# License file (not needed for runtime)
 LICENSE
+
+# Temporary files
+.tmp_*
+*.tmp
+*.bak
+*.swp
+*~
+
+# IDE and editor configs
+.idea
+.vscode
+*.iml
+
+# Windsurf workflows
+.windsurf
+
+# Environment files (may contain secrets)
+.env
+.env.*
+!.env.example
+
+# Coverage and profiling
+*.profraw
+*.profdata
+coverage
+lcov.info

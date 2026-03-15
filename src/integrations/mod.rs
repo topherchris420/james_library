@@ -79,7 +79,7 @@ fn show_integration_info(config: &Config, name: &str) -> Result<()> {
 
     let Some(entry) = entries.iter().find(|e| e.name.to_lowercase() == name_lower) else {
         anyhow::bail!(
-            "Unknown integration: {name}. Check README for supported integrations or run `zeroclaw onboard --interactive` to configure channels/providers."
+            "Unknown integration: {name}. Check README for supported integrations or run `zeroclaw onboard` to configure channels/providers."
         );
     };
 
@@ -163,7 +163,7 @@ fn show_integration_info(config: &Config, name: &str) -> Result<()> {
         _ => {
             if status == IntegrationStatus::ComingSoon {
                 println!("  This integration is planned. Stay tuned!");
-                println!("  Track progress: https://github.com/theonlyhennygod/zeroclaw");
+                println!("  Track progress: https://github.com/zeroclaw-labs/zeroclaw");
             }
         }
     }

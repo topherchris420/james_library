@@ -171,8 +171,10 @@ impl Tool for ContentSearchTool {
         }
 
         // --- Path security checks ---
-        let candidate = std::path::Path::new(search_path);
-        if candidate.is_absolute() || candidate.has_root() {
+        // Reject absolute paths unless they fall under an explicit allowed root.
+        if std::path::Path::new(search_path).is_absolute()
+            && !self.security.is_under_allowed_root(search_path)
+        {
             return Ok(ToolResult {
                 success: false,
                 output: String::new(),
@@ -208,8 +210,7 @@ impl Tool for ContentSearchTool {
         }
 
         // --- Resolve search directory ---
-        let workspace = &self.security.workspace_dir;
-        let resolved_path = workspace.join(search_path);
+        let resolved_path = self.security.resolve_tool_path(search_path);
 
         let resolved_canon = match std::fs::canonicalize(&resolved_path) {
             Ok(p) => p,
@@ -315,6 +316,7 @@ impl Tool for ContentSearchTool {
         let raw_stdout = String::from_utf8_lossy(&output.stdout);
 
         // --- Parse and format output ---
+        let workspace = &self.security.workspace_dir;
         let workspace_canon =
             std::fs::canonicalize(workspace).unwrap_or_else(|_| workspace.clone());
 

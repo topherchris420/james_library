@@ -238,7 +238,7 @@ fn open_skills_enabled_from_sources(
     env_override: Option<&str>,
 ) -> bool {
     if let Some(raw) = env_override {
-        if let Some(enabled) = parse_open_skills_enabled(&raw) {
+        if let Some(enabled) = parse_open_skills_enabled(raw) {
             return enabled;
         }
         if !raw.trim().is_empty() {
@@ -506,10 +506,10 @@ fn render_skill_location(skill: &Skill, workspace_dir: &Path, prefer_relative: b
     let location = resolve_skill_location(skill, workspace_dir);
     if prefer_relative {
         if let Ok(relative) = location.strip_prefix(workspace_dir) {
-            return relative.display().to_string().replace('\\', "/");
+            return relative.display().to_string();
         }
     }
-    location.display().to_string().replace('\\', "/")
+    location.display().to_string()
 }
 
 /// Build the "Available Skills" system prompt section with full skill instructions.

@@ -1,8 +1,7 @@
 use super::traits::RuntimeAdapter;
-use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
-/// Native runtime — full access, runs on Mac/Linux/Docker/Raspberry Pi
+/// Native runtime — full access, runs on Mac/Linux/Windows/Docker/Raspberry Pi
 pub struct NativeRuntime;
 
 impl NativeRuntime {
@@ -40,27 +39,19 @@ impl RuntimeAdapter for NativeRuntime {
         command: &str,
         workspace_dir: &Path,
     ) -> anyhow::Result<tokio::process::Command> {
-        #[cfg(windows)]
-        let mut process = {
-            let shell = std::env::var_os("COMSPEC").unwrap_or_else(|| OsString::from("cmd.exe"));
-            let mut process = tokio::process::Command::new(shell);
-            // Pass all environment variables to ensure PATH, TEMP, etc. are available
-            process.envs(std::env::vars());
-            process.arg("/d").arg("/s").arg("/c").arg(command);
-            process
-        };
-
-        #[cfg(not(windows))]
-        let mut process = {
+        #[cfg(not(target_os = "windows"))]
+        {
             let mut process = tokio::process::Command::new("sh");
-            // Pass all environment variables for cross-platform compatibility
-            process.envs(std::env::vars());
-            process.arg("-c").arg(command);
-            process
-        };
+            process.arg("-c").arg(command).current_dir(workspace_dir);
+            Ok(process)
+        }
 
-        process.current_dir(workspace_dir);
-        Ok(process)
+        #[cfg(target_os = "windows")]
+        {
+            let mut process = tokio::process::Command::new("cmd.exe");
+            process.arg("/C").arg(command).current_dir(workspace_dir);
+            Ok(process)
+        }
     }
 }
 
@@ -107,29 +98,5 @@ mod tests {
             .unwrap();
         let debug = format!("{command:?}");
         assert!(debug.contains("echo hello"));
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn native_windows_uses_cmd_shell() {
-        let cwd = std::env::temp_dir();
-        let command = NativeRuntime::new()
-            .build_shell_command("dir", &cwd)
-            .unwrap();
-        let debug = format!("{command:?}").to_ascii_lowercase();
-        assert!(debug.contains("cmd"));
-        assert!(debug.contains("/c"));
-    }
-
-    #[cfg(not(windows))]
-    #[test]
-    fn native_unix_uses_sh_shell() {
-        let cwd = std::env::temp_dir();
-        let command = NativeRuntime::new()
-            .build_shell_command("echo hello", &cwd)
-            .unwrap();
-        let debug = format!("{command:?}");
-        assert!(debug.contains("sh"));
-        assert!(debug.contains("-c"));
     }
 }

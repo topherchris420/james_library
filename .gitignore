@@ -1,69 +1,49 @@
-# Python
+/target
+firmware/*/target
+web/dist/
+*.db
+*.db-journal
+.DS_Store
+._*
+.wt-pr37/
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
+docker-compose.override.yml
 
-# Virtual environments
+# Environment files (may contain secrets)
+.env
+
+# Python virtual environments
+
 .venv/
 venv/
-ENV/
-env/
 
-# Testing
-.pytest_cache/
-.ruff_cache/
-.coverage
-htmlcov/
-.tox/
+# ESP32 build cache (esp-idf-sys managed)
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Project-specific
-james_library-main/
-openclaw-main/
-vers3dynamics_lab/
-backups/
-meeting_archives/runtime_events.jsonl
-meeting_archives/godot_events.jsonl
-meeting_archives/tts_audio/
-
-# Sensitive files (DO NOT COMMIT)
-config.toml
-secret.key
-*.sqlite
-.env
+.embuild/
 .env.local
-logs/
-*.log
+.env.*.local
 
-# Build artifacts (Rust)
-target/
+# Secret keys and credentials
+.secret_key
+*.key
+*.pem
+credentials.json
+.worktrees/
+.zeroclaw/*
 
-# Jupyter
-.ipynb_checkpoints/
+# Skill eval workspaces (test outputs, transcripts, grading)
+.claude/skills/*-workspace/
+
+# Local state backups
+.local-state-backups/
+*.local-state-backup/
+
+# Coverage artifacts
+lcov.info
+
+# IDE's stuff
+.idea
+
+# Wrangler cache
+.wrangler/

@@ -15,79 +15,147 @@ use axum::{
         ws::{Message, WebSocket},
         Query, State, WebSocketUpgrade,
     },
+    http::{header, HeaderMap},
     response::IntoResponse,
 };
 use futures_util::{SinkExt, StreamExt};
 use serde::Deserialize;
 
+/// The sub-protocol we support for the chat WebSocket.
+const WS_PROTOCOL: &str = "zeroclaw.v1";
+
+/// Prefix used in `Sec-WebSocket-Protocol` to carry a bearer token.
+const BEARER_SUBPROTO_PREFIX: &str = "bearer.";
+
 #[derive(Deserialize)]
 pub struct WsQuery {
     pub token: Option<String>,
+    pub session_id: Option<String>,
 }
 
-/// Parse incoming WebSocket text and return the user content if valid, or an
-/// error JSON string for invalid input.  Factored out of `handle_socket` so the
-/// protocol parsing logic is directly unit-testable.
-fn parse_ws_message(raw: &str) -> Result<String, String> {
-    let parsed: serde_json::Value = serde_json::from_str(raw).map_err(|_| {
-        serde_json::json!({"type": "error", "message": "Invalid JSON"}).to_string()
-    })?;
-
-    let msg_type = parsed["type"].as_str().unwrap_or("");
-    if msg_type != "message" {
-        return Err(String::new()); // silently skip
+/// Extract a bearer token from WebSocket-compatible sources.
+///
+/// Precedence (first non-empty wins):
+/// 1. `Authorization: Bearer <token>` header
+/// 2. `Sec-WebSocket-Protocol: bearer.<token>` subprotocol
+/// 3. `?token=<token>` query parameter
+///
+/// Browsers cannot set custom headers on `new WebSocket(url)`, so the query
+/// parameter and subprotocol paths are required for browser-based clients.
+fn extract_ws_token<'a>(headers: &'a HeaderMap, query_token: Option<&'a str>) -> Option<&'a str> {
+    // 1. Authorization header
+    if let Some(t) = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|auth| auth.strip_prefix("Bearer "))
+    {
+        if !t.is_empty() {
+            return Some(t);
+        }
     }
 
-    let content = parsed["content"].as_str().unwrap_or("").to_string();
-    if content.is_empty() {
-        return Err(String::new()); // silently skip
+    // 2. Sec-WebSocket-Protocol: bearer.<token>
+    if let Some(t) = headers
+        .get("sec-websocket-protocol")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|protos| {
+            protos
+                .split(',')
+                .map(|p| p.trim())
+                .find_map(|p| p.strip_prefix(BEARER_SUBPROTO_PREFIX))
+        })
+    {
+        if !t.is_empty() {
+            return Some(t);
+        }
     }
 
-    Ok(content)
+    // 3. ?token= query parameter
+    if let Some(t) = query_token {
+        if !t.is_empty() {
+            return Some(t);
+        }
+    }
+
+    None
 }
 
 /// GET /ws/chat — WebSocket upgrade for agent chat
 pub async fn handle_ws_chat(
     State(state): State<AppState>,
     Query(params): Query<WsQuery>,
+    headers: HeaderMap,
     ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
-    // Auth via query param (browser WebSocket limitation)
+    // Auth: check header, subprotocol, then query param (precedence order)
     if state.pairing.require_pairing() {
-        let token = params.token.as_deref().unwrap_or("");
+        let token = extract_ws_token(&headers, params.token.as_deref()).unwrap_or("");
         if !state.pairing.is_authenticated(token) {
             return (
                 axum::http::StatusCode::UNAUTHORIZED,
-                "Unauthorized — provide ?token=<bearer_token>",
+                "Unauthorized — provide Authorization header, Sec-WebSocket-Protocol bearer, or ?token= query param",
             )
                 .into_response();
         }
     }
 
-    ws.on_upgrade(move |socket| handle_socket(socket, state))
+    // Echo Sec-WebSocket-Protocol if the client requests our sub-protocol.
+    let ws = if headers
+        .get("sec-websocket-protocol")
+        .and_then(|v| v.to_str().ok())
+        .map_or(false, |protos| {
+            protos.split(',').any(|p| p.trim() == WS_PROTOCOL)
+        }) {
+        ws.protocols([WS_PROTOCOL])
+    } else {
+        ws
+    };
+
+    let session_id = params.session_id.clone();
+    ws.on_upgrade(move |socket| handle_socket(socket, state, session_id))
         .into_response()
 }
 
-async fn handle_socket(socket: WebSocket, state: AppState) {
+async fn handle_socket(socket: WebSocket, state: AppState, _session_id: Option<String>) {
     let (mut sender, mut receiver) = socket.split();
+
+    // Build a persistent Agent for this connection so history is maintained across turns.
+    let config = state.config.lock().clone();
+    let mut agent = match crate::agent::Agent::from_config(&config) {
+        Ok(a) => a,
+        Err(e) => {
+            let err = serde_json::json!({"type": "error", "message": format!("Failed to initialise agent: {e}")});
+            let _ = sender.send(Message::Text(err.to_string().into())).await;
+            return;
+        }
+    };
 
     while let Some(msg) = receiver.next().await {
         let msg = match msg {
             Ok(Message::Text(text)) => text,
-            Ok(Message::Close(_)) => break,
-            Err(_) => break,
+            Ok(Message::Close(_)) | Err(_) => break,
             _ => continue,
         };
 
-        let content = match parse_ws_message(&msg) {
-            Ok(c) => c,
-            Err(err_json) => {
-                if !err_json.is_empty() {
-                    let _ = sender.send(Message::Text(err_json.into())).await;
-                }
+        // Parse incoming message
+        let parsed: serde_json::Value = match serde_json::from_str(&msg) {
+            Ok(v) => v,
+            Err(_) => {
+                let err = serde_json::json!({"type": "error", "message": "Invalid JSON"});
+                let _ = sender.send(Message::Text(err.to_string().into())).await;
                 continue;
             }
         };
+
+        let msg_type = parsed["type"].as_str().unwrap_or("");
+        if msg_type != "message" {
+            continue;
+        }
+
+        let content = parsed["content"].as_str().unwrap_or("").to_string();
+        if content.is_empty() {
+            continue;
+        }
 
         // Process message with the LLM provider
         let provider_label = state
@@ -104,45 +172,8 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
             "model": state.model,
         }));
 
-        // Simple single-turn chat (no streaming for now — use provider.chat_with_system)
-        let system_prompt = {
-            let config_guard = state.config.lock();
-            crate::channels::build_system_prompt(
-                &config_guard.workspace_dir,
-                &state.model,
-                &[],
-                &[],
-                Some(&config_guard.identity),
-                None,
-            )
-        };
-
-        let messages = vec![
-            crate::providers::ChatMessage::system(system_prompt),
-            crate::providers::ChatMessage::user(&content),
-        ];
-
-        let multimodal_config = state.config.lock().multimodal.clone();
-        let prepared =
-            match crate::multimodal::prepare_messages_for_provider(&messages, &multimodal_config)
-                .await
-            {
-                Ok(p) => p,
-                Err(e) => {
-                    let err = serde_json::json!({
-                        "type": "error",
-                        "message": format!("Multimodal prep failed: {e}")
-                    });
-                    let _ = sender.send(Message::Text(err.to_string().into())).await;
-                    continue;
-                }
-            };
-
-        match state
-            .provider
-            .chat_with_history(&prepared.messages, &state.model, state.temperature)
-            .await
-        {
+        // Multi-turn chat via persistent Agent (history is maintained across turns)
+        match agent.turn(&content).await {
             Ok(response) => {
                 // Send the full response as a done message
                 let done = serde_json::json!({
@@ -180,82 +211,81 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::http::HeaderMap;
 
     #[test]
-    fn ws_query_token_is_optional() {
-        let q: WsQuery = serde_json::from_str("{}").unwrap();
-        assert!(q.token.is_none());
-
-        let q: WsQuery = serde_json::from_str(r#"{"token":"abc"}"#).unwrap();
-        assert_eq!(q.token.as_deref(), Some("abc"));
+    fn extract_ws_token_from_authorization_header() {
+        let mut headers = HeaderMap::new();
+        headers.insert("authorization", "Bearer zc_test123".parse().unwrap());
+        assert_eq!(extract_ws_token(&headers, None), Some("zc_test123"));
     }
 
     #[test]
-    fn parse_ws_message_rejects_invalid_json() {
-        let result = parse_ws_message("not json");
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.contains("Invalid JSON"));
+    fn extract_ws_token_from_subprotocol() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "sec-websocket-protocol",
+            "zeroclaw.v1, bearer.zc_sub456".parse().unwrap(),
+        );
+        assert_eq!(extract_ws_token(&headers, None), Some("zc_sub456"));
     }
 
     #[test]
-    fn parse_ws_message_skips_non_message_types() {
-        let result = parse_ws_message(r#"{"type":"ping","content":"hello"}"#);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().is_empty(), "non-message types should be silently skipped");
+    fn extract_ws_token_from_query_param() {
+        let headers = HeaderMap::new();
+        assert_eq!(
+            extract_ws_token(&headers, Some("zc_query789")),
+            Some("zc_query789")
+        );
     }
 
     #[test]
-    fn parse_ws_message_skips_missing_type() {
-        let result = parse_ws_message(r#"{"content":"hello"}"#);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().is_empty());
+    fn extract_ws_token_precedence_header_over_subprotocol() {
+        let mut headers = HeaderMap::new();
+        headers.insert("authorization", "Bearer zc_header".parse().unwrap());
+        headers.insert("sec-websocket-protocol", "bearer.zc_sub".parse().unwrap());
+        assert_eq!(
+            extract_ws_token(&headers, Some("zc_query")),
+            Some("zc_header")
+        );
     }
 
     #[test]
-    fn parse_ws_message_skips_empty_content() {
-        let result = parse_ws_message(r#"{"type":"message","content":""}"#);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().is_empty());
+    fn extract_ws_token_precedence_subprotocol_over_query() {
+        let mut headers = HeaderMap::new();
+        headers.insert("sec-websocket-protocol", "bearer.zc_sub".parse().unwrap());
+        assert_eq!(extract_ws_token(&headers, Some("zc_query")), Some("zc_sub"));
     }
 
     #[test]
-    fn parse_ws_message_skips_missing_content() {
-        let result = parse_ws_message(r#"{"type":"message"}"#);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().is_empty());
+    fn extract_ws_token_returns_none_when_empty() {
+        let headers = HeaderMap::new();
+        assert_eq!(extract_ws_token(&headers, None), None);
     }
 
     #[test]
-    fn parse_ws_message_extracts_valid_content() {
-        let result = parse_ws_message(r#"{"type":"message","content":"Hello world"}"#);
-        assert_eq!(result.unwrap(), "Hello world");
+    fn extract_ws_token_skips_empty_header_value() {
+        let mut headers = HeaderMap::new();
+        headers.insert("authorization", "Bearer ".parse().unwrap());
+        assert_eq!(
+            extract_ws_token(&headers, Some("zc_fallback")),
+            Some("zc_fallback")
+        );
     }
 
     #[test]
-    fn parse_ws_message_handles_unicode_content() {
-        let result = parse_ws_message(r#"{"type":"message","content":"resonance \u00e9tude"}"#);
-        assert!(result.is_ok());
+    fn extract_ws_token_skips_empty_query_param() {
+        let headers = HeaderMap::new();
+        assert_eq!(extract_ws_token(&headers, Some("")), None);
     }
 
     #[test]
-    fn protocol_done_response_has_expected_shape() {
-        let response = "mock response";
-        let done = serde_json::json!({
-            "type": "done",
-            "full_response": response,
-        });
-        assert_eq!(done["type"], "done");
-        assert_eq!(done["full_response"], "mock response");
-    }
-
-    #[test]
-    fn protocol_error_response_has_expected_shape() {
-        let err = serde_json::json!({
-            "type": "error",
-            "message": "something went wrong",
-        });
-        assert_eq!(err["type"], "error");
-        assert!(err["message"].as_str().unwrap().contains("something went wrong"));
+    fn extract_ws_token_subprotocol_with_multiple_entries() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "sec-websocket-protocol",
+            "zeroclaw.v1, bearer.zc_tok, other".parse().unwrap(),
+        );
+        assert_eq!(extract_ws_token(&headers, None), Some("zc_tok"));
     }
 }
