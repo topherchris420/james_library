@@ -12,69 +12,35 @@ impl AdvisoryPublisher for NoopAdvisoryPublisher {
 }
 
 #[cfg(feature = "p2p")]
-pub struct P2pAdvisoryPublisher;
+pub struct P2pAdvisoryPublisher {
+    p2p_config: crate::config::schema::P2pConfig,
+}
 
 #[cfg(feature = "p2p")]
 impl AdvisoryPublisher for P2pAdvisoryPublisher {
     fn publish(&self, response: &str) {
-        let Some(sanitized) = sanitize_for_p2p(response) else {
+        let Some(sanitized) = crate::p2p::sanitize_for_advisory(response) else {
             return;
         };
+        let cfg = self.p2p_config.clone();
         tokio::spawn(async move {
-            crate::p2p::publish_advisory_result(&sanitized).await;
+            crate::p2p::publish_advisory_result(&cfg, &sanitized).await;
         });
     }
 }
 
-pub fn build_publisher() -> Arc<dyn AdvisoryPublisher> {
+pub fn build_publisher(config: &crate::config::Config) -> Arc<dyn AdvisoryPublisher> {
     #[cfg(feature = "p2p")]
     {
-        if p2p_enabled() {
-            return Arc::new(P2pAdvisoryPublisher);
+        if crate::p2p::p2p_enabled(&config.p2p) {
+            return Arc::new(P2pAdvisoryPublisher {
+                p2p_config: config.p2p.clone(),
+            });
         }
     }
 
+    let _ = config; // suppress unused warning when p2p feature is off
     Arc::new(NoopAdvisoryPublisher)
-}
-
-#[cfg(feature = "p2p")]
-fn p2p_enabled() -> bool {
-    std::env::var("ZEROCLAW_P2P_ENABLE")
-        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false)
-}
-
-#[cfg(not(feature = "p2p"))]
-fn p2p_enabled() -> bool {
-    false
-}
-
-#[cfg(feature = "p2p")]
-fn sanitize_for_p2p(response: &str) -> Option<String> {
-    const MAX_LEN: usize = 512;
-    let lower = response.to_ascii_lowercase();
-    let blocked = [
-        "api_key",
-        "token",
-        "password",
-        "secret",
-        "bearer",
-        "credential",
-    ];
-    if blocked.iter().any(|k| lower.contains(k)) {
-        return None;
-    }
-
-    let trimmed = response.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-
-    let mut out = String::new();
-    for ch in trimmed.chars().take(MAX_LEN) {
-        out.push(ch);
-    }
-    Some(out)
 }
 
 #[cfg(test)]
@@ -84,14 +50,14 @@ mod tests {
     #[cfg(feature = "p2p")]
     #[test]
     fn sanitize_blocks_sensitive_keywords() {
-        assert!(sanitize_for_p2p("token=abcd").is_none());
+        assert!(crate::p2p::sanitize_for_advisory("token=abcd").is_none());
     }
 
     #[cfg(feature = "p2p")]
     #[test]
     fn sanitize_limits_output_size() {
         let input = "x".repeat(600);
-        let output = sanitize_for_p2p(&input).expect("sanitized output expected");
+        let output = crate::p2p::sanitize_for_advisory(&input).expect("sanitized output expected");
         assert_eq!(output.len(), 512);
     }
 }

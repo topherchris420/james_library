@@ -95,6 +95,7 @@ mod migration;
 mod multimodal;
 mod observability;
 mod onboard;
+mod p2p;
 mod peripherals;
 mod providers;
 mod runtime;
@@ -111,7 +112,7 @@ use config::Config;
 // Re-export so binary modules can use crate::<CommandEnum> while keeping a single source of truth.
 pub use zeroclaw::{
     ChannelCommands, CronCommands, GatewayCommands, HardwareCommands, IntegrationCommands,
-    MigrateCommands, PeripheralCommands, ServiceCommands, SkillCommands,
+    MigrateCommands, P2pCommands, PeripheralCommands, ServiceCommands, SkillCommands,
 };
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
@@ -443,6 +444,27 @@ Examples:
     Memory {
         #[command(subcommand)]
         memory_command: MemoryCommands,
+    },
+
+    /// Manage P2P gossip network and Kademlia DHT
+    #[command(long_about = "\
+Manage the P2P networking layer.
+
+Interact with the libp2p-based gossip/Kademlia overlay network. \
+Publish messages to topics, store and retrieve DHT records, and \
+inspect node status.
+
+Requires the `p2p` feature at compile time and `[p2p] enabled = true` \
+in config (or ZEROCLAW_P2P_ENABLE=1).
+
+Examples:
+  zeroclaw p2p status
+  zeroclaw p2p publish 'hello' --topic zeroclaw/advisory
+  zeroclaw p2p put-record my-key my-value
+  zeroclaw p2p get-record my-key")]
+    P2p {
+        #[command(subcommand)]
+        p2p_command: P2pCommands,
     },
 
     /// Manage configuration
@@ -1206,6 +1228,8 @@ async fn main() -> Result<()> {
         Commands::Peripheral { peripheral_command } => {
             peripherals::handle_command(peripheral_command.clone(), &config).await
         }
+
+        Commands::P2p { p2p_command } => handle_p2p_command(p2p_command, &config).await,
 
         Commands::Config { config_command } => match config_command {
             ConfigCommands::Schema => {
@@ -2105,6 +2129,58 @@ async fn handle_auth_command(auth_command: AuthCommands, config: &Config) -> Res
                 println!("  {provider}: {profile_id}");
             }
 
+            Ok(())
+        }
+    }
+}
+
+async fn handle_p2p_command(command: P2pCommands, config: &Config) -> Result<()> {
+    match command {
+        P2pCommands::Status => {
+            let status = p2p::get_status(&config.p2p);
+            println!("P2P enabled:     {}", status.enabled);
+            println!("P2P running:     {}", status.running);
+            if let Some(ref pid) = status.local_peer_id {
+                println!("Local peer ID:   {pid}");
+            }
+            if !status.listen_addresses.is_empty() {
+                println!("Listen addrs:    {}", status.listen_addresses.join(", "));
+            }
+            println!("Connected peers: {}", status.connected_peers);
+            println!("Topics:          {}", status.subscribed_topics.join(", "));
+
+            #[cfg(not(feature = "p2p"))]
+            {
+                println!();
+                println!("Note: binary compiled without `p2p` feature. Rebuild with:");
+                println!("  cargo build --features p2p");
+            }
+
+            Ok(())
+        }
+        P2pCommands::Publish { message, topic } => {
+            p2p::ensure_runtime_started(&config.p2p).await?;
+            p2p::publish_to_topic(&config.p2p, &topic, message.as_bytes()).await?;
+            println!("Published to topic: {topic}");
+            Ok(())
+        }
+        P2pCommands::PutRecord { key, value } => {
+            p2p::ensure_runtime_started(&config.p2p).await?;
+            p2p::put_dht_record(&config.p2p, key.as_bytes(), value.as_bytes()).await?;
+            println!("Stored DHT record: {key}");
+            Ok(())
+        }
+        P2pCommands::GetRecord { key } => {
+            p2p::ensure_runtime_started(&config.p2p).await?;
+            match p2p::get_dht_record(&config.p2p, key.as_bytes()).await? {
+                Some(value) => {
+                    let display = String::from_utf8_lossy(&value);
+                    println!("{display}");
+                }
+                None => {
+                    println!("No record found for key: {key}");
+                }
+            }
             Ok(())
         }
     }
