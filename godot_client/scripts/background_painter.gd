@@ -2,19 +2,33 @@ extends Node2D
 class_name BackgroundPainter
 
 const GRADIENT_SHADER_PATH := "res://shaders/background_gradient.gdshader"
+const CYMATICS_SHADER_PATH := "res://shaders/cymatics_overlay.gdshader"
 
 var _theme_id: String = "flower_field"
 var _background_cfg: Dictionary = {}
 var _seed: int = 1
 var _gradient_rect: ColorRect
+var _cymatics_rect: ColorRect
+
+# Resonance state — smoothly interpolated toward targets.
+var _res_freq_target: float = 0.0
+var _res_freq_current: float = 0.0
+var _res_amp_target: float = 0.0
+var _res_amp_current: float = 0.0
+var _res_stab_target: float = 0.5
+var _res_stab_current: float = 0.5
+var _res_time: float = 0.0
+const _RES_LERP_SPEED: float = 3.0
 
 
 func _ready() -> void:
 	_ensure_gradient_layer()
+	_ensure_cymatics_layer()
 	var viewport := get_viewport()
 	if viewport != null:
 		viewport.size_changed.connect(_on_viewport_size_changed)
 	_sync_gradient_rect()
+	_sync_cymatics_rect()
 	_apply_gradient_to_shader()
 
 
@@ -23,11 +37,35 @@ func apply_theme(theme_id: String, background_cfg: Dictionary) -> void:
 	_background_cfg = background_cfg.duplicate(true)
 	_seed = abs(hash(theme_id)) + 17
 	_apply_gradient_to_shader()
+
+	# Apply optional per-theme cymatics line colour.
+	var cymatics_hex := str(background_cfg.get("cymatics_line_color", ""))
+	if cymatics_hex != "" and _cymatics_rect != null:
+		var mat: Variant = _cymatics_rect.material
+		if mat is ShaderMaterial:
+			(mat as ShaderMaterial).set_shader_parameter("line_color", _color_from(cymatics_hex, "#66d9ff"))
+
 	queue_redraw()
+
+
+func apply_resonance(freq: float, amp: float, stability: float) -> void:
+	_res_freq_target = freq
+	_res_amp_target = clampf(amp, 0.0, 1.0)
+	_res_stab_target = clampf(stability, 0.0, 1.0)
+
+
+func _process(delta: float) -> void:
+	# Smoothly interpolate resonance uniforms toward targets.
+	_res_freq_current = lerpf(_res_freq_current, _res_freq_target, minf(1.0, delta * _RES_LERP_SPEED))
+	_res_amp_current = lerpf(_res_amp_current, _res_amp_target, minf(1.0, delta * _RES_LERP_SPEED))
+	_res_stab_current = lerpf(_res_stab_current, _res_stab_target, minf(1.0, delta * _RES_LERP_SPEED))
+	_res_time += delta
+	_apply_cymatics_uniforms()
 
 
 func _on_viewport_size_changed() -> void:
 	_sync_gradient_rect()
+	_sync_cymatics_rect()
 	queue_redraw()
 
 
@@ -41,6 +79,43 @@ func _draw() -> void:
 		_draw_lab(size, horizon_y)
 	else:
 		_draw_flower_field(size, horizon_y)
+
+
+func _ensure_cymatics_layer() -> void:
+	if _cymatics_rect != null:
+		return
+	_cymatics_rect = ColorRect.new()
+	_cymatics_rect.name = "CymaticsRect"
+	_cymatics_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cymatics_rect.z_index = -99  # Just above gradient, below everything else.
+	add_child(_cymatics_rect)
+
+	var shader := load(CYMATICS_SHADER_PATH)
+	if shader is Shader:
+		var material := ShaderMaterial.new()
+		material.shader = shader
+		_cymatics_rect.material = material
+
+
+func _sync_cymatics_rect() -> void:
+	if _cymatics_rect == null:
+		return
+	var rect := get_viewport_rect()
+	_cymatics_rect.position = rect.position
+	_cymatics_rect.size = rect.size
+
+
+func _apply_cymatics_uniforms() -> void:
+	if _cymatics_rect == null:
+		return
+	var mat: Variant = _cymatics_rect.material
+	if not (mat is ShaderMaterial):
+		return
+	var shader_mat := mat as ShaderMaterial
+	shader_mat.set_shader_parameter("target_frequency", _res_freq_current)
+	shader_mat.set_shader_parameter("amplitude", _res_amp_current)
+	shader_mat.set_shader_parameter("consensus_stability", _res_stab_current)
+	shader_mat.set_shader_parameter("time_s", _res_time)
 
 
 func _ensure_gradient_layer() -> void:

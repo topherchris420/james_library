@@ -64,6 +64,85 @@ RE_CORRUPTION_PATTERNS = [
     ]
 ]
 
+# --- RESONANCE / FREQUENCY DETECTION ---
+
+RE_FREQUENCY = re.compile(
+    r"(\d+(?:\.\d+)?)\s*(?:hz|hertz)",
+    re.IGNORECASE,
+)
+
+RE_RESONANCE_KEYWORDS = re.compile(
+    r"\b(?:resonan(?:ce|t)|cymati(?:c|cs)|chladni|nodal|standing\s+wave|harmonic|"
+    r"vibrat(?:e|ion|ional)|frequenc(?:y|ies)|acoustic|waveform|oscillat(?:e|ion)|"
+    r"eigenfrequen(?:cy|cies)|anti[-\s]?node|amplitude)\b",
+    re.IGNORECASE,
+)
+
+
+class ResonanceDetector:
+    """Scan agent utterances for frequency/resonance discussion.
+
+    Maintains a small rolling window of recently mentioned frequencies so
+    that ``consensus_stability`` can rise when multiple agents converge on
+    similar values and fall when discussion diverges.
+    """
+
+    _WINDOW_SIZE = 8
+
+    def __init__(self) -> None:
+        self._recent_frequencies: list[float] = []
+        self._last_emitted_freq: float = 0.0
+        self._last_stability: float = 0.0
+
+    def analyze(self, text: str) -> "dict[str, float] | None":
+        """Return a resonance_state payload dict, or *None* if nothing detected."""
+
+        keyword_hits = len(RE_RESONANCE_KEYWORDS.findall(text))
+        freq_matches = RE_FREQUENCY.findall(text)
+
+        if keyword_hits == 0 and not freq_matches:
+            return None
+
+        # Extract the dominant mentioned frequency (last one wins).
+        if freq_matches:
+            target_freq = float(freq_matches[-1])
+        elif self._recent_frequencies:
+            target_freq = self._recent_frequencies[-1]
+        else:
+            target_freq = 432.0  # sensible acoustic default
+
+        # Track recent frequencies for stability calculation.
+        self._recent_frequencies.append(target_freq)
+        if len(self._recent_frequencies) > self._WINDOW_SIZE:
+            self._recent_frequencies = self._recent_frequencies[-self._WINDOW_SIZE:]
+
+        # Amplitude: more keyword hits → stronger visual effect (capped at 1).
+        amplitude = min(1.0, 0.25 + keyword_hits * 0.15)
+
+        # Consensus stability: how tightly recent frequencies cluster.
+        stability = self._compute_stability()
+
+        self._last_emitted_freq = target_freq
+        self._last_stability = stability
+
+        return {
+            "target_frequency": round(target_freq, 2),
+            "amplitude": round(amplitude, 3),
+            "consensus_stability": round(stability, 3),
+        }
+
+    def _compute_stability(self) -> float:
+        n = len(self._recent_frequencies)
+        if n < 2:
+            return 0.5
+        mean = sum(self._recent_frequencies) / n
+        if mean == 0.0:
+            return 1.0
+        variance = sum((f - mean) ** 2 for f in self._recent_frequencies) / n
+        cv = (variance ** 0.5) / mean  # coefficient of variation
+        # Map CV → stability: cv=0 → 1.0, cv≥0.5 → 0.0
+        return max(0.0, min(1.0, 1.0 - cv * 2.0))
+
 
 def sanitize_text(text: str) -> str:
     """Sanitize external content to prevent prompt injection and control token attacks"""
@@ -1657,6 +1736,7 @@ class RainLabOrchestrator:
         self.visual_event_server = VisualEventServer(config)
         self.visual_conversation_id: Optional[str] = None
         self.visual_conversation_active = False
+        self.resonance_detector = ResonanceDetector()
         self.tts_audio_dir = Path(config.library_path) / config.tts_audio_dir
         if self.config.export_tts_audio:
             self.tts_audio_dir.mkdir(parents=True, exist_ok=True)
@@ -2145,6 +2225,17 @@ class RainLabOrchestrator:
                     "audio": audio_payload,
                 }
             )
+
+            # Emit resonance_state when agents discuss frequencies/acoustics
+            resonance = self.resonance_detector.analyze(clean_response)
+            if resonance is not None:
+                self._emit_visual_event(
+                    {
+                        "type": "resonance_state",
+                        "conversation_id": self.visual_conversation_id or "",
+                        **resonance,
+                    }
+                )
 
             self.voice_engine.speak(
                 spoken_text,

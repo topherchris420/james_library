@@ -49,12 +49,22 @@
         "type": "agent_utterance",
         "turn_id": "t_003",
         "agent_id": "elena",
-        "text": "Same conversation, different environment. Background, UI skin, ambience, and sprite palettes all changed.",
-        "tone": "neutral",
+        "text": "Let me propose a resonance experiment. We should examine standing wave formation at 432 Hz on a Chladni plate with fine sand medium.",
+        "tone": "focused",
         "audio": {
           "mode": "synthetic",
-          "duration_ms": 3800
+          "duration_ms": 4200
         }
+      }
+    },
+    {
+      "delay_s": 0.3,
+      "event": {
+        "type": "resonance_state",
+        "conversation_id": "demo_001",
+        "target_frequency": 432.0,
+        "amplitude": 0.55,
+        "consensus_stability": 0.3
       }
     },
     {
@@ -63,12 +73,70 @@
         "type": "agent_utterance",
         "turn_id": "t_004",
         "agent_id": "luca",
-        "text": "During each utterance, the active speaker animates while everyone else stays visible in the same scene.",
+        "text": "Agreed on 432 Hz. The nodal patterns at that frequency should produce a characteristic four-fold symmetric cymatic figure. The amplitude needs to be high enough to overcome damping.",
         "tone": "excited",
         "audio": {
           "mode": "synthetic",
-          "duration_ms": 3600
+          "duration_ms": 4600
         }
+      }
+    },
+    {
+      "delay_s": 0.3,
+      "event": {
+        "type": "resonance_state",
+        "conversation_id": "demo_001",
+        "target_frequency": 432.0,
+        "amplitude": 0.75,
+        "consensus_stability": 0.7
+      }
+    },
+    {
+      "delay_s": 0.8,
+      "event": {
+        "type": "agent_utterance",
+        "turn_id": "t_005",
+        "agent_id": "james",
+        "text": "Beautiful. Both of you converge on 432 Hz with high confidence. The eigenfrequency alignment is clear and the simulation confirms stable nodal lines.",
+        "tone": "excited",
+        "audio": {
+          "mode": "synthetic",
+          "duration_ms": 4000
+        }
+      }
+    },
+    {
+      "delay_s": 0.3,
+      "event": {
+        "type": "resonance_state",
+        "conversation_id": "demo_001",
+        "target_frequency": 432.0,
+        "amplitude": 0.9,
+        "consensus_stability": 0.95
+      }
+    },
+    {
+      "delay_s": 0.6,
+      "event": {
+        "type": "agent_utterance",
+        "turn_id": "t_006",
+        "agent_id": "jasmine",
+        "text": "What if we shift to 528 Hz? The harmonic relationship between 432 and 528 might reveal interesting interference at the vibration boundary.",
+        "tone": "curious",
+        "audio": {
+          "mode": "synthetic",
+          "duration_ms": 4400
+        }
+      }
+    },
+    {
+      "delay_s": 0.3,
+      "event": {
+        "type": "resonance_state",
+        "conversation_id": "demo_001",
+        "target_frequency": 528.0,
+        "amplitude": 0.65,
+        "consensus_stability": 0.35
       }
     },
     {

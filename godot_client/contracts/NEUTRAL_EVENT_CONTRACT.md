@@ -14,6 +14,7 @@ The Godot client maps these events to theme-specific visuals/audio.
 - `agent_utterance_chunk`
 - `agent_emote`
 - `theme_changed`
+- `resonance_state`
 
 ## Example Payloads
 
@@ -68,6 +69,28 @@ The Godot client maps these events to theme-specific visuals/audio.
 {
   "type": "theme_changed",
   "theme_id": "lab"
+}
+```
+
+### `resonance_state`
+
+Emitted when agents discuss specific frequencies, acoustic physics, or reach
+consensus on resonance parameters.  The Godot client uses these values to drive
+a shader-based cymatic/Chladni-plate visualisation overlay.
+
+| Field                 | Type  | Range       | Description                                                                 |
+|-----------------------|-------|-------------|-----------------------------------------------------------------------------|
+| `target_frequency`    | float | > 0         | Dominant frequency (Hz) under discussion. Controls nodal pattern complexity. |
+| `amplitude`           | float | 0.0 – 1.0  | Signal strength / visual intensity of the pattern.                          |
+| `consensus_stability` | float | 0.0 – 1.0  | How settled the group is on the value. 1.0 = perfectly symmetric pattern; 0.0 = jittery/chaotic. |
+
+```json
+{
+  "type": "resonance_state",
+  "conversation_id": "c_42",
+  "target_frequency": 432.0,
+  "amplitude": 0.75,
+  "consensus_stability": 0.6
 }
 ```
 
