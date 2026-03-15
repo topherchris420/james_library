@@ -15,6 +15,7 @@
 //! To add a new tool, implement [`Tool`] in a new submodule and register it in
 //! [`all_tools_with_runtime`]. See `AGENTS.md` §7.3 for the full change playbook.
 
+pub mod arxiv_search;
 pub mod browser;
 pub mod browser_open;
 pub mod cli_discovery;
@@ -55,6 +56,7 @@ pub mod traits;
 pub mod web_fetch;
 pub mod web_search_tool;
 
+pub use arxiv_search::ArxivSearchTool;
 pub use browser::{BrowserTool, ComputerUseConfig};
 pub use browser_open::BrowserOpenTool;
 pub use composio::ComposioTool;
@@ -294,6 +296,15 @@ pub fn all_tools_with_runtime(
             root_config.web_search.brave_api_key.clone(),
             root_config.web_search.max_results,
             root_config.web_search.timeout_secs,
+        )));
+    }
+
+    // ArXiv paper search tool
+    if root_config.arxiv_search.enabled {
+        tool_arcs.push(Arc::new(ArxivSearchTool::new(
+            security.clone(),
+            root_config.arxiv_search.max_results,
+            root_config.arxiv_search.timeout_secs,
         )));
     }
 

@@ -3,13 +3,13 @@ use super::proxy::{
     parse_proxy_enabled, parse_proxy_scope, set_runtime_proxy_config,
 };
 use super::schema::{
-    is_valid_env_var_name, parse_skills_prompt_injection_mode, AgentConfig, AutonomyConfig,
-    BrowserConfig, ChannelsConfig, ComposioConfig, Config, CostConfig, CronConfig, GatewayConfig,
-    HardwareConfig, HeartbeatConfig, HooksConfig, HttpRequestConfig, IdentityConfig, MemoryConfig,
-    ModelProviderConfig, MultimodalConfig, ObservabilityConfig, PeripheralsConfig, ProxyConfig,
-    ProxyScope, QueryClassificationConfig, ReliabilityConfig, RuntimeConfig, SchedulerConfig,
-    SecretsConfig, SecurityConfig, SkillsConfig, StorageConfig, TranscriptionConfig, TunnelConfig,
-    WebFetchConfig, WebSearchConfig,
+    is_valid_env_var_name, parse_skills_prompt_injection_mode, AgentConfig, ArxivSearchConfig,
+    AutonomyConfig, BrowserConfig, ChannelsConfig, ComposioConfig, Config, CostConfig, CronConfig,
+    GatewayConfig, HardwareConfig, HeartbeatConfig, HooksConfig, HttpRequestConfig, IdentityConfig,
+    MemoryConfig, ModelProviderConfig, MultimodalConfig, ObservabilityConfig, PeripheralsConfig,
+    ProxyConfig, ProxyScope, QueryClassificationConfig, ReliabilityConfig, RuntimeConfig,
+    SchedulerConfig, SecretsConfig, SecurityConfig, SkillsConfig, StorageConfig,
+    TranscriptionConfig, TunnelConfig, WebFetchConfig, WebSearchConfig,
 };
 use crate::providers::{is_glm_alias, is_zai_alias};
 use crate::security::DomainMatcher;
@@ -64,6 +64,7 @@ impl Default for Config {
             multimodal: MultimodalConfig::default(),
             web_fetch: WebFetchConfig::default(),
             web_search: WebSearchConfig::default(),
+            arxiv_search: ArxivSearchConfig::default(),
             proxy: ProxyConfig::default(),
             identity: IdentityConfig::default(),
             cost: CostConfig::default(),

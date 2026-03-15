@@ -61,6 +61,9 @@ urlencoding = "2.1"
 # HTML to plain text conversion (web_fetch tool)
 nanohtml2text = "0.2"
 
+# XML parsing (ArXiv Atom feed)
+quick-xml = { version = "0.37", default-features = false, features = ["serialize"] }
+
 # Optional Rust-native browser automation backend
 fantoccini = { version = "0.22.0", optional = true, default-features = false, features = ["rustls-tls"] }
 

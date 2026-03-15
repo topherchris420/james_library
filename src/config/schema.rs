@@ -134,6 +134,10 @@ pub struct Config {
     #[serde(default)]
     pub web_search: WebSearchConfig,
 
+    /// ArXiv paper search tool configuration (`[arxiv_search]`).
+    #[serde(default)]
+    pub arxiv_search: ArxivSearchConfig,
+
     /// Proxy configuration for outbound HTTP/HTTPS/SOCKS5 traffic (`[proxy]`).
     #[serde(default)]
     pub proxy: ProxyConfig,
@@ -1073,6 +1077,40 @@ impl Default for WebSearchConfig {
             brave_api_key: None,
             max_results: default_web_search_max_results(),
             timeout_secs: default_web_search_timeout_secs(),
+        }
+    }
+}
+
+// ── ArXiv search ────────────────────────────────────────────────
+
+/// ArXiv paper search tool configuration (`[arxiv_search]` section).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ArxivSearchConfig {
+    /// Enable `arxiv_search` tool for searching academic papers on ArXiv
+    #[serde(default)]
+    pub enabled: bool,
+    /// Maximum results per search (1–100, default: 10)
+    #[serde(default = "default_arxiv_max_results")]
+    pub max_results: usize,
+    /// Request timeout in seconds (default: 30)
+    #[serde(default = "default_arxiv_timeout_secs")]
+    pub timeout_secs: u64,
+}
+
+fn default_arxiv_max_results() -> usize {
+    10
+}
+
+fn default_arxiv_timeout_secs() -> u64 {
+    30
+}
+
+impl Default for ArxivSearchConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            max_results: default_arxiv_max_results(),
+            timeout_secs: default_arxiv_timeout_secs(),
         }
     }
 }
@@ -3422,6 +3460,7 @@ default_temperature = 0.7
             multimodal: MultimodalConfig::default(),
             web_fetch: WebFetchConfig::default(),
             web_search: WebSearchConfig::default(),
+            arxiv_search: ArxivSearchConfig::default(),
             proxy: ProxyConfig::default(),
             agent: AgentConfig::default(),
             identity: IdentityConfig::default(),
@@ -3604,6 +3643,7 @@ tool_dispatcher = "xml"
             multimodal: MultimodalConfig::default(),
             web_fetch: WebFetchConfig::default(),
             web_search: WebSearchConfig::default(),
+            arxiv_search: ArxivSearchConfig::default(),
             proxy: ProxyConfig::default(),
             agent: AgentConfig::default(),
             identity: IdentityConfig::default(),
