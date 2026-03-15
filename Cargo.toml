@@ -195,9 +195,6 @@ wa-rs-proto = { version = "0.2", optional = true, default-features = false }
 wa-rs-ureq-http = { version = "0.2", optional = true }
 wa-rs-tokio-transport = { version = "0.2", optional = true, default-features = false }
 
-# libp2p — P2P networking with gossipsub + Kademlia DHT (optional, enable with --features p2p)
-libp2p = { version = "0.54", optional = true, default-features = false, features = ["gossipsub", "kad", "noise", "tcp", "yamux", "tokio", "macros", "identify"] }
-
 # Raspberry Pi GPIO / Landlock (Linux only) — target-specific to avoid compile failure on macOS
 [target.'cfg(target_os = "linux")'.dependencies]
 rppal = { version = "0.22", optional = true }
@@ -235,8 +232,6 @@ probe = ["dep:probe-rs"]
 rag-pdf = ["dep:pdf-extract"]
 # whatsapp-web = Native WhatsApp Web client with custom rusqlite storage backend
 whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-proto", "dep:wa-rs-ureq-http", "dep:wa-rs-tokio-transport", "dep:serde-big-array", "dep:prost", "dep:qrcode"]
-# p2p = libp2p-based gossipsub + Kademlia DHT for decentralized agent networking
-p2p = ["dep:libp2p"]
 
 [profile.release]
 opt-level = "z"      # Optimize for size

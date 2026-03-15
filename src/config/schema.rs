@@ -255,10 +255,6 @@ pub struct Config {
     /// Dynamic node discovery configuration (`[nodes]`).
     #[serde(default)]
     pub nodes: NodesConfig,
-
-    /// P2P networking configuration: gossipsub + Kademlia DHT (`[p2p]`).
-    #[serde(default)]
-    pub p2p: P2pConfig,
 }
 
 /// Named provider profile definition compatible with Codex app-server style config.
@@ -589,76 +585,6 @@ impl Default for NodesConfig {
             enabled: false,
             max_nodes: default_max_nodes(),
             auth_token: None,
-        }
-    }
-}
-
-// ── P2P networking (gossipsub + Kademlia DHT) ────────────────────
-
-fn default_p2p_listen_addr() -> String {
-    "/ip4/127.0.0.1/tcp/0".into()
-}
-
-fn default_p2p_max_message_size() -> usize {
-    1024
-}
-
-fn default_p2p_max_peers() -> usize {
-    50
-}
-
-/// P2P networking configuration for decentralized agent communication.
-///
-/// Uses libp2p gossipsub for pub/sub messaging and Kademlia DHT for
-/// peer discovery and distributed record storage.
-///
-/// Requires the `p2p` feature flag at compile time. At runtime, set
-/// `enabled = true` in `[p2p]` or `ZEROCLAW_P2P_ENABLE=1`.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct P2pConfig {
-    /// Enable P2P networking. Default: `false`.
-    /// Can also be enabled via `ZEROCLAW_P2P_ENABLE=1` env var.
-    #[serde(default)]
-    pub enabled: bool,
-
-    /// Multiaddr to listen on. Default: `"/ip4/127.0.0.1/tcp/0"` (random port, localhost only).
-    /// Override with `ZEROCLAW_P2P_LISTEN_ADDR` env var.
-    #[serde(default = "default_p2p_listen_addr")]
-    pub listen_addr: String,
-
-    /// Comma-separated list of bootstrap peer multiaddrs (must include `/p2p/<peer_id>`).
-    /// Override with `ZEROCLAW_P2P_BOOTSTRAP` env var.
-    #[serde(default)]
-    pub bootstrap_peers: Vec<String>,
-
-    /// Gossipsub topics to subscribe to. Default: `["zeroclaw/advisory"]`.
-    #[serde(default)]
-    pub topics: Vec<String>,
-
-    /// Maximum gossip message size in bytes. Default: `1024`.
-    #[serde(default = "default_p2p_max_message_size")]
-    pub max_message_size: usize,
-
-    /// Maximum number of connected peers. Default: `50`.
-    #[serde(default = "default_p2p_max_peers")]
-    pub max_peers: usize,
-
-    /// Node identifier broadcast to peers. Falls back to hostname if unset.
-    /// Override with `ZEROCLAW_NODE_ID` env var.
-    #[serde(default)]
-    pub node_id: Option<String>,
-}
-
-impl Default for P2pConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            listen_addr: default_p2p_listen_addr(),
-            bootstrap_peers: Vec::new(),
-            topics: Vec::new(),
-            max_message_size: default_p2p_max_message_size(),
-            max_peers: default_p2p_max_peers(),
-            node_id: None,
         }
     }
 }
@@ -4250,7 +4176,6 @@ impl Default for Config {
             tts: TtsConfig::default(),
             mcp: McpConfig::default(),
             nodes: NodesConfig::default(),
-            p2p: P2pConfig::default(),
         }
     }
 }
@@ -6355,7 +6280,6 @@ default_temperature = 0.7
             tts: TtsConfig::default(),
             mcp: McpConfig::default(),
             nodes: NodesConfig::default(),
-            p2p: P2pConfig::default(),
         };
 
         let toml_str = toml::to_string_pretty(&config).unwrap();
@@ -6647,7 +6571,6 @@ tool_dispatcher = "xml"
             tts: TtsConfig::default(),
             mcp: McpConfig::default(),
             nodes: NodesConfig::default(),
-            p2p: P2pConfig::default(),
         };
 
         config.save().await.unwrap();

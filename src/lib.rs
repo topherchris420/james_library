@@ -59,7 +59,6 @@ pub(crate) mod migration;
 pub(crate) mod multimodal;
 pub mod observability;
 pub(crate) mod onboard;
-pub mod p2p;
 pub mod peripherals;
 pub mod providers;
 pub mod rag;
@@ -418,59 +417,6 @@ pub enum MemoryCommands {
         /// Skip confirmation prompt
         #[arg(long)]
         yes: bool,
-    },
-}
-
-/// P2P networking subcommands
-#[derive(Subcommand, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum P2pCommands {
-    /// Show P2P node status (peer ID, listen addresses, connected peers)
-    Status,
-    /// Publish a message to a gossipsub topic
-    #[command(long_about = "\
-Publish a text message to a gossipsub topic.
-
-Sends a UTF-8 message to the specified topic through the P2P gossip \
-network. Requires the P2P runtime to be enabled and started.
-
-Examples:
-  zeroclaw p2p publish 'sensor reading: 42' --topic zeroclaw/advisory
-  zeroclaw p2p publish 'hello peers'")]
-    Publish {
-        /// Message text to publish
-        message: String,
-        /// Topic to publish to (default: zeroclaw/advisory)
-        #[arg(long, default_value = "zeroclaw/advisory")]
-        topic: String,
-    },
-    /// Store a key-value record in the Kademlia DHT
-    #[command(long_about = "\
-Store a key-value pair in the distributed hash table.
-
-The record is replicated to nearby peers via Kademlia DHT. \
-Keys and values are UTF-8 strings.
-
-Examples:
-  zeroclaw p2p put-record my-key my-value
-  zeroclaw p2p put-record sensor/temp '22.5'")]
-    PutRecord {
-        /// Record key
-        key: String,
-        /// Record value
-        value: String,
-    },
-    /// Retrieve a record from the Kademlia DHT
-    #[command(long_about = "\
-Look up a value by key in the distributed hash table.
-
-Queries the Kademlia DHT for the record associated with the given key.
-
-Examples:
-  zeroclaw p2p get-record my-key
-  zeroclaw p2p get-record sensor/temp")]
-    GetRecord {
-        /// Record key to look up
-        key: String,
     },
 }
 
