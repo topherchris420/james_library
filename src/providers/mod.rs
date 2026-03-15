@@ -1880,12 +1880,6 @@ pub fn list_providers() -> Vec<ProviderInfo> {
             aliases: &[],
             local: false,
         },
-        ProviderInfo {
-            name: "azure_openai",
-            display_name: "Azure OpenAI",
-            aliases: &[],
-            local: false,
-        },
     ]
 }
 
