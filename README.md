@@ -264,7 +264,7 @@ MIT License. See [LICENSE](LICENSE).
 
 ## Acknowledgements
 
-R.A.I.N. Lab is a [Vers3Dynamics](https://rainlabteam.vercel.app/) project, built on the ZeroClaw runtime with inspiration from MIT CSAIL research. Huge thanks to both teams for creating such a high-performance, lightweight agent runtime that made this lab possible.
+R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project, built on the ZeroClaw runtime with inspiration from MIT CSAIL research. Huge thanks to both teams for creating such a high-performance, lightweight agent runtime that made this lab possible.
 
 ## Benchmarks
 
