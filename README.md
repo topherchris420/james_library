@@ -46,6 +46,20 @@ hero:
 
 ---
 
+## Project Identity (Quick Map)
+
+To avoid naming confusion, use this quick map:
+
+- **R.A.I.N. Lab** = the end-user product experience
+- **James Library** = the Python research/workflow layer
+- **ZeroClaw** = the Rust runtime layer (`zeroclaw` crate)
+
+Runtime flow at a glance:
+
+`User -> R.A.I.N. Lab interface -> ZeroClaw runtime (agent/channels/tools/memory/security) -> James Library research workflows -> model/provider APIs`
+
+---
+
 ## What is the R.A.I.N. Lab?
 
 Vers3Dynamics' R.A.I.N. Lab are recursive AI research assistants that helps you explore ideas and make real discoveries. Unlike a regular chatbot that might "discover" things you already know, R.A.I.N. Lab cross-checks your internal knowledge and online sources to make sure you are exploring genuinely new territory.

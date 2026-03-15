@@ -8,6 +8,14 @@
 - ドキュメントハブ（日本語）：[`docs/README.ja.md`](docs/README.ja.md)
 - 統合目次：[`docs/SUMMARY.md`](docs/SUMMARY.md)
 
+## プロジェクト構成クイックマップ
+
+- **R.A.I.N. Lab**：エンドユーザー向けの製品体験
+- **James Library**：Python の研究/ワークフローレイヤー
+- **ZeroClaw**：Rust ランタイムレイヤー（`zeroclaw` crate）
+
+実行フロー：`ユーザー -> R.A.I.N. Lab インターフェース -> ZeroClaw ランタイム -> James Library 研究ワークフロー -> モデル/Provider API`
+
 ## クイックスタート
 
 ```bash
