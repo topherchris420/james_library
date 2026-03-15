@@ -33,7 +33,13 @@ impl HookHandler for CommandLoggerHook {
         -50
     }
 
-    async fn on_after_tool_call(&self, tool: &str, _args: &serde_json::Value, result: &ToolResult, duration: Duration) {
+    async fn on_after_tool_call(
+        &self,
+        tool: &str,
+        _args: &serde_json::Value,
+        result: &ToolResult,
+        duration: Duration,
+    ) {
         let entry = format!(
             "[{}] {} ({}ms) success={}",
             chrono::Utc::now().format("%H:%M:%S"),
@@ -58,8 +64,13 @@ mod tests {
             output: "ok".into(),
             error: None,
         };
-        hook.on_after_tool_call("shell", &serde_json::json!({"command": "ls"}), &result, Duration::from_millis(42))
-            .await;
+        hook.on_after_tool_call(
+            "shell",
+            &serde_json::json!({"command": "ls"}),
+            &result,
+            Duration::from_millis(42),
+        )
+        .await;
         let entries = hook.entries();
         assert_eq!(entries.len(), 1);
         assert!(entries[0].contains("shell"));

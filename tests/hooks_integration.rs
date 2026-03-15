@@ -21,7 +21,13 @@ impl HookHandler for CounterHook {
         self.gateway_starts.fetch_add(1, Ordering::SeqCst);
     }
 
-    async fn on_after_tool_call(&self, _tool: &str, _result: &ToolResult, _duration: Duration) {
+    async fn on_after_tool_call(
+        &self,
+        _tool: &str,
+        _args: &serde_json::Value,
+        _result: &ToolResult,
+        _duration: Duration,
+    ) {
         self.tool_calls.fetch_add(1, Ordering::SeqCst);
     }
 }
@@ -90,7 +96,12 @@ async fn hook_runner_full_pipeline() {
         error: None,
     };
     runner
-        .fire_after_tool_call("safe_tool", &tool_result, Duration::from_millis(10))
+        .fire_after_tool_call(
+            "safe_tool",
+            &serde_json::json!({}),
+            &tool_result,
+            Duration::from_millis(10),
+        )
         .await;
     assert_eq!(tool_calls.load(Ordering::SeqCst), 1);
 }

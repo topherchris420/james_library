@@ -243,7 +243,7 @@ impl HookHandler for EpisodicMemoryHook {
             tool: tool.to_string(),
             args: args.clone(),
             sentence,
-            duration_ms: duration.as_millis() as u64,
+            duration_ms: u64::try_from(duration.as_millis()).unwrap_or(u64::MAX),
         };
 
         // Non-blocking send; if the writer task is gone, just drop silently.
@@ -377,10 +377,9 @@ mod tests {
         // Give the writer task time to flush
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        let content =
-            tokio::fs::read_to_string(dir.path().join("episodic_events.jsonl"))
-                .await
-                .unwrap();
+        let content = tokio::fs::read_to_string(dir.path().join("episodic_events.jsonl"))
+            .await
+            .unwrap();
         let lines: Vec<&str> = content.trim().lines().collect();
         assert_eq!(lines.len(), 1);
         assert!(lines[0].contains("cymatics"));

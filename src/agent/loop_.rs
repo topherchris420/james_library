@@ -678,7 +678,12 @@ pub(crate) async fn run_tool_call_loop(
                     error: None,
                 };
                 hooks
-                    .fire_after_tool_call(&call.name, &call.arguments, &tool_result_obj, outcome.duration)
+                    .fire_after_tool_call(
+                        &call.name,
+                        &call.arguments,
+                        &tool_result_obj,
+                        outcome.duration,
+                    )
                     .await;
             }
 
