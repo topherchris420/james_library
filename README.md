@@ -262,7 +262,7 @@ Once installed, here are the most common things you can do:
 R.A.I.N. Lab needs an AI model to power its conversations. The easiest option is **LM Studio**, which lets you run models locally on your own computer for free:
 
 1. Download [LM Studio](https://lmstudio.ai/) for your platform.
-2. Open LM Studio, search for a model (try "Mistral" or "Llama" for a good starting point), and download it.
+2. Open LM Studio, search for a model (try "qwen2.5-coder:7b" for a good starting point), and download it.
 3. Click **Start Server** in LM Studio.
 4. Run `python rain_lab.py --mode first-run` — it will automatically detect LM Studio.
 
