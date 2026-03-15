@@ -6,7 +6,6 @@ import argparse
 import getpass
 import platform
 import subprocess
-import sys
 from pathlib import Path
 
 from openclaw_service import pick_headless_python

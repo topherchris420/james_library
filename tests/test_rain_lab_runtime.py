@@ -3,7 +3,6 @@ import asyncio
 import os
 from pathlib import Path
 
-import pytest
 
 import rain_lab_runtime as runtime
 

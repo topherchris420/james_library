@@ -6,7 +6,6 @@ Verifies all prerequisites before running rain_lab_meeting.py
 import sys
 import os
 import glob
-from pathlib import Path
 import io
 
 # Force UTF-8 for Windows consoles
@@ -132,7 +131,7 @@ for rlm_path in rlm_paths:
         # Check if we can actually import it
         sys.path.insert(0, rlm_path)
         try:
-            from rlm import RLM
+            from rlm import RLM  # noqa: F401 — intentional import probe
             print_success(f"RLM module imports successfully (via: {rlm_path})")
             rlm_imported = True
             break

@@ -6,7 +6,6 @@ import argparse
 import json
 import os
 import shutil
-import sys
 from collections import deque
 from dataclasses import asdict, dataclass
 from pathlib import Path

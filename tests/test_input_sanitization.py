@@ -3,8 +3,7 @@ import os
 import unittest
 import tempfile
 import shutil
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # Mock dependencies to avoid ImportErrors and side effects
 sys.modules["openai"] = MagicMock()

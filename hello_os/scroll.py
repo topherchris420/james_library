@@ -5,7 +5,6 @@ Dependencies: hello_os.symbols, hello_os.utils, hello_os.core
 """
 
 from hello_os.symbols import (
-    GPU_AVAILABLE,
     HTML,
     FancyArrowPatch,
     animation,

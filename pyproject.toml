@@ -16,7 +16,6 @@ select = ["E", "F", "W"]
 ignore = [
     "E501",   # line-length — many scripts exceed 120 today
     "E402",   # module-level import not at top — scripts do sys.path manipulation
-    "F401",   # unused imports — several are intentional try/except probes
     "F541",   # f-string without placeholders — cosmetic, not a bug
     "F841",   # local variable assigned but never used — clean up later
     "W605",   # invalid escape sequence — raw-string Windows paths

@@ -8,7 +8,6 @@ import re
 import urllib.request
 import urllib.parse
 import json
-import os
 
 
 def search_arxiv(query: str, max_results: int = 5) -> str:

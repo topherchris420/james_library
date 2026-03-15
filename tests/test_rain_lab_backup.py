@@ -1,4 +1,3 @@
-from pathlib import Path
 from zipfile import ZipFile
 
 import rain_lab_backup as backup

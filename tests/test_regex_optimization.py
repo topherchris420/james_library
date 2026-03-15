@@ -2,7 +2,6 @@
 import unittest
 import sys
 import os
-import re
 from unittest.mock import MagicMock
 
 # Add parent directory to path

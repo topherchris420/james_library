@@ -4,9 +4,6 @@ R.A.I.N. Lab Tools Module
 RLM agent tools for research: web search, paper reading, library search, RAG.
 """
 
-import os
-import glob
-import re
 
 
 def get_setup_code() -> str:

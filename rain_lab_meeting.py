@@ -5,7 +5,6 @@ R.A.I.N. LAB
 
 import sys
 import os
-import glob
 import io
 import time
 import uuid
