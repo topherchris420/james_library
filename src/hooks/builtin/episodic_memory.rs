@@ -81,7 +81,7 @@ fn translate_tool_call(agent: &str, tool: &str, args: &Value) -> String {
                 .get("command")
                 .and_then(|v| v.as_str())
                 .unwrap_or("unknown command");
-            let short = if cmd.len() > 60 { &cmd[..60] } else { cmd };
+            let short = if cmd.chars().count() > 60 { cmd.chars().take(60).collect::<String>() } else { cmd.to_string() };
             format!("Agent {agent} executed shell command '{short}'.")
         }
         "memory_store" => {
