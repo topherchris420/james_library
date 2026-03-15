@@ -35,6 +35,15 @@ hero:
   <a href="https://deepwiki.com/topherchris420/james_library"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
 </p>
 
+<p align="center">
+  <strong>Read this in:</strong>
+  <a href="README.zh-CN.md">中文</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ru.md">Русский</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.vi.md">Tiếng Việt</a>
+</p>
+
 ---
 
 ## What is R.A.I.N. Lab?
