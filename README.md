@@ -14,7 +14,7 @@ hero:
       icon: material/arrow-left
 ---
 
-# R.A.I.N. Lab
+# James
 
 <p align="center">
   <img src="assets/rain_lab_logo.png" alt="R.A.I.N. Lab logo" width="900" />
