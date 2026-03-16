@@ -210,6 +210,8 @@ import argparse
 
 from graph_bridge import HypergraphManager
 
+from stagnation_monitor import StagnationMonitor
+
 try:
     import msvcrt  # Windows keyboard input detection
 
@@ -1737,6 +1739,7 @@ class RainLabOrchestrator:
         self.visual_conversation_id: Optional[str] = None
         self.visual_conversation_active = False
         self.resonance_detector = ResonanceDetector()
+        self.stagnation_monitor = StagnationMonitor()
         self.tts_audio_dir = Path(config.library_path) / config.tts_audio_dir
         if self.config.export_tts_audio:
             self.tts_audio_dir.mkdir(parents=True, exist_ok=True)
@@ -2283,7 +2286,17 @@ class RainLabOrchestrator:
 
             history_log.append(f"{current_agent.name}: {response}")
 
-            # 6. Record eval metrics for this turn
+            # 6. Epistemic failsafe: check for stagnation / dead-end loops
+
+            verdict = self.stagnation_monitor.check(response)
+            if verdict.intervention_prompt:
+                history_log.append(f"SYSTEM: {verdict.intervention_prompt}")
+                self.log_manager.log_statement("SYSTEM", verdict.intervention_prompt)
+                print(f"\n\033[91m{'=' * 70}")
+                print(f"  {verdict.intervention_prompt}")
+                print(f"{'=' * 70}\033[0m\n")
+
+            # 7. Record eval metrics for this turn
 
             if self.metrics_tracker is not None:
                 self.metrics_tracker.record_turn(current_agent.name, response, metadata)
