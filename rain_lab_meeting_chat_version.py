@@ -210,6 +210,10 @@ import argparse
 
 from graph_bridge import HypergraphManager
 
+from stagnation_monitor import StagnationMonitor
+
+from hypothesis_tree import HypothesisTree, NodeStatus
+
 try:
     import msvcrt  # Windows keyboard input detection
 
@@ -1737,6 +1741,9 @@ class RainLabOrchestrator:
         self.visual_conversation_id: Optional[str] = None
         self.visual_conversation_active = False
         self.resonance_detector = ResonanceDetector()
+        self.stagnation_monitor = StagnationMonitor()
+        self.hypothesis_tree = HypothesisTree()
+        self._current_hypothesis_id: Optional[int] = None
         self.tts_audio_dir = Path(config.library_path) / config.tts_audio_dir
         if self.config.export_tts_audio:
             self.tts_audio_dir.mkdir(parents=True, exist_ok=True)
@@ -2075,6 +2082,11 @@ class RainLabOrchestrator:
 
         wrap_up_complete = False
 
+        # --- HYPOTHESIS TREE INITIALIZATION ---
+
+        root_id = self.hypothesis_tree.add_root(topic)
+        self._current_hypothesis_id = self.hypothesis_tree.select()
+
         # --- AUTONOMOUS LOOP WITH MANUAL INTERVENTION ---
 
         # Calculate when wrap-up should start
@@ -2199,6 +2211,10 @@ class RainLabOrchestrator:
 
                 current_agent.citations_made += len(citation_analysis["verified"])
 
+            # 3b. Update hypothesis tree based on citation results
+
+            self._update_hypothesis_after_turn(response, metadata)
+
             # 4. Output - Clean up any duplicate name prefixes from the response
 
             clean_response = self._strip_agent_prefix(response, current_agent.name)
@@ -2283,7 +2299,17 @@ class RainLabOrchestrator:
 
             history_log.append(f"{current_agent.name}: {response}")
 
-            # 6. Record eval metrics for this turn
+            # 6. Epistemic failsafe: check for stagnation / dead-end loops
+
+            verdict = self.stagnation_monitor.check(response)
+            if verdict.intervention_prompt:
+                history_log.append(f"SYSTEM: {verdict.intervention_prompt}")
+                self.log_manager.log_statement("SYSTEM", verdict.intervention_prompt)
+                print(f"\n\033[91m{'=' * 70}")
+                print(f"  {verdict.intervention_prompt}")
+                print(f"{'=' * 70}\033[0m\n")
+
+            # 7. Record eval metrics for this turn
 
             if self.metrics_tracker is not None:
                 self.metrics_tracker.record_turn(current_agent.name, response, metadata)
@@ -2368,6 +2394,73 @@ class RainLabOrchestrator:
         finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], "finish_reason") else None
         return content, finish_reason
 
+    def _get_hypothesis_context(self) -> str:
+        """Build the hypothesis-tree prompt fragment for the current node."""
+        if self._current_hypothesis_id is None:
+            return ""
+        try:
+            node = self.hypothesis_tree.get(self._current_hypothesis_id)
+            if node.status != NodeStatus.ACTIVE:
+                return ""
+            return self.hypothesis_tree.get_current_hypothesis_prompt(
+                self._current_hypothesis_id
+            )
+        except KeyError:
+            return ""
+
+    def _update_hypothesis_after_turn(
+        self, response: str, metadata: Optional[Dict]
+    ) -> None:
+        """Update the hypothesis tree based on citation analysis results."""
+        if self._current_hypothesis_id is None:
+            return
+        try:
+            node = self.hypothesis_tree.get(self._current_hypothesis_id)
+        except KeyError:
+            return
+        if node.status != NodeStatus.ACTIVE:
+            return
+
+        # Use citation analysis: if unverified claims dominate, mark disproven.
+        if metadata and isinstance(metadata, dict):
+            unverified = metadata.get("unverified", [])
+            verified = metadata.get("verified", [])
+            if unverified:
+                self.hypothesis_tree.add_evidence(
+                    self._current_hypothesis_id,
+                    f"Unverified claims: {len(unverified)}",
+                )
+            if verified:
+                for quote, source in verified[:2]:
+                    self.hypothesis_tree.add_evidence(
+                        self._current_hypothesis_id,
+                        f"Verified: \"{quote[:60]}\" [from {source}]",
+                    )
+            # Disprove if zero verified citations but 3+ unverified in this turn.
+            if len(unverified) >= 3 and len(verified) == 0:
+                self.hypothesis_tree.disprove(
+                    self._current_hypothesis_id,
+                    "Failed citation verification: no claims supported by local corpus",
+                )
+                print(
+                    f"\033[91m  [HYPOTHESIS PRUNED] #{self._current_hypothesis_id}: "
+                    f"failed fact-check against corpus\033[0m"
+                )
+                self._advance_hypothesis_selection()
+
+    def _advance_hypothesis_selection(self) -> None:
+        """Select the next hypothesis node via UCB1, or log exhaustion."""
+        try:
+            self._current_hypothesis_id = self.hypothesis_tree.select()
+            node = self.hypothesis_tree.get(self._current_hypothesis_id)
+            print(
+                f"\033[96m  [HYPOTHESIS SELECTED] #{node.node_id}: "
+                f"{node.hypothesis}\033[0m"
+            )
+        except ValueError:
+            self._current_hypothesis_id = None
+            print("\033[93m  [HYPOTHESIS TREE EXHAUSTED] All branches explored.\033[0m")
+
     def _generate_agent_response(
         self,
         agent: Agent,
@@ -2437,6 +2530,8 @@ CONVERSATIONAL CONTEXT:
 {agent.soul}
 
 {conversational_instruction}
+
+{self._get_hypothesis_context()}
 
 ### CURRENT TASK
 
@@ -2995,6 +3090,19 @@ Keep it under 60 words - maintain your standards but be collegial.""",
             stats_lines.append(f"  • Novel-claim density:  {m['novel_claim_density']:.2f}")
 
             stats_lines.append(f"  • Critique change rate: {m['critique_change_rate']:.2f}")
+
+        # Hypothesis tree summary
+        if self.hypothesis_tree.size > 0:
+            stats_lines.append("")
+            stats_lines.append("HYPOTHESIS TREE:")
+            proven = self.hypothesis_tree.proven_nodes()
+            disproven = self.hypothesis_tree.disproven_nodes()
+            active = self.hypothesis_tree.active_nodes()
+            stats_lines.append(f"  • Proven: {len(proven)}  Active: {len(active)}  Disproven: {len(disproven)}")
+            for node in proven:
+                stats_lines.append(f"    [+] #{node.node_id}: {node.hypothesis}")
+            for node in disproven[:5]:
+                stats_lines.append(f"    [X] #{node.node_id}: {node.hypothesis}")
 
         return "\n".join(stats_lines)
 
