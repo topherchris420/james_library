@@ -48,7 +48,7 @@ impl HookHandler for CommandLoggerHook {
             result.success,
         );
         tracing::info!(hook = "command-logger", "{}", entry);
-        self.log.lock().unwrap().push(entry);
+        self.log.lock().unwrap_or_else(|e| e.into_inner()).push(entry);
     }
 }
 

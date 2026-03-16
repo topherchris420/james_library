@@ -601,7 +601,7 @@ fn check_config_semantics(config: &Config, items: &mut Vec<DiagItem>) {
     let mut agent_names: Vec<_> = config.agents.keys().collect();
     agent_names.sort();
     for name in agent_names {
-        let agent = config.agents.get(name).unwrap();
+        let Some(agent) = config.agents.get(name) else { continue };
         if let Some(reason) = provider_validation_error(&agent.provider) {
             items.push(DiagItem::warn(
                 cat,

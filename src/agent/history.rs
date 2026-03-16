@@ -220,10 +220,12 @@ pub(crate) fn build_native_assistant_history(
     });
 
     if let Some(rc) = reasoning_content {
-        obj.as_object_mut().unwrap().insert(
-            "reasoning_content".to_string(),
-            serde_json::Value::String(rc.to_string()),
-        );
+        if let Some(map) = obj.as_object_mut() {
+            map.insert(
+                "reasoning_content".to_string(),
+                serde_json::Value::String(rc.to_string()),
+            );
+        }
     }
 
     obj.to_string()
@@ -257,10 +259,12 @@ pub(crate) fn build_native_assistant_history_from_parsed_calls(
     });
 
     if let Some(rc) = reasoning_content {
-        obj.as_object_mut().unwrap().insert(
-            "reasoning_content".to_string(),
-            serde_json::Value::String(rc.to_string()),
-        );
+        if let Some(map) = obj.as_object_mut() {
+            map.insert(
+                "reasoning_content".to_string(),
+                serde_json::Value::String(rc.to_string()),
+            );
+        }
     }
 
     Some(obj.to_string())
