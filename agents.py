@@ -71,6 +71,7 @@ rag_results = semantic_search("query")   # Semantic search in library
 visual = visualize_concepts(["a", "b"]) # Create concept diagrams
 mermaid = generate_mermaid("graph TD; A-->B") # Generate diagrams
 memory = remember_entity("name", "desc") # Remember entities across sessions
+report = invoke_peer_review(document, topic, rounds=6) # Adversarial swarm review
 ```
 
 {STAGE_PROTOCOL}
@@ -85,7 +86,7 @@ RULES:
 - When you need data, write code to get it.
 - Use ONLY research papers from this library and web search.
 - Only use: read_paper(), search_web(), list_papers(), search_library(), semantic_search(),
-  visualize_concepts(), generate_mermaid(), remember_entity(), recall_entity()
+  visualize_concepts(), generate_mermaid(), remember_entity(), recall_entity(), invoke_peer_review()
 """
             self._soul_cache = external_soul + rlm_rules
             print(f"     Soul loaded: {self.name.upper()}_SOUL.md")

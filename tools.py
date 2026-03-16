@@ -1128,6 +1128,55 @@ def get_previous_topics() -> str:
 # Initialize memory on load
 _load_memory()
 
+
+# =============================================================================
+# PEER REVIEW SWARM - Adversarial multi-agent document review
+# =============================================================================
+
+def invoke_peer_review(document: str, topic: str, rounds: int = 6) -> str:
+    """Invoke an adversarial peer-review swarm on a research document.
+
+    Spins up 3-4 temporary reviewer agents who debate the document's
+    scientific, logical, and mathematical validity across multiple rounds.
+    Returns a structured Peer_Review_Report.md.
+
+    This tool is ISOLATED from the main meeting context.
+
+    Args:
+        document: Full markdown text of the paper to review.
+        topic: Short description of the paper's subject (used to select reviewer specializations).
+        rounds: Number of debate rounds (default 6, range 3-12).
+
+    Returns:
+        The synthesized peer review report as a markdown string.
+    """
+    _trace_event("call", "invoke_peer_review", {"topic": topic, "rounds": rounds, "doc_len": len(document)})
+    try:
+        from swarm_orchestrator import invoke_peer_review_sync
+        result = invoke_peer_review_sync(
+            document=document,
+            topic=topic,
+            rounds=rounds,
+        )
+        report = result.get("report", "[ERROR: No report generated]")
+        output_file = result.get("output_file")
+        summary = result.get("transcript_summary", {})
+        print(f"[PEER REVIEW] Completed: {summary.get('total_turns', 0)} turns, "
+              f"{summary.get('duration_s', 0)}s, saved to {output_file}")
+        _trace_event("result", "invoke_peer_review", {
+            "session_id": summary.get("session_id"),
+            "turns": summary.get("total_turns"),
+            "duration_s": summary.get("duration_s"),
+            "output_file": output_file,
+        })
+        return report
+    except Exception as e:
+        msg = f"[PEER REVIEW ERROR] {type(e).__name__}: {e}"
+        print(msg)
+        _trace_event("error", "invoke_peer_review", {"error": str(e)})
+        return msg
+
+
 TOOLS_READY = True
 print("[SETUP] tools ready")
 
