@@ -270,8 +270,8 @@ def create_mcp_server(
         Returns a human-readable summary of all hypothesis nodes, their
         status (active/proven/disproven), visit counts, and scores.
         """
-        import importlib.util
-        if importlib.util.find_spec("hypothesis_tree") is not None:
+        try:
+            import hypothesis_tree  # noqa: F401
             # This is a read-only snapshot tool — it cannot modify the tree.
             # The actual tree lives in the orchestrator; this returns a
             # placeholder until a running session exports its state.
@@ -279,7 +279,7 @@ def create_mcp_server(
                 "Hypothesis tree state is managed by the active meeting session. "
                 "Use this tool during a live meeting to query the orchestrator's tree."
             )
-        else:
+        except ImportError:
             return "Hypothesis tree module not available."
 
     # -- Tool: peripheral_status (opt-in only) ------------------------------
