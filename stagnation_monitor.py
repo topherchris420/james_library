@@ -6,7 +6,6 @@ by tracking content similarity and novelty variance across meeting turns.
 
 from __future__ import annotations
 
-import hashlib
 from collections import deque
 from dataclasses import dataclass
 from difflib import SequenceMatcher

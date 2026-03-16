@@ -23,9 +23,7 @@ Usage::
 
 from __future__ import annotations
 
-import glob
 import os
-import re
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
@@ -272,8 +270,8 @@ def create_mcp_server(
         Returns a human-readable summary of all hypothesis nodes, their
         status (active/proven/disproven), visit counts, and scores.
         """
-        try:
-            from hypothesis_tree import HypothesisTree
+        import importlib.util
+        if importlib.util.find_spec("hypothesis_tree") is not None:
             # This is a read-only snapshot tool — it cannot modify the tree.
             # The actual tree lives in the orchestrator; this returns a
             # placeholder until a running session exports its state.
@@ -281,7 +279,7 @@ def create_mcp_server(
                 "Hypothesis tree state is managed by the active meeting session. "
                 "Use this tool during a live meeting to query the orchestrator's tree."
             )
-        except ImportError:
+        else:
             return "Hypothesis tree module not available."
 
     # -- Tool: peripheral_status (opt-in only) ------------------------------

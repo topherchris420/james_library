@@ -1,7 +1,5 @@
 """Tests for the MCP-compliant research tools server."""
 
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
