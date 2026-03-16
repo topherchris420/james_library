@@ -688,7 +688,7 @@ async fn main() -> Result<()> {
         )
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).context("setting default subscriber failed")?;
 
     // Onboard runs quick setup by default, or the interactive wizard with --interactive.
     // The onboard wizard uses reqwest::blocking internally, which creates its own
@@ -1028,7 +1028,7 @@ async fn main() -> Result<()> {
                 let schema = schemars::schema_for!(config::Config);
                 println!(
                     "{}",
-                    serde_json::to_string_pretty(&schema).expect("failed to serialize JSON Schema")
+                    serde_json::to_string_pretty(&schema).context("failed to serialize JSON Schema")?
                 );
                 Ok(())
             }

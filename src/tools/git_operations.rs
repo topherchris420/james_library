@@ -500,12 +500,12 @@ impl Tool for GitOperationsTool {
             // Try to find .git in parent directories
             let mut current_dir = self.workspace_dir.as_path();
             let mut found_git = false;
-            while current_dir.parent().is_some() {
+            while let Some(parent) = current_dir.parent() {
                 if current_dir.join(".git").exists() {
                     found_git = true;
                     break;
                 }
-                current_dir = current_dir.parent().unwrap();
+                current_dir = parent;
             }
 
             if !found_git {

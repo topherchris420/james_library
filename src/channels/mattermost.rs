@@ -104,10 +104,12 @@ impl Channel for MattermostChannel {
         });
 
         if let Some(root) = root_id {
-            body_map.as_object_mut().unwrap().insert(
-                "root_id".to_string(),
-                serde_json::Value::String(root.to_string()),
-            );
+            if let Some(obj) = body_map.as_object_mut() {
+                obj.insert(
+                    "root_id".to_string(),
+                    serde_json::Value::String(root.to_string()),
+                );
+            }
         }
 
         let resp = self
@@ -236,9 +238,9 @@ impl Channel for MattermostChannel {
             loop {
                 let mut body = serde_json::json!({ "channel_id": channel_id });
                 if let Some(ref pid) = parent_id {
-                    body.as_object_mut()
-                        .unwrap()
-                        .insert("parent_id".to_string(), serde_json::json!(pid));
+                    if let Some(obj) = body.as_object_mut() {
+                        obj.insert("parent_id".to_string(), serde_json::json!(pid));
+                    }
                 }
 
                 if let Ok(r) = client

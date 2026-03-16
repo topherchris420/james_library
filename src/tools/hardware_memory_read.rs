@@ -78,17 +78,19 @@ impl Tool for HardwareMemoryReadTool {
             .or_else(|| self.boards.first().cloned())
             .unwrap_or_else(|| "nucleo-f401re".into());
 
-        let chip = Self::chip_for_board(&board);
-        if chip.is_none() {
-            return Ok(ToolResult {
-                success: false,
-                output: String::new(),
-                error: Some(format!(
-                    "Memory read only supports nucleo-f401re, nucleo-f411re. Got: {}",
-                    board
-                )),
-            });
-        }
+        let chip = match Self::chip_for_board(&board) {
+            Some(c) => c,
+            None => {
+                return Ok(ToolResult {
+                    success: false,
+                    output: String::new(),
+                    error: Some(format!(
+                        "Memory read only supports nucleo-f401re, nucleo-f411re. Got: {}",
+                        board
+                    )),
+                });
+            }
+        };
 
         let address_str = args
             .get("address")
@@ -103,7 +105,7 @@ impl Tool for HardwareMemoryReadTool {
 
         #[cfg(feature = "probe")]
         {
-            match probe_read_memory(chip.unwrap(), _address, _length) {
+            match probe_read_memory(chip, _address, _length) {
                 Ok(output) => {
                     return Ok(ToolResult {
                         success: true,
