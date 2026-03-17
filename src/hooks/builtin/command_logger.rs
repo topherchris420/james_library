@@ -48,7 +48,10 @@ impl HookHandler for CommandLoggerHook {
             result.success,
         );
         tracing::info!(hook = "command-logger", "{}", entry);
-        self.log.lock().unwrap_or_else(|e| e.into_inner()).push(entry);
+        self.log
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(entry);
     }
 }
 
