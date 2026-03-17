@@ -1648,7 +1648,7 @@ mod tests {
 
     #[tokio::test]
     async fn metrics_endpoint_renders_prometheus_output() {
-        let prom = Arc::new(crate::observability::PrometheusObserver::new().unwrap());
+        let prom = Arc::new(crate::observability::PrometheusObserver::new());
         crate::observability::Observer::record_event(
             prom.as_ref(),
             &crate::observability::ObserverEvent::HeartbeatTick,

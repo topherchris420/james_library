@@ -474,7 +474,7 @@ fn refresh_lock_for_profile(profile_id: &str) -> Arc<tokio::sync::Mutex<()>> {
     static LOCKS: OnceLock<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> = OnceLock::new();
 
     let table = LOCKS.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut guard = table.lock().unwrap_or_else(|e| e.into_inner());
+    let mut guard = table.lock().expect("refresh lock table poisoned");
 
     guard
         .entry(profile_id.to_string())

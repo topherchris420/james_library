@@ -90,10 +90,10 @@ impl SignalChannel {
         }
     }
 
-    fn http_client(&self) -> anyhow::Result<Client> {
+    fn http_client(&self) -> Client {
         let builder = Client::builder().connect_timeout(Duration::from_secs(10));
         let builder = crate::config::apply_runtime_proxy_to_builder(builder, "channel.signal");
-        Ok(builder.build()?)
+        builder.build().expect("Signal HTTP client should build")
     }
 
     /// Effective sender: prefer `sourceNumber` (E.164), fall back to `source`.
@@ -184,7 +184,7 @@ impl SignalChannel {
         });
 
         let resp = self
-            .http_client()?
+            .http_client()
             .post(&url)
             .timeout(Duration::from_secs(30))
             .header("Content-Type", "application/json")
@@ -308,7 +308,7 @@ impl Channel for SignalChannel {
 
         loop {
             let resp = self
-                .http_client()?
+                .http_client()
                 .get(url.clone())
                 .header("Accept", "text/event-stream")
                 .send()
@@ -417,10 +417,8 @@ impl Channel for SignalChannel {
 
     async fn health_check(&self) -> bool {
         let url = format!("{}/api/v1/check", self.http_url);
-        let Ok(client) = self.http_client() else {
-            return false;
-        };
-        let Ok(resp) = client
+        let Ok(resp) = self
+            .http_client()
             .get(&url)
             .timeout(Duration::from_secs(10))
             .send()

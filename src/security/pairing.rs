@@ -190,13 +190,9 @@ impl PairingGuard {
         // TODO: make this function the main one without spawning a task
         let handle = tokio::task::spawn_blocking(move || this.try_pair_blocking(&code, &client_id));
 
-        match handle.await {
-            Ok(result) => result,
-            Err(e) => {
-                tracing::error!("Pairing task failed unexpectedly: {e}");
-                Ok(None)
-            }
-        }
+        handle
+            .await
+            .expect("failed to spawn blocking task this should not happen")
     }
 
     /// Check if a bearer token is valid (compares against stored hashes).

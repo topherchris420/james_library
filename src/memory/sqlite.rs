@@ -213,7 +213,11 @@ impl SqliteMemory {
         // First 8 bytes → 16 hex chars, matching previous format length
         format!(
             "{:016x}",
-            u64::from_be_bytes(hash[..8].try_into().unwrap_or_default())
+            u64::from_be_bytes(
+                hash[..8]
+                    .try_into()
+                    .expect("SHA-256 always produces >= 8 bytes")
+            )
         )
     }
 

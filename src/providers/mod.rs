@@ -1014,7 +1014,7 @@ fn create_provider_with_url_and_options(
         ))),
         name if moonshot_base_url(name).is_some() => Ok(Box::new(OpenAiCompatibleProvider::new(
             "Moonshot",
-            moonshot_base_url(name).ok_or_else(|| anyhow::anyhow!("moonshot base URL missing"))?,
+            moonshot_base_url(name).expect("checked in guard"),
             key,
             AuthStyle::Bearer,
         ))),
@@ -1035,14 +1035,14 @@ fn create_provider_with_url_and_options(
         ))),
         name if zai_base_url(name).is_some() => Ok(Box::new(OpenAiCompatibleProvider::new(
             "Z.AI",
-            zai_base_url(name).ok_or_else(|| anyhow::anyhow!("Z.AI base URL missing"))?,
+            zai_base_url(name).expect("checked in guard"),
             key,
             AuthStyle::Bearer,
         ))),
         name if glm_base_url(name).is_some() => {
             Ok(Box::new(OpenAiCompatibleProvider::new_no_responses_fallback(
                 "GLM",
-                glm_base_url(name).ok_or_else(|| anyhow::anyhow!("GLM base URL missing"))?,
+                glm_base_url(name).expect("checked in guard"),
                 key,
                 AuthStyle::Bearer,
             )))
@@ -1050,7 +1050,7 @@ fn create_provider_with_url_and_options(
         name if minimax_base_url(name).is_some() => Ok(Box::new(
             OpenAiCompatibleProvider::new_merge_system_into_user(
                 "MiniMax",
-                minimax_base_url(name).ok_or_else(|| anyhow::anyhow!("MiniMax base URL missing"))?,
+                minimax_base_url(name).expect("checked in guard"),
                 key,
                 AuthStyle::Bearer,
             )
@@ -1085,7 +1085,7 @@ fn create_provider_with_url_and_options(
         ))),
         name if qwen_base_url(name).is_some() => Ok(Box::new(OpenAiCompatibleProvider::new_with_vision(
             "Qwen",
-            qwen_base_url(name).ok_or_else(|| anyhow::anyhow!("Qwen base URL missing"))?,
+            qwen_base_url(name).expect("checked in guard"),
             key,
             AuthStyle::Bearer,
             true,

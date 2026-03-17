@@ -29,23 +29,26 @@ pub struct PrometheusObserver {
 }
 
 impl PrometheusObserver {
-    pub fn new() -> Result<Self, prometheus::Error> {
+    pub fn new() -> Self {
         let registry = Registry::new();
 
         let agent_starts = IntCounterVec::new(
             prometheus::Opts::new("zeroclaw_agent_starts_total", "Total agent invocations"),
             &["provider", "model"],
-        )?;
+        )
+        .expect("valid metric");
 
         let llm_requests = IntCounterVec::new(
             prometheus::Opts::new("zeroclaw_llm_requests_total", "Total LLM provider requests"),
             &["provider", "model", "success"],
-        )?;
+        )
+        .expect("valid metric");
 
         let tokens_input_total = IntCounterVec::new(
             prometheus::Opts::new("zeroclaw_tokens_input_total", "Total input tokens consumed"),
             &["provider", "model"],
-        )?;
+        )
+        .expect("valid metric");
 
         let tokens_output_total = IntCounterVec::new(
             prometheus::Opts::new(
@@ -53,25 +56,30 @@ impl PrometheusObserver {
                 "Total output tokens consumed",
             ),
             &["provider", "model"],
-        )?;
+        )
+        .expect("valid metric");
 
         let tool_calls = IntCounterVec::new(
             prometheus::Opts::new("zeroclaw_tool_calls_total", "Total tool calls"),
             &["tool", "success"],
-        )?;
+        )
+        .expect("valid metric");
 
         let channel_messages = IntCounterVec::new(
             prometheus::Opts::new("zeroclaw_channel_messages_total", "Total channel messages"),
             &["channel", "direction"],
-        )?;
+        )
+        .expect("valid metric");
 
         let heartbeat_ticks =
-            prometheus::IntCounter::new("zeroclaw_heartbeat_ticks_total", "Total heartbeat ticks")?;
+            prometheus::IntCounter::new("zeroclaw_heartbeat_ticks_total", "Total heartbeat ticks")
+                .expect("valid metric");
 
         let errors = IntCounterVec::new(
             prometheus::Opts::new("zeroclaw_errors_total", "Total errors by component"),
             &["component"],
-        )?;
+        )
+        .expect("valid metric");
 
         let agent_duration = HistogramVec::new(
             HistogramOpts::new(
@@ -80,7 +88,8 @@ impl PrometheusObserver {
             )
             .buckets(vec![0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0]),
             &["provider", "model"],
-        )?;
+        )
+        .expect("valid metric");
 
         let tool_duration = HistogramVec::new(
             HistogramOpts::new(
@@ -89,7 +98,8 @@ impl PrometheusObserver {
             )
             .buckets(vec![0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0]),
             &["tool"],
-        )?;
+        )
+        .expect("valid metric");
 
         let request_latency = Histogram::with_opts(
             HistogramOpts::new(
@@ -97,22 +107,26 @@ impl PrometheusObserver {
                 "Request latency in seconds",
             )
             .buckets(vec![0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]),
-        )?;
+        )
+        .expect("valid metric");
 
         let tokens_used = prometheus::IntGauge::new(
             "zeroclaw_tokens_used_last",
             "Tokens used in the last request",
-        )?;
+        )
+        .expect("valid metric");
 
         let active_sessions = GaugeVec::new(
             prometheus::Opts::new("zeroclaw_active_sessions", "Number of active sessions"),
             &[],
-        )?;
+        )
+        .expect("valid metric");
 
         let queue_depth = GaugeVec::new(
             prometheus::Opts::new("zeroclaw_queue_depth", "Message queue depth"),
             &[],
-        )?;
+        )
+        .expect("valid metric");
 
         // Register all metrics
         registry.register(Box::new(agent_starts.clone())).ok();
@@ -132,7 +146,7 @@ impl PrometheusObserver {
         registry.register(Box::new(active_sessions.clone())).ok();
         registry.register(Box::new(queue_depth.clone())).ok();
 
-        Ok(Self {
+        Self {
             registry,
             agent_starts,
             llm_requests,
@@ -148,7 +162,7 @@ impl PrometheusObserver {
             tokens_used,
             active_sessions,
             queue_depth,
-        })
+        }
     }
 
     /// Encode all registered metrics into Prometheus text exposition format.
