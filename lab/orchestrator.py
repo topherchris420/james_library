@@ -143,7 +143,7 @@ def evaluate_results(outputs):
     else:
         summary = (
             f"{success_count}/{total_runs} experiment runs succeeded. "
-            f"Best run: {best_run['config']}. Preview: {best_run['stdout_preview']}"
+            f"Best run: {format_config_label(best_run['config'])}. Preview: {best_run['stdout_preview']}"
         )
 
     return {
