@@ -10,6 +10,7 @@ Core modes:
 
 - `--mode first-run`
 - `--mode chat --topic "..."`
+- `--mode chat --topic "..." --temp 0.85 --max-tokens 320` for more exploratory experiment output
 - `--mode validate`
 - `--mode status`
 - `--mode models`

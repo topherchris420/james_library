@@ -10,6 +10,7 @@ Chế độ thường dùng:
 
 - `--mode first-run`
 - `--mode chat --topic "..."`
+- `--mode chat --topic "..." --temp 0.85 --max-tokens 320` để tạo đầu ra thử nghiệm giàu khám phá hơn
 - `--mode validate`
 - `--mode status`
 - `--mode models`

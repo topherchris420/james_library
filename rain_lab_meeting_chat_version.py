@@ -3150,6 +3150,7 @@ Examples:
   python rain_lab_v31_production.py --library ./my_papers --topic "field theory"
 
   python rain_lab_v31_production.py --temp 0.3 --topic "entanglement"
+  python rain_lab_v31_production.py --temp 0.85 --max-tokens 320 --topic "entanglement"
 
         """,
     )
@@ -3169,7 +3170,12 @@ Examples:
         help="LM Studio OpenAI-compatible base URL",
     )
 
-    parser.add_argument("--temp", type=float, default=0.4, help="LLM temperature (0.0-1.0, default: 0.4)")
+    parser.add_argument(
+        "--temp",
+        type=float,
+        default=float(os.environ.get("RAIN_CHAT_TEMP", "0.7")),
+        help="LLM temperature (0.0-1.0, default: 0.7; raise for more exploratory outputs)",
+    )
 
     parser.add_argument(
         "--recursive-depth",
@@ -3194,7 +3200,12 @@ Examples:
 
     parser.add_argument("--max-turns", type=int, default=25, help="Maximum conversation turns (default: 25)")
 
-    parser.add_argument("--max-tokens", type=int, default=200, help="Max tokens per response (default: 200)")
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=int(os.environ.get("RAIN_CHAT_MAX_TOKENS", "320")),
+        help="Max tokens per response (default: 320)",
+    )
 
     parser.add_argument(
         "--timeout",

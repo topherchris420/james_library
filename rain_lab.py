@@ -9,6 +9,7 @@ Usage examples:
   python rain_lab.py           # Interactive wizard (recommended!)
   python rain_lab.py --mode first-run
   python rain_lab.py --mode chat --topic "Guarino paper"
+  python rain_lab.py --mode chat --topic "Guarino paper" --temp 0.85 --max-tokens 320
   python rain_lab.py --mode rlm --topic "Guarino paper"
   python rain_lab.py --mode validate
   python rain_lab.py --mode models
@@ -208,6 +209,18 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         help="Chat mode only: LM request timeout in seconds (default: 180; maps to --timeout)",
     )
     parser.add_argument(
+        "--temp",
+        type=float,
+        default=float(os.environ.get("RAIN_CHAT_TEMP", "0.7")),
+        help="Chat/Godot mode only: generation temperature (default: 0.7; set higher for more exploratory outputs)",
+    )
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=int(os.environ.get("RAIN_CHAT_MAX_TOKENS", "320")),
+        help="Chat/Godot mode only: response token budget per turn (default: 320)",
+    )
+    parser.add_argument(
         "--recursive-depth",
         type=int,
         default=None,
@@ -405,6 +418,10 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
             cmd.extend(["--max-turns", str(args.turns)])
         if args.timeout is not None:
             cmd.extend(["--timeout", str(args.timeout)])
+        if args.temp is not None:
+            cmd.extend(["--temp", str(args.temp)])
+        if args.max_tokens is not None:
+            cmd.extend(["--max-tokens", str(args.max_tokens)])
         if args.no_recursive_intellect or args.recursive_depth is None:
             cmd.append("--no-recursive-intellect")
         elif args.recursive_depth is not None:

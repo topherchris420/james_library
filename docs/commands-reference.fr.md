@@ -10,6 +10,7 @@ Modes principaux:
 
 - `--mode first-run`
 - `--mode chat --topic "..."`
+- `--mode chat --topic "..." --temp 0.85 --max-tokens 320` pour des sorties d'expérimentation plus exploratoires
 - `--mode validate`
 - `--mode status`
 - `--mode models`
