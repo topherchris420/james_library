@@ -96,6 +96,7 @@ mod migration;
 mod multimodal;
 mod observability;
 mod onboard;
+mod p2p;
 mod peripherals;
 #[cfg(feature = "plugins-wasm")]
 mod plugins;
@@ -943,6 +944,9 @@ async fn main() -> Result<()> {
             peripheral,
         } => {
             let final_temperature = temperature.unwrap_or(config.default_temperature);
+            p2p::ensure_runtime_started(&config.p2p)
+                .await
+                .context("failed to start p2p runtime for agent startup")?;
 
             Box::pin(agent::run(
                 config,
@@ -1063,6 +1067,9 @@ async fn main() -> Result<()> {
             } else {
                 info!("🧠 Starting ZeroClaw Daemon on {host}:{port}");
             }
+            p2p::ensure_runtime_started(&config.p2p)
+                .await
+                .context("failed to start p2p runtime for daemon startup")?;
             Box::pin(daemon::run(config, host, port)).await
         }
 

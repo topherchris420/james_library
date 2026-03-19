@@ -148,6 +148,9 @@ futures-util = { version = "0.3", default-features = false, features = ["sink"] 
 nostr-sdk = { version = "0.44", default-features = false, features = ["nip04", "nip59"], optional = true }
 regex = "1.10"
 hostname = "0.4.2"
+
+# libp2p — P2P networking with gossipsub + Kademlia DHT (optional, enable with --features p2p)
+libp2p = { version = "0.54", optional = true, default-features = false, features = ["gossipsub", "kad", "noise", "tcp", "yamux", "tokio", "macros", "identify"] }
 rustls = "0.23"
 rustls-pki-types = "1.14.0"
 tokio-rustls = "0.26.4"
@@ -244,6 +247,8 @@ rag-pdf = ["dep:pdf-extract"]
 whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-proto", "dep:wa-rs-ureq-http", "dep:wa-rs-tokio-transport", "dep:serde-big-array", "dep:prost", "dep:qrcode"]
 # WASM plugin system (extism-based)
 plugins-wasm = ["dep:extism"]
+# p2p = libp2p-based gossipsub + Kademlia DHT for decentralized agent networking
+p2p = ["dep:libp2p"]
 
 [profile.release]
 opt-level = "z"      # Optimize for size
