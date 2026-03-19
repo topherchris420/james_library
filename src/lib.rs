@@ -63,6 +63,7 @@ pub mod nodes;
 pub mod observability;
 pub(crate) mod onboard;
 pub mod peripherals;
+#[cfg(feature = "p2p")]
 pub mod p2p;
 pub mod providers;
 pub mod rag;

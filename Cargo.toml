@@ -205,6 +205,11 @@ wa-rs-proto = { version = "0.2", optional = true, default-features = false }
 wa-rs-ureq-http = { version = "0.2", optional = true }
 wa-rs-tokio-transport = { version = "0.2", optional = true, default-features = false }
 
+# P2P Networking (libp2p) — enable with --features p2p
+libp2p = { version = "0.55", default-features = false, features = [
+    "tcp", "noise", "yamux", "gossipsub", "kademlia", "mdns", "ping", "autonat", "relay", "dcutr", "identify", "serde_json"
+], optional = true }
+
 # Raspberry Pi GPIO / Landlock (Linux only) — target-specific to avoid compile failure on macOS
 [target.'cfg(target_os = "linux")'.dependencies]
 rppal = { version = "0.22", optional = true }
@@ -244,6 +249,8 @@ rag-pdf = ["dep:pdf-extract"]
 whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-proto", "dep:wa-rs-ureq-http", "dep:wa-rs-tokio-transport", "dep:serde-big-array", "dep:prost", "dep:qrcode"]
 # WASM plugin system (extism-based)
 plugins-wasm = ["dep:extism"]
+# P2P networking with libp2p (gossipsub, kademlia, mDNS, ping, relay)
+p2p = ["dep:libp2p"]
 
 [profile.release]
 opt-level = "z"      # Optimize for size
