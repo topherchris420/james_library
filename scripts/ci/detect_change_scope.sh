@@ -13,10 +13,11 @@ write_empty_docs_files() {
   {
     echo "docs_files<<EOF"
     echo "EOF"
-  } >> "$GITHUB_OUTPUT"
+  } >> "$OUTPUT_FILE"
 }
 
-BASE="$BASE_SHA"
+OUTPUT_FILE="${GITHUB_OUTPUT:-/tmp/zeroclaw_detect_change_scope.out}"
+BASE="${BASE_SHA:-}"
 
 if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
   {
@@ -25,7 +26,7 @@ if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
     echo "rust_changed=true"
     echo "workflow_changed=false"
     echo "base_sha="
-  } >> "$GITHUB_OUTPUT"
+  } >> "$OUTPUT_FILE"
   write_empty_docs_files
   exit 0
 fi
@@ -48,7 +49,7 @@ if [ -z "$CHANGED" ]; then
     echo "rust_changed=false"
     echo "workflow_changed=false"
     echo "base_sha=$DIFF_BASE"
-  } >> "$GITHUB_OUTPUT"
+  } >> "$OUTPUT_FILE"
   write_empty_docs_files
   exit 0
 fi
@@ -102,4 +103,4 @@ done <<< "$CHANGED"
   echo "docs_files<<EOF"
   printf '%s\n' "${docs_files[@]}"
   echo "EOF"
-} >> "$GITHUB_OUTPUT"
+} >> "$OUTPUT_FILE"
