@@ -3,7 +3,8 @@ permissions:
   contents: read
 on:
   push:
-    branches: [dev, main]
+    branches:
+      - '**'
   pull_request:
     branches: [dev, main]
 

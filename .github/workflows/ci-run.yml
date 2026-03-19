@@ -2,7 +2,8 @@ name: CI Run
 
 on:
     push:
-        branches: [dev, main]
+        branches:
+            - '**'
     pull_request:
         branches: [dev, main]
 
@@ -19,7 +20,7 @@ env:
 jobs:
     changes:
         name: Detect Change Scope
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         outputs:
             docs_only: ${{ steps.scope.outputs.docs_only }}
             docs_changed: ${{ steps.scope.outputs.docs_changed }}
@@ -44,7 +45,7 @@ jobs:
         name: Lint Gate (Format + Clippy + Strict Delta)
         needs: [changes]
         if: needs.changes.outputs.rust_changed == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 25
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -66,7 +67,7 @@ jobs:
         name: Test
         needs: [changes, lint]
         if: needs.changes.outputs.rust_changed == 'true' && needs.lint.result == 'success'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 30
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -81,7 +82,7 @@ jobs:
         name: Build (Smoke)
         needs: [changes]
         if: needs.changes.outputs.rust_changed == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 20
 
         steps:
@@ -99,7 +100,7 @@ jobs:
         name: Docs-Only Fast Path
         needs: [changes]
         if: needs.changes.outputs.docs_only == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         steps:
             - name: Skip heavy jobs for docs-only change
               run: echo "Docs-only change detected. Rust lint/test/build skipped."
@@ -108,7 +109,7 @@ jobs:
         name: Non-Rust Fast Path
         needs: [changes]
         if: needs.changes.outputs.docs_only != 'true' && needs.changes.outputs.rust_changed != 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         steps:
             - name: Skip Rust jobs for non-Rust change scope
               run: echo "No Rust-impacting files changed. Rust lint/test/build skipped."
@@ -117,7 +118,7 @@ jobs:
         name: Docs Quality
         needs: [changes]
         if: needs.changes.outputs.docs_changed == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -172,7 +173,7 @@ jobs:
         name: Lint Feedback
         if: github.event_name == 'pull_request'
         needs: [changes, lint, docs-quality]
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         permissions:
             contents: read
             pull-requests: write
@@ -198,7 +199,7 @@ jobs:
         name: Workflow Owner Approval
         needs: [changes]
         if: github.event_name == 'pull_request' && needs.changes.outputs.workflow_changed == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         permissions:
             contents: read
             pull-requests: read
@@ -219,7 +220,7 @@ jobs:
         name: License File Owner Guard
         needs: [changes]
         if: github.event_name == 'pull_request'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         permissions:
             contents: read
             pull-requests: read
@@ -237,7 +238,7 @@ jobs:
         name: CI Required Gate
         if: always()
         needs: [changes, lint, test, build, docs-only, non-rust, docs-quality, lint-feedback, workflow-owner-approval, license-file-owner-guard]
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         steps:
             - name: Enforce required status
               shell: bash
