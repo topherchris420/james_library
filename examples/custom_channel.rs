@@ -1,5 +1,3 @@
-//! Example: Implementing a custom Channel for ZeroClaw
-//!
 //! Channels let ZeroClaw communicate through any messaging platform.
 //! Implement the Channel trait, register it, and the agent works everywhere.
 
