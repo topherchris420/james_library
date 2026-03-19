@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Launches the OpenClaw autonomous research agent in the background
+set -euo pipefail
 # Supervised by openclaw_service.py for self-healing
 
 echo "Starting James 2 Autonomous Research Node..."
