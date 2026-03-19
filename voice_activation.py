@@ -1,8 +1,5 @@
 """
 R.A.I.N. Lab Voice Activation Module
-
-Wake word detection for hands-free operation.
-Supports: "Hey James" or custom wake words.
 """
 
 import threading
