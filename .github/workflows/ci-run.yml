@@ -2,6 +2,8 @@ name: CI Run
 
 on:
     push:
+        branches:
+            - '**'
     pull_request:
         branches: [dev, main]
 

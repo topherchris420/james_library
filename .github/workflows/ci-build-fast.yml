@@ -5,6 +5,8 @@ name: CI Build (Fast)
 
 on:
     push:
+        branches:
+            - '**'
     pull_request:
         branches: [dev, main]
 
