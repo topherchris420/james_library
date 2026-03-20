@@ -26,8 +26,8 @@ const PAL := {
 	15: Color("#c0c0c0"),             # light grey (Luca)
 	16: Color("#b03030"),             # dark red body (Elena)
 	17: Color("#e04040"),             # bright red (Elena accent)
-	18: Color("#9040b0"),             # purple body (octopus)
-	19: Color("#6830a0"),             # purple dark (octopus body)
+	18: Color("#e8a030"),             # amber / gold (James body)
+	19: Color("#c87040"),             # coral pink (James tentacles)
 }
 
 ## AVATARS — each entry has its own palette and 8×20 sprite grid.
@@ -35,8 +35,8 @@ const PAL := {
 ## Sprite rows: head(4) + brow(1) + eyes(2) + mouth(1) + body(5) + legs(7) = 20 px tall.
 const AVATARS := {
 	"james": {
-		## Purple octopus — dark body + green tentacles
-		"palette": [1, 2, 3, 7, 10, 19, 18],
+		## Amber/gold octopus with coral pink tentacles
+		"palette": [1, 2, 3, 7, 18, 19],
 		"sprite": [
 			# head outline
 			[0,0,1,1,1,1,0,0],
