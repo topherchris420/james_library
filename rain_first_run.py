@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import rich_ui
+
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Guided first-run onboarding for R.A.I.N. Lab.")
@@ -29,10 +31,16 @@ def _run_preflight(repo_root: Path) -> subprocess.CompletedProcess[str]:
 
 
 def _print_next_steps(topic: str) -> None:
-    print("\n[first-run] Next steps")
-    print(f'  1. python rain_lab.py --mode chat --topic "{topic}"')
-    print("  2. python rain_lab.py --mode backup")
-    print("  3. Review docs/TROUBLESHOOTING.md if you hit runtime issues")
+    print("\n" + rich_ui.bold(rich_ui.color("✨ Setup Complete! R.A.I.N. Lab is ready.", "bright_green")))
+    print(rich_ui.color("═" * 65, "bright_black"))
+
+    print(f"  {rich_ui.bold('1. Start Chat:')} python rain_lab.py --mode chat --topic \"{topic}\"")
+    print(f"  {rich_ui.bold('2. Backup:')}     python rain_lab.py --mode backup")
+    print(f"  {rich_ui.bold('3. Docs:')}       Review docs/TROUBLESHOOTING.md")
+
+    print(rich_ui.color("─" * 65, "bright_black"))
+    print(f"  {rich_ui.color('🎮 Want the 3D Avatar experience?', 'bright_cyan')}")
+    print(f"  Run: {rich_ui.bold(rich_ui.color('python deploy.py --install-godot-client', 'bright_yellow'))}\n")
 
 
 def main(argv: list[str] | None = None) -> int:
