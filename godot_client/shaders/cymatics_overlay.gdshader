@@ -26,7 +26,6 @@ void fragment() {
 	// When amplitude is zero the overlay is fully transparent — no work needed.
 	if (amplitude < 0.001) {
 		COLOR = vec4(0.0);
-		return;
 	}
 
 	// Map frequency to mode indices (n, m).  Low frequencies → simple patterns,

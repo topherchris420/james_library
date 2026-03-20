@@ -145,11 +145,11 @@ func _resolve_audio_stream(audio_payload: Dictionary) -> AudioStream:
 
 	var ext := path.get_extension().to_lower()
 	if ext == "wav":
-		return AudioStreamWAV.load_from_file(path)
-	if ext == "mp3":
-		return AudioStreamMP3.load_from_file(path)
-	if ext == "ogg":
-		return AudioStreamOggVorbis.load_from_file(path)
+		var stream := AudioStreamWAV.new()
+		stream.load_wav_from_file(path)
+		return stream
+	if ext == "mp3" or ext == "ogg":
+		return ResourceLoader.load(path) as AudioStream
 
 	return null
 

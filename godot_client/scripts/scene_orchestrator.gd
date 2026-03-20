@@ -8,17 +8,17 @@ const AGENT_AVATAR_SCENE: PackedScene = preload("res://scenes/agent_avatar.tscn"
 @export var fallback_participants: Array[String] = DEFAULT_PARTICIPANTS
 @export var avatar_scene: PackedScene = AGENT_AVATAR_SCENE
 
-@onready var _background_layer: BackgroundPainter = $BackgroundLayer
+@onready var _background_layer = $BackgroundLayer
 @onready var _character_layer: Node2D = $CharacterLayer
-@onready var _dialogue_ui: DialogueUI = $UILayer/DialoguePanel
+@onready var _dialogue_ui = $UILayer/DialoguePanel
 @onready var _theme_badge: Label = $UILayer/ThemeBadge
 @onready var _demo_controls: Control = $UILayer/DemoControls
 @onready var _demo_play_pause: Button = $UILayer/DemoControls/Margin/HBox/PlayPauseButton
 @onready var _demo_scrubber: HSlider = $UILayer/DemoControls/Margin/HBox/Scrubber
 @onready var _demo_status: Label = $UILayer/DemoControls/Margin/HBox/ReplayStatus
-@onready var _theme_manager: ThemeManager = $Managers/ThemeManager
-@onready var _event_client: EventClient = $Managers/EventClient
-@onready var _audio_sync: AudioSync = $Managers/AudioSync
+@onready var _theme_manager = $Managers/ThemeManager
+@onready var _event_client = $Managers/EventClient
+@onready var _audio_sync = $Managers/AudioSync
 
 var _participants: Array[String] = []
 var _avatars: Dictionary = {}
@@ -68,7 +68,7 @@ func _on_theme_applied(theme_id: String, theme_cfg: Dictionary) -> void:
 	_apply_theme_to_avatars()
 
 	if _participants.is_empty():
-		var theme_default := _theme_manager.get_default_participants()
+		var theme_default = _theme_manager.get_default_participants()
 		if not theme_default.is_empty():
 			_spawn_participants(theme_default)
 
@@ -118,10 +118,7 @@ func _handle_agent_utterance(event_payload: Dictionary) -> void:
 		return
 
 	var tone := str(event_payload.get("tone", "neutral")).to_lower()
-	var avatar_variant: Variant = _avatars.get(speaker_id, null)
-	if avatar_variant is AgentAvatar:
-		var avatar := avatar_variant as AgentAvatar
-		avatar.set_tone(tone)
+	_set_avatar_tone(speaker_id, tone)
 
 	_set_active_speaker(speaker_id)
 	_dialogue_ui.show_line(speaker_name, text)
@@ -162,18 +159,11 @@ func _handle_conversation_reset() -> void:
 
 func _on_utterance_started(agent_id: String) -> void:
 	for key in _avatars.keys():
-		var avatar_variant: Variant = _avatars[key]
-		if avatar_variant is AgentAvatar:
-			var avatar := avatar_variant as AgentAvatar
-			avatar.set_talking(str(key) == agent_id)
+		_set_avatar_talking(key, str(key) == agent_id)
 
 
 func _on_utterance_finished(agent_id: String) -> void:
-	if _avatars.has(agent_id):
-		var avatar_variant: Variant = _avatars[agent_id]
-		if avatar_variant is AgentAvatar:
-			var avatar := avatar_variant as AgentAvatar
-			avatar.set_talking(false)
+	_set_avatar_talking(agent_id, false)
 
 
 func _spawn_participants(agent_ids: Array[String]) -> void:
@@ -203,16 +193,7 @@ func _spawn_participants(agent_ids: Array[String]) -> void:
 		var x := lerpf(left_x, right_x, t)
 		var y := base_y + absf(t - 0.5) * 92.0
 
-		var avatar: AgentAvatar
-		if avatar_scene != null:
-			var instance := avatar_scene.instantiate()
-			if instance is AgentAvatar:
-				avatar = instance as AgentAvatar
-			else:
-				instance.free()
-				avatar = AgentAvatar.new()
-		else:
-			avatar = AgentAvatar.new()
+		var avatar = load("res://scripts/agent_avatar.gd").new()
 		_character_layer.add_child(avatar)
 		avatar.configure(agent_id, _title_case(agent_id), _theme_manager.get_agent_style(agent_id))
 		avatar.position = Vector2(x, y)
@@ -223,19 +204,33 @@ func _spawn_participants(agent_ids: Array[String]) -> void:
 
 func _apply_theme_to_avatars() -> void:
 	for key in _avatars.keys():
-		var avatar_variant: Variant = _avatars[key]
-		if avatar_variant is AgentAvatar:
-			var avatar := avatar_variant as AgentAvatar
+		var avatar = _avatars[key]
+		if avatar.has_method("apply_style"):
 			avatar.apply_style(_theme_manager.get_agent_style(str(key)))
 
 
 func _set_active_speaker(agent_id: String) -> void:
 	_active_speaker_id = agent_id
 	for key in _avatars.keys():
-		var avatar_variant: Variant = _avatars[key]
-		if avatar_variant is AgentAvatar:
-			var avatar := avatar_variant as AgentAvatar
+		var avatar = _avatars[key]
+		if avatar.has_method("set_active"):
 			avatar.set_active(str(key) == agent_id)
+
+
+func _set_avatar_tone(agent_id: String, tone: String) -> void:
+	if not _avatars.has(agent_id):
+		return
+	var avatar = _avatars[agent_id]
+	if avatar.has_method("set_tone"):
+		avatar.set_tone(tone)
+
+
+func _set_avatar_talking(agent_id: String, talking: bool) -> void:
+	if not _avatars.has(agent_id):
+		return
+	var avatar = _avatars[agent_id]
+	if avatar.has_method("set_talking"):
+		avatar.set_talking(talking)
 
 
 func _parse_participants(raw: Variant) -> Array[String]:

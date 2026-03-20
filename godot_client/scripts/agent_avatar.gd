@@ -160,21 +160,28 @@ var _is_talking := false
 var _is_active  := false
 var _frame: float = 0.0
 
-@onready var _anim_sprite: Sprite2D = Sprite2D.new()
-@onready var _talk_sprite: Sprite2D = Sprite2D.new()
-@onready var _active_sprite: Sprite2D = Sprite2D.new()
+var _anim_sprite: Sprite2D
+var _talk_sprite: Sprite2D
+var _active_sprite: Sprite2D
 
 var _idle_frames: Array[Image] = []
 var _talk_frames: Array[Image] = []
 
 
 func _init() -> void:
+	_anim_sprite = Sprite2D.new()
+	_talk_sprite = Sprite2D.new()
+	_active_sprite = Sprite2D.new()
+	_anim_sprite.name = "AnimSprite"
+	_talk_sprite.name = "TalkSprite"
+	_active_sprite.name = "ActiveSprite"
+
+
+func _ready() -> void:
 	add_child(_anim_sprite)
 	add_child(_talk_sprite)
 	add_child(_active_sprite)
 
-
-func _ready() -> void:
 	_anim_sprite.centered = false
 	_talk_sprite.centered = false
 	_active_sprite.centered = false
@@ -247,8 +254,9 @@ func _pick_avatar_key(key: String) -> String:
 	for k in AVATARS.keys():
 		if lower.contains(k):
 			return k
-	var h := abs(hash(key)) % AVATARS.size()
-	return AVATARS.keys()[h]
+	var av_keys: Array = AVATARS.keys()
+	var h: int = abs(hash(key)) % av_keys.size()
+	return str(av_keys[h])
 
 
 func _generate_frames() -> void:
@@ -299,7 +307,6 @@ func _build_frame(data: Array, w: int, h: int, lookup: Dictionary, talk: bool) -
 
 func _set_sprite_frame(sprite: Sprite2D, img: Image) -> void:
 	var tex := ImageTexture.create_from_image(img)
-	tex.filter_mode = Texture.FILTER_NEAREST
 	sprite.texture = tex
 	sprite.scale = Vector2(SPRITE_SCALE, SPRITE_SCALE)
 

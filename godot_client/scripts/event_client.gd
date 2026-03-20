@@ -159,7 +159,8 @@ func _process_demo(delta: float) -> void:
 func _poll_websocket() -> void:
 	var state := _socket.get_ready_state()
 	if state != WebSocketPeer.STATE_CLOSED:
-		var poll_err := _socket.poll()
+		_socket.poll()
+		var poll_err := OK  # poll() returns void in Godot 4; connection state checked below
 		if poll_err != OK:
 			push_warning("WebSocket poll failed (code %d)" % poll_err)
 			_handle_disconnect("poll_failed")

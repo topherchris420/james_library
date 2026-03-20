@@ -18,6 +18,7 @@ script = ExtResource("2_4g2c1")
 [node name="UILayer" type="CanvasLayer" parent="."]
 
 [node name="DialoguePanel" type="PanelContainer" parent="UILayer"]
+script = ExtResource("3_8f9jm")
 anchor_left = 0.03
 anchor_top = 0.72
 anchor_right = 0.97
