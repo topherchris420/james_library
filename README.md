@@ -471,7 +471,9 @@ MIT License. See [LICENSE](LICENSE).
 
 ## Acknowledgements
 
-R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project, built on the ZeroClaw runtime with inspiration from MIT CSAIL research. Huge thanks to both teams for creating such a high-performance, lightweight agent runtime that made this lab possible. Special thanks to OpenClaw for being released on my birthday.
+R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project, built on the high-performance [ZeroClaw](https://github.com/zeroclaw/zeroclaw) Rust runtime — inspired by research from MIT CSAIL. We're grateful to both teams for making this laboratory possible.
+
+Special thanks to the OpenClaw team for releasing such an excellent tool on my birthday.
 
 <a href="https://www.star-history.com/?repos=topherchris420%2Fjames_library&type=date&legend=top-left">
  <picture>
