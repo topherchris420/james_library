@@ -32,7 +32,7 @@ If you're just using the tool, think of all of this as one app and start with `p
 ---
 
 
-## Prerequisites (Simple Checklist)
+## Checklist
 
 Before first use, install:
 
