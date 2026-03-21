@@ -22,51 +22,66 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-R.A.I.N. Lab is a high-performance, local-first multi-agent research platform. It solves the biggest bottleneck in modern AI—"The Hallucination Problem"—by bridging the lateral creativity of Large Language Models with the strict, deterministic logic of Formal Verification.
+R.A.I.N. Lab is a research assistant that runs entirely on your own computer. You ask it a question, and instead of giving you one answer that might be wrong, it launches a team of AI agents that debate each other, poke holes in each other's logic, and — when they get stuck — settle the argument with mathematical proof.
 
-**It doesn't just chat. It explores, debates, and mathematically proves its conclusions inside a secure WebAssembly sandbox.**
+**The result: answers you can actually trust, with your data never leaving your machine.**
 
 ---
 
 ## Who We Are
 
-To avoid naming confusion, use this quick map:
+You'll see three names in this project — here's what each one means:
 
-- **R.A.I.N. Lab** = the end-user product experience
-- **James Library** = the Python research/workflow layer
-- **ZeroClaw** = the Rust runtime layer (`zeroclaw` crate)
+- **R.A.I.N. Lab** — the product you interact with (the interface, the chat, the experience)
+- **James Library** — the Python code that powers the research workflows (debates, synthesis, analysis)
+- **ZeroClaw** — the fast Rust engine running behind the scenes (networking, security, orchestration)
 
-Runtime flow at a glance:
-
-`User -> R.A.I.N. Lab interface -> ZeroClaw runtime (agent/channels/tools/memory/security) -> James Library research workflows -> model/provider APIs`
+As a user, you only need to know **R.A.I.N. Lab** — the other two are under the hood.
 
 ---
 
 ## ⚡ The Breakthrough: "The Circuit Breaker" Architecture
 
-Most multi-agent frameworks (like AutoGen or CrewAI) eventually suffer from the "Agent Death Loop": agents get stuck in polite agreement or argue in circles forever.
+**The problem:** Most AI multi-agent systems eventually get stuck — the agents either politely agree with each other or argue in circles forever, never reaching a conclusion.
 
-R.A.I.N. Lab introduces an **Evolutionary Pressure System**:
+**R.A.I.N. Lab's solution — in plain English:**
 
-1. **Hypothesis Generation:** Specialized agents (e.g., Elena for Quantum Theory, James for Physics) autonomously explore hypothesis trees using a UCB1-Bandit algorithm.
-2. **Adversarial Swarm Review:** Agents ruthlessly critique each other's logic in multi-round debates.
-3. **The WASM Circuit Breaker:** When the Stagnation Monitor detects agents arguing in circles, it automatically intercepts the debate. It translates the core argument into a boolean formula, compiles it, and executes it against a WASM-compiled DPLL SAT Solver.
-4. **Deterministic Synthesis:** The mathematically guaranteed truth is forced back into the context window as a `SYSTEM_OVERRIDE`, forcing the agents to pivot and build on verified facts.
+1. **Explore:** Specialist agents each investigate different angles of your question, like researchers branching out across a library.
+2. **Debate:** The agents challenge each other's reasoning in multiple rounds — no free passes.
+3. **Break the deadlock:** When the system detects the debate is going in circles, it steps in automatically. It translates the core disagreement into a math problem and solves it with a guaranteed-correct solver running in a secure sandbox.
+4. **Move forward:** The proven answer is injected back into the conversation, forcing the agents to accept the settled fact and build on it.
+
+<details>
+<summary><strong>Technical details (for developers)</strong></summary>
+
+- Step 1 uses a UCB1-Bandit algorithm to explore hypothesis trees efficiently.
+- Step 3 compiles the argument into a boolean formula and runs it against a WASM-compiled DPLL SAT Solver.
+- Step 4 injects the result as a `SYSTEM_OVERRIDE` into the agent context window.
+- The entire verification step runs inside a WebAssembly (WASM) sandbox for security isolation.
+
+</details>
 
 ---
 
-## 🏗️ Technical Highlights
+## 🏗️ Why R.A.I.N. Lab?
 
-* **The ZeroClaw Runtime:** A blistering fast, 3.1 MB Rust binary that handles orchestration, P2P networking, and WASM plugin hosting. Runs on edge devices and "potato" hardware.
-* **Dual-Language Dominance:** Uses Python for what it does best (LLM orchestration and rapid workflows) and Rust/WASM for what is strictly required (secure, deterministic execution).
-* **100% Offline / Local-First Privacy:** Backed by a ChaCha20-Poly1305 encrypted secret store and local Ollama support. Feed it your pre-patent IP, unpublished thesis data, or proprietary corporate code with zero risk of cloud leakage.
-* **Hot-Loadable Math Engines:** Need a custom tensor-calculus solver? Compile it to `.wasm`, drop it in the plugins folder, and the agents will immediately learn how to use it—no restarts required.
+* **Runs on almost anything:** The core engine is a tiny 3.1 MB program that works on laptops, desktops, and even low-powered devices.
+* **Your data stays on your machine:** All conversations and files are stored locally with strong encryption. Nothing is sent to the cloud unless you choose to connect a cloud AI provider.
+* **Extensible with plugins:** If you need the AI to use a custom math solver or physics engine, you can drop it in as a plugin — no restart required.
+* **Two languages, best of both worlds:** Python handles the AI conversations and research workflows; Rust handles the fast, security-critical parts like verification and networking.
 
 ---
 
 ## 🚀 How it Works (The Verification Loop)
 
-When agents debate a complex problem (like an $N$-Queens constraint or a Phase Transition 3-SAT formula), they don't guess. They prove it.
+When agents disagree about something that can be checked logically, R.A.I.N. Lab doesn't let them guess — it proves who's right. Here's what happens behind the scenes:
+
+1. **An agent states its case** — it translates its argument into a logical formula (like "either A or B must be true, and A is false").
+2. **The system intercepts** — the Rust runtime catches the claim and sends it to a secure sandbox for verification.
+3. **The math settles it** — the solver finds the answer (e.g., "B must be true") and sends the proven result back to the agents, who must accept it and move on.
+
+<details>
+<summary><strong>See the actual code flow</strong></summary>
 
 ```json
 // 1. Agent Formulates Logic
@@ -93,6 +108,8 @@ pub extern "C" fn verify_logic(input_ptr: *const c_char) -> *mut c_char { ... }
   "SYSTEM_OVERRIDE": "Satisfiable: {A: false, B: true}. Elena's logic holds. Debate advancing to next node."
 }
 ```
+
+</details>
 
 ---
 
@@ -300,16 +317,16 @@ Once installed, here are the most common things you can do:
 > **Tip:** On macOS and Linux, use `python3` instead of `python` if `python` is not recognized.
 
 ---
-## 🐙 James/R.A.I.N. Lab vs. Single-Loop Optimizers
-If you are coming from **Karpathy's `autoresearch`**, here is how R.A.I.N. Lab advances the autonomy stack:
+## 🐙 How R.A.I.N. Lab Differs from Other AI Research Tools
 
+Most AI research tools follow a simple loop: try something, measure the result, tweak, repeat. R.A.I.N. Lab works differently:
 
-| Feature | Single-Loop (e.g. `autoresearch`) | R.A.I.N. Agent Ecology |
+| | Traditional AI tools | R.A.I.N. Lab |
 | :--- | :--- | :--- |
-| **Logic** | Linear (Action -> Result -> Mutate) | Recursive (Debate -> Critique -> Synthesize) |
-| **Goal** | Numerical Optimization (Minimizing Loss) | Epistemic Discovery (Finding Truth) |
-| **Safety** | Metric-driven | **Truth-Layer Friction** (Refuses low-confidence answers) |
-| **Outcome** | Improved Code/Hyperparameters | **Published Research Papers** |
+| **How it thinks** | One step at a time (try, measure, tweak) | Multiple agents debate and challenge each other |
+| **What it optimizes for** | Better numbers (scores, metrics) | Better understanding (finding what's actually true) |
+| **How it handles uncertainty** | Picks the best-scoring option | Refuses to answer until confidence is high enough |
+| **What you get** | Improved code or settings | Research-grade conclusions and papers |
 
 ---
 ## Connecting an AI Model
