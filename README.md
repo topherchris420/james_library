@@ -1,6 +1,4 @@
-# R.A.I.N. Lab: Mathematically-Verified Autonomous Research
-
-**James🐙**
+# R.A.I.N. Lab: A Local-First Research Assistant That Verifies Its Own Answers
 
 <p align="center">
   <img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="900" />
@@ -14,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>🌐 Read this in:</strong>
+  <strong>Read this in:</strong>
   <a href="README.zh-CN.md">中文</a> ·
   <a href="README.ja.md">日本語</a> ·
   <a href="README.ru.md">Русский</a> ·
@@ -22,9 +20,7 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-R.A.I.N. Lab is a research assistant that runs entirely on your own computer. You ask it a question, and instead of giving you one answer that might be wrong, it launches a team of AI agents that debate each other, poke holes in each other's logic, and — when they get stuck — settle the argument with mathematical proof.
-
-**The result: answers you can actually trust, with your data never leaving your machine.**
+R.A.I.N. Lab is an open-source multi-agent research assistant built for **academic researchers, R&D teams, and privacy-conscious organizations** who need AI-generated conclusions they can actually trust. It solves the fundamental problem with multi-agent AI — agents that either agree too quickly or argue in circles forever — by automatically settling unresolved debates with mathematical proof via a sandboxed SAT solver. It runs entirely on your own computer, and your data never leaves your machine.
 
 ---
 
