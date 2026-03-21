@@ -1,4 +1,4 @@
-# ⛈️ R.A.I.N. Lab: Mathematically-Verified Autonomous Research
+# 🐙James // R.A.I.N. Lab: Mathematically-Verified Autonomous Research
 
 **(Recursive Architecture for Intelligent Nexus)**
 
