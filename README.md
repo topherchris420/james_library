@@ -37,7 +37,7 @@ hero:
 </p>
 
 <p align="center">
-  <strong>Read this in:</strong>
+  <strong>🌐Read this in:</strong>
   <a href="README.zh-CN.md">中文</a> ·
   <a href="README.ja.md">日本語</a> ·
   <a href="README.ru.md">Русский</a> ·
@@ -63,7 +63,7 @@ Runtime flow at a glance:
 
 ## What is the R.A.I.N. Lab?
 
-Vers3Dynamics' R.A.I.N. Lab is a set of recursive AI research assistants that help you explore ideas and make real discoveries. Unlike a regular chatbot that might "discover" things you already know, R.A.I.N. Lab cross-checks your internal knowledge and online sources to make sure you are exploring genuinely new territory.
+Vers3Dynamics' R.A.I.N. Lab is a set of recursive AI research assistants that help you explore ideas and make real discoveries. Unlike a regular chatbot that might "discover" things you already know, R.A.I.N. Lab cross-checks your internal knowledge and online sources to make sure you are exploring genuinely new territory. If you want a rigorous, multi-agent AI lab to verify theories, organize your notes, and co-author actual research papers instead of just running a single-user assistant, this is it.
 
 **What you can do with it:**
 
