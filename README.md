@@ -20,13 +20,13 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-R.A.I.N. Lab is an open-source multi-agent research assistant built for **academic researchers, R&D teams, and privacy-conscious individuals** who need conclusions they can actually trust. It solves the fundamental problem with multi AI agents that either agree too quickly or argue in circles forever, by automatically settling unresolved debates with mathematical proof via a sandboxed SAT solver. It runs entirely on your own computer, and your data never leaves your machine.
+The R.A.I.N. Lab is an open-source multi-agentic research team of assistants built for **academic researchers, R&D teams, and privacy-conscious individuals** who need conclusions they can actually trust. It solves the fundamental problem with AI agents that either agree too quickly or argue in circles forever, by automatically settling unresolved debates with mathematical proof via a sandboxed SAT solver. It runs entirely on your own computer, and your data never leaves your machine.
 
 ---
 
 ## Who We Are
 
-You'll see three names in this project — here's what each one means:
+You'll see three names in this lab — here's what each one means:
 
 - **R.A.I.N. Lab** — the product you interact with (the interface, the chat, the experience)
 - **James Library** — the Python code that powers the research workflows (debates, synthesis, analysis)
