@@ -20,7 +20,7 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-R.A.I.N. Lab is an open-source multi-agent research assistant built for **academic researchers, R&D teams, and privacy-conscious organizations** who need AI-generated conclusions they can actually trust. It solves the fundamental problem with multi-agent AI — agents that either agree too quickly or argue in circles forever — by automatically settling unresolved debates with mathematical proof via a sandboxed SAT solver. It runs entirely on your own computer, and your data never leaves your machine.
+R.A.I.N. Lab is an open-source multi-agent research assistant built for **academic researchers, R&D teams, and privacy-conscious individuals** who need conclusions they can actually trust. It solves the fundamental problem with multi AI agents that either agree too quickly or argue in circles forever, by automatically settling unresolved debates with mathematical proof via a sandboxed SAT solver. It runs entirely on your own computer, and your data never leaves your machine.
 
 ---
 
@@ -32,7 +32,7 @@ You'll see three names in this project — here's what each one means:
 - **James Library** — the Python code that powers the research workflows (debates, synthesis, analysis)
 - **ZeroClaw** — the fast Rust engine running behind the scenes (networking, security, orchestration)
 
-As a user, you only need to know **R.A.I.N. Lab** — the other two are under the hood.
+All you need to know is the **R.A.I.N. Lab**. Everything else just works.
 
 ---
 
