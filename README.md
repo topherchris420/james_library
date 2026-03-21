@@ -21,7 +21,7 @@ hero:
 </p>
 
 <p align="center">
-  <strong>Your personal AI Research Assistants — talk about ideas, verify discoveries, and organize your work.</strong>
+  <strong>Your Personal AI Research Assistants — talk about ideas, verify discoveries, and organize your work.</strong>
 </p>
 
 <p align="center">
