@@ -93,7 +93,7 @@ CLIPPY_EXIT=$?
 set -e
 
 if [ "$CLIPPY_EXIT" -eq 0 ]; then
-    echo "Strict delta gate passed: no strict warnings/errors." 
+    echo "Strict delta gate passed: no strict warnings/errors."
     exit 0
 fi
 

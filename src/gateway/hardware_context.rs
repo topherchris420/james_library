@@ -374,7 +374,7 @@ pub async fn handle_hardware_context_get(
 
 // ── POST /api/hardware/reload ─────────────────────────────────────────────────
 
-/// `POST /api/hardware/reload` — verify on-disk hardware context and report what  
+/// `POST /api/hardware/reload` — verify on-disk hardware context and report what
 /// will be loaded on the next chat request.
 ///
 /// Since [`crate::hardware::boot`] re-reads from disk on every agent invocation,

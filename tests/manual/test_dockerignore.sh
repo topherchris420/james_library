@@ -82,7 +82,7 @@ done
 while IFS= read -r line; do
     # Skip empty lines and comments
     [[ -z "$line" || "$line" =~ ^# ]] && continue
-    
+
     # Check for common issues
     if [[ "$line" =~ [[:space:]]$ ]]; then
         log_fail "Trailing whitespace in pattern: '$line'"
