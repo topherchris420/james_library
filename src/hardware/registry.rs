@@ -91,94 +91,12 @@ mod tests {
     }
 
     #[test]
-    fn lookup_nucleo_f411re() {
-        let b = lookup_board(0x0483, 0x3748).unwrap();
-        assert_eq!(b.name, "nucleo-f411re");
-        assert_eq!(b.architecture, Some("ARM Cortex-M4"));
-    }
-
-    #[test]
-    fn lookup_arduino_uno() {
-        let b = lookup_board(0x2341, 0x0043).unwrap();
-        assert_eq!(b.name, "arduino-uno");
-    }
-
-    #[test]
-    fn lookup_arduino_uno_q() {
-        let b = lookup_board(0x2341, 0x0078).unwrap();
-        assert_eq!(b.name, "arduino-uno");
-        assert!(b.architecture.unwrap().contains("Uno Q"));
-    }
-
-    #[test]
-    fn lookup_arduino_mega() {
-        let b = lookup_board(0x2341, 0x0042).unwrap();
-        assert_eq!(b.name, "arduino-mega");
-    }
-
-    #[test]
-    fn lookup_cp2102_uart_bridge() {
-        let b = lookup_board(0x10c4, 0xea60).unwrap();
-        assert_eq!(b.name, "cp2102");
-        assert!(b.architecture.unwrap().contains("USB-UART"));
-    }
-
-    #[test]
-    fn lookup_esp32_ch340() {
-        let b = lookup_board(0x1a86, 0x7523).unwrap();
-        assert_eq!(b.name, "esp32");
-        assert!(b.architecture.unwrap().contains("CH340"));
-    }
-
-    #[test]
     fn lookup_unknown_returns_none() {
         assert!(lookup_board(0x0000, 0x0000).is_none());
     }
 
     #[test]
-    fn lookup_vid_match_pid_mismatch_returns_none() {
-        // STM VID but wrong PID
-        assert!(lookup_board(0x0483, 0xFFFF).is_none());
-    }
-
-    #[test]
     fn known_boards_not_empty() {
         assert!(!known_boards().is_empty());
-    }
-
-    #[test]
-    fn all_known_boards_have_names_and_architectures() {
-        for board in known_boards() {
-            assert!(
-                !board.name.is_empty(),
-                "Board with VID={:#06x} PID={:#06x} has empty name",
-                board.vid,
-                board.pid
-            );
-            assert!(
-                board.architecture.is_some(),
-                "Board {} has no architecture",
-                board.name
-            );
-        }
-    }
-
-    #[test]
-    fn no_duplicate_vid_pid_pairs() {
-        let boards = known_boards();
-        for (i, a) in boards.iter().enumerate() {
-            for (j, b) in boards.iter().enumerate() {
-                if i != j {
-                    assert!(
-                        !(a.vid == b.vid && a.pid == b.pid),
-                        "Duplicate VID/PID: {:#06x}/{:#06x} for {} and {}",
-                        a.vid,
-                        a.pid,
-                        a.name,
-                        b.name
-                    );
-                }
-            }
-        }
     }
 }

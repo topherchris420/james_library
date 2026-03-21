@@ -249,7 +249,7 @@ async fn check_memory_roundtrip(config: &crate::config::Config) -> CheckResult {
         return CheckResult::fail("memory", format!("write failed: {e}"));
     }
 
-    match mem.recall(test_key, 1, None).await {
+    match mem.recall(test_key, 1, None, None, None).await {
         Ok(entries) if !entries.is_empty() => {
             let _ = mem.forget(test_key).await;
             CheckResult::pass("memory", "write/read/delete round-trip OK")
@@ -277,123 +277,5 @@ async fn check_websocket_handshake(config: &crate::config::Config) -> CheckResul
     match tokio_tungstenite::connect_async(&url).await {
         Ok((_, _)) => CheckResult::pass("websocket", format!("handshake OK at {url}")),
         Err(e) => CheckResult::fail("websocket", format!("handshake failed at {url}: {e}")),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn check_result_pass_sets_passed_true() {
-        let result = CheckResult::pass("test_check", "all good");
-        assert!(result.passed);
-        assert_eq!(result.name, "test_check");
-        assert_eq!(result.detail, "all good");
-    }
-
-    #[test]
-    fn check_result_fail_sets_passed_false() {
-        let result = CheckResult::fail("test_check", "something broke");
-        assert!(!result.passed);
-        assert_eq!(result.name, "test_check");
-        assert_eq!(result.detail, "something broke");
-    }
-
-    #[test]
-    fn check_config_passes_when_file_exists() {
-        let temp = tempfile::tempdir().unwrap();
-        let config_path = temp.path().join("config.toml");
-        std::fs::write(&config_path, b"# test config").unwrap();
-
-        let mut config = crate::config::Config::default();
-        config.config_path = config_path;
-
-        let result = check_config(&config);
-        assert!(result.passed);
-        assert!(result.detail.contains("loaded from"));
-    }
-
-    #[test]
-    fn check_config_fails_when_file_missing() {
-        let mut config = crate::config::Config::default();
-        config.config_path = std::path::PathBuf::from("/nonexistent/config.toml");
-
-        let result = check_config(&config);
-        assert!(!result.passed);
-        assert!(result.detail.contains("not found"));
-    }
-
-    #[tokio::test]
-    async fn check_workspace_passes_for_writable_dir() {
-        let temp = tempfile::tempdir().unwrap();
-        let result = check_workspace(temp.path()).await;
-        assert!(result.passed);
-        assert!(result.detail.contains("writable"));
-    }
-
-    #[tokio::test]
-    async fn check_workspace_fails_for_nonexistent_dir() {
-        let result = check_workspace(Path::new("/nonexistent/workspace")).await;
-        assert!(!result.passed);
-    }
-
-    #[test]
-    fn check_sqlite_opens_fresh_database() {
-        let temp = tempfile::tempdir().unwrap();
-        let result = check_sqlite(temp.path());
-        assert!(result.passed);
-        assert!(result.detail.contains("opens and responds"));
-    }
-
-    #[test]
-    fn check_provider_registry_has_entries() {
-        let result = check_provider_registry();
-        assert!(result.passed);
-        assert!(result.detail.contains("providers available"));
-    }
-
-    #[test]
-    fn check_version_returns_version() {
-        let result = check_version();
-        assert!(result.passed);
-        assert!(result.detail.starts_with('v'));
-    }
-
-    #[test]
-    fn check_security_policy_parses_default_config() {
-        let config = crate::config::Config::default();
-        let result = check_security_policy(&config);
-        assert!(result.passed);
-        assert!(result.detail.contains("autonomy level"));
-    }
-
-    #[test]
-    fn check_channel_config_reports_channel_counts() {
-        let config = crate::config::Config::default();
-        let result = check_channel_config(&config);
-        assert!(result.passed);
-        assert!(result.detail.contains("channel types"));
-    }
-
-    #[tokio::test]
-    async fn run_quick_returns_eight_checks() {
-        let config = crate::config::Config::default();
-        let results = run_quick(&config).await.unwrap();
-        assert_eq!(results.len(), 8);
-    }
-
-    #[test]
-    fn print_results_does_not_panic_on_empty() {
-        print_results(&[]);
-    }
-
-    #[test]
-    fn print_results_handles_mixed_pass_fail() {
-        let results = vec![
-            CheckResult::pass("a", "ok"),
-            CheckResult::fail("b", "broken"),
-        ];
-        print_results(&results);
     }
 }

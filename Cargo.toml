@@ -1,10 +1,10 @@
 [workspace]
-members = [".", "crates/robot-kit", "crates/logic_prover"]
+members = [".", "crates/robot-kit", "crates/aardvark-sys"]
 resolver = "2"
 
 [package]
 name = "zeroclawlabs"
-version = "0.5.3"
+version = "0.5.6"
 edition = "2021"
 authors = ["theonlyhennygod"]
 license = "MIT OR Apache-2.0"
@@ -14,15 +14,6 @@ readme = "README.md"
 keywords = ["ai", "agent", "cli", "assistant", "chatbot"]
 categories = ["command-line-utilities", "api-bindings"]
 rust-version = "1.87"
-
-[[bin]]
-name = "zeroclaw"
-path = "src/main.rs"
-
-[lib]
-name = "zeroclaw"
-path = "src/lib.rs"
-
 include = [
   "/src/**/*",
   "/build.rs",
@@ -33,6 +24,14 @@ include = [
   "/web/dist/**/*",
   "/tool_descriptions/**/*",
 ]
+
+[[bin]]
+name = "zeroclaw"
+path = "src/main.rs"
+
+[lib]
+name = "zeroclaw"
+path = "src/lib.rs"
 
 [dependencies]
 # CLI - minimal and fast
@@ -54,7 +53,7 @@ matrix-sdk = { version = "0.16", optional = true, default-features = false, feat
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["std"] }
 serde_ignored = "0.1"
-
+serde_yaml = "0.9"
 
 # Config
 directories = "6.0"
@@ -90,9 +89,15 @@ indicatif = "0.18"
 # Temp files (update pipeline rollback)
 tempfile = "3.26"
 
+# Zip extraction for ClawhHub / OpenClaw registry installers
+zip = { version = "8.1", default-features = false, features = ["deflate"] }
+
 # Error handling
 anyhow = "1.0"
 thiserror = "2.0"
+
+# Aardvark I2C/SPI/GPIO USB adapter (Total Phase) — stub when SDK absent
+aardvark-sys = { path = "crates/aardvark-sys", version = "0.1.0" }
 
 # UUID generation
 uuid = { version = "1.22", default-features = false, features = ["v4", "std"] }
@@ -192,7 +197,7 @@ probe-rs = { version = "0.31", optional = true }
 pdf-extract = { version = "0.10", optional = true }
 
 # WASM plugin runtime (extism)
-extism = { version = "1.9", optional = true }
+extism = { version = "1.20", optional = true }
 
 # Terminal QR rendering for WhatsApp Web pairing flow.
 qrcode = { version = "0.14", optional = true }
@@ -206,11 +211,6 @@ wa-rs-proto = { version = "0.2", optional = true, default-features = false }
 wa-rs-ureq-http = { version = "0.2", optional = true }
 wa-rs-tokio-transport = { version = "0.2", optional = true, default-features = false }
 
-# P2P Networking (libp2p) — enable with --features p2p
-libp2p = { version = "0.55", default-features = false, features = [
-    "tcp", "noise", "yamux", "gossipsub", "kad", "mdns", "ping", "autonat", "relay", "dcutr", "identify", "json"
-], optional = true }
-
 # Raspberry Pi GPIO / Landlock (Linux only) — target-specific to avoid compile failure on macOS
 [target.'cfg(target_os = "linux")'.dependencies]
 rppal = { version = "0.22", optional = true }
@@ -221,13 +221,15 @@ landlock = { version = "0.4", optional = true }
 libc = "0.2"
 
 [features]
-default = ["observability-prometheus", "channel-nostr"]
+default = ["observability-prometheus", "channel-nostr", "skill-creation"]
 channel-nostr = ["dep:nostr-sdk"]
 hardware = ["nusb", "tokio-serial"]
 channel-matrix = ["dep:matrix-sdk"]
 channel-lark = ["dep:prost"]
 channel-feishu = ["channel-lark"]  # Alias for Feishu users (Lark and Feishu are the same platform)
 memory-postgres = ["dep:postgres"]
+# memory-mem0 = Mem0 (OpenMemory) memory backend via REST API
+memory-mem0 = []
 observability-prometheus = ["dep:prometheus"]
 observability-otel = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp"]
 peripheral-rpi = ["rppal"]
@@ -246,13 +248,12 @@ metrics = ["observability-prometheus"]
 probe = ["dep:probe-rs"]
 # rag-pdf = PDF ingestion for datasheet RAG
 rag-pdf = ["dep:pdf-extract"]
+# skill-creation = Autonomous skill creation from successful multi-step tasks
+skill-creation = []
 # whatsapp-web = Native WhatsApp Web client with custom rusqlite storage backend
 whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-proto", "dep:wa-rs-ureq-http", "dep:wa-rs-tokio-transport", "dep:serde-big-array", "dep:prost", "dep:qrcode"]
 # WASM plugin system (extism-based)
 plugins-wasm = ["dep:extism"]
-# P2P networking with libp2p (gossipsub, kademlia, mDNS, ping, relay)
-p2p = ["dep:libp2p"]
-test-wiremock = []
 
 [profile.release]
 opt-level = "z"      # Optimize for size

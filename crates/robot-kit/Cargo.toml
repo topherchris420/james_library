@@ -51,9 +51,12 @@ tracing = "0.1"
 # Time handling
 chrono = { version = "0.4", features = ["clock", "std"] }
 
+# Portable atomics for 32-bit targets
+portable-atomic = "1"
+
 # User directories
 directories = "6.0"
-portable-atomic = "1"
+
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # GPIO (Raspberry Pi only, optional)

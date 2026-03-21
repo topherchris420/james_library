@@ -1,1 +1,2 @@
-// Component-level tests placeholder
+mod component;
+mod support;
