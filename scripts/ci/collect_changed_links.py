@@ -41,9 +41,9 @@ def normalize_docs_files(raw: str) -> list[str]:
 def infer_base_sha(provided: str) -> str:
     if commit_exists(provided):
         return provided
-    if run_git(["rev-parse", "--verify", "origin/main"]).returncode != 0:
+    if run_git(["rev-parse", "--verify", "origin/master"]).returncode != 0:
         return ""
-    proc = run_git(["merge-base", "origin/main", "HEAD"])
+    proc = run_git(["merge-base", "origin/master", "HEAD"])
     candidate = proc.stdout.strip()
     return candidate if commit_exists(candidate) else ""
 
@@ -92,7 +92,9 @@ def normalize_link_target(raw_target: str, source_path: str) -> str | None:
     if path_without_fragment.startswith("/"):
         resolved = path_without_fragment.lstrip("/")
     else:
-        resolved = os.path.normpath(os.path.join(os.path.dirname(source_path) or ".", path_without_fragment))
+        resolved = os.path.normpath(
+            os.path.join(os.path.dirname(source_path) or ".", path_without_fragment)
+        )
 
     if not resolved or resolved == ".":
         return None

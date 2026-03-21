@@ -4,6 +4,7 @@ use crate::agent::dispatcher::{
 use crate::agent::memory_loader::{DefaultMemoryLoader, MemoryLoader};
 use crate::agent::prompt::{PromptContext, SystemPromptBuilder};
 use crate::config::Config;
+use crate::i18n::ToolDescriptions;
 use crate::memory::{self, Memory, MemoryCategory};
 use crate::observability::{self, Observer, ObserverEvent};
 use crate::providers::{self, ChatMessage, ChatRequest, ConversationMessage, Provider};
@@ -40,6 +41,12 @@ pub struct Agent {
     route_model_by_hint: HashMap<String, String>,
     allowed_tools: Option<Vec<String>>,
     response_cache: Option<Arc<crate::memory::response_cache::ResponseCache>>,
+    tool_descriptions: Option<ToolDescriptions>,
+    /// Pre-rendered security policy summary injected into the system prompt
+    /// so the LLM knows the concrete constraints before making tool calls.
+    security_summary: Option<String>,
+    /// Autonomy level from config; controls safety prompt instructions.
+    autonomy_level: crate::security::AutonomyLevel,
 }
 
 pub struct AgentBuilder {
@@ -64,6 +71,9 @@ pub struct AgentBuilder {
     route_model_by_hint: Option<HashMap<String, String>>,
     allowed_tools: Option<Vec<String>>,
     response_cache: Option<Arc<crate::memory::response_cache::ResponseCache>>,
+    tool_descriptions: Option<ToolDescriptions>,
+    security_summary: Option<String>,
+    autonomy_level: Option<crate::security::AutonomyLevel>,
 }
 
 impl AgentBuilder {
@@ -90,6 +100,9 @@ impl AgentBuilder {
             route_model_by_hint: None,
             allowed_tools: None,
             response_cache: None,
+            tool_descriptions: None,
+            security_summary: None,
+            autonomy_level: None,
         }
     }
 
@@ -207,6 +220,21 @@ impl AgentBuilder {
         self
     }
 
+    pub fn tool_descriptions(mut self, tool_descriptions: Option<ToolDescriptions>) -> Self {
+        self.tool_descriptions = tool_descriptions;
+        self
+    }
+
+    pub fn security_summary(mut self, summary: Option<String>) -> Self {
+        self.security_summary = summary;
+        self
+    }
+
+    pub fn autonomy_level(mut self, level: crate::security::AutonomyLevel) -> Self {
+        self.autonomy_level = Some(level);
+        self
+    }
+
     pub fn build(self) -> Result<Agent> {
         let mut tools = self
             .tools
@@ -257,6 +285,11 @@ impl AgentBuilder {
             route_model_by_hint: self.route_model_by_hint.unwrap_or_default(),
             allowed_tools: allowed,
             response_cache: self.response_cache,
+            tool_descriptions: self.tool_descriptions,
+            security_summary: self.security_summary,
+            autonomy_level: self
+                .autonomy_level
+                .unwrap_or(crate::security::AutonomyLevel::Supervised),
         })
     }
 }
@@ -297,7 +330,7 @@ impl Agent {
         }
     }
 
-    pub fn from_config(config: &Config) -> Result<Self> {
+    pub async fn from_config(config: &Config) -> Result<Self> {
         let observer: Arc<dyn Observer> =
             Arc::from(observability::create_observer(&config.observability));
         let runtime: Arc<dyn runtime::RuntimeAdapter> =
@@ -326,7 +359,7 @@ impl Agent {
             None
         };
 
-        let (tools, _delegate_handle) = tools::all_tools_with_runtime(
+        let (mut tools, delegate_handle) = tools::all_tools_with_runtime(
             Arc::new(config.clone()),
             &security,
             runtime,
@@ -341,6 +374,66 @@ impl Agent {
             config.api_key.as_deref(),
             config,
         );
+
+        // ── Wire MCP tools (non-fatal) ─────────────────────────────
+        // Replicates the same MCP initialization logic used in the CLI
+        // and webhook paths (loop_.rs) so that the WebSocket/daemon UI
+        // path also has access to MCP tools.
+        if config.mcp.enabled && !config.mcp.servers.is_empty() {
+            tracing::info!(
+                "Initializing MCP client — {} server(s) configured",
+                config.mcp.servers.len()
+            );
+            match tools::McpRegistry::connect_all(&config.mcp.servers).await {
+                Ok(registry) => {
+                    let registry = std::sync::Arc::new(registry);
+                    if config.mcp.deferred_loading {
+                        let deferred_set = tools::DeferredMcpToolSet::from_registry(
+                            std::sync::Arc::clone(&registry),
+                        )
+                        .await;
+                        tracing::info!(
+                            "MCP deferred: {} tool stub(s) from {} server(s)",
+                            deferred_set.len(),
+                            registry.server_count()
+                        );
+                        let activated = std::sync::Arc::new(std::sync::Mutex::new(
+                            tools::ActivatedToolSet::new(),
+                        ));
+                        tools.push(Box::new(tools::ToolSearchTool::new(
+                            deferred_set,
+                            activated,
+                        )));
+                    } else {
+                        let names = registry.tool_names();
+                        let mut registered = 0usize;
+                        for name in names {
+                            if let Some(def) = registry.get_tool_def(&name).await {
+                                let wrapper: std::sync::Arc<dyn tools::Tool> =
+                                    std::sync::Arc::new(tools::McpToolWrapper::new(
+                                        name,
+                                        def,
+                                        std::sync::Arc::clone(&registry),
+                                    ));
+                                if let Some(ref handle) = delegate_handle {
+                                    handle.write().push(std::sync::Arc::clone(&wrapper));
+                                }
+                                tools.push(Box::new(tools::ArcToolRef(wrapper)));
+                                registered += 1;
+                            }
+                        }
+                        tracing::info!(
+                            "MCP: {} tool(s) registered from {} server(s)",
+                            registered,
+                            registry.server_count()
+                        );
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("MCP registry failed to initialize: {e:#}");
+                }
+            }
+        }
 
         let provider_name = config.default_provider.as_deref().unwrap_or("openrouter");
 
@@ -416,6 +509,8 @@ impl Agent {
             ))
             .skills_prompt_mode(config.skills.prompt_injection_mode)
             .auto_save(config.memory.auto_save)
+            .security_summary(Some(security.prompt_summary()))
+            .autonomy_level(config.autonomy.level)
             .build()
     }
 
@@ -456,6 +551,9 @@ impl Agent {
             skills_prompt_mode: self.skills_prompt_mode,
             identity_config: Some(&self.identity_config),
             dispatcher_instructions: &instructions,
+            tool_descriptions: self.tool_descriptions.as_ref(),
+            security_summary: self.security_summary.clone(),
+            autonomy_level: self.autonomy_level,
         };
         self.prompt_builder.build(&ctx)
     }
@@ -547,6 +645,16 @@ impl Agent {
                 )));
         }
 
+        let context = self
+            .memory_loader
+            .load_context(
+                self.memory.as_ref(),
+                user_message,
+                self.memory_session_id.as_deref(),
+            )
+            .await
+            .unwrap_or_default();
+
         if self.auto_save {
             let _ = self
                 .memory
@@ -558,16 +666,6 @@ impl Agent {
                 )
                 .await;
         }
-
-        let context = self
-            .memory_loader
-            .load_context(
-                self.memory.as_ref(),
-                user_message,
-                self.memory_session_id.as_deref(),
-            )
-            .await
-            .unwrap_or_default();
 
         let now = chrono::Local::now().format("%Y-%m-%d %H:%M:%S %Z");
         let enriched = if context.is_empty() {
@@ -748,7 +846,7 @@ pub async fn run(
     }
     effective_config.default_temperature = temperature;
 
-    let mut agent = Agent::from_config(&effective_config)?;
+    let mut agent = Agent::from_config(&effective_config).await?;
 
     let provider_name = effective_config
         .default_provider
@@ -1092,7 +1190,9 @@ mod tests {
             .extra_headers
             .insert("X-Title".to_string(), "zeroclaw-web".to_string());
 
-        let mut agent = Agent::from_config(&config).expect("agent from config");
+        let mut agent = Agent::from_config(&config)
+            .await
+            .expect("agent from config");
         let response = agent.turn("hello").await.expect("agent turn");
 
         assert_eq!(response, "hello from mock");

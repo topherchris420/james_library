@@ -1,1 +1,2 @@
-// Integration-level tests placeholder
+mod integration;
+mod support;

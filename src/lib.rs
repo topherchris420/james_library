@@ -42,6 +42,7 @@ pub mod agent;
 pub(crate) mod approval;
 pub(crate) mod auth;
 pub mod channels;
+pub(crate) mod cli_input;
 pub mod commands;
 pub mod config;
 pub(crate) mod cost;
@@ -54,6 +55,7 @@ pub(crate) mod hardware;
 pub(crate) mod health;
 pub(crate) mod heartbeat;
 pub mod hooks;
+pub mod i18n;
 pub(crate) mod identity;
 pub(crate) mod integrations;
 pub mod memory;
@@ -62,8 +64,6 @@ pub(crate) mod multimodal;
 pub mod nodes;
 pub mod observability;
 pub(crate) mod onboard;
-#[cfg(feature = "p2p")]
-pub mod p2p;
 pub mod peripherals;
 pub mod providers;
 pub mod rag;
@@ -73,7 +73,8 @@ pub(crate) mod service;
 pub(crate) mod skills;
 pub mod tools;
 pub(crate) mod tunnel;
-pub mod util;
+pub(crate) mod util;
+pub mod verifiable_intent;
 
 #[cfg(feature = "plugins-wasm")]
 pub mod plugins;
@@ -300,6 +301,9 @@ Examples:
         /// Treat the argument as an agent prompt instead of a shell command
         #[arg(long)]
         agent: bool,
+        /// Restrict agent cron jobs to the specified tool names (repeatable, agent-only)
+        #[arg(long = "allowed-tool")]
+        allowed_tools: Vec<String>,
         /// Command (shell) or prompt (agent) to run
         command: String,
     },
@@ -318,6 +322,9 @@ Examples:
         /// Treat the argument as an agent prompt instead of a shell command
         #[arg(long)]
         agent: bool,
+        /// Restrict agent cron jobs to the specified tool names (repeatable, agent-only)
+        #[arg(long = "allowed-tool")]
+        allowed_tools: Vec<String>,
         /// Command (shell) or prompt (agent) to run
         command: String,
     },
@@ -336,6 +343,9 @@ Examples:
         /// Treat the argument as an agent prompt instead of a shell command
         #[arg(long)]
         agent: bool,
+        /// Restrict agent cron jobs to the specified tool names (repeatable, agent-only)
+        #[arg(long = "allowed-tool")]
+        allowed_tools: Vec<String>,
         /// Command (shell) or prompt (agent) to run
         command: String,
     },
@@ -356,6 +366,9 @@ Examples:
         /// Treat the argument as an agent prompt instead of a shell command
         #[arg(long)]
         agent: bool,
+        /// Restrict agent cron jobs to the specified tool names (repeatable, agent-only)
+        #[arg(long = "allowed-tool")]
+        allowed_tools: Vec<String>,
         /// Command (shell) or prompt (agent) to run
         command: String,
     },
@@ -389,6 +402,9 @@ Examples:
         /// New job name
         #[arg(long)]
         name: Option<String>,
+        /// Replace the agent job allowlist with the specified tool names (repeatable)
+        #[arg(long = "allowed-tool")]
+        allowed_tools: Vec<String>,
     },
     /// Pause a scheduled task
     Pause {

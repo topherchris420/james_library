@@ -5,8 +5,8 @@ set -euo pipefail
 BASE_SHA="${BASE_SHA:-}"
 RUST_FILES_RAW="${RUST_FILES:-}"
 
-if [ -z "$BASE_SHA" ] && git rev-parse --verify origin/main >/dev/null 2>&1; then
-    BASE_SHA="$(git merge-base origin/main HEAD)"
+if [ -z "$BASE_SHA" ] && git rev-parse --verify origin/master >/dev/null 2>&1; then
+    BASE_SHA="$(git merge-base origin/master HEAD)"
 fi
 
 if [ -z "$BASE_SHA" ] && git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
@@ -15,7 +15,7 @@ fi
 
 if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
     echo "BASE_SHA is missing or invalid for strict delta gate."
-    echo "Set BASE_SHA explicitly or ensure origin/main is available."
+    echo "Set BASE_SHA explicitly or ensure origin/master is available."
     exit 1
 fi
 
@@ -93,7 +93,7 @@ CLIPPY_EXIT=$?
 set -e
 
 if [ "$CLIPPY_EXIT" -eq 0 ]; then
-    echo "Strict delta gate passed: no strict warnings/errors." 
+    echo "Strict delta gate passed: no strict warnings/errors."
     exit 0
 fi
 

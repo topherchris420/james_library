@@ -17,11 +17,23 @@ pub struct NextcloudTalkChannel {
 
 impl NextcloudTalkChannel {
     pub fn new(base_url: String, app_token: String, allowed_users: Vec<String>) -> Self {
+        Self::new_with_proxy(base_url, app_token, allowed_users, None)
+    }
+
+    pub fn new_with_proxy(
+        base_url: String,
+        app_token: String,
+        allowed_users: Vec<String>,
+        proxy_url: Option<String>,
+    ) -> Self {
         Self {
             base_url: base_url.trim_end_matches('/').to_string(),
             app_token,
             allowed_users,
-            client: reqwest::Client::new(),
+            client: crate::config::build_channel_proxy_client(
+                "channel.nextcloud_talk",
+                proxy_url.as_deref(),
+            ),
         }
     }
 
@@ -193,6 +205,7 @@ impl NextcloudTalkChannel {
             channel: "nextcloud_talk".to_string(),
             timestamp: Self::now_unix_secs(),
             thread_ts: None,
+            interruption_scope_id: None,
         });
 
         messages
@@ -294,6 +307,7 @@ impl NextcloudTalkChannel {
             channel: "nextcloud_talk".to_string(),
             timestamp,
             thread_ts: None,
+            interruption_scope_id: None,
         });
 
         messages
