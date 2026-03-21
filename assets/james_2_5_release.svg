@@ -1,0 +1,56 @@
+<svg width="1600" height="1600" viewBox="0 0 1600 1600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="1600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FAF6E8"/>
+      <stop offset="1" stop-color="#F3E8C5"/>
+    </linearGradient>
+    <linearGradient id="pool" x1="1020" y1="1240" x2="1350" y2="1450" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#97F6FF"/>
+      <stop offset="1" stop-color="#68C9E8"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="200%" height="200%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#B7A566" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1600" rx="32" fill="url(#bg)"/>
+  <text x="90" y="160" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="700" fill="#090909">James 2.5 // R.A.I.N. Lab</text>
+  <text x="104" y="235" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#090909">from Vers3Dynamics</text>
+
+  <g filter="url(#shadow)">
+    <rect x="95" y="330" width="1410" height="1120" rx="20" fill="#FFF2CC"/>
+    <polygon points="95,330 760,330 760,760 95,980" fill="#2B5FD3"/>
+    <polygon points="350,330 1390,330 1180,520 160,940" fill="#FFE066"/>
+    <rect x="810" y="500" width="320" height="420" rx="10" fill="#F5A05F"/>
+    <rect x="1085" y="760" width="360" height="430" rx="10" fill="#D6F4D2"/>
+    <polygon points="95,930 720,930 610,1450 95,1180" fill="#CFF3DB"/>
+    <polygon points="1020,1120 1460,1120 1460,1450 840,1450" fill="#F6B48B"/>
+    <rect x="1020" y="1240" width="330" height="210" rx="12" fill="url(#pool)"/>
+
+    <g fill="#FFE066">
+      <polygon points="1200,350 1450,350 1350,420 1200,420"/>
+      <polygon points="1210,420 1450,420 1390,490 1210,490"/>
+      <polygon points="1220,490 1450,490 1410,560 1220,560"/>
+      <polygon points="1230,560 1450,560 1420,630 1230,630"/>
+      <polygon points="1240,630 1450,630 1430,700 1240,700"/>
+      <polygon points="1250,700 1450,700 1440,770 1250,770"/>
+      <polygon points="1260,770 1450,770 1450,840 1260,840"/>
+    </g>
+
+    <g>
+      <ellipse cx="760" cy="680" rx="150" ry="150" fill="#A61C2E"/>
+      <ellipse cx="810" cy="930" rx="200" ry="230" fill="#B71E34"/>
+      <path d="M610 850C470 810 380 820 310 760" stroke="#A61C2E" stroke-width="92" stroke-linecap="round"/>
+      <path d="M640 930C520 970 420 1040 360 1180" stroke="#A61C2E" stroke-width="84" stroke-linecap="round"/>
+      <path d="M740 1040C690 1160 640 1260 540 1360" stroke="#A61C2E" stroke-width="70" stroke-linecap="round"/>
+      <path d="M900 980C1050 950 1140 980 1240 1110" stroke="#A61C2E" stroke-width="82" stroke-linecap="round"/>
+      <path d="M980 860C1090 760 1140 680 1080 560" stroke="#A61C2E" stroke-width="78" stroke-linecap="round"/>
+      <path d="M840 780C780 720 710 720 660 780" stroke="#7D1322" stroke-width="30" stroke-linecap="round"/>
+      <ellipse cx="810" cy="760" rx="36" ry="28" fill="#FFF9EA"/>
+      <ellipse cx="823" cy="764" rx="12" ry="12" fill="#090909"/>
+    </g>
+  </g>
+
+  <text x="1545" y="1380" transform="rotate(-90 1545 1380)" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#090909">Rust • Python • Local-first • Open-source</text>
+  <text x="100" y="1525" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#222222">The Autonomous Node</text>
+</svg>

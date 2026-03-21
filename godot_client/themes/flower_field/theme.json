@@ -1,0 +1,102 @@
+{
+  "id": "flower_field",
+  "display_name": "Flower Field",
+  "participants": ["james", "jasmine", "elena", "luca"],
+  "background": {
+    "sky_top": "#89D6FF",
+    "sky_bottom": "#E9FCE7",
+    "horizon_y": 0.62,
+    "ground_top": "#9FD875",
+    "ground_bottom": "#618E46",
+    "decor_style": "flowers",
+    "decor_count": 190,
+    "decor_colors": ["#FFD7F1", "#FFF0A6", "#C9F4FF", "#FFD9B5", "#FFFFFF"]
+  },
+  "ui": {
+    "panel_bg": "#F7F0D5",
+    "panel_border": "#4A6336",
+    "speaker_color": "#2E4D1F",
+    "text_color": "#1C2B18",
+    "accent": "#F29A63",
+    "typewriter_chars_per_second": 70
+  },
+  "audio": {
+    "ducking_db": -6,
+    "mouth_flap_threshold": 0.08,
+    "ambient": {
+      "mode": "synth",
+      "profile": "wind",
+      "base_hz": 126.0,
+      "wobble_hz": 0.21,
+      "gain": 0.012,
+      "volume_db": -26.0
+    }
+  },
+  "agents": {
+    "default": {
+      "body": "#7AA3E3",
+      "accent": "#4D6EAF",
+      "skin": "#F3D5B5",
+      "hair": "#35507A",
+      "outline": "#1E2B3E",
+      "eye": "#0E121A",
+      "mouth": "#6A312C",
+      "flap_speed": 10.0
+    },
+    "james": {
+      "body": "#5FA5F1",
+      "accent": "#3B6CA8",
+      "hair": "#344D7A"
+    },
+    "jasmine": {
+      "body": "#E7A56B",
+      "accent": "#A7643F",
+      "hair": "#704A33"
+    },
+    "elena": {
+      "body": "#9F8EE8",
+      "accent": "#6558AF",
+      "hair": "#413A78"
+    },
+    "luca": {
+      "body": "#56BDB2",
+      "accent": "#2F7C74",
+      "hair": "#2B5750"
+    },
+    "alex": {
+      "body": "#E57C6C",
+      "accent": "#A4473E",
+      "hair": "#70342E"
+    },
+    "sarah": {
+      "body": "#8EB5F0",
+      "accent": "#4A6DA8",
+      "hair": "#37527A"
+    },
+    "diana": {
+      "body": "#DAB5E8",
+      "accent": "#9163A8",
+      "hair": "#5C3F74"
+    },
+    "eve": {
+      "body": "#B0B0B0",
+      "accent": "#6A6A6A",
+      "hair": "#424242"
+    },
+    "ryan": {
+      "body": "#DCC86F",
+      "accent": "#9A8539",
+      "hair": "#6B5A26"
+    },
+    "marcus": {
+      "body": "#7CB1CF",
+      "accent": "#4D7490",
+      "hair": "#2E4960"
+    },
+    "nova": {
+      "body": "#EF97B8",
+      "accent": "#A75475",
+      "hair": "#703247"
+    }
+  }
+}

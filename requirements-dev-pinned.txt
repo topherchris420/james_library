@@ -1,0 +1,6 @@
+# Pinned development toolchain tested on 2026-02-22.
+-r requirements-pinned.txt
+pytest==9.0.2
+pytest-cov==7.0.0
+ruff==0.15.2
+PyYAML==6.0.2

@@ -1,0 +1,47 @@
+site_name: R.A.I.N. Lab Documentation
+site_description: Enterprise-grade epistemic laboratory and multi-agent architecture.
+theme:
+  name: material
+  custom_dir: docs/overrides
+  logo: assets/rain_lab_logo.png
+  favicon: assets/rain_lab_logo.png
+  palette:
+    scheme: slate
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+
+docs_dir: docs
+
+nav:
+  - Welcome: 
+      - Home: index.md
+      - Roadmap: PRODUCT_ROADMAP.md
+      - Meeting Archives: RAIN_LAB_MEETING_LOG.md
+  - System Architecture:
+      - Core Engine: ARCHITECTURE.md
+      - Planning & Tool Integration: docs/plan-tool-integration.md
+      - Bounded Adaptation Policy: docs/BOUNDED_ADAPTATION_POLICY.md
+      - Security & Hardening: SECURITY.md
+      - Godot Theme Blueprint: docs/GODOT_SCENE_THEME_BLUEPRINT.md
+  - R.A.I.N. Lab Agents:
+      - Team Overview: AGENTS.md
+      - James (Director): JAMES_SOUL.md
+      - Elena (Systems Architect): ELENA_SOUL.md
+      - Luca (Theoretical Physicist): LUCA_SOUL.md
+      - Jasmine (Communications): JASMINE_SOUL.md
+  - Theoretical Framework:
+      - Dynamic Resonance Rooting: papers/Dynamic Resonance Rooting (Friction Mechanism).md
+      - Recursive Resonance Stabilization: papers/Recursive Resonance Stabilization.md
+      - Discrete Celestial Holography: papers/Discrete Celestial Holography.md
+      - Coherence Depth: papers/Coherence Depth.md
+      - Location is a Dynamic Variable: papers/Location is a Dynamic Variable.md
+      - Geometric Reality: papers/Reality Built on a Finite Set of Geometric Instructions.md
+      - Temporal Re-Localization: papers/Temporal Re-Localization via Scalar Resonance.md
+  - Operations & Guides:
+      - First Run Checklist: docs/FIRST_RUN_CHECKLIST.md
+      - Production Readiness: docs/PRODUCTION_READINESS.md
+      - Backup & Restore: docs/BACKUP_RESTORE.md
+      - Troubleshooting: docs/TROUBLESHOOTING.md

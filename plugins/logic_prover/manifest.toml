@@ -1,0 +1,7 @@
+name = "logic_prover"
+version = "0.1.0"
+description = "Deterministic DPLL SAT solver for formal hypothesis verification"
+author = "R.A.I.N. Lab"
+wasm_path = "logic_prover.wasm"
+capabilities = ["tool"]
+permissions = []

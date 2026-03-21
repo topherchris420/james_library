@@ -1,0 +1,9 @@
+metric,rain_lab,autoresearch,notes
+architecture_scope,10,4,Runtime language mix and subsystem breadth
+devops_ci,9,3,CI and operational readiness surface
+local_first_capability,10,2,Offline and local-first workflows
+agent_framework_depth,9,4,Multi-agent orchestration depth
+language_runtime_diversity,10,2,Rust + Python vs Python-only
+tooling_extensibility,8,5,Tool and integration extension points
+visualization_support,8,1,Godot and interface support
+reproducibility_docs,9,8,Commands and runbook quality
