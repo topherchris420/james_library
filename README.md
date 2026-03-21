@@ -42,9 +42,9 @@ As a user, you only need to know **R.A.I.N. Lab** — the other two are under th
 
 ## ⚡ The Breakthrough: "The Circuit Breaker" Architecture
 
-**The problem:** Most AI multi-agent systems eventually get stuck — the agents either politely agree with each other or argue in circles forever, never reaching a conclusion.
+**The problem:** Most AI multi-agent systems eventually get stuck — the agents either politely agree with each other or argue in circles forever, never concluding.
 
-**R.A.I.N. Lab's solution — in plain English:**
+**R.A.I.N. Lab's solution**
 
 1. **Explore:** Specialist agents each investigate different angles of your question, like researchers branching out across a library.
 2. **Debate:** The agents challenge each other's reasoning in multiple rounds — no free passes.
