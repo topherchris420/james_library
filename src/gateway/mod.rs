@@ -16,6 +16,7 @@ pub mod sse;
 pub mod static_files;
 pub mod ws;
 
+use crate::agent::loop_::ModelSwitchState;
 use crate::channels::{
     session_backend::SessionBackend, session_sqlite::SqliteSessionBackend, Channel, LinqChannel,
     NextcloudTalkChannel, SendMessage, WatiChannel, WhatsAppChannel,
@@ -446,6 +447,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
         &config.agents,
         config.api_key.as_deref(),
         &config,
+        ModelSwitchState::default(),
     );
 
     // ── Wire MCP tools into the gateway tool registry (non-fatal) ───

@@ -97,8 +97,8 @@ pub use whatsapp::WhatsAppChannel;
 pub use whatsapp_web::WhatsAppWebChannel;
 
 use crate::agent::loop_::{
-    build_tool_instructions, clear_model_switch_request, get_model_switch_state,
-    is_model_switch_requested, run_tool_call_loop, scrub_credentials,
+    build_tool_instructions, is_model_switch_requested, run_tool_call_loop, scrub_credentials,
+    ModelSwitchState,
 };
 use crate::approval::ApprovalManager;
 use crate::config::Config;
@@ -373,6 +373,7 @@ pub(crate) struct ChannelRuntimeContext {
     activated_tools: Option<std::sync::Arc<std::sync::Mutex<crate::tools::ActivatedToolSet>>>,
     cost_tracking: Option<ChannelCostTrackingState>,
     pacing: crate::config::PacingConfig,
+    model_switch_state: ModelSwitchState,
 }
 
 #[derive(Clone)]
@@ -1611,7 +1612,7 @@ async fn process_channel_message(
         Cancelled,
     }
 
-    let model_switch_callback = get_model_switch_state();
+    let model_switch_callback = ctx.model_switch_state.callback();
     let scale_cap = ctx
         .pacing
         .message_timeout_scale_max
@@ -1692,7 +1693,7 @@ async fn process_channel_message(
                         active_provider = Arc::from(new_prov);
                         route.provider = new_provider;
                         route.model = new_model;
-                        clear_model_switch_request();
+                        ctx.model_switch_state.clear();
 
                         ctx.observer.record_event(&ObserverEvent::AgentStart {
                             provider: route.provider.clone(),
@@ -1703,7 +1704,7 @@ async fn process_channel_message(
                     }
                     Err(err) => {
                         tracing::error!("Failed to create provider after model switch: {err}");
-                        clear_model_switch_request();
+                        ctx.model_switch_state.clear();
                         // Fall through with the original error
                     }
                 }
@@ -3237,6 +3238,7 @@ pub async fn start_channels(config: Config) -> Result<()> {
     };
     // Build system prompt from workspace identity files + skills
     let workspace = config.workspace_dir.clone();
+    let model_switch_state = ModelSwitchState::default();
     let (mut built_tools, delegate_handle_ch): (Vec<Box<dyn Tool>>, _) =
         tools::all_tools_with_runtime(
             Arc::new(config.clone()),
@@ -3252,6 +3254,7 @@ pub async fn start_channels(config: Config) -> Result<()> {
             &config.agents,
             config.api_key.as_deref(),
             &config,
+            model_switch_state.clone(),
         );
 
     // Wire MCP tools into the registry before freezing — non-fatal.
@@ -3641,6 +3644,7 @@ pub async fn start_channels(config: Config) -> Result<()> {
             prices: Arc::new(config.cost.prices.clone()),
         }),
         pacing: config.pacing.clone(),
+        model_switch_state,
     });
 
     // Hydrate in-memory conversation histories from persisted JSONL session files.
@@ -3986,6 +3990,7 @@ mod tests {
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         };
 
         assert!(compact_sender_history(&ctx, &sender));
@@ -4103,6 +4108,7 @@ mod tests {
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         };
 
         append_sender_turn(&ctx, &sender, ChatMessage::user("hello"));
@@ -4176,6 +4182,7 @@ mod tests {
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         };
 
         assert!(rollback_orphan_user_turn(&ctx, &sender, "pending"));
@@ -4268,6 +4275,7 @@ mod tests {
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         };
 
         assert!(rollback_orphan_user_turn(
@@ -4810,6 +4818,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -4892,6 +4901,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -4988,6 +4998,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5069,6 +5080,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5160,6 +5172,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5272,6 +5285,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5365,6 +5379,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5473,6 +5488,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5566,6 +5582,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5649,6 +5666,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -5847,6 +5865,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         let (tx, rx) = tokio::sync::mpsc::channel::<traits::ChannelMessage>(4);
@@ -5950,6 +5969,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         let (tx, rx) = tokio::sync::mpsc::channel::<traits::ChannelMessage>(8);
@@ -6068,6 +6088,7 @@ BTC is currently around $65,000 based on latest tool output."#
             cost_tracking: None,
             query_classification: crate::config::QueryClassificationConfig::default(),
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         let (tx, rx) = tokio::sync::mpsc::channel::<traits::ChannelMessage>(8);
@@ -6183,6 +6204,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         let (tx, rx) = tokio::sync::mpsc::channel::<traits::ChannelMessage>(8);
@@ -6280,6 +6302,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -6361,6 +6384,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -7128,6 +7152,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -7260,6 +7285,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -7432,6 +7458,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -7541,6 +7568,7 @@ BTC is currently around $65,000 based on latest tool output."#
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -8078,6 +8106,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         // Simulate a photo attachment message with [IMAGE:] marker.
@@ -8166,6 +8195,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -8329,6 +8359,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -8441,6 +8472,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -8545,6 +8577,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -8669,6 +8702,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         process_channel_message(
@@ -8931,6 +8965,7 @@ Mon Feb 20
             activated_tools: None,
             cost_tracking: None,
             pacing: crate::config::PacingConfig::default(),
+            model_switch_state: ModelSwitchState::default(),
         });
 
         let (tx, rx) = tokio::sync::mpsc::channel::<traits::ChannelMessage>(8);

@@ -158,6 +158,7 @@ pub use web_fetch::WebFetchTool;
 pub use web_search_tool::WebSearchTool;
 pub use workspace_tool::WorkspaceTool;
 
+use crate::agent::loop_::ModelSwitchState;
 use crate::config::{Config, DelegateAgentConfig};
 use crate::memory::Memory;
 use crate::runtime::{NativeRuntime, RuntimeAdapter};
@@ -277,6 +278,7 @@ pub fn all_tools(
         agents,
         fallback_api_key,
         root_config,
+        ModelSwitchState::default(),
     )
 }
 
@@ -296,6 +298,7 @@ pub fn all_tools_with_runtime(
     agents: &HashMap<String, DelegateAgentConfig>,
     fallback_api_key: Option<&str>,
     root_config: &crate::config::Config,
+    model_switch_state: ModelSwitchState,
 ) -> (Vec<Box<dyn Tool>>, Option<DelegateParentToolsHandle>) {
     let has_shell_access = runtime.has_shell_access();
     let sandbox = create_sandbox(&root_config.security);
@@ -324,7 +327,7 @@ pub fn all_tools_with_runtime(
             config.clone(),
             security.clone(),
         )),
-        Arc::new(ModelSwitchTool::new(security.clone())),
+        Arc::new(ModelSwitchTool::new(security.clone(), model_switch_state)),
         Arc::new(ProxyConfigTool::new(config.clone(), security.clone())),
         Arc::new(GitOperationsTool::new(
             security.clone(),

@@ -1,6 +1,7 @@
 use crate::agent::dispatcher::{
     NativeToolDispatcher, ParsedToolCall, ToolDispatcher, ToolExecutionResult, XmlToolDispatcher,
 };
+use crate::agent::loop_::ModelSwitchState;
 use crate::agent::memory_loader::{DefaultMemoryLoader, MemoryLoader};
 use crate::agent::prompt::{PromptContext, SystemPromptBuilder};
 use crate::config::Config;
@@ -371,6 +372,7 @@ impl Agent {
             &config.agents,
             config.api_key.as_deref(),
             config,
+            ModelSwitchState::default(),
         );
 
         // ── Wire MCP tools (non-fatal) ─────────────────────────────

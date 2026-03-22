@@ -6,8 +6,9 @@ use directories::UserDirs;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::sync::{OnceLock, RwLock};
+use std::sync::{Arc, RwLock};
 #[cfg(unix)]
 use tokio::fs::File;
 use tokio::fs::{self, OpenOptions};
@@ -53,9 +54,97 @@ const SUPPORTED_PROXY_SERVICE_SELECTORS: &[&str] = &[
     "transcription.*",
 ];
 
-static RUNTIME_PROXY_CONFIG: OnceLock<RwLock<ProxyConfig>> = OnceLock::new();
-static RUNTIME_PROXY_CLIENT_CACHE: OnceLock<RwLock<HashMap<String, reqwest::Client>>> =
-    OnceLock::new();
+#[derive(Debug, Default)]
+struct RuntimeProxyState {
+    config: RwLock<ProxyConfig>,
+    client_cache: RwLock<HashMap<String, reqwest::Client>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct RuntimeProxyStateHandle {
+    inner: Arc<RuntimeProxyState>,
+}
+
+impl Default for RuntimeProxyStateHandle {
+    fn default() -> Self {
+        Self {
+            inner: Arc::new(RuntimeProxyState::default()),
+        }
+    }
+}
+
+impl RuntimeProxyStateHandle {
+    fn config(&self) -> ProxyConfig {
+        match self.inner.config.read() {
+            Ok(guard) => guard.clone(),
+            Err(poisoned) => poisoned.into_inner().clone(),
+        }
+    }
+
+    fn set_config(&self, config: ProxyConfig) {
+        match self.inner.config.write() {
+            Ok(mut guard) => {
+                *guard = config;
+            }
+            Err(poisoned) => {
+                *poisoned.into_inner() = config;
+            }
+        }
+        self.clear_client_cache();
+    }
+
+    fn cached_client(&self, cache_key: &str) -> Option<reqwest::Client> {
+        match self.inner.client_cache.read() {
+            Ok(guard) => guard.get(cache_key).cloned(),
+            Err(poisoned) => poisoned.into_inner().get(cache_key).cloned(),
+        }
+    }
+
+    fn set_cached_client(&self, cache_key: String, client: reqwest::Client) {
+        match self.inner.client_cache.write() {
+            Ok(mut guard) => {
+                guard.insert(cache_key, client);
+            }
+            Err(poisoned) => {
+                poisoned.into_inner().insert(cache_key, client);
+            }
+        }
+    }
+
+    fn clear_client_cache(&self) {
+        match self.inner.client_cache.write() {
+            Ok(mut guard) => {
+                guard.clear();
+            }
+            Err(poisoned) => {
+                poisoned.into_inner().clear();
+            }
+        }
+    }
+
+    #[cfg(test)]
+    fn contains_cached_client(&self, cache_key: &str) -> bool {
+        match self.inner.client_cache.read() {
+            Ok(guard) => guard.contains_key(cache_key),
+            Err(poisoned) => poisoned.into_inner().contains_key(cache_key),
+        }
+    }
+}
+
+tokio::task_local! {
+    static ACTIVE_RUNTIME_PROXY_STATE: RuntimeProxyStateHandle;
+}
+
+pub async fn with_runtime_proxy_state<T>(
+    state: RuntimeProxyStateHandle,
+    future: impl Future<Output = T>,
+) -> T {
+    ACTIVE_RUNTIME_PROXY_STATE.scope(state, future).await
+}
+
+fn current_runtime_proxy_state() -> Option<RuntimeProxyStateHandle> {
+    ACTIVE_RUNTIME_PROXY_STATE.try_with(Clone::clone).ok()
+}
 
 // ── Top-level config ──────────────────────────────────────────────
 
@@ -3405,22 +3494,110 @@ fn clear_proxy_env_pair(key: &str) {
     std::env::remove_var(key.to_ascii_lowercase());
 }
 
-fn runtime_proxy_state() -> &'static RwLock<ProxyConfig> {
-    RUNTIME_PROXY_CONFIG.get_or_init(|| RwLock::new(ProxyConfig::default()))
+fn set_runtime_proxy_meta_env(key: &str, value: Option<&str>) {
+    if let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) {
+        std::env::set_var(key, value);
+    } else {
+        std::env::remove_var(key);
+    }
 }
 
-fn runtime_proxy_client_cache() -> &'static RwLock<HashMap<String, reqwest::Client>> {
-    RUNTIME_PROXY_CLIENT_CACHE.get_or_init(|| RwLock::new(HashMap::new()))
+fn sync_runtime_proxy_env(config: &ProxyConfig) {
+    set_runtime_proxy_meta_env(
+        "rain_PROXY_ENABLED",
+        Some(if config.enabled { "true" } else { "false" }),
+    );
+    set_runtime_proxy_meta_env("rain_HTTP_PROXY", config.http_proxy.as_deref());
+    set_runtime_proxy_meta_env("rain_HTTPS_PROXY", config.https_proxy.as_deref());
+    set_runtime_proxy_meta_env("rain_ALL_PROXY", config.all_proxy.as_deref());
+    let no_proxy = config.normalized_no_proxy();
+    let services = config.normalized_services();
+    set_runtime_proxy_meta_env(
+        "rain_NO_PROXY",
+        (!no_proxy.is_empty())
+            .then(|| no_proxy.join(","))
+            .as_deref(),
+    );
+    let scope = match config.scope {
+        ProxyScope::Environment => "environment",
+        ProxyScope::Rain => "rain",
+        ProxyScope::Services => "services",
+    };
+    set_runtime_proxy_meta_env("rain_PROXY_SCOPE", Some(scope));
+    set_runtime_proxy_meta_env(
+        "rain_PROXY_SERVICES",
+        (!services.is_empty())
+            .then(|| services.join(","))
+            .as_deref(),
+    );
+
+    if config.enabled && config.scope == ProxyScope::Environment {
+        config.apply_to_process_env();
+    } else {
+        ProxyConfig::clear_process_env();
+    }
+}
+
+fn env_runtime_proxy_config() -> ProxyConfig {
+    let mut proxy = ProxyConfig::default();
+    let explicit_proxy_enabled = std::env::var("rain_PROXY_ENABLED")
+        .ok()
+        .as_deref()
+        .and_then(parse_proxy_enabled);
+    if let Some(enabled) = explicit_proxy_enabled {
+        proxy.enabled = enabled;
+    }
+
+    let mut proxy_url_overridden = false;
+    if let Ok(proxy_url) = std::env::var("rain_HTTP_PROXY").or_else(|_| std::env::var("HTTP_PROXY"))
+    {
+        proxy.http_proxy = normalize_proxy_url_option(Some(&proxy_url));
+        proxy_url_overridden = true;
+    }
+    if let Ok(proxy_url) =
+        std::env::var("rain_HTTPS_PROXY").or_else(|_| std::env::var("HTTPS_PROXY"))
+    {
+        proxy.https_proxy = normalize_proxy_url_option(Some(&proxy_url));
+        proxy_url_overridden = true;
+    }
+    if let Ok(proxy_url) = std::env::var("rain_ALL_PROXY").or_else(|_| std::env::var("ALL_PROXY")) {
+        proxy.all_proxy = normalize_proxy_url_option(Some(&proxy_url));
+        proxy_url_overridden = true;
+    }
+    if let Ok(no_proxy) = std::env::var("rain_NO_PROXY").or_else(|_| std::env::var("NO_PROXY")) {
+        proxy.no_proxy = normalize_no_proxy_list(vec![no_proxy]);
+    }
+
+    if explicit_proxy_enabled.is_none() && proxy_url_overridden && proxy.has_any_proxy_url() {
+        proxy.enabled = true;
+    }
+
+    if let Ok(scope_raw) = std::env::var("rain_PROXY_SCOPE") {
+        if let Some(scope) = parse_proxy_scope(&scope_raw) {
+            proxy.scope = scope;
+        } else {
+            tracing::warn!(
+                scope = %scope_raw,
+                "Ignoring invalid rain_PROXY_SCOPE (valid: environment|R.A.I.N.|services)"
+            );
+        }
+    }
+
+    if let Ok(services_raw) = std::env::var("rain_PROXY_SERVICES") {
+        proxy.services = normalize_service_list(vec![services_raw]);
+    }
+
+    if let Err(error) = proxy.validate() {
+        tracing::warn!("Invalid proxy configuration ignored: {error}");
+        proxy.enabled = false;
+    }
+
+    proxy
 }
 
 fn clear_runtime_proxy_client_cache() {
-    match runtime_proxy_client_cache().write() {
-        Ok(mut guard) => {
-            guard.clear();
-        }
-        Err(poisoned) => {
-            poisoned.into_inner().clear();
-        }
+    if let Some(state) = current_runtime_proxy_state() {
+        state.clear_client_cache();
     }
 }
 
@@ -3442,41 +3619,26 @@ fn runtime_proxy_cache_key(
 }
 
 fn runtime_proxy_cached_client(cache_key: &str) -> Option<reqwest::Client> {
-    match runtime_proxy_client_cache().read() {
-        Ok(guard) => guard.get(cache_key).cloned(),
-        Err(poisoned) => poisoned.into_inner().get(cache_key).cloned(),
-    }
+    current_runtime_proxy_state().and_then(|state| state.cached_client(cache_key))
 }
 
 fn set_runtime_proxy_cached_client(cache_key: String, client: reqwest::Client) {
-    match runtime_proxy_client_cache().write() {
-        Ok(mut guard) => {
-            guard.insert(cache_key, client);
-        }
-        Err(poisoned) => {
-            poisoned.into_inner().insert(cache_key, client);
-        }
+    if let Some(state) = current_runtime_proxy_state() {
+        state.set_cached_client(cache_key, client);
     }
 }
 
 pub fn set_runtime_proxy_config(config: ProxyConfig) {
-    match runtime_proxy_state().write() {
-        Ok(mut guard) => {
-            *guard = config;
-        }
-        Err(poisoned) => {
-            *poisoned.into_inner() = config;
-        }
+    if let Some(state) = current_runtime_proxy_state() {
+        state.set_config(config.clone());
     }
-
-    clear_runtime_proxy_client_cache();
+    sync_runtime_proxy_env(&config);
 }
 
 pub fn runtime_proxy_config() -> ProxyConfig {
-    match runtime_proxy_state().read() {
-        Ok(guard) => guard.clone(),
-        Err(poisoned) => poisoned.into_inner().clone(),
-    }
+    current_runtime_proxy_state()
+        .map(|state| state.config())
+        .unwrap_or_else(env_runtime_proxy_config)
 }
 
 pub fn apply_runtime_proxy_to_builder(
@@ -6822,6 +6984,22 @@ impl Default for Config {
     }
 }
 
+impl Config {
+    pub fn runtime_proxy_state_handle(&self) -> RuntimeProxyStateHandle {
+        let state = RuntimeProxyStateHandle::default();
+        state.set_config(self.proxy.clone());
+        state
+    }
+
+    pub async fn with_runtime_proxy_state<T>(&self, future: impl Future<Output = T>) -> T {
+        with_runtime_proxy_state(self.runtime_proxy_state_handle(), future).await
+    }
+
+    pub fn sync_runtime_proxy_state(&self) {
+        set_runtime_proxy_config(self.proxy.clone());
+    }
+}
+
 fn default_config_and_workspace_dirs() -> Result<(PathBuf, PathBuf)> {
     let config_dir = default_config_dir()?;
     Ok((config_dir.clone(), config_dir.join("workspace")))
@@ -8774,10 +8952,6 @@ impl Config {
         if let Err(error) = self.proxy.validate() {
             tracing::warn!("Invalid proxy configuration ignored: {error}");
             self.proxy.enabled = false;
-        }
-
-        if self.proxy.enabled && self.proxy.scope == ProxyScope::Environment {
-            self.proxy.apply_to_process_env();
         }
 
         set_runtime_proxy_config(self.proxy.clone());

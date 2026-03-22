@@ -180,22 +180,28 @@ const AUTOSAVE_MIN_MESSAGE_CHARS: usize = 20;
 /// Returns Some((provider, model)) if a switch was requested, None otherwise.
 pub type ModelSwitchCallback = Arc<Mutex<Option<(String, String)>>>;
 
-/// Global model switch request state - used for runtime model switching via model_switch tool.
-/// This is set by the model_switch tool and checked by the agent loop.
-#[allow(clippy::type_complexity)]
-static MODEL_SWITCH_REQUEST: LazyLock<Arc<Mutex<Option<(String, String)>>>> =
-    LazyLock::new(|| Arc::new(Mutex::new(None)));
-
-/// Get the global model switch request state
-pub fn get_model_switch_state() -> ModelSwitchCallback {
-    Arc::clone(&MODEL_SWITCH_REQUEST)
+/// Per-runtime model switch request state shared by the tool registry and agent loop.
+#[derive(Clone, Default)]
+pub struct ModelSwitchState {
+    inner: ModelSwitchCallback,
 }
 
-/// Clear any pending model switch request
-pub fn clear_model_switch_request() {
-    if let Ok(guard) = MODEL_SWITCH_REQUEST.lock() {
-        let mut guard = guard;
-        *guard = None;
+impl ModelSwitchState {
+    pub fn callback(&self) -> ModelSwitchCallback {
+        Arc::clone(&self.inner)
+    }
+
+    pub fn pending_request(&self) -> Option<(String, String)> {
+        self.inner.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    pub fn request_switch(&self, provider: impl Into<String>, model: impl Into<String>) {
+        *self.inner.lock().unwrap_or_else(|e| e.into_inner()) =
+            Some((provider.into(), model.into()));
+    }
+
+    pub fn clear(&self) {
+        *self.inner.lock().unwrap_or_else(|e| e.into_inner()) = None;
     }
 }
 
@@ -1558,6 +1564,7 @@ pub async fn run(
     } else {
         (None, None)
     };
+    let model_switch_state = ModelSwitchState::default();
     let (mut tools_registry, delegate_handle) = tools::all_tools_with_runtime(
         Arc::new(config.clone()),
         &security,
@@ -1572,6 +1579,7 @@ pub async fn run(
         &config.agents,
         config.api_key.as_deref(),
         &config,
+        model_switch_state.clone(),
     );
 
     let peripheral_tools: Vec<Box<dyn Tool>> =
@@ -1702,7 +1710,7 @@ pub async fn run(
         &provider_runtime_options,
     )?;
 
-    let model_switch_callback = get_model_switch_state();
+    let model_switch_callback = model_switch_state.callback();
 
     observer.record_event(&ObserverEvent::AgentStart {
         provider: provider_name.to_string(),
@@ -2005,7 +2013,7 @@ pub async fn run(
                         provider_name = new_provider;
                         model_name = new_model;
 
-                        clear_model_switch_request();
+                        model_switch_state.clear();
 
                         observer.record_event(&ObserverEvent::AgentStart {
                             provider: provider_name.to_string(),
@@ -2230,7 +2238,7 @@ pub async fn run(
                             provider_name = new_provider;
                             model_name = new_model;
 
-                            clear_model_switch_request();
+                            model_switch_state.clear();
 
                             observer.record_event(&ObserverEvent::AgentStart {
                                 provider: provider_name.to_string(),
@@ -2341,6 +2349,7 @@ pub async fn process_message(
         &config.agents,
         config.api_key.as_deref(),
         &config,
+        ModelSwitchState::default(),
     );
     let peripheral_tools: Vec<Box<dyn Tool>> =
         crate::peripherals::create_peripheral_tools(&config.peripherals).await?;

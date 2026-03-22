@@ -1,5 +1,5 @@
 use super::traits::{Tool, ToolResult};
-use crate::agent::loop_::get_model_switch_state;
+use crate::agent::loop_::ModelSwitchState;
 use crate::providers;
 use crate::security::policy::ToolOperation;
 use crate::security::SecurityPolicy;
@@ -9,11 +9,12 @@ use std::sync::Arc;
 
 pub struct ModelSwitchTool {
     security: Arc<SecurityPolicy>,
+    state: ModelSwitchState,
 }
 
 impl ModelSwitchTool {
-    pub fn new(security: Arc<SecurityPolicy>) -> Self {
-        Self { security }
+    pub fn new(security: Arc<SecurityPolicy>, state: ModelSwitchState) -> Self {
+        Self { security, state }
     }
 }
 
@@ -82,11 +83,7 @@ impl Tool for ModelSwitchTool {
 
 impl ModelSwitchTool {
     fn handle_get(&self) -> anyhow::Result<ToolResult> {
-        let switch_state = get_model_switch_state();
-        let pending = switch_state
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .clone();
+        let pending = self.state.pending_request();
 
         Ok(ToolResult {
             success: true,
@@ -145,10 +142,7 @@ impl ModelSwitchTool {
             });
         }
 
-        // Set the global model switch request
-        let switch_state = get_model_switch_state();
-        *switch_state.lock().unwrap_or_else(|e| e.into_inner()) =
-            Some((provider.to_string(), model.to_string()));
+        self.state.request_switch(provider, model);
 
         Ok(ToolResult {
             success: true,
