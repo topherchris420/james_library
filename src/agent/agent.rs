@@ -39,7 +39,6 @@ pub struct Agent {
     classification_config: crate::config::QueryClassificationConfig,
     available_hints: Vec<String>,
     route_model_by_hint: HashMap<String, String>,
-    allowed_tools: Option<Vec<String>>,
     response_cache: Option<Arc<crate::memory::response_cache::ResponseCache>>,
     tool_descriptions: Option<ToolDescriptions>,
     /// Pre-rendered security policy summary injected into the system prompt
@@ -283,7 +282,6 @@ impl AgentBuilder {
             classification_config: self.classification_config.unwrap_or_default(),
             available_hints: self.available_hints.unwrap_or_default(),
             route_model_by_hint: self.route_model_by_hint.unwrap_or_default(),
-            allowed_tools: allowed,
             response_cache: self.response_cache,
             tool_descriptions: self.tool_descriptions,
             security_summary: self.security_summary,

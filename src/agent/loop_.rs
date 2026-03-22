@@ -1,21 +1,30 @@
 use crate::agent::history::{
-    apply_compaction_summary, auto_compact_history, autosave_memory_key,
-    build_compaction_transcript, build_context, build_hardware_context, estimate_history_tokens,
+    auto_compact_history, autosave_memory_key, build_context, build_hardware_context,
     load_interactive_session_history, memory_session_id_from_state_file,
-    save_interactive_session_history, trim_history, InteractiveSessionState,
-    DEFAULT_MAX_HISTORY_MESSAGES,
+    save_interactive_session_history, trim_history,
 };
 use crate::agent::tool_call_parser::{
-    build_assistant_history_with_tool_calls, build_native_assistant_history,
-    build_native_assistant_history_from_parsed_calls, detect_tool_call_parse_issue,
-    extract_json_values, parse_glm_shortened_body, parse_glm_style_tool_calls,
-    parse_perl_style_tool_calls, parse_structured_tool_calls, parse_tool_call_value,
-    parse_tool_calls, parse_tool_calls_from_json_value, resolve_display_text, strip_think_tags,
-    strip_tool_result_blocks, tool_call_signature, ParsedToolCall,
+    build_native_assistant_history, build_native_assistant_history_from_parsed_calls,
+    detect_tool_call_parse_issue, parse_structured_tool_calls, parse_tool_calls,
+    resolve_display_text, strip_tool_result_blocks, tool_call_signature, ParsedToolCall,
 };
-use crate::agent::tool_filter::{
-    compute_excluded_mcp_tools, filter_by_allowed_tools, filter_tool_specs_for_turn, glob_match,
+use crate::agent::tool_filter::compute_excluded_mcp_tools;
+
+// Imports used only in `#[cfg(test)]` modules — kept behind cfg to avoid warnings.
+#[cfg(test)]
+use crate::agent::history::{
+    apply_compaction_summary, build_compaction_transcript, estimate_history_tokens,
+    InteractiveSessionState, DEFAULT_MAX_HISTORY_MESSAGES,
 };
+#[cfg(test)]
+use crate::agent::tool_call_parser::{
+    default_param_for_tool, extract_json_values, map_tool_name_alias, parse_arguments_value,
+    parse_glm_shortened_body, parse_glm_style_tool_calls, parse_perl_style_tool_calls,
+    parse_tool_call_value, parse_tool_calls_from_json_value, strip_think_tags,
+};
+#[cfg(test)]
+use crate::agent::tool_filter::{filter_by_allowed_tools, filter_tool_specs_for_turn, glob_match};
+
 use crate::approval::{ApprovalManager, ApprovalRequest, ApprovalResponse};
 use crate::config::schema::ModelPricing;
 use crate::config::Config;
@@ -25,15 +34,15 @@ use crate::i18n::ToolDescriptions;
 use crate::memory::{self, Memory, MemoryCategory};
 use crate::multimodal;
 use crate::observability::{self, runtime_trace, Observer, ObserverEvent};
-use crate::providers::{
-    self, ChatMessage, ChatRequest, Provider, ProviderCapabilityError, ToolCall,
-};
+#[cfg(test)]
+use crate::providers::ToolCall;
+use crate::providers::{self, ChatMessage, ChatRequest, Provider, ProviderCapabilityError};
 use crate::runtime;
 use crate::security::{AutonomyLevel, SecurityPolicy};
 use crate::tools::{self, Tool};
 use crate::util::truncate_with_ellipsis;
 use anyhow::Result;
-use regex::{Regex, RegexSet};
+use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Write;
 use std::io::Write as _;
@@ -148,6 +157,17 @@ pub(crate) fn check_tool_loop_budget() -> Option<BudgetCheck> {
 /// Minimum characters per chunk when relaying LLM text to a streaming draft.
 const STREAM_CHUNK_MIN_CHARS: usize = 80;
 
+/// Sentinel value sent on the streaming delta channel to signal the receiver
+/// to clear any accumulated draft text before the final answer is streamed.
+pub(crate) const DRAFT_CLEAR_SENTINEL: &str = "\x00__draft_clear__";
+
+// Task-local override for the Anthropic `tool_choice` parameter.
+// Set by the agent loop (e.g. "any" to force tool use for hardware requests)
+// and read by providers that support native tool calling.
+tokio::task_local! {
+    pub(crate) static TOOL_CHOICE_OVERRIDE: Option<String>;
+}
+
 /// Default maximum agentic tool-use iterations per user message to prevent runaway loops.
 /// Used as a safe fallback when `max_tool_iterations` is unset or configured as zero.
 const DEFAULT_MAX_TOOL_ITERATIONS: usize = 10;
@@ -178,19 +198,6 @@ pub fn clear_model_switch_request() {
         *guard = None;
     }
 }
-
-static SENSITIVE_KEY_PATTERNS: LazyLock<RegexSet> = LazyLock::new(|| {
-    RegexSet::new([
-        r"(?i)token",
-        r"(?i)api[_-]?key",
-        r"(?i)password",
-        r"(?i)secret",
-        r"(?i)user[_-]?key",
-        r"(?i)bearer",
-        r"(?i)credential",
-    ])
-    .unwrap()
-});
 
 static SENSITIVE_KV_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?i)(token|api[_-]?key|password|secret|user[_-]?key|bearer|credential)["']?\s*[:=]\s*(?:"([^"]{8,})"|'([^']{8,})'|([a-zA-Z0-9_\-\.]{8,}))"#).unwrap()
@@ -240,6 +247,28 @@ pub(crate) fn scrub_credentials(input: &str) -> String {
             }
         })
         .to_string()
+}
+
+/// Build a short hint string from a tool's JSON arguments for progress display.
+/// Returns the most informative single argument value, truncated to `max_chars`.
+fn truncate_tool_args_for_progress(
+    _tool_name: &str,
+    args: &serde_json::Value,
+    max_chars: usize,
+) -> String {
+    let hint = match args {
+        serde_json::Value::Object(map) => map
+            .values()
+            .find_map(|v| v.as_str())
+            .unwrap_or("")
+            .to_string(),
+        serde_json::Value::String(s) => s.clone(),
+        _ => return String::new(),
+    };
+    if hint.is_empty() {
+        return String::new();
+    }
+    truncate_with_ellipsis(&scrub_credentials(&hint), max_chars)
 }
 
 /// Find a tool by name in the registry.
@@ -2555,6 +2584,26 @@ pub async fn process_message(
         None,
     )
     .await
+}
+
+/// Convert tool definitions to OpenAI function-calling format.
+/// Used in tests to verify tool registration produces valid schemas.
+#[cfg(test)]
+fn tools_to_openai_format(tools: &[Box<dyn Tool>]) -> Vec<serde_json::Value> {
+    tools
+        .iter()
+        .map(|t| {
+            let spec = t.spec();
+            serde_json::json!({
+                "type": "function",
+                "function": {
+                    "name": spec.name,
+                    "description": spec.description,
+                    "parameters": spec.parameters,
+                }
+            })
+        })
+        .collect()
 }
 
 #[cfg(test)]

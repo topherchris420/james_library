@@ -20,6 +20,7 @@ pub mod cli;
 pub mod dingtalk;
 pub mod discord;
 pub mod email_channel;
+mod history;
 pub mod imessage;
 pub mod irc;
 #[cfg(feature = "channel-lark")]
@@ -36,6 +37,7 @@ pub mod notion;
 pub mod qq;
 pub mod reddit;
 pub(crate) mod runtime_state;
+pub(crate) mod sanitize;
 pub mod session_backend;
 pub mod session_sqlite;
 pub mod session_store;
@@ -117,14 +119,18 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
+use self::history::{
+    append_sender_turn, compact_sender_history, proactive_trim_turns, rollback_orphan_user_turn,
+};
 use self::runtime_state::{
     clear_sender_history, config_file_stamp, conversation_history_key, conversation_memory_key,
     followup_thread_id, get_route_selection, interruption_scope_key, mark_sender_for_new_session,
     maybe_apply_runtime_config_update, parse_runtime_command, resolve_provider_alias,
     resolved_default_model, resolved_default_provider, runtime_config_store,
     runtime_defaults_from_config, runtime_defaults_snapshot, set_route_selection,
-    take_pending_new_session, ChannelRuntimeDefaults, RuntimeConfigState,
+    take_pending_new_session, RuntimeConfigState,
 };
+use self::sanitize::{sanitize_channel_response, strip_tool_call_tags};
 
 /// Observer wrapper that forwards tool-call events to a channel sender
 /// for real-time threaded notifications.
@@ -251,7 +257,7 @@ fn channel_message_timeout_budget_secs_with_cap(
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct ChannelRouteSelection {
+pub(crate) struct ChannelRouteSelection {
     provider: String,
     model: String,
     /// Route-specific API key override. When set, this takes precedence over
@@ -261,7 +267,7 @@ struct ChannelRouteSelection {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum ChannelRuntimeCommand {
+pub(crate) enum ChannelRuntimeCommand {
     ShowProviders,
     SetProvider(String),
     ShowModel,
@@ -315,7 +321,7 @@ struct ChannelCostTrackingState {
 }
 
 #[derive(Clone)]
-struct ChannelRuntimeContext {
+pub(crate) struct ChannelRuntimeContext {
     channels_by_name: Arc<HashMap<String, Arc<dyn Channel>>>,
     provider: Arc<dyn Provider>,
     default_provider: Arc<String>,
@@ -403,122 +409,6 @@ fn is_stop_command(content: &str) -> bool {
     let cmd = trimmed.split_whitespace().next().unwrap_or("");
     let base = cmd.split('@').next().unwrap_or(cmd);
     base.eq_ignore_ascii_case("/stop")
-}
-
-/// Strip tool-call XML tags from outgoing messages.
-///
-/// LLM responses may contain `<function_calls>`, `<function_call>`,
-/// `<tool_call>`, `<toolcall>`, `<tool-call>`, `<tool>`, or `<invoke>`
-/// blocks that are internal protocol and must not be forwarded to end
-/// users on any channel.
-fn strip_tool_call_tags(message: &str) -> String {
-    const TOOL_CALL_OPEN_TAGS: [&str; 7] = [
-        "<function_calls>",
-        "<function_call>",
-        "<tool_call>",
-        "<toolcall>",
-        "<tool-call>",
-        "<tool>",
-        "<invoke>",
-    ];
-
-    fn find_first_tag<'a>(haystack: &str, tags: &'a [&'a str]) -> Option<(usize, &'a str)> {
-        tags.iter()
-            .filter_map(|tag| haystack.find(tag).map(|idx| (idx, *tag)))
-            .min_by_key(|(idx, _)| *idx)
-    }
-
-    fn matching_close_tag(open_tag: &str) -> Option<&'static str> {
-        match open_tag {
-            "<function_calls>" => Some("</function_calls>"),
-            "<function_call>" => Some("</function_call>"),
-            "<tool_call>" => Some("</tool_call>"),
-            "<toolcall>" => Some("</toolcall>"),
-            "<tool-call>" => Some("</tool-call>"),
-            "<tool>" => Some("</tool>"),
-            "<invoke>" => Some("</invoke>"),
-            _ => None,
-        }
-    }
-
-    fn extract_first_json_end(input: &str) -> Option<usize> {
-        let trimmed = input.trim_start();
-        let trim_offset = input.len().saturating_sub(trimmed.len());
-
-        for (byte_idx, ch) in trimmed.char_indices() {
-            if ch != '{' && ch != '[' {
-                continue;
-            }
-
-            let slice = &trimmed[byte_idx..];
-            let mut stream =
-                serde_json::Deserializer::from_str(slice).into_iter::<serde_json::Value>();
-            if let Some(Ok(_value)) = stream.next() {
-                let consumed = stream.byte_offset();
-                if consumed > 0 {
-                    return Some(trim_offset + byte_idx + consumed);
-                }
-            }
-        }
-
-        None
-    }
-
-    fn strip_leading_close_tags(mut input: &str) -> &str {
-        loop {
-            let trimmed = input.trim_start();
-            if !trimmed.starts_with("</") {
-                return trimmed;
-            }
-
-            let Some(close_end) = trimmed.find('>') else {
-                return "";
-            };
-            input = &trimmed[close_end + 1..];
-        }
-    }
-
-    let mut kept_segments = Vec::new();
-    let mut remaining = message;
-
-    while let Some((start, open_tag)) = find_first_tag(remaining, &TOOL_CALL_OPEN_TAGS) {
-        let before = &remaining[..start];
-        if !before.is_empty() {
-            kept_segments.push(before.to_string());
-        }
-
-        let Some(close_tag) = matching_close_tag(open_tag) else {
-            break;
-        };
-        let after_open = &remaining[start + open_tag.len()..];
-
-        if let Some(close_idx) = after_open.find(close_tag) {
-            remaining = &after_open[close_idx + close_tag.len()..];
-            continue;
-        }
-
-        if let Some(consumed_end) = extract_first_json_end(after_open) {
-            remaining = strip_leading_close_tags(&after_open[consumed_end..]);
-            continue;
-        }
-
-        kept_segments.push(remaining[start..].to_string());
-        remaining = "";
-        break;
-    }
-
-    if !remaining.is_empty() {
-        kept_segments.push(remaining.to_string());
-    }
-
-    let mut result = kept_segments.concat();
-
-    // Clean up any resulting blank lines (but preserve paragraphs)
-    while result.contains("\n\n\n") {
-        result = result.replace("\n\n\n", "\n\n");
-    }
-
-    result.trim().to_string()
 }
 
 fn channel_delivery_instructions(channel_name: &str) -> Option<&'static str> {
@@ -710,121 +600,6 @@ fn refreshed_new_session_system_prompt(ctx: &ChannelRuntimeContext) -> String {
         ctx.prompt_config.skills.prompt_injection_mode,
     );
     replace_available_skills_section(ctx.system_prompt.as_str(), &refreshed_skills)
-}
-
-fn compact_sender_history(ctx: &ChannelRuntimeContext, sender_key: &str) -> bool {
-    let mut histories = ctx
-        .conversation_histories
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-
-    let Some(turns) = histories.get_mut(sender_key) else {
-        return false;
-    };
-
-    if turns.is_empty() {
-        return false;
-    }
-
-    let keep_from = turns
-        .len()
-        .saturating_sub(CHANNEL_HISTORY_COMPACT_KEEP_MESSAGES);
-    let mut compacted = normalize_cached_channel_turns(turns[keep_from..].to_vec());
-
-    for turn in &mut compacted {
-        if turn.content.chars().count() > CHANNEL_HISTORY_COMPACT_CONTENT_CHARS {
-            turn.content =
-                truncate_with_ellipsis(&turn.content, CHANNEL_HISTORY_COMPACT_CONTENT_CHARS);
-        }
-    }
-
-    if compacted.is_empty() {
-        turns.clear();
-        return false;
-    }
-
-    *turns = compacted;
-    true
-}
-
-/// Proactively trim conversation turns so that the total estimated character
-/// count stays within [`PROACTIVE_CONTEXT_BUDGET_CHARS`].  Drops the oldest
-/// turns first, but always preserves the most recent turn (the current user
-/// message).  Returns the number of turns dropped.
-fn proactive_trim_turns(turns: &mut Vec<ChatMessage>, budget: usize) -> usize {
-    let total_chars: usize = turns.iter().map(|t| t.content.chars().count()).sum();
-    if total_chars <= budget || turns.len() <= 1 {
-        return 0;
-    }
-
-    let mut excess = total_chars.saturating_sub(budget);
-    let mut drop_count = 0;
-
-    // Walk from the oldest turn forward, but never drop the very last turn.
-    while excess > 0 && drop_count < turns.len().saturating_sub(1) {
-        excess = excess.saturating_sub(turns[drop_count].content.chars().count());
-        drop_count += 1;
-    }
-
-    if drop_count > 0 {
-        turns.drain(..drop_count);
-    }
-    drop_count
-}
-
-fn append_sender_turn(ctx: &ChannelRuntimeContext, sender_key: &str, turn: ChatMessage) {
-    // Persist to JSONL before adding to in-memory history.
-    if let Some(ref store) = ctx.session_store {
-        if let Err(e) = store.append(sender_key, &turn) {
-            tracing::warn!("Failed to persist session turn: {e}");
-        }
-    }
-
-    let mut histories = ctx
-        .conversation_histories
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    let turns = histories.entry(sender_key.to_string()).or_default();
-    turns.push(turn);
-    while turns.len() > MAX_CHANNEL_HISTORY {
-        turns.remove(0);
-    }
-}
-
-fn rollback_orphan_user_turn(
-    ctx: &ChannelRuntimeContext,
-    sender_key: &str,
-    expected_content: &str,
-) -> bool {
-    let mut histories = ctx
-        .conversation_histories
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    let Some(turns) = histories.get_mut(sender_key) else {
-        return false;
-    };
-
-    let should_pop = turns
-        .last()
-        .is_some_and(|turn| turn.role == "user" && turn.content == expected_content);
-    if !should_pop {
-        return false;
-    }
-
-    turns.pop();
-    if turns.is_empty() {
-        histories.remove(sender_key);
-    }
-
-    // Also remove the orphan turn from the persisted JSONL session store so
-    // it doesn't resurface after a daemon restart (fixes #3674).
-    if let Some(ref store) = ctx.session_store {
-        if let Err(e) = store.remove_last(sender_key) {
-            tracing::warn!("Failed to rollback session store entry: {e}");
-        }
-    }
-
-    true
 }
 
 fn should_skip_memory_context_entry(key: &str, content: &str) -> bool {
@@ -1304,229 +1079,6 @@ fn extract_tool_context_summary(history: &[ChatMessage], start_index: usize) -> 
     }
 
     format!("[Used tools: {}]", tool_names.join(", "))
-}
-
-fn sanitize_channel_response(response: &str, tools: &[Box<dyn Tool>]) -> String {
-    let known_tool_names: HashSet<String> = tools
-        .iter()
-        .map(|tool| tool.name().to_ascii_lowercase())
-        .collect();
-    // Strip XML-style tool-call tags (e.g. <tool_call>...</tool_call>)
-    let stripped_xml = strip_tool_call_tags(response);
-    // Strip isolated tool-call JSON artifacts
-    let stripped_json = strip_isolated_tool_json_artifacts(&stripped_xml, &known_tool_names);
-    // Strip leading narration lines that announce tool usage
-    strip_tool_narration(&stripped_json)
-}
-
-/// Remove leading lines that narrate tool usage (e.g. "Let me check the weather for you.").
-///
-/// Only strips lines from the very beginning of the message that match common
-/// narration patterns, so genuine content is preserved.
-fn strip_tool_narration(message: &str) -> String {
-    let narration_prefixes: &[&str] = &[
-        "let me ",
-        "i'll ",
-        "i will ",
-        "i am going to ",
-        "i'm going to ",
-        "searching ",
-        "looking up ",
-        "fetching ",
-        "checking ",
-        "using the ",
-        "using my ",
-        "one moment",
-        "hold on",
-        "just a moment",
-        "give me a moment",
-        "allow me to ",
-    ];
-
-    let mut result_lines: Vec<&str> = Vec::new();
-    let mut past_narration = false;
-
-    for line in message.lines() {
-        if past_narration {
-            result_lines.push(line);
-            continue;
-        }
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        let lower = trimmed.to_lowercase();
-        if narration_prefixes.iter().any(|p| lower.starts_with(p)) {
-            // Skip this narration line
-            continue;
-        }
-        // First non-narration, non-empty line — keep everything from here
-        past_narration = true;
-        result_lines.push(line);
-    }
-
-    let joined = result_lines.join("\n");
-    let trimmed = joined.trim();
-    if trimmed.is_empty() && !message.trim().is_empty() {
-        // If stripping removed everything, return original to avoid empty reply
-        message.to_string()
-    } else {
-        trimmed.to_string()
-    }
-}
-
-fn is_tool_call_payload(value: &serde_json::Value, known_tool_names: &HashSet<String>) -> bool {
-    let Some(object) = value.as_object() else {
-        return false;
-    };
-
-    let (name, has_args) =
-        if let Some(function) = object.get("function").and_then(|f| f.as_object()) {
-            (
-                function
-                    .get("name")
-                    .and_then(|v| v.as_str())
-                    .or_else(|| object.get("name").and_then(|v| v.as_str())),
-                function.contains_key("arguments")
-                    || function.contains_key("parameters")
-                    || object.contains_key("arguments")
-                    || object.contains_key("parameters"),
-            )
-        } else {
-            (
-                object.get("name").and_then(|v| v.as_str()),
-                object.contains_key("arguments") || object.contains_key("parameters"),
-            )
-        };
-
-    let Some(name) = name.map(str::trim).filter(|name| !name.is_empty()) else {
-        return false;
-    };
-
-    has_args && known_tool_names.contains(&name.to_ascii_lowercase())
-}
-
-fn is_tool_result_payload(
-    object: &serde_json::Map<String, serde_json::Value>,
-    saw_tool_call_payload: bool,
-) -> bool {
-    if !saw_tool_call_payload || !object.contains_key("result") {
-        return false;
-    }
-
-    object.keys().all(|key| {
-        matches!(
-            key.as_str(),
-            "result" | "id" | "tool_call_id" | "name" | "tool"
-        )
-    })
-}
-
-fn sanitize_tool_json_value(
-    value: &serde_json::Value,
-    known_tool_names: &HashSet<String>,
-    saw_tool_call_payload: bool,
-) -> Option<(String, bool)> {
-    if is_tool_call_payload(value, known_tool_names) {
-        return Some((String::new(), true));
-    }
-
-    if let Some(array) = value.as_array() {
-        if !array.is_empty()
-            && array
-                .iter()
-                .all(|item| is_tool_call_payload(item, known_tool_names))
-        {
-            return Some((String::new(), true));
-        }
-        return None;
-    }
-
-    let object = value.as_object()?;
-
-    if let Some(tool_calls) = object.get("tool_calls").and_then(|value| value.as_array()) {
-        if !tool_calls.is_empty()
-            && tool_calls
-                .iter()
-                .all(|call| is_tool_call_payload(call, known_tool_names))
-        {
-            let content = object
-                .get("content")
-                .and_then(|value| value.as_str())
-                .unwrap_or("")
-                .trim()
-                .to_string();
-            return Some((content, true));
-        }
-    }
-
-    if is_tool_result_payload(object, saw_tool_call_payload) {
-        return Some((String::new(), false));
-    }
-
-    None
-}
-
-fn is_line_isolated_json_segment(message: &str, start: usize, end: usize) -> bool {
-    let line_start = message[..start].rfind('\n').map_or(0, |idx| idx + 1);
-    let line_end = message[end..]
-        .find('\n')
-        .map_or(message.len(), |idx| end + idx);
-
-    message[line_start..start].trim().is_empty() && message[end..line_end].trim().is_empty()
-}
-
-fn strip_isolated_tool_json_artifacts(message: &str, known_tool_names: &HashSet<String>) -> String {
-    let mut cleaned = String::with_capacity(message.len());
-    let mut cursor = 0usize;
-    let mut saw_tool_call_payload = false;
-
-    while cursor < message.len() {
-        let Some(rel_start) = message[cursor..].find(['{', '[']) else {
-            cleaned.push_str(&message[cursor..]);
-            break;
-        };
-
-        let start = cursor + rel_start;
-        cleaned.push_str(&message[cursor..start]);
-
-        let candidate = &message[start..];
-        let mut stream =
-            serde_json::Deserializer::from_str(candidate).into_iter::<serde_json::Value>();
-
-        if let Some(Ok(value)) = stream.next() {
-            let consumed = stream.byte_offset();
-            if consumed > 0 {
-                let end = start + consumed;
-                if is_line_isolated_json_segment(message, start, end) {
-                    if let Some((replacement, marks_tool_call)) =
-                        sanitize_tool_json_value(&value, known_tool_names, saw_tool_call_payload)
-                    {
-                        if marks_tool_call {
-                            saw_tool_call_payload = true;
-                        }
-                        if !replacement.trim().is_empty() {
-                            cleaned.push_str(replacement.trim());
-                        }
-                        cursor = end;
-                        continue;
-                    }
-                }
-            }
-        }
-
-        let Some(ch) = message[start..].chars().next() else {
-            break;
-        };
-        cleaned.push(ch);
-        cursor = start + ch.len_utf8();
-    }
-
-    let mut result = cleaned.replace("\r\n", "\n");
-    while result.contains("\n\n\n") {
-        result = result.replace("\n\n\n", "\n\n");
-    }
-    result.trim().to_string()
 }
 
 fn spawn_supervised_listener(
@@ -4334,6 +3886,7 @@ pub async fn start_channels(config: Config) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::channels::runtime_state::ChannelRuntimeDefaults;
     use crate::memory::{Memory, MemoryCategory, SqliteMemory};
     use crate::observability::NoopObserver;
     use crate::providers::{ChatMessage, Provider};
@@ -8294,42 +7847,6 @@ Mon Feb 20
 
         let summary = extract_tool_context_summary(&history, 1);
         assert_eq!(summary, "[Used tools: fresh_tool]");
-    }
-
-    #[test]
-    fn strip_isolated_tool_json_artifacts_removes_tool_calls_and_results() {
-        let mut known_tools = HashSet::new();
-        known_tools.insert("schedule".to_string());
-
-        let input = r#"{"name":"schedule","parameters":{"action":"create","message":"test"}}
-{"name":"schedule","parameters":{"action":"cancel","task_id":"test"}}
-Let me create the reminder properly:
-{"name":"schedule","parameters":{"action":"create","message":"Go to sleep"}}
-{"result":{"task_id":"abc","status":"scheduled"}}
-Done reminder set for 1:38 AM."#;
-
-        let result = strip_isolated_tool_json_artifacts(input, &known_tools);
-        let normalized = result
-            .lines()
-            .filter(|line| !line.trim().is_empty())
-            .collect::<Vec<_>>()
-            .join("\n");
-        assert_eq!(
-            normalized,
-            "Let me create the reminder properly:\nDone reminder set for 1:38 AM."
-        );
-    }
-
-    #[test]
-    fn strip_isolated_tool_json_artifacts_preserves_non_tool_json() {
-        let mut known_tools = HashSet::new();
-        known_tools.insert("shell".to_string());
-
-        let input = r#"{"name":"profile","parameters":{"timezone":"UTC"}}
-This is an example JSON object for profile settings."#;
-
-        let result = strip_isolated_tool_json_artifacts(input, &known_tools);
-        assert_eq!(result, input);
     }
 
     // ── AIEOS Identity Tests (Issue #168) ─────────────────────────

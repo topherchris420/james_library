@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 /// Default `gws` command execution time before kill (overridden by config).
+#[allow(dead_code)] // used in tests
 const DEFAULT_GWS_TIMEOUT_SECS: u64 = 30;
 /// Maximum output size in bytes (1MB).
 const MAX_OUTPUT_BYTES: usize = 1_048_576;
@@ -24,7 +25,6 @@ pub struct GoogleWorkspaceTool {
     allowed_operations: Vec<GoogleWorkspaceAllowedOperation>,
     credentials_path: Option<String>,
     default_account: Option<String>,
-    rate_limit_per_minute: u32,
     timeout_secs: u64,
     audit_log: bool,
 }
@@ -39,7 +39,7 @@ impl GoogleWorkspaceTool {
         allowed_operations: Vec<GoogleWorkspaceAllowedOperation>,
         credentials_path: Option<String>,
         default_account: Option<String>,
-        rate_limit_per_minute: u32,
+        _rate_limit_per_minute: u32,
         timeout_secs: u64,
         audit_log: bool,
     ) -> Self {
@@ -71,7 +71,6 @@ impl GoogleWorkspaceTool {
             allowed_operations: operations,
             credentials_path,
             default_account,
-            rate_limit_per_minute,
             timeout_secs,
             audit_log,
         }

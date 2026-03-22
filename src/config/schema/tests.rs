@@ -543,8 +543,7 @@ async fn parse_extra_headers_env_basic() {
 
 #[test]
 async fn parse_extra_headers_env_with_url_value() {
-    let headers =
-        parse_extra_headers_env("HTTP-Referer:https://github.com/R.A.I.N.-labs/R.A.I.N.");
+    let headers = parse_extra_headers_env("HTTP-Referer:https://github.com/R.A.I.N.-labs/R.A.I.N.");
     assert_eq!(headers.len(), 1);
     // Only splits on first colon, preserving URL colons in value
     assert_eq!(headers[0].0, "HTTP-Referer");
@@ -2225,8 +2224,7 @@ async fn model_provider_profile_responses_uses_openai_codex_and_openai_key() {
 #[test]
 async fn save_repairs_bare_config_filename_using_runtime_resolution() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let workspace_dir = temp_home.join("workspace");
     let resolved_config_path = temp_home.join(".R.A.I.N.").join("config.toml");
 
@@ -2454,8 +2452,7 @@ async fn resolve_runtime_config_dirs_falls_back_to_default_layout() {
 #[test]
 async fn load_or_init_workspace_override_uses_workspace_root_for_config() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let workspace_dir = temp_home.join("profile-a");
 
     let original_home = std::env::var("HOME").ok();
@@ -2480,8 +2477,7 @@ async fn load_or_init_workspace_override_uses_workspace_root_for_config() {
 #[test]
 async fn load_or_init_workspace_suffix_uses_legacy_config_layout() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let workspace_dir = temp_home.join("workspace");
     let legacy_config_path = temp_home.join(".R.A.I.N.").join("config.toml");
 
@@ -2507,8 +2503,7 @@ async fn load_or_init_workspace_suffix_uses_legacy_config_layout() {
 #[test]
 async fn load_or_init_workspace_override_keeps_existing_legacy_config() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let workspace_dir = temp_home.join("custom-workspace");
     let legacy_config_dir = temp_home.join(".R.A.I.N.");
     let legacy_config_path = legacy_config_dir.join("config.toml");
@@ -2545,8 +2540,7 @@ default_model = "legacy-model"
 #[test]
 async fn load_or_init_decrypts_feishu_channel_secrets() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let config_dir = temp_home.join(".R.A.I.N.");
     let config_path = config_dir.join("config.toml");
 
@@ -2589,8 +2583,7 @@ async fn load_or_init_decrypts_feishu_channel_secrets() {
 #[test]
 async fn load_or_init_uses_persisted_active_workspace_marker() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let temp_default_dir = temp_home.join(".R.A.I.N.");
     let custom_config_dir = temp_home.join("profiles").join("agent-alpha");
 
@@ -2632,8 +2625,7 @@ async fn load_or_init_uses_persisted_active_workspace_marker() {
 #[test]
 async fn load_or_init_env_workspace_override_takes_priority_over_marker() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let temp_default_dir = temp_home.join(".R.A.I.N.");
     let marker_config_dir = temp_home.join("profiles").join("persisted-profile");
     let env_workspace_dir = temp_home.join("env-workspace");
@@ -2671,8 +2663,7 @@ async fn load_or_init_env_workspace_override_takes_priority_over_marker() {
 
 #[test]
 async fn persist_active_workspace_marker_is_cleared_for_default_config_dir() {
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let default_config_dir = temp_home.join(".R.A.I.N.");
     let custom_config_dir = temp_home.join("profiles").join("custom-profile");
     let marker_path = default_config_dir.join(ACTIVE_WORKSPACE_STATE_FILE);
@@ -2696,8 +2687,7 @@ async fn persist_active_workspace_marker_is_cleared_for_default_config_dir() {
 #[allow(clippy::large_futures)]
 async fn load_or_init_logs_existing_config_as_initialized() {
     let _env_guard = env_override_lock().await;
-    let temp_home =
-        std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
+    let temp_home = std::env::temp_dir().join(format!("rain_test_home_{}", uuid::Uuid::new_v4()));
     let workspace_dir = temp_home.join("profile-a");
     let config_path = workspace_dir.join("config.toml");
 
@@ -3590,9 +3580,9 @@ async fn validate_accepts_local_whisper_as_transcription_default_provider() {
     let mut config = Config::default();
     config.transcription.default_provider = "local_whisper".to_string();
 
-    config.validate().expect(
-        "local_whisper must be accepted by the transcription.default_provider allowlist",
-    );
+    config
+        .validate()
+        .expect("local_whisper must be accepted by the transcription.default_provider allowlist");
 }
 
 #[test]
@@ -3611,8 +3601,7 @@ async fn validate_rejects_unknown_transcription_default_provider() {
 
 #[tokio::test]
 async fn channel_secret_telegram_bot_token_roundtrip() {
-    let dir =
-        std::env::temp_dir().join(format!("rain_test_tg_bot_token_{}", uuid::Uuid::new_v4()));
+    let dir = std::env::temp_dir().join(format!("rain_test_tg_bot_token_{}", uuid::Uuid::new_v4()));
     fs::create_dir_all(&dir).await.unwrap();
 
     let plaintext_token = "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11";
@@ -3928,8 +3917,7 @@ async fn mcp_transport_serde_roundtrip_lowercase() {
     for (variant, expected_json) in &cases {
         let serialized = serde_json::to_string(variant).expect("serialize");
         assert_eq!(&serialized, expected_json, "variant: {variant:?}");
-        let deserialized: McpTransport =
-            serde_json::from_str(expected_json).expect("deserialize");
+        let deserialized: McpTransport = serde_json::from_str(expected_json).expect("deserialize");
         assert_eq!(&deserialized, variant);
     }
 }
@@ -3944,8 +3932,7 @@ async fn swarm_strategy_roundtrip() {
     for (variant, expected_json) in &cases {
         let serialized = serde_json::to_string(variant).expect("serialize");
         assert_eq!(&serialized, expected_json, "variant: {variant:?}");
-        let deserialized: SwarmStrategy =
-            serde_json::from_str(expected_json).expect("deserialize");
+        let deserialized: SwarmStrategy = serde_json::from_str(expected_json).expect("deserialize");
         assert_eq!(&deserialized, variant);
     }
 }
@@ -4004,8 +3991,7 @@ async fn config_with_swarms_section_deserializes() {
 
 #[tokio::test]
 async fn nevis_client_secret_encrypt_decrypt_roundtrip() {
-    let dir =
-        std::env::temp_dir().join(format!("rain_test_nevis_secret_{}", uuid::Uuid::new_v4()));
+    let dir = std::env::temp_dir().join(format!("rain_test_nevis_secret_{}", uuid::Uuid::new_v4()));
     fs::create_dir_all(&dir).await.unwrap();
 
     let plaintext_secret = "nevis-test-client-secret-value";

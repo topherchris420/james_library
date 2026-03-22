@@ -58,6 +58,7 @@ impl GitOperationsTool {
     }
 
     /// Check if an operation is read-only
+    #[allow(dead_code)] // used in tests
     fn is_read_only(&self, operation: &str) -> bool {
         matches!(
             operation,

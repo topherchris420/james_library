@@ -10,6 +10,7 @@ use uuid::Uuid;
 /// Default trigger for auto-compaction when non-system message count exceeds this threshold.
 /// Prefer passing the config-driven value via `run_tool_call_loop`; this constant is only
 /// used when callers omit the parameter.
+#[allow(dead_code)] // used in tests
 pub(crate) const DEFAULT_MAX_HISTORY_MESSAGES: usize = 50;
 
 /// Keep this many most-recent non-system messages after compaction.
@@ -146,8 +147,8 @@ pub(crate) async fn auto_compact_history(
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct InteractiveSessionState {
-    version: u32,
-    history: Vec<ChatMessage>,
+    pub(crate) version: u32,
+    pub(crate) history: Vec<ChatMessage>,
 }
 
 impl InteractiveSessionState {
