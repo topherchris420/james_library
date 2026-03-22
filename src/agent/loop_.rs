@@ -2150,10 +2150,12 @@ fn build_native_assistant_history(
     });
 
     if let Some(rc) = reasoning_content {
-        obj.as_object_mut().unwrap().insert(
-            "reasoning_content".to_string(),
-            serde_json::Value::String(rc.to_string()),
-        );
+        if let Some(map) = obj.as_object_mut() {
+            map.insert(
+                "reasoning_content".to_string(),
+                serde_json::Value::String(rc.to_string()),
+            );
+        }
     }
 
     obj.to_string()
@@ -2187,10 +2189,12 @@ fn build_native_assistant_history_from_parsed_calls(
     });
 
     if let Some(rc) = reasoning_content {
-        obj.as_object_mut().unwrap().insert(
-            "reasoning_content".to_string(),
-            serde_json::Value::String(rc.to_string()),
-        );
+        if let Some(map) = obj.as_object_mut() {
+            map.insert(
+                "reasoning_content".to_string(),
+                serde_json::Value::String(rc.to_string()),
+            );
+        }
     }
 
     Some(obj.to_string())
@@ -2447,7 +2451,8 @@ async fn execute_one_tool(
 
     let static_tool = find_tool(tools_registry, call_name);
     let activated_arc = if static_tool.is_none() {
-        activated_tools.and_then(|at| at.lock().unwrap().get_resolved(call_name))
+        activated_tools
+            .and_then(|at| at.lock().unwrap_or_else(|e| e.into_inner()).get_resolved(call_name))
     } else {
         None
     };
@@ -2698,7 +2703,7 @@ pub(crate) async fn run_tool_call_loop(
             .map(|tool| tool.spec())
             .collect();
         if let Some(at) = activated_tools {
-            for spec in at.lock().unwrap().tool_specs() {
+            for spec in at.lock().unwrap_or_else(|e| e.into_inner()).tool_specs() {
                 if !excluded_tools.iter().any(|ex| ex == &spec.name) {
                     tool_specs.push(spec);
                 }

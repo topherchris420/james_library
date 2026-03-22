@@ -21,24 +21,19 @@ impl Channel for WasmChannel {
         &self.name
     }
 
-    async fn send(&self, message: &SendMessage) -> anyhow::Result<()> {
-        // TODO: Wire to WASM plugin send function
-        tracing::warn!(
-            "WasmChannel '{}' (plugin: {}) send not yet connected: {}",
+    async fn send(&self, _message: &SendMessage) -> anyhow::Result<()> {
+        anyhow::bail!(
+            "WasmChannel '{}' (plugin: {}) — Extism send bridge not yet wired",
             self.name,
             self.plugin_name,
-            message.content
-        );
-        Ok(())
+        )
     }
 
     async fn listen(&self, _tx: tokio::sync::mpsc::Sender<ChannelMessage>) -> anyhow::Result<()> {
-        // TODO: Wire to WASM plugin receive/listen function
-        tracing::warn!(
-            "WasmChannel '{}' (plugin: {}) listen not yet connected",
+        anyhow::bail!(
+            "WasmChannel '{}' (plugin: {}) — Extism listen bridge not yet wired",
             self.name,
             self.plugin_name,
-        );
-        Ok(())
+        )
     }
 }

@@ -45,19 +45,16 @@ impl Tool for WasmTool {
         self.parameters_schema.clone()
     }
 
-    async fn execute(&self, args: Value) -> anyhow::Result<ToolResult> {
-        // TODO: Call into Extism plugin runtime
-        // For now, return a placeholder indicating the plugin system is available
-        // but not yet wired to actual WASM execution.
+    async fn execute(&self, _args: Value) -> anyhow::Result<ToolResult> {
+        // Extism plugin runtime integration is pending; fail explicitly so callers
+        // know the tool exists but cannot execute yet.
         Ok(ToolResult {
             success: false,
-            output: format!(
-                "[plugin:{}/{}] WASM execution not yet connected. Args: {}",
-                self.plugin_name,
-                self.function_name,
-                serde_json::to_string(&args).unwrap_or_default()
-            ),
-            error: Some("WASM execution bridge not yet implemented".into()),
+            output: String::new(),
+            error: Some(format!(
+                "WASM plugin {}/{} is registered but the Extism execution bridge is not yet wired",
+                self.plugin_name, self.function_name,
+            )),
         })
     }
 }

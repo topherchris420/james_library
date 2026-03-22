@@ -138,8 +138,10 @@ where
 }
 
 fn gpio_read(_pin: i32) -> anyhow::Result<u8> {
-    // TODO: implement input pin read — requires storing InputPin drivers per pin
-    Ok(0)
+    // Input pin reads require a per-pin InputPin driver registry (static storage
+    // with thread-safe access).  Until that registry is implemented, fail
+    // explicitly rather than returning a misleading zero.
+    anyhow::bail!("gpio_read not yet implemented — InputPin driver registry required")
 }
 
 fn gpio_write<G2, G13>(

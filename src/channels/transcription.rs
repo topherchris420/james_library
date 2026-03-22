@@ -668,8 +668,8 @@ impl TranscriptionProvider for LocalWhisperProvider {
         let client = crate::config::build_runtime_proxy_client("transcription.local_whisper");
 
         // to_vec() clones the buffer for the multipart payload; peak memory per
-        // call is ~2× max_audio_bytes. TODO: replace with streaming upload once
-        // reqwest supports body streaming in multipart parts.
+        // call is ~2× max_audio_bytes.  Streaming upload requires reqwest multipart
+        // body streaming support (not yet available as of reqwest 0.12).
         let file_part = Part::bytes(audio_data.to_vec())
             .file_name(normalized_name)
             .mime_str(mime)?;
