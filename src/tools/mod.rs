@@ -888,6 +888,43 @@ mod tests {
     }
 
     #[test]
+    fn all_tools_registers_runtime_wired_ops_tools_when_enabled() {
+        let tmp = TempDir::new().unwrap();
+        let security = Arc::new(SecurityPolicy::default());
+        let mem_cfg = MemoryConfig {
+            backend: "markdown".into(),
+            ..MemoryConfig::default()
+        };
+        let mem: Arc<dyn Memory> =
+            Arc::from(crate::memory::create_memory(&mem_cfg, tmp.path(), None).unwrap());
+
+        let browser = BrowserConfig::default();
+        let http = crate::config::HttpRequestConfig::default();
+        let mut cfg = test_config(&tmp);
+        cfg.cloud_ops.enabled = true;
+        cfg.security_ops.enabled = true;
+
+        let (tools, _) = all_tools(
+            Arc::new(Config::default()),
+            &security,
+            mem,
+            None,
+            None,
+            &browser,
+            &http,
+            &crate::config::WebFetchConfig::default(),
+            tmp.path(),
+            &HashMap::new(),
+            None,
+            &cfg,
+        );
+        let names: Vec<&str> = tools.iter().map(|t| t.name()).collect();
+        assert!(names.contains(&"cloud_ops"));
+        assert!(names.contains(&"cloud_patterns"));
+        assert!(names.contains(&"security_ops"));
+    }
+
+    #[test]
     fn default_tools_names() {
         let security = Arc::new(SecurityPolicy::default());
         let tools = default_tools(security);

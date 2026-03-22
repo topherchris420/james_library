@@ -2737,6 +2737,30 @@ default_model = "persisted-profile"
 }
 
 #[test]
+async fn apply_env_overrides_warns_for_reserved_conversational_ai_config() {
+    let capture = SharedLogBuffer::default();
+    let subscriber = tracing_subscriber::fmt()
+        .with_ansi(false)
+        .without_time()
+        .with_target(false)
+        .with_writer(capture.clone())
+        .finish();
+    let dispatch = tracing::Dispatch::new(subscriber);
+    let guard = tracing::dispatcher::set_default(&dispatch);
+
+    let mut config = Config::default();
+    config.conversational_ai.enabled = true;
+    config.apply_env_overrides();
+
+    drop(guard);
+    let logs = capture.captured();
+    assert!(
+        logs.contains("conversational_ai.enabled = true"),
+        "expected reserved-config warning, got: {logs}"
+    );
+}
+
+#[test]
 async fn env_override_empty_values_ignored() {
     let _env_guard = env_override_lock().await;
     let mut config = Config::default();
