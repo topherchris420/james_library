@@ -30,6 +30,7 @@
     clippy::unnecessary_literal_bound,
     clippy::unnecessary_map_or,
     clippy::unnecessary_wraps,
+    clippy::large_futures,
     dead_code
 )]
 

@@ -1,5 +1,6 @@
 #![warn(clippy::all, clippy::pedantic)]
 #![allow(
+    dead_code,
     clippy::assigning_clones,
     clippy::bool_to_int_with_if,
     clippy::case_sensitive_file_extension_comparisons,
