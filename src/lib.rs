@@ -23,7 +23,6 @@
     clippy::similar_names,
     clippy::single_match_else,
     clippy::struct_field_names,
-    clippy::too_many_lines,
     clippy::uninlined_format_args,
     clippy::unnecessary_cast,
     clippy::unnecessary_lazy_evaluations,
@@ -33,7 +32,6 @@
     clippy::cast_precision_loss,
     clippy::unnecessary_wraps
 )]
-
 use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 
@@ -69,7 +67,15 @@ pub mod rag;
 pub mod runtime;
 pub(crate) mod security;
 pub(crate) mod service;
+#[allow(
+    clippy::needless_raw_string_hashes,
+    reason = "Skill-audit regex literals are being normalized separately from this crate-root lint pass."
+)]
 pub(crate) mod skills;
+#[allow(
+    clippy::similar_names,
+    reason = "Tooling modules still have a few mirrored transport/workspace names slated for follow-up cleanup."
+)]
 pub mod tools;
 pub(crate) mod tunnel;
 pub(crate) mod util;
@@ -294,7 +300,7 @@ Examples:
     Add {
         /// Cron expression
         expression: String,
-        /// Optional IANA timezone (e.g. America/Los_Angeles)
+        /// Optional IANA timezone (e.g. `America/Los_Angeles`)
         #[arg(long)]
         tz: Option<String>,
         /// Treat the argument as an agent prompt instead of a shell command
@@ -504,7 +510,7 @@ Examples:
   rain hardware info
   rain hardware info --chip STM32F401RETx")]
     Info {
-        /// Chip name (e.g. STM32F401RETx). Default: STM32F401RETx for Nucleo-F401RE
+        /// Chip name (e.g. `STM32F401RETx`). Default: `STM32F401RETx` for Nucleo-F401RE
         #[arg(long, default_value = "STM32F401RETx")]
         chip: String,
     },

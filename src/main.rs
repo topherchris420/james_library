@@ -21,7 +21,6 @@
     clippy::similar_names,
     clippy::single_match_else,
     clippy::struct_field_names,
-    clippy::too_many_lines,
     clippy::uninlined_format_args,
     clippy::unused_self,
     clippy::cast_precision_loss,
@@ -33,7 +32,6 @@
     clippy::large_futures,
     dead_code
 )]
-
 use anyhow::{bail, Context, Result};
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use dialoguer::Password;
@@ -771,7 +769,10 @@ enum MemoryCommands {
 }
 
 #[tokio::main]
-#[allow(clippy::too_many_lines)]
+#[allow(
+    clippy::too_many_lines,
+    reason = "CLI bootstrap keeps top-level command flow auditable in one place."
+)]
 async fn main() -> Result<()> {
     // Install default crypto provider for Rustls TLS.
     // This prevents the error: "could not automatically determine the process-level CryptoProvider"
@@ -943,6 +944,11 @@ async fn main() -> Result<()> {
     cli::dispatch::dispatch_command(cli.command, config).await
 }
 
+/// Handle the emergency-stop CLI subcommand.
+///
+/// # Errors
+/// Returns an error when emergency-stop support is disabled, configuration cannot be loaded,
+/// OTP validation cannot be initialized, or the requested engage/resume action is invalid.
 pub(crate) fn handle_estop_command(
     config: &Config,
     estop_command: Option<EstopSubcommands>,
@@ -1109,6 +1115,10 @@ fn print_estop_status(state: &security::EstopState) {
     }
 }
 
+/// Write shell completion output to the provided writer.
+///
+/// # Errors
+/// Returns an error when clap cannot render completions or the output writer cannot be flushed.
 pub(crate) fn write_shell_completion<W: Write>(
     shell: CompletionShell,
     writer: &mut W,
@@ -1155,7 +1165,11 @@ pub(crate) fn log_gateway_start(host: &str, port: u16) {
     }
 }
 
-/// Gracefully shutdown a running gateway via the admin endpoint.
+/// Request graceful shutdown of a running gateway via the admin endpoint.
+///
+/// # Errors
+/// Returns an error when the gateway cannot be reached or the admin endpoint responds with a
+/// non-success status.
 pub(crate) async fn shutdown_gateway(host: &str, port: u16) -> Result<()> {
     let url = format!("http://{host}:{port}/admin/shutdown");
     let client = reqwest::Client::new();
@@ -1175,8 +1189,13 @@ pub(crate) async fn shutdown_gateway(host: &str, port: u16) -> Result<()> {
     }
 }
 
-/// Fetch the current pairing code from a running gateway.
-/// If `new` is true, generates a fresh pairing code via POST request.
+/// Fetch the current pairing code from a running gateway or generate a fresh code.
+///
+/// If `new` is true, the helper requests a freshly generated paircode.
+///
+/// # Errors
+/// Returns an error when the gateway cannot be reached, response decoding fails, or the admin
+/// endpoint returns an unexpected status.
 pub(crate) async fn fetch_paircode(host: &str, port: u16, new: bool) -> Result<Option<String>> {
     let client = reqwest::Client::new();
 
@@ -1267,6 +1286,10 @@ fn set_owner_only_permissions(path: &std::path::Path) -> Result<()> {
 }
 
 #[cfg(not(unix))]
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "Non-Unix builds keep the same Result-based helper signature as Unix for shared call sites."
+)]
 fn set_owner_only_permissions(_path: &std::path::Path) -> Result<()> {
     Ok(())
 }
@@ -1428,7 +1451,15 @@ fn format_expiry(profile: &auth::profiles::AuthProfile) -> String {
     }
 }
 
-#[allow(clippy::too_many_lines)]
+/// Handle authentication-related CLI subcommands.
+///
+/// # Errors
+/// Returns an error when provider normalization fails, OAuth state cannot be persisted, user input
+/// is invalid, or upstream authentication requests fail.
+#[allow(
+    clippy::too_many_lines,
+    reason = "OAuth login flows and provider-specific prompts stay together to keep CLI auth sequencing explicit."
+)]
 pub(crate) async fn handle_auth_command(auth_command: AuthCommands, config: &Config) -> Result<()> {
     let auth_service = auth::AuthService::from_config(config);
 
