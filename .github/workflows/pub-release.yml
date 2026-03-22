@@ -407,7 +407,7 @@ jobs:
                   cat SHA256SUMS
 
             - name: Install cosign
-              uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+              uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
 
             - name: Sign artifacts with cosign (keyless)
               shell: bash
@@ -462,7 +462,7 @@ jobs:
                   exit 1
 
             - name: Create GitHub Release
-              uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
+              uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
               with:
                   tag_name: ${{ needs.prepare.outputs.release_tag }}
                   draft: ${{ needs.prepare.outputs.draft_release == 'true' }}
