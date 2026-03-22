@@ -2,6 +2,7 @@
 pub mod agent;
 pub mod classifier;
 pub mod dispatcher;
+pub(crate) mod history;
 pub mod loop_;
 pub mod memory_loader;
 pub mod prompt;
