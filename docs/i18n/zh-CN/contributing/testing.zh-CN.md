@@ -1,8 +1,31 @@
 # 测试指南
 
-R.A.I.N. 使用基于文件系统组织的五级测试分类体系。
+R.A.I.N. 采用基于文件系统组织的五级 Rust 测试分类体系，且必经质量门禁现在通过同一个入口同时校验 Python 与 Web 表面。
 
-## 测试分类
+## 规范验证入口
+
+如果希望在本地运行与 GitHub Actions 相同的验证类别，请使用以下命令：
+
+```bash
+# GitHub Actions 使用的原生质量门禁
+bash scripts/ci/quality_gate.sh all
+
+# 面向本地贡献者的可发现 Docker 包装命令
+./dev/ci.sh all
+```
+
+规范门禁拆分为以下类别：
+
+| 类别 | 执行内容 |
+|---|---|
+| `rust` | `cargo fmt --all -- --check`、`cargo clippy --locked --all-targets -- -D warnings`、`cargo nextest run --locked`、`cargo check --all-features --locked`、`cargo build --profile ci --locked` |
+| `python` | 安装 Python 依赖、`ruff check . --output-format=full`、`pytest tests -v -ra --tb=long`，以及在存在 `python/R.A.I.N._tools` 时运行 `python/tests` |
+| `web` | `npm ci --prefix web`、可选的 `npm run lint --prefix web`、可选的 `npm run test --prefix web`、`npm run build --prefix web` |
+| `governance` | 当变更文件触发时，运行文档导航一致性、架构边界与 Markdown 质量检查 |
+
+你可以直接运行 `bash scripts/ci/quality_gate.sh <category>` 执行单个类别，也可以通过 `./dev/ci.sh <category>` 在 Docker 中执行。
+
+## Rust 测试分类
 
 | 级别 | 测试内容 | 外部边界 | 目录 |
 |-------|--------------|-------------------|-----------|
@@ -24,11 +47,31 @@ R.A.I.N. 使用基于文件系统组织的五级测试分类体系。
 | `tests/manual/` | — | 人工驱动的测试脚本（shell、Python） | 直接运行 |
 | `tests/support/` | — | 共享模拟基础设施（非测试二进制文件） | — |
 | `tests/fixtures/` | — | 测试数据文件（JSON 追踪、媒体文件） | — |
+| `python/tests/` | Python | 当存在 `python/R.A.I.N._tools` 时，对 `R.A.I.N.-tools` 伴生包进行覆盖 | `cd python && pytest tests -v -ra --tb=long` |
+| `web/` | Web | 前端构建验证 | `npm ci --prefix web && npm run build --prefix web` |
 
-## 如何运行测试
+## 如何运行检查
 
 ```bash
-# 运行所有测试（单元 + 组件 + 集成 + 系统）
+# 运行与 GitHub Actions 等价的完整原生门禁
+bash scripts/ci/quality_gate.sh all
+
+# 在本地 CI 容器中运行同一门禁
+./dev/ci.sh all
+
+# 仅运行 CI 使用的 Rust 门禁
+bash scripts/ci/quality_gate.sh rust
+
+# 仅运行 CI 使用的 Python 门禁
+bash scripts/ci/quality_gate.sh python
+
+# 仅运行 CI 使用的 Web 门禁
+bash scripts/ci/quality_gate.sh web
+
+# 仅运行 CI 使用的治理/文档门禁
+bash scripts/ci/quality_gate.sh governance
+
+# 运行所有 Rust 测试（单元 + 组件 + 集成 + 系统）
 cargo test
 
 # 仅运行单元测试
@@ -48,14 +91,6 @@ cargo test --test live -- --ignored
 
 # 在某个级别内过滤测试
 cargo test --test integration agent
-
-# 完整 CI 验证
-./dev/ci.sh all
-
-# 特定级别的 CI 命令
-./dev/ci.sh test-component
-./dev/ci.sh test-integration
-./dev/ci.sh test-system
 ```
 
 ## 如何添加新测试
@@ -64,6 +99,8 @@ cargo test --test integration agent
 2. **测试多个组件协同工作？** → `tests/integration/`
 3. **测试完整消息流程？** → `tests/system/`
 4. **需要真实 API 密钥？** → `tests/live/` 并标记为 `#[ignore]`
+5. **测试 Python 伴生包？** → 在 `python/R.A.I.N._tools` 下添加源码，并在 `python/tests/` 中补充覆盖。
+6. **测试 Web UI？** → 在 `web/package.json` 中添加或更新脚本，使 `web` 质量门禁自动拾取。
 
 创建测试文件后，将其添加到对应的 `mod.rs` 中，并使用 `tests/support/` 中的共享基础设施。
 
@@ -89,7 +126,7 @@ use crate::support::helpers::{build_agent, text_response, tool_response};
 
 ## JSON 追踪测试夹具
 
-追踪夹具是存储在 `tests/fixtures/traces/` 中的 JSON 文件格式的 LLM 响应脚本。它们用声明式的对话脚本替代了内联的模拟设置。
+追踪夹具是存储在 `tests/fixtures/traces/` 中的 JSON 文件格式 LLM 响应脚本。它们用声明式对话脚本替代了内联模拟设置。
 
 ### 工作原理
 

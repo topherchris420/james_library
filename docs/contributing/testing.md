@@ -1,8 +1,31 @@
 # Testing Guide
 
-R.A.I.N. uses a five-level testing taxonomy with filesystem-based organization.
+R.A.I.N. uses a five-level testing taxonomy for Rust coverage, and the required quality gate also validates Python and web surfaces from the same entrypoint.
 
-## Testing Taxonomy
+## Canonical Validation Entry Points
+
+Use these commands when you want the same validation categories locally that GitHub Actions runs:
+
+```bash
+# Native quality gate used by GitHub Actions
+bash scripts/ci/quality_gate.sh all
+
+# Discoverable Docker wrapper for local contributors
+./dev/ci.sh all
+```
+
+The canonical gate is split into the following categories:
+
+| Category | What it runs |
+|---|---|
+| `rust` | `cargo fmt --all -- --check`, `cargo clippy --locked --all-targets -- -D warnings`, `cargo nextest run --locked`, `cargo check --all-features --locked`, `cargo build --profile ci --locked` |
+| `python` | dependency install, `ruff check . --output-format=full`, `pytest tests -v -ra --tb=long`, and `python/tests` when `python/R.A.I.N._tools` exists |
+| `web` | `npm ci --prefix web`, optional `npm run lint --prefix web`, optional `npm run test --prefix web`, `npm run build --prefix web` |
+| `governance` | docs parity, architecture-boundary, and markdown quality checks when the changed files require them |
+
+You can run an individual category directly with `bash scripts/ci/quality_gate.sh <category>` or through Docker with `./dev/ci.sh <category>`.
+
+## Rust Testing Taxonomy
 
 | Level | What it tests | External boundaries | Directory |
 |-------|--------------|-------------------|-----------|
@@ -24,11 +47,31 @@ R.A.I.N. uses a five-level testing taxonomy with filesystem-based organization.
 | `tests/manual/` | — | Human-driven test scripts (shell, Python) | Run directly |
 | `tests/support/` | — | Shared mock infrastructure (not a test binary) | — |
 | `tests/fixtures/` | — | Test data files (JSON traces, media) | — |
+| `python/tests/` | Python | Companion package coverage for `R.A.I.N.-tools` when `python/R.A.I.N._tools` is present | `cd python && pytest tests -v -ra --tb=long` |
+| `web/` | Web | Front-end build validation | `npm ci --prefix web && npm run build --prefix web` |
 
-## How to Run Tests
+## How to Run Checks
 
 ```bash
-# Run all tests (unit + component + integration + system)
+# Run the full GitHub Actions-equivalent gate natively
+bash scripts/ci/quality_gate.sh all
+
+# Run the same gate inside the local CI container
+./dev/ci.sh all
+
+# Run only the Rust gate used by CI
+bash scripts/ci/quality_gate.sh rust
+
+# Run only the Python gate used by CI
+bash scripts/ci/quality_gate.sh python
+
+# Run only the web gate used by CI
+bash scripts/ci/quality_gate.sh web
+
+# Run only the governance/docs gate used by CI
+bash scripts/ci/quality_gate.sh governance
+
+# Run all Rust tests (unit + component + integration + system)
 cargo test
 
 # Run only unit tests
@@ -48,14 +91,6 @@ cargo test --test live -- --ignored
 
 # Filter within a level
 cargo test --test integration agent
-
-# Full CI validation
-./dev/ci.sh all
-
-# Level-specific CI commands
-./dev/ci.sh test-component
-./dev/ci.sh test-integration
-./dev/ci.sh test-system
 ```
 
 ## How to Add a New Test
@@ -64,6 +99,8 @@ cargo test --test integration agent
 2. **Testing multiple components together?** → `tests/integration/`
 3. **Testing full message flow?** → `tests/system/`
 4. **Requires real API keys?** → `tests/live/` with `#[ignore]`
+5. **Testing the Python companion package?** → add sources under `python/R.A.I.N._tools` and cover them in `python/tests/`.
+6. **Testing the web UI?** → add or update scripts in `web/package.json` so the `web` quality gate picks them up automatically.
 
 After creating a test file, add it to the appropriate `mod.rs` and use shared infrastructure from `tests/support/`.
 
