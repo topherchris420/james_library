@@ -20,7 +20,6 @@ use std::fmt::Write;
 use std::sync::Arc;
 
 const COMPOSIO_API_BASE_V3: &str = "https://backend.composio.dev/api/v3";
-const COMPOSIO_API_BASE_V2: &str = "https://backend.composio.dev/api";
 const COMPOSIO_TOOL_VERSION_LATEST: &str = "latest";
 
 fn ensure_https(url: &str) -> anyhow::Result<()> {
@@ -480,43 +479,6 @@ impl ComposioTool {
             .context("Failed to decode Composio v3 connect response")?;
         let redirect_url = extract_redirect_url(&result)
             .ok_or_else(|| anyhow::anyhow!("No redirect URL in Composio v3 response"))?;
-        Ok(ComposioConnectionLink {
-            redirect_url,
-            connected_account_id: extract_connected_account_id(&result),
-        })
-    }
-
-    async fn get_connection_url_v2(
-        &self,
-        app_name: &str,
-        entity_id: &str,
-    ) -> anyhow::Result<ComposioConnectionLink> {
-        let url = format!("{COMPOSIO_API_BASE_V2}/connectedAccounts");
-
-        let body = json!({
-            "integrationId": app_name,
-            "entityId": entity_id,
-        });
-
-        let resp = self
-            .client()
-            .post(&url)
-            .header("x-api-key", &self.api_key)
-            .json(&body)
-            .send()
-            .await?;
-
-        if !resp.status().is_success() {
-            let err = response_error(resp).await;
-            anyhow::bail!("Composio v2 connect failed: {err}");
-        }
-
-        let result: serde_json::Value = resp
-            .json()
-            .await
-            .context("Failed to decode Composio v2 connect response")?;
-        let redirect_url = extract_redirect_url(&result)
-            .ok_or_else(|| anyhow::anyhow!("No redirect URL in Composio v2 response"))?;
         Ok(ComposioConnectionLink {
             redirect_url,
             connected_account_id: extract_connected_account_id(&result),

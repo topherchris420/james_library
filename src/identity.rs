@@ -985,6 +985,7 @@ pub fn is_aieos_configured(config: &IdentityConfig) -> bool {
 mod tests {
     use super::*;
 
+    #[allow(dead_code)]
     fn test_workspace_dir() -> PathBuf {
         std::env::temp_dir().join("R.A.I.N.-test-identity")
     }

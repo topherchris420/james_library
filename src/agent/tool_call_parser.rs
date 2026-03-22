@@ -1561,30 +1561,6 @@ pub(crate) fn build_native_assistant_history_from_parsed_calls(
     Some(obj.to_string())
 }
 
-pub(crate) fn build_assistant_history_with_tool_calls(
-    text: &str,
-    tool_calls: &[ToolCall],
-) -> String {
-    let mut parts = Vec::new();
-
-    if !text.trim().is_empty() {
-        parts.push(text.trim().to_string());
-    }
-
-    for call in tool_calls {
-        let arguments = serde_json::from_str::<serde_json::Value>(&call.arguments)
-            .unwrap_or_else(|_| serde_json::Value::String(call.arguments.clone()));
-        let payload = serde_json::json!({
-            "id": call.id,
-            "name": call.name,
-            "arguments": arguments,
-        });
-        parts.push(format!("<tool_call>\n{payload}\n</tool_call>"));
-    }
-
-    parts.join("\n")
-}
-
 pub(crate) fn resolve_display_text(
     response_text: &str,
     parsed_text: &str,

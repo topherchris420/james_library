@@ -459,25 +459,6 @@ impl SseTransport {
         }
         Ok((derived, false))
     }
-
-    fn maybe_try_alternate_message_url(
-        &self,
-        current_url: &str,
-        from_endpoint: bool,
-    ) -> Option<String> {
-        if from_endpoint {
-            return None;
-        }
-        let alt = if current_url.ends_with("/messages") {
-            derive_message_url(&self.sse_url, "message")
-        } else {
-            derive_message_url(&self.sse_url, "messages")
-        }?;
-        if alt == current_url {
-            return None;
-        }
-        Some(alt)
-    }
 }
 
 #[derive(Default)]

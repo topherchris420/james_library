@@ -42,7 +42,7 @@ use crate::security::{AutonomyLevel, SecurityPolicy};
 use crate::tools::{self, Tool};
 use crate::util::truncate_with_ellipsis;
 use anyhow::Result;
-use regex::{Regex, RegexSet};
+use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Write;
 use std::io::Write as _;
@@ -198,19 +198,6 @@ pub fn clear_model_switch_request() {
         *guard = None;
     }
 }
-
-static SENSITIVE_KEY_PATTERNS: LazyLock<RegexSet> = LazyLock::new(|| {
-    RegexSet::new([
-        r"(?i)token",
-        r"(?i)api[_-]?key",
-        r"(?i)password",
-        r"(?i)secret",
-        r"(?i)user[_-]?key",
-        r"(?i)bearer",
-        r"(?i)credential",
-    ])
-    .unwrap()
-});
 
 static SENSITIVE_KV_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?i)(token|api[_-]?key|password|secret|user[_-]?key|bearer|credential)["']?\s*[:=]\s*(?:"([^"]{8,})"|'([^']{8,})'|([a-zA-Z0-9_\-\.]{8,}))"#).unwrap()

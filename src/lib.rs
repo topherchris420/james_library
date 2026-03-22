@@ -31,48 +31,66 @@
     clippy::unnecessary_map_or,
     clippy::unused_self,
     clippy::cast_precision_loss,
-    clippy::unnecessary_wraps,
-    dead_code
+    clippy::unnecessary_wraps
 )]
 
 use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 
 pub mod agent;
+#[allow(dead_code)]
 pub(crate) mod approval;
+#[allow(dead_code)]
 pub(crate) mod auth;
+#[allow(dead_code)]
 pub mod channels;
+#[allow(dead_code)]
 pub(crate) mod cli_input;
 pub mod commands;
 pub mod config;
 pub(crate) mod cost;
+#[allow(dead_code)]
 pub(crate) mod cron;
+#[allow(dead_code)]
 pub(crate) mod daemon;
+#[allow(dead_code)]
 pub(crate) mod doctor;
 pub mod gateway;
 pub mod hands;
+#[allow(dead_code)]
 pub(crate) mod hardware;
 pub(crate) mod health;
+#[allow(dead_code)]
 pub(crate) mod heartbeat;
 pub mod hooks;
 pub mod i18n;
 pub(crate) mod identity;
+#[allow(dead_code)]
 pub(crate) mod integrations;
 pub mod memory;
+#[allow(dead_code)]
 pub(crate) mod migration;
+#[allow(dead_code)]
 pub(crate) mod multimodal;
 pub mod nodes;
 pub mod observability;
+#[allow(dead_code)]
 pub(crate) mod onboard;
 pub mod peripherals;
+#[allow(dead_code)]
 pub mod providers;
 pub mod rag;
 pub mod runtime;
+#[allow(dead_code)]
 pub(crate) mod security;
+#[allow(dead_code)]
 pub(crate) mod service;
+#[allow(dead_code)]
 pub(crate) mod skills;
 pub mod tools;
+#[allow(dead_code)]
 pub(crate) mod tunnel;
+#[allow(dead_code)]
 pub(crate) mod util;
 pub mod verifiable_intent;
 

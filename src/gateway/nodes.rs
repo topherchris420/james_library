@@ -166,6 +166,7 @@ enum NodeMessage {
 /// Messages sent to a node.
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[allow(dead_code)] // variants used in serialization and tests
 enum GatewayMessage {
     Registered {
         node_id: String,

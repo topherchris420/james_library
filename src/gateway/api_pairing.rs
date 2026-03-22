@@ -190,7 +190,7 @@ impl DeviceRegistry {
 #[derive(Debug)]
 pub struct PairingStore {
     pending: Mutex<Vec<PendingPairing>>,
-    max_pending: usize,
+    _max_pending: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -206,7 +206,7 @@ impl PairingStore {
     pub fn new(max_pending: usize) -> Self {
         Self {
             pending: Mutex::new(Vec::new()),
-            max_pending,
+            _max_pending: max_pending,
         }
     }
 

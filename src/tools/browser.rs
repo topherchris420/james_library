@@ -63,8 +63,11 @@ pub struct BrowserTool {
     allowed_domains: Vec<String>,
     session_name: Option<String>,
     backend: String,
+    #[allow(dead_code)] // used when browser-native feature is enabled
     native_headless: bool,
+    #[allow(dead_code)] // used when browser-native feature is enabled
     native_webdriver_url: String,
+    #[allow(dead_code)] // used when browser-native feature is enabled
     native_chrome_path: Option<String>,
     computer_use: ComputerUseConfig,
     #[cfg(feature = "browser-native")]
@@ -1985,6 +1988,7 @@ fn unavailable_action_for_backend_error(action: &str, backend: ResolvedBackend) 
     )
 }
 
+#[allow(dead_code)] // used when browser-native feature is enabled
 fn is_recoverable_rust_native_error(err: &anyhow::Error) -> bool {
     let message = format!("{err:#}").to_ascii_lowercase();
 
