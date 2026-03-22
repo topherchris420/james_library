@@ -1,20 +1,20 @@
 use crate::agent::history::{
     auto_compact_history, autosave_memory_key, build_context, build_hardware_context,
     load_interactive_session_history, memory_session_id_from_state_file,
-    save_interactive_session_history, trim_history,
+    save_interactive_session_history, trim_history, DEFAULT_MAX_HISTORY_MESSAGES,
 };
 use crate::agent::tool_call_parser::{
     build_native_assistant_history, build_native_assistant_history_from_parsed_calls,
     detect_tool_call_parse_issue, parse_structured_tool_calls, parse_tool_calls,
     resolve_display_text, strip_tool_result_blocks, tool_call_signature, ParsedToolCall,
 };
-use crate::agent::tool_filter::compute_excluded_mcp_tools;
+use crate::agent::tool_filter::{compute_excluded_mcp_tools, filter_by_allowed_tools};
 
 // Imports used only in `#[cfg(test)]` modules — kept behind cfg to avoid warnings.
 #[cfg(test)]
 use crate::agent::history::{
     apply_compaction_summary, build_compaction_transcript, estimate_history_tokens,
-    InteractiveSessionState, DEFAULT_MAX_HISTORY_MESSAGES,
+    InteractiveSessionState,
 };
 #[cfg(test)]
 use crate::agent::tool_call_parser::{
@@ -23,7 +23,7 @@ use crate::agent::tool_call_parser::{
     parse_tool_call_value, parse_tool_calls_from_json_value, strip_think_tags,
 };
 #[cfg(test)]
-use crate::agent::tool_filter::{filter_by_allowed_tools, filter_tool_specs_for_turn, glob_match};
+use crate::agent::tool_filter::{filter_tool_specs_for_turn, glob_match};
 
 use crate::approval::{ApprovalManager, ApprovalRequest, ApprovalResponse};
 use crate::config::schema::ModelPricing;
@@ -1586,7 +1586,15 @@ pub async fn run(
     // those tools whose name appears in the list. Unknown names are silently
     // ignored. When `None`, all tools remain available (backward compatible).
     if let Some(ref allow_list) = allowed_tools {
-        tools_registry.retain(|t| allow_list.iter().any(|name| name == t.name()));
+        let filtered_specs = filter_by_allowed_tools(
+            tools_registry.iter().map(|tool| tool.spec()).collect(),
+            Some(allow_list),
+        );
+        let allowed_names: HashSet<&str> = filtered_specs
+            .iter()
+            .map(|spec| spec.name.as_str())
+            .collect();
+        tools_registry.retain(|tool| allowed_names.contains(tool.name()));
         tracing::info!(
             allowed = allow_list.len(),
             retained = tools_registry.len(),
@@ -2248,11 +2256,15 @@ pub async fn run(
             observer.record_event(&ObserverEvent::TurnComplete);
 
             // Auto-compaction before hard trimming to preserve long-context signal.
+            let max_history_messages = config
+                .agent
+                .max_history_messages
+                .max(DEFAULT_MAX_HISTORY_MESSAGES);
             if let Ok(compacted) = auto_compact_history(
                 &mut history,
                 provider.as_ref(),
                 &model_name,
-                config.agent.max_history_messages,
+                max_history_messages,
                 config.agent.max_context_tokens,
             )
             .await
@@ -2263,7 +2275,7 @@ pub async fn run(
             }
 
             // Hard cap as a safety net.
-            trim_history(&mut history, config.agent.max_history_messages);
+            trim_history(&mut history, max_history_messages);
 
             if let Some(path) = session_state_file.as_deref() {
                 save_interactive_session_history(path, &history)?;

@@ -71,7 +71,6 @@ pub(crate) fn filter_tool_specs_for_turn(
 /// When `allowed` is `None`, all specs pass through unchanged.
 /// When `allowed` is `Some(list)`, only specs whose name appears in the list
 /// are retained. Unknown names in the allowlist are silently ignored.
-#[allow(dead_code)] // called from test modules only
 pub(crate) fn filter_by_allowed_tools(
     specs: Vec<ToolSpec>,
     allowed: Option<&[String]>,
