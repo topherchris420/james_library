@@ -44,14 +44,14 @@ All you need to know is the **R.A.I.N. Lab**. Everything else just works.
 
 1. **Explore:** Specialist agents each investigate different angles of your question, like researchers branching out across a library.
 2. **Debate:** The agents challenge each other's reasoning in multiple rounds — no free passes.
-3. **Break the deadlock:** When the system detects the debate is going in circles, it steps in automatically. It translates the core disagreement into a math problem and solves it with a guaranteed-correct solver running in a secure sandbox.
+3. **Break the deadlock:** When the system detects that the debate is going in circles, it steps in automatically. It translates the core disagreement into a math problem and solves it with a guaranteed-correct solver running in a secure sandbox.
 4. **Move forward:** The proven answer is injected back into the conversation, forcing the agents to accept the settled fact and build on it.
 
 <details>
 <summary><strong>Technical details (for developers)</strong></summary>
 
 - Step 1 uses a UCB1-Bandit algorithm to explore hypothesis trees efficiently.
-- Step 3 compiles the argument into a boolean formula and runs it against a WASM-compiled DPLL SAT Solver.
+- Step 3 compiles the argument into a Boolean formula and runs it against a WASM-compiled DPLL SAT Solver.
 - Step 4 injects the result as a `SYSTEM_OVERRIDE` into the agent context window.
 - The entire verification step runs inside a WebAssembly (WASM) sandbox for security isolation.
 
