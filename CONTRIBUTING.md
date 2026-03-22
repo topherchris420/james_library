@@ -79,6 +79,9 @@ Configure branch protections for both `dev` and `main` in
 ## Code Style
 
 - Python: formatted and linted with **ruff** (`ruff check .`).
+- Rust: avoid new crate-level `#![allow(clippy::...)]` suppressions unless there is
+  a documented justification and the lint cannot be scoped to a smaller target
+  (`fn`, `impl`, or module).
 - Max line length: not enforced globally (E501 ignored), but keep it
   reasonable.
 - Tests live in `tests/` and run via `pytest`.

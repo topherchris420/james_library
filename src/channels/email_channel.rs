@@ -1,4 +1,6 @@
 #![allow(clippy::uninlined_format_args)]
+// Legacy IMAP header parsing intentionally uses `Option::map(...).unwrap_or(...)`
+// to keep fallback behavior explicit for malformed/partial payloads.
 #![allow(clippy::map_unwrap_or)]
 #![allow(clippy::redundant_closure_for_method_calls)]
 #![allow(clippy::cast_lossless)]

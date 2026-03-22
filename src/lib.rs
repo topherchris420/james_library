@@ -9,7 +9,6 @@
     clippy::float_cmp,
     clippy::implicit_clone,
     clippy::items_after_statements,
-    clippy::map_unwrap_or,
     clippy::manual_let_else,
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
