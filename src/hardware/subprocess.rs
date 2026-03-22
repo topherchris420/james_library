@@ -1,7 +1,7 @@
 //! SubprocessTool — wraps any external binary as a [`Tool`].
 //!
 //! Plugins do not need to be written in Rust. Any executable that follows the
-//! ZeroClaw subprocess protocol is a valid tool:
+//! R.A.I.N. subprocess protocol is a valid tool:
 //!
 //! **Protocol (stdin/stdout, one line each):**
 //! ```text

@@ -1,4 +1,4 @@
-# ZeroClaw Dokumentationssammanfattning (Enhetlig Innehållsförteckning)
+# R.A.I.N. Dokumentationssammanfattning (Enhetlig Innehållsförteckning)
 
 Denna fil utgör den kanoniska innehållsförteckningen för dokumentationssystemet.
 

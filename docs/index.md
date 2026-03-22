@@ -45,7 +45,7 @@ R.A.I.N. Lab ships as one product built from two layers:
 | Layer | Role | Language |
 |---|---|---|
 | **James Library** | Research workflows, lab meetings, synthesis | Python |
-| **ZeroClaw** | Agent runtime, orchestration, security, tools | Rust (optional) |
+| **R.A.I.N.** | Agent runtime, orchestration, security, tools | Rust (optional) |
 
 Python research workflows work without Rust. The Rust runtime adds speed, channels, and tool execution for advanced users.
 

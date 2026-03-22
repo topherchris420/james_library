@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# ZeroClaw installer
+# R.A.I.N. installer
 # POSIX preamble: ensure bash is available, then re-exec under bash.
 set -eu
 
@@ -25,7 +25,7 @@ _ensure_bash() {
   elif _have_cmd dnf; then _run_privileged dnf install -y bash
   elif _have_cmd pacman; then
     if _is_container_runtime; then
-      _PACMAN_CFG="$(mktemp /tmp/zeroclaw-pacman.XXXXXX.conf)"
+      _PACMAN_CFG="$(mktemp /tmp/R.A.I.N.-pacman.XXXXXX.conf)"
       cp /etc/pacman.conf "$_PACMAN_CFG"
       grep -Eq '^[[:space:]]*DisableSandboxSyscalls([[:space:]]|$)' "$_PACMAN_CFG" || printf '\nDisableSandboxSyscalls\n' >> "$_PACMAN_CFG"
       _run_privileged pacman --config "$_PACMAN_CFG" -Sy --noconfirm
@@ -89,12 +89,12 @@ error() {
 
 usage() {
   cat <<'USAGE'
-ZeroClaw installer — one-click bootstrap
+R.A.I.N. installer — one-click bootstrap
 
 Usage:
   ./install.sh [options]
 
-The installer builds ZeroClaw, configures your provider and API key,
+The installer builds R.A.I.N., configures your provider and API key,
 starts the gateway service, and opens the dashboard — all in one step.
 
 Options:
@@ -117,7 +117,7 @@ Options:
 
 Examples:
   # One-click install (interactive)
-  curl -fsSL https://zeroclawlabs.ai/install.sh | bash
+  curl -fsSL https://R.A.I.N.labs.ai/install.sh | bash
 
   # Non-interactive with API key
   ./install.sh --api-key "sk-..." --provider openrouter
@@ -132,15 +132,15 @@ Examples:
   ./install.sh --skip-onboard
 
 Environment:
-  ZEROCLAW_CONTAINER_CLI     Container CLI command (default: docker; auto-fallback: podman)
-  ZEROCLAW_DOCKER_DATA_DIR   Host path for Docker config/workspace persistence
-  ZEROCLAW_DOCKER_IMAGE      Docker image tag to build/run (default: zeroclaw-bootstrap:local)
-  ZEROCLAW_API_KEY           Used when --api-key is not provided
-  ZEROCLAW_PROVIDER          Used when --provider is not provided (default: openrouter)
-  ZEROCLAW_MODEL             Used when --model is not provided
-  ZEROCLAW_BOOTSTRAP_MIN_RAM_MB   Minimum RAM threshold for source build preflight (default: 2048)
-  ZEROCLAW_BOOTSTRAP_MIN_DISK_MB  Minimum free disk threshold for source build preflight (default: 6144)
-  ZEROCLAW_DISABLE_ALPINE_AUTO_DEPS
+  R.A.I.N._CONTAINER_CLI     Container CLI command (default: docker; auto-fallback: podman)
+  R.A.I.N._DOCKER_DATA_DIR   Host path for Docker config/workspace persistence
+  R.A.I.N._DOCKER_IMAGE      Docker image tag to build/run (default: R.A.I.N.-bootstrap:local)
+  R.A.I.N._API_KEY           Used when --api-key is not provided
+  R.A.I.N._PROVIDER          Used when --provider is not provided (default: openrouter)
+  R.A.I.N._MODEL             Used when --model is not provided
+  R.A.I.N._BOOTSTRAP_MIN_RAM_MB   Minimum RAM threshold for source build preflight (default: 2048)
+  R.A.I.N._BOOTSTRAP_MIN_DISK_MB  Minimum free disk threshold for source build preflight (default: 6144)
+  R.A.I.N._DISABLE_ALPINE_AUTO_DEPS
                             Set to 1 to disable Alpine auto-install of missing prerequisites
 USAGE
 }
@@ -234,8 +234,8 @@ should_attempt_prebuilt_for_resources() {
   local workspace="${1:-.}"
   local min_ram_mb min_disk_mb total_ram_mb free_disk_mb low_resource
 
-  min_ram_mb="${ZEROCLAW_BOOTSTRAP_MIN_RAM_MB:-2048}"
-  min_disk_mb="${ZEROCLAW_BOOTSTRAP_MIN_DISK_MB:-6144}"
+  min_ram_mb="${R.A.I.N._BOOTSTRAP_MIN_RAM_MB:-2048}"
+  min_disk_mb="${R.A.I.N._BOOTSTRAP_MIN_DISK_MB:-6144}"
   total_ram_mb="$(get_total_memory_mb || true)"
   free_disk_mb="$(get_available_disk_mb "$workspace" || true)"
   low_resource=false
@@ -267,7 +267,7 @@ should_attempt_prebuilt_for_resources() {
 
 resolve_asset_url() {
   local asset_name="$1"
-  local api_url="https://api.github.com/repos/zeroclaw-labs/zeroclaw/releases"
+  local api_url="https://api.github.com/repos/R.A.I.N.-labs/R.A.I.N./releases"
   local releases_json download_url
 
   # Fetch up to 10 recent releases (includes prereleases) and find the first
@@ -316,16 +316,16 @@ install_prebuilt_binary() {
     return 1
   fi
 
-  asset_name="zeroclaw-${target}.tar.gz"
+  asset_name="R.A.I.N.-${target}.tar.gz"
 
   # Try the GitHub API first to find the newest release (including prereleases)
   # that actually contains the asset, then fall back to /releases/latest/.
   archive_url="$(resolve_asset_url "$asset_name" || true)"
   if [[ -z "$archive_url" ]]; then
-    archive_url="https://github.com/zeroclaw-labs/zeroclaw/releases/latest/download/${asset_name}"
+    archive_url="https://github.com/R.A.I.N.-labs/R.A.I.N./releases/latest/download/${asset_name}"
   fi
 
-  temp_dir="$(mktemp -d -t zeroclaw-prebuilt-XXXXXX)"
+  temp_dir="$(mktemp -d -t R.A.I.N.-prebuilt-XXXXXX)"
   archive_path="$temp_dir/${asset_name}"
 
   step_dot "Attempting pre-built binary install for target: $target"
@@ -341,22 +341,22 @@ install_prebuilt_binary() {
     return 1
   fi
 
-  extracted_bin="$temp_dir/zeroclaw"
+  extracted_bin="$temp_dir/R.A.I.N."
   if [[ ! -x "$extracted_bin" ]]; then
-    extracted_bin="$(find "$temp_dir" -maxdepth 2 -type f -name zeroclaw -perm -u+x | head -n 1 || true)"
+    extracted_bin="$(find "$temp_dir" -maxdepth 2 -type f -name R.A.I.N. -perm -u+x | head -n 1 || true)"
   fi
   if [[ -z "$extracted_bin" || ! -x "$extracted_bin" ]]; then
-    warn "Archive did not contain an executable zeroclaw binary."
+    warn "Archive did not contain an executable R.A.I.N. binary."
     rm -rf "$temp_dir"
     return 1
   fi
 
   install_dir="$HOME/.cargo/bin"
   mkdir -p "$install_dir"
-  install -m 0755 "$extracted_bin" "$install_dir/zeroclaw"
+  install -m 0755 "$extracted_bin" "$install_dir/R.A.I.N."
   rm -rf "$temp_dir"
 
-  step_ok "Installed pre-built binary to $install_dir/zeroclaw"
+  step_ok "Installed pre-built binary to $install_dir/R.A.I.N."
   if [[ ":$PATH:" != *":$install_dir:"* ]]; then
     warn "$install_dir is not in PATH for this shell."
     warn "Run: export PATH=\"$install_dir:\$PATH\""
@@ -401,7 +401,7 @@ run_pacman() {
 
   local pacman_cfg_tmp=""
   local pacman_rc=0
-  pacman_cfg_tmp="$(mktemp /tmp/zeroclaw-pacman.XXXXXX.conf)"
+  pacman_cfg_tmp="$(mktemp /tmp/R.A.I.N.-pacman.XXXXXX.conf)"
   cp /etc/pacman.conf "$pacman_cfg_tmp"
   if ! grep -Eq '^[[:space:]]*DisableSandboxSyscalls([[:space:]]|$)' "$pacman_cfg_tmp"; then
     printf '\nDisableSandboxSyscalls\n' >> "$pacman_cfg_tmp"
@@ -571,7 +571,7 @@ MSG
       # Detect un-accepted Xcode/CLT license (causes `cc` to exit 69).
       # xcrun --show-sdk-path can succeed even without an accepted license,
       # so we test-compile a trivial C file which reliably triggers the error.
-      _xcode_test_file="$(mktemp /tmp/zeroclaw-xcode-check.XXXXXX.c)"
+      _xcode_test_file="$(mktemp /tmp/R.A.I.N.-xcode-check.XXXXXX.c)"
       printf 'int main(){return 0;}\n' > "$_xcode_test_file"
       if ! cc -x c "$_xcode_test_file" -o /dev/null 2>/dev/null; then
         rm -f "$_xcode_test_file"
@@ -700,7 +700,7 @@ prompt_api_key() {
     API_KEY="$api_key_input"
     step_ok "API key set"
   else
-    warn "No API key entered — you can configure it later with zeroclaw onboard"
+    warn "No API key entered — you can configure it later with R.A.I.N. onboard"
     SKIP_ONBOARD=true
   fi
 }
@@ -729,7 +729,7 @@ run_guided_installer() {
   fi
 
   echo
-  echo -e "  ${BOLD_BLUE}${CRAB} ZeroClaw Guided Installer${RESET}"
+  echo -e "  ${BOLD_BLUE}${CRAB} R.A.I.N. Guided Installer${RESET}"
   echo -e "  ${DIM}Answer a few questions, then the installer will handle everything.${RESET}"
   echo
 
@@ -786,8 +786,8 @@ ensure_default_config_and_workspace() {
   # onboard wizard was skipped (e.g. --skip-build --prefer-prebuilt, or
   # Docker mode without an API key).
   #
-  # $1 — config directory  (e.g. ~/.zeroclaw or $docker_data_dir/.zeroclaw)
-  # $2 — workspace directory (e.g. ~/.zeroclaw/workspace or $docker_data_dir/workspace)
+  # $1 — config directory  (e.g. ~/.R.A.I.N. or $docker_data_dir/.R.A.I.N.)
+  # $2 — workspace directory (e.g. ~/.R.A.I.N./workspace or $docker_data_dir/workspace)
   # $3 — provider name      (default: openrouter)
   local config_dir="$1"
   local workspace_dir="$2"
@@ -800,8 +800,8 @@ ensure_default_config_and_workspace() {
   if [[ ! -f "$config_path" ]]; then
     step_dot "Creating default config.toml"
     cat > "$config_path" <<TOML
-# ZeroClaw configuration — generated by install.sh
-# Edit this file or run 'zeroclaw onboard' to reconfigure.
+# R.A.I.N. configuration — generated by install.sh
+# Edit this file or run 'R.A.I.N. onboard' to reconfigure.
 
 default_provider = "${provider}"
 workspace_dir = "${workspace_dir}"
@@ -826,7 +826,7 @@ TOML
 
   # Seed workspace markdown files only if they don't already exist.
   local user_name="${USER:-User}"
-  local agent_name="ZeroClaw"
+  local agent_name="R.A.I.N."
 
   _write_if_missing() {
     local filepath="$1"
@@ -917,7 +917,7 @@ You are **${agent_name}**. Built in Rust. 3MB binary. Zero bloat.
 
 resolve_container_cli() {
   local requested_cli
-  requested_cli="${ZEROCLAW_CONTAINER_CLI:-docker}"
+  requested_cli="${R.A.I.N._CONTAINER_CLI:-docker}"
 
   if have_cmd "$requested_cli"; then
     CONTAINER_CLI="$requested_cli"
@@ -932,9 +932,9 @@ resolve_container_cli() {
 
   error "Container CLI '$requested_cli' is not installed."
   if [[ "$requested_cli" != "docker" ]]; then
-    error "Set ZEROCLAW_CONTAINER_CLI to an installed Docker-compatible CLI (e.g., docker or podman)."
+    error "Set R.A.I.N._CONTAINER_CLI to an installed Docker-compatible CLI (e.g., docker or podman)."
   else
-    error "Install Docker, install podman, or set ZEROCLAW_CONTAINER_CLI to an available Docker-compatible CLI."
+    error "Install Docker, install podman, or set R.A.I.N._CONTAINER_CLI to an available Docker-compatible CLI."
   fi
   exit 1
 }
@@ -953,17 +953,17 @@ run_docker_bootstrap() {
   local docker_image docker_data_dir default_data_dir fallback_image
   local config_mount workspace_mount
   local -a container_run_user_args container_run_namespace_args
-  docker_image="${ZEROCLAW_DOCKER_IMAGE:-zeroclaw-bootstrap:local}"
-  fallback_image="ghcr.io/zeroclaw-labs/zeroclaw:latest"
+  docker_image="${R.A.I.N._DOCKER_IMAGE:-R.A.I.N.-bootstrap:local}"
+  fallback_image="ghcr.io/R.A.I.N.-labs/R.A.I.N.:latest"
   if [[ "$TEMP_CLONE" == true ]]; then
-    default_data_dir="$HOME/.zeroclaw-docker"
+    default_data_dir="$HOME/.R.A.I.N.-docker"
   else
-    default_data_dir="$WORK_DIR/.zeroclaw-docker"
+    default_data_dir="$WORK_DIR/.R.A.I.N.-docker"
   fi
-  docker_data_dir="${ZEROCLAW_DOCKER_DATA_DIR:-$default_data_dir}"
+  docker_data_dir="${R.A.I.N._DOCKER_DATA_DIR:-$default_data_dir}"
   DOCKER_DATA_DIR="$docker_data_dir"
 
-  mkdir -p "$docker_data_dir/.zeroclaw" "$docker_data_dir/workspace"
+  mkdir -p "$docker_data_dir/.R.A.I.N." "$docker_data_dir/workspace"
 
   if [[ "$SKIP_INSTALL" == true ]]; then
     warn "--skip-install has no effect with --docker."
@@ -976,7 +976,7 @@ run_docker_bootstrap() {
     info "Skipping Docker image build"
     if ! "$CONTAINER_CLI" image inspect "$docker_image" >/dev/null 2>&1; then
       warn "Local Docker image ($docker_image) was not found."
-      info "Pulling official ZeroClaw image ($fallback_image)"
+      info "Pulling official R.A.I.N. image ($fallback_image)"
       if ! "$CONTAINER_CLI" pull "$fallback_image"; then
         error "Failed to pull fallback Docker image: $fallback_image"
         error "Run without --skip-build to build locally, or verify access to GHCR."
@@ -989,8 +989,8 @@ run_docker_bootstrap() {
     fi
   fi
 
-  config_mount="$docker_data_dir/.zeroclaw:/zeroclaw-data/.zeroclaw"
-  workspace_mount="$docker_data_dir/workspace:/zeroclaw-data/workspace"
+  config_mount="$docker_data_dir/.R.A.I.N.:/R.A.I.N.-data/.R.A.I.N."
+  workspace_mount="$docker_data_dir/workspace:/R.A.I.N.-data/workspace"
   if [[ "$CONTAINER_CLI" == "podman" ]]; then
     config_mount+=":Z"
     workspace_mount+=":Z"
@@ -1027,20 +1027,20 @@ run_docker_bootstrap() {
     "$CONTAINER_CLI" run --rm -it \
       "${container_run_namespace_args[@]+"${container_run_namespace_args[@]}"}" \
       "${container_run_user_args[@]}" \
-      -e HOME=/zeroclaw-data \
-      -e ZEROCLAW_WORKSPACE=/zeroclaw-data/workspace \
+      -e HOME=/R.A.I.N.-data \
+      -e R.A.I.N._WORKSPACE=/R.A.I.N.-data/workspace \
       -v "$config_mount" \
       -v "$workspace_mount" \
       "$docker_image" \
       "${onboard_cmd[@]}" || true
   else
-    info "Docker image ready. Run zeroclaw onboard inside the container to configure."
+    info "Docker image ready. Run R.A.I.N. onboard inside the container to configure."
   fi
 
   # Ensure config.toml and workspace scaffold exist on the host even when
   # onboard was skipped, failed, or ran non-interactively inside the container.
   ensure_default_config_and_workspace \
-    "$docker_data_dir/.zeroclaw" \
+    "$docker_data_dir/.R.A.I.N." \
     "$docker_data_dir/workspace" \
     "$PROVIDER"
 }
@@ -1048,7 +1048,7 @@ run_docker_bootstrap() {
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd || pwd)"
 ROOT_DIR="$SCRIPT_DIR"
-REPO_URL="https://github.com/zeroclaw-labs/zeroclaw.git"
+REPO_URL="https://github.com/R.A.I.N.-labs/R.A.I.N..git"
 ORIGINAL_ARG_COUNT=$#
 GUIDED_MODE="auto"
 
@@ -1062,10 +1062,10 @@ SKIP_ONBOARD=false
 SKIP_BUILD=false
 SKIP_INSTALL=false
 PREBUILT_INSTALLED=false
-CONTAINER_CLI="${ZEROCLAW_CONTAINER_CLI:-docker}"
-API_KEY="${ZEROCLAW_API_KEY:-}"
-PROVIDER="${ZEROCLAW_PROVIDER:-openrouter}"
-MODEL="${ZEROCLAW_MODEL:-}"
+CONTAINER_CLI="${R.A.I.N._CONTAINER_CLI:-docker}"
+API_KEY="${R.A.I.N._API_KEY:-}"
+PROVIDER="${R.A.I.N._PROVIDER:-openrouter}"
+MODEL="${R.A.I.N._MODEL:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -1180,11 +1180,11 @@ if [[ "$DOCKER_MODE" == true ]]; then
       warn "--install-rust is ignored with --docker."
   fi
 else
-  if [[ "$OS_NAME" == "Linux" && -z "${ZEROCLAW_DISABLE_ALPINE_AUTO_DEPS:-}" ]] && have_cmd apk; then
+  if [[ "$OS_NAME" == "Linux" && -z "${R.A.I.N._DISABLE_ALPINE_AUTO_DEPS:-}" ]] && have_cmd apk; then
     find_missing_alpine_prereqs
     if [[ ${#ALPINE_MISSING_PKGS[@]} -gt 0 && "$INSTALL_SYSTEM_DEPS" == false ]]; then
       info "Detected Alpine with missing prerequisites: ${ALPINE_MISSING_PKGS[*]}"
-      info "Auto-enabling system dependency installation (set ZEROCLAW_DISABLE_ALPINE_AUTO_DEPS=1 to disable)."
+      info "Auto-enabling system dependency installation (set R.A.I.N._DISABLE_ALPINE_AUTO_DEPS=1 to disable)."
       INSTALL_SYSTEM_DEPS=true
     fi
   fi
@@ -1196,7 +1196,7 @@ else
   # Always check Xcode/CLT license on macOS, regardless of --install-system-deps.
   # An un-accepted license causes `cc` to exit 69, breaking all Rust builds.
   if [[ "$OS_NAME" == "Darwin" ]]; then
-    _xcode_test_file="$(mktemp /tmp/zeroclaw-xcode-check.XXXXXX.c)"
+    _xcode_test_file="$(mktemp /tmp/R.A.I.N.-xcode-check.XXXXXX.c)"
     printf 'int main(){return 0;}\n' > "$_xcode_test_file"
     if ! cc -x c "$_xcode_test_file" -o /dev/null 2>/dev/null; then
       rm -f "$_xcode_test_file"
@@ -1211,7 +1211,7 @@ else
       if [[ "$_xcode_accept_ok" == true ]]; then
         step_ok "Xcode license accepted"
         # Re-test compilation to confirm it's fixed.
-        _xcode_test_file="$(mktemp /tmp/zeroclaw-xcode-check.XXXXXX.c)"
+        _xcode_test_file="$(mktemp /tmp/R.A.I.N.-xcode-check.XXXXXX.c)"
         printf 'int main(){return 0;}\n' > "$_xcode_test_file"
         if ! cc -x c "$_xcode_test_file" -o /dev/null 2>/dev/null; then
           rm -f "$_xcode_test_file"
@@ -1262,7 +1262,7 @@ if [[ ! -f "$WORK_DIR/Cargo.toml" ]]; then
       exit 1
     fi
 
-    TEMP_DIR="$(mktemp -d -t zeroclaw-bootstrap-XXXXXX)"
+    TEMP_DIR="$(mktemp -d -t R.A.I.N.-bootstrap-XXXXXX)"
     info "No local repository detected; cloning latest master branch"
     git clone --depth 1 --branch master "$REPO_URL" "$TEMP_DIR"
     WORK_DIR="$TEMP_DIR"
@@ -1271,7 +1271,7 @@ if [[ ! -f "$WORK_DIR/Cargo.toml" ]]; then
 fi
 
 echo
-echo -e "  ${BOLD_BLUE}${CRAB} ZeroClaw Installer${RESET}"
+echo -e "  ${BOLD_BLUE}${CRAB} R.A.I.N. Installer${RESET}"
 echo -e "  ${DIM}Build it, run it, trust it.${RESET}"
 echo
 step_ok "Detected: ${BOLD}$(echo "$OS_NAME" | tr '[:upper:]' '[:lower:]')${RESET}"
@@ -1279,11 +1279,11 @@ step_ok "Detected: ${BOLD}$(echo "$OS_NAME" | tr '[:upper:]' '[:lower:]')${RESET
 # --- Detect existing installation and version ---
 EXISTING_VERSION=""
 INSTALL_MODE="fresh"
-if have_cmd zeroclaw; then
-  EXISTING_VERSION="$(zeroclaw --version 2>/dev/null | awk '{print $NF}' || true)"
+if have_cmd R.A.I.N.; then
+  EXISTING_VERSION="$(R.A.I.N. --version 2>/dev/null | awk '{print $NF}' || true)"
   INSTALL_MODE="upgrade"
-elif [[ -x "$HOME/.cargo/bin/zeroclaw" ]]; then
-  EXISTING_VERSION="$("$HOME/.cargo/bin/zeroclaw" --version 2>/dev/null | awk '{print $NF}' || true)"
+elif [[ -x "$HOME/.cargo/bin/R.A.I.N." ]]; then
+  EXISTING_VERSION="$("$HOME/.cargo/bin/R.A.I.N." --version 2>/dev/null | awk '{print $NF}' || true)"
   INSTALL_MODE="upgrade"
 fi
 
@@ -1311,9 +1311,9 @@ if [[ -n "$TARGET_VERSION" ]]; then
 fi
 step_dot "Workspace: $WORK_DIR"
 if [[ "$INSTALL_MODE" == "upgrade" && -n "$EXISTING_VERSION" ]]; then
-  step_dot "Existing ZeroClaw installation detected, upgrading from v${EXISTING_VERSION}"
+  step_dot "Existing R.A.I.N. installation detected, upgrading from v${EXISTING_VERSION}"
 elif [[ "$INSTALL_MODE" == "upgrade" ]]; then
-  step_dot "Existing ZeroClaw installation detected, upgrading"
+  step_dot "Existing R.A.I.N. installation detected, upgrading"
 fi
 
 cd "$WORK_DIR"
@@ -1333,17 +1333,17 @@ if [[ "$DOCKER_MODE" == true ]]; then
   echo
   echo -e "${BOLD_BLUE}${CRAB} Docker bootstrap complete!${RESET}"
   echo
-  echo -e "${BOLD}Your containerized ZeroClaw data is persisted under:${RESET}"
+  echo -e "${BOLD}Your containerized R.A.I.N. data is persisted under:${RESET}"
   echo -e "  ${DIM}$DOCKER_DATA_DIR${RESET}"
   echo
   echo -e "${BOLD}Dashboard URL:${RESET} ${BLUE}http://127.0.0.1:42617${RESET}"
   echo
   echo -e "${BOLD}Next steps:${RESET}"
-  echo -e "  ${DIM}zeroclaw status${RESET}"
-  echo -e "  ${DIM}zeroclaw agent -m \"Hello, ZeroClaw!\"${RESET}"
-  echo -e "  ${DIM}zeroclaw gateway${RESET}"
+  echo -e "  ${DIM}R.A.I.N. status${RESET}"
+  echo -e "  ${DIM}R.A.I.N. agent -m \"Hello, R.A.I.N.!\"${RESET}"
+  echo -e "  ${DIM}R.A.I.N. gateway${RESET}"
   echo
-  echo -e "${BOLD}Docs:${RESET} ${BLUE}https://www.zeroclawlabs.ai/docs${RESET}"
+  echo -e "${BOLD}Docs:${RESET} ${BLUE}https://www.R.A.I.N.labs.ai/docs${RESET}"
   exit 0
 fi
 
@@ -1405,9 +1405,9 @@ else
 fi
 
 echo
-echo -e "${BOLD_BLUE}[2/3]${RESET} ${BOLD}Installing ZeroClaw${RESET}"
+echo -e "${BOLD_BLUE}[2/3]${RESET} ${BOLD}Installing R.A.I.N.${RESET}"
 if [[ -n "$TARGET_VERSION" ]]; then
-  step_dot "Installing ZeroClaw v${TARGET_VERSION}"
+  step_dot "Installing R.A.I.N. v${TARGET_VERSION}"
 fi
 if [[ "$SKIP_BUILD" == false ]]; then
   # Clean stale build artifacts on upgrade to prevent bindgen/build-script
@@ -1424,61 +1424,61 @@ else
 fi
 
 if [[ "$SKIP_INSTALL" == false ]]; then
-  step_dot "Installing zeroclaw to cargo bin"
+  step_dot "Installing R.A.I.N. to cargo bin"
 
-  # Clean up stale cargo install tracking from the old "zeroclaw" package name
-  # (renamed to "zeroclawlabs"). Without this, `cargo install zeroclawlabs` from
-  # crates.io fails with "binary already exists as part of `zeroclaw`".
+  # Clean up stale cargo install tracking from the old "R.A.I.N." package name
+  # (renamed to "R.A.I.N.labs"). Without this, `cargo install R.A.I.N.labs` from
+  # crates.io fails with "binary already exists as part of `R.A.I.N.`".
   if have_cmd cargo; then
-    if [[ -f "$HOME/.cargo/.crates.toml" ]] && grep -q '^"zeroclaw ' "$HOME/.cargo/.crates.toml" 2>/dev/null; then
-      step_dot "Removing stale cargo tracking for old 'zeroclaw' package name"
-      cargo uninstall zeroclaw 2>/dev/null || true
+    if [[ -f "$HOME/.cargo/.crates.toml" ]] && grep -q '^"R.A.I.N. ' "$HOME/.cargo/.crates.toml" 2>/dev/null; then
+      step_dot "Removing stale cargo tracking for old 'R.A.I.N.' package name"
+      cargo uninstall R.A.I.N. 2>/dev/null || true
     fi
   fi
 
   cargo install --path "$WORK_DIR" --force --locked
-  step_ok "ZeroClaw installed"
+  step_ok "R.A.I.N. installed"
 
   # Sync binary to ~/.local/bin so PATH lookups find the fresh version
   if [[ -d "$HOME/.local/bin" ]]; then
-    cp -f "$HOME/.cargo/bin/zeroclaw" "$HOME/.local/bin/zeroclaw" 2>/dev/null && \
+    cp -f "$HOME/.cargo/bin/R.A.I.N." "$HOME/.local/bin/R.A.I.N." 2>/dev/null && \
       step_ok "Synced binary to ~/.local/bin" || true
   fi
 else
   step_dot "Skipping install"
 fi
 
-ZEROCLAW_BIN=""
-if [[ -x "$HOME/.cargo/bin/zeroclaw" ]]; then
-  ZEROCLAW_BIN="$HOME/.cargo/bin/zeroclaw"
-elif [[ -x "$WORK_DIR/target/release/zeroclaw" ]]; then
-  ZEROCLAW_BIN="$WORK_DIR/target/release/zeroclaw"
-elif have_cmd zeroclaw; then
-  ZEROCLAW_BIN="zeroclaw"
+R.A.I.N._BIN=""
+if [[ -x "$HOME/.cargo/bin/R.A.I.N." ]]; then
+  R.A.I.N._BIN="$HOME/.cargo/bin/R.A.I.N."
+elif [[ -x "$WORK_DIR/target/release/R.A.I.N." ]]; then
+  R.A.I.N._BIN="$WORK_DIR/target/release/R.A.I.N."
+elif have_cmd R.A.I.N.; then
+  R.A.I.N._BIN="R.A.I.N."
 fi
 
 echo
 echo -e "${BOLD_BLUE}[3/3]${RESET} ${BOLD}Finalizing setup${RESET}"
 
 # --- Inline onboarding (provider + API key configuration) ---
-if [[ "$SKIP_ONBOARD" == false && -n "$ZEROCLAW_BIN" ]]; then
+if [[ "$SKIP_ONBOARD" == false && -n "$R.A.I.N._BIN" ]]; then
   if [[ -n "$API_KEY" ]]; then
     step_dot "Configuring provider: ${PROVIDER}"
-    ONBOARD_CMD=("$ZEROCLAW_BIN" onboard --api-key "$API_KEY" --provider "$PROVIDER")
+    ONBOARD_CMD=("$R.A.I.N._BIN" onboard --api-key "$API_KEY" --provider "$PROVIDER")
     if [[ -n "$MODEL" ]]; then
       ONBOARD_CMD+=(--model "$MODEL")
     fi
     if "${ONBOARD_CMD[@]}" 2>/dev/null; then
       step_ok "Provider configured"
     else
-      step_fail "Provider configuration failed — run zeroclaw onboard to retry"
+      step_fail "Provider configuration failed — run R.A.I.N. onboard to retry"
     fi
   elif [[ "$PROVIDER" == "ollama" ]]; then
     step_dot "Configuring Ollama (no API key needed)"
-    if "$ZEROCLAW_BIN" onboard --provider ollama 2>/dev/null; then
+    if "$R.A.I.N._BIN" onboard --provider ollama 2>/dev/null; then
       step_ok "Ollama configured"
     else
-      step_fail "Ollama configuration failed — run zeroclaw onboard to retry"
+      step_fail "Ollama configuration failed — run R.A.I.N. onboard to retry"
     fi
   else
     # No API key and not ollama — prompt inline if interactive, skip otherwise
@@ -1486,47 +1486,47 @@ if [[ "$SKIP_ONBOARD" == false && -n "$ZEROCLAW_BIN" ]]; then
       prompt_provider
       prompt_api_key
       if [[ -n "$API_KEY" ]]; then
-        ONBOARD_CMD=("$ZEROCLAW_BIN" onboard --api-key "$API_KEY" --provider "$PROVIDER")
+        ONBOARD_CMD=("$R.A.I.N._BIN" onboard --api-key "$API_KEY" --provider "$PROVIDER")
         if [[ -n "$MODEL" ]]; then
           ONBOARD_CMD+=(--model "$MODEL")
         fi
         if "${ONBOARD_CMD[@]}" 2>/dev/null; then
           step_ok "Provider configured"
         else
-          step_fail "Provider configuration failed — run zeroclaw onboard to retry"
+          step_fail "Provider configuration failed — run R.A.I.N. onboard to retry"
         fi
       fi
     else
-      step_dot "No API key provided — run zeroclaw onboard to configure"
+      step_dot "No API key provided — run R.A.I.N. onboard to configure"
     fi
   fi
 elif [[ "$SKIP_ONBOARD" == true ]]; then
-  step_dot "Skipping configuration (run zeroclaw onboard later)"
-elif [[ -z "$ZEROCLAW_BIN" ]]; then
-  warn "ZeroClaw binary not found — cannot configure provider"
+  step_dot "Skipping configuration (run R.A.I.N. onboard later)"
+elif [[ -z "$R.A.I.N._BIN" ]]; then
+  warn "R.A.I.N. binary not found — cannot configure provider"
 fi
 
 # Ensure config.toml and workspace scaffold exist even when onboard was
 # skipped, unavailable, or failed (e.g. --skip-build --prefer-prebuilt
 # without an API key, or when the binary could not run onboard).
-_native_config_dir="${ZEROCLAW_CONFIG_DIR:-$HOME/.zeroclaw}"
-_native_workspace_dir="${ZEROCLAW_WORKSPACE:-$_native_config_dir/workspace}"
+_native_config_dir="${R.A.I.N._CONFIG_DIR:-$HOME/.R.A.I.N.}"
+_native_workspace_dir="${R.A.I.N._WORKSPACE:-$_native_config_dir/workspace}"
 ensure_default_config_and_workspace "$_native_config_dir" "$_native_workspace_dir" "$PROVIDER"
 
 # --- Gateway service management ---
-if [[ -n "$ZEROCLAW_BIN" ]]; then
+if [[ -n "$R.A.I.N._BIN" ]]; then
   # Try to install and start the gateway service
   step_dot "Checking gateway service"
-  if "$ZEROCLAW_BIN" service install 2>/dev/null; then
+  if "$R.A.I.N._BIN" service install 2>/dev/null; then
     step_ok "Gateway service installed"
-    if "$ZEROCLAW_BIN" service restart 2>/dev/null; then
+    if "$R.A.I.N._BIN" service restart 2>/dev/null; then
       step_ok "Gateway service restarted"
 
       # Fetch and display pairing code from running gateway
       PAIR_CODE=""
       for i in 1 2 3 4 5; do
         sleep 2
-        if PAIR_CODE=$("$ZEROCLAW_BIN" gateway get-paircode 2>/dev/null | grep -oE '[0-9]{6}'); then
+        if PAIR_CODE=$("$R.A.I.N._BIN" gateway get-paircode 2>/dev/null | grep -oE '[0-9]{6}'); then
           break
         fi
       done
@@ -1539,41 +1539,41 @@ if [[ -n "$ZEROCLAW_BIN" ]]; then
         echo -e "  ${BOLD_BLUE}└──────────────┘${RESET}"
         echo
         echo -e "  ${DIM}Enter this code in the dashboard to pair your device.${RESET}"
-        echo -e "  ${DIM}Run 'zeroclaw gateway get-paircode --new' anytime to generate a fresh code.${RESET}"
+        echo -e "  ${DIM}Run 'R.A.I.N. gateway get-paircode --new' anytime to generate a fresh code.${RESET}"
       fi
     else
-      step_fail "Gateway service restart failed — re-run with zeroclaw service start"
+      step_fail "Gateway service restart failed — re-run with R.A.I.N. service start"
     fi
   else
-    step_dot "Gateway service not installed (run zeroclaw service install later)"
+    step_dot "Gateway service not installed (run R.A.I.N. service install later)"
   fi
 
   # --- Post-install doctor check ---
   step_dot "Running doctor to validate installation"
-  if "$ZEROCLAW_BIN" doctor 2>/dev/null; then
+  if "$R.A.I.N._BIN" doctor 2>/dev/null; then
     step_ok "Doctor complete"
   else
-    warn "Doctor reported issues — run zeroclaw doctor --fix to resolve"
+    warn "Doctor reported issues — run R.A.I.N. doctor --fix to resolve"
   fi
 fi
 
 # --- Determine installed version ---
 INSTALLED_VERSION=""
-if [[ -n "$ZEROCLAW_BIN" ]]; then
-  INSTALLED_VERSION="$("$ZEROCLAW_BIN" --version 2>/dev/null | awk '{print $NF}' || true)"
+if [[ -n "$R.A.I.N._BIN" ]]; then
+  INSTALLED_VERSION="$("$R.A.I.N._BIN" --version 2>/dev/null | awk '{print $NF}' || true)"
 fi
 
 # --- Success banner ---
 echo
 if [[ -n "$INSTALLED_VERSION" ]]; then
-  echo -e "${BOLD_BLUE}${CRAB} ZeroClaw installed successfully (ZeroClaw ${INSTALLED_VERSION})!${RESET}"
+  echo -e "${BOLD_BLUE}${CRAB} R.A.I.N. installed successfully (R.A.I.N. ${INSTALLED_VERSION})!${RESET}"
 else
-  echo -e "${BOLD_BLUE}${CRAB} ZeroClaw installed successfully!${RESET}"
+  echo -e "${BOLD_BLUE}${CRAB} R.A.I.N. installed successfully!${RESET}"
 fi
 
-if [[ -x "$HOME/.cargo/bin/zeroclaw" ]] && ! have_cmd zeroclaw; then
+if [[ -x "$HOME/.cargo/bin/R.A.I.N." ]] && ! have_cmd R.A.I.N.; then
   echo
-  warn "zeroclaw is installed in $HOME/.cargo/bin, but that directory is not in PATH for this shell."
+  warn "R.A.I.N. is installed in $HOME/.cargo/bin, but that directory is not in PATH for this shell."
   warn 'Run: export PATH="$HOME/.cargo/bin:$PATH"'
   step_dot "To persist it, add that export line to ~/.bashrc, ~/.zshrc, or your shell profile, then open a new shell."
 fi
@@ -1587,7 +1587,7 @@ GATEWAY_PORT=42617
 DASHBOARD_URL="http://127.0.0.1:${GATEWAY_PORT}"
 echo
 echo -e "${BOLD}Dashboard URL:${RESET} ${BLUE}${DASHBOARD_URL}${RESET}"
-echo -e "${DIM}  Run 'zeroclaw gateway get-paircode' to get your pairing code.${RESET}"
+echo -e "${DIM}  Run 'R.A.I.N. gateway get-paircode' to get your pairing code.${RESET}"
 
 # --- Copy to clipboard ---
 COPIED_TO_CLIPBOARD=false
@@ -1631,9 +1631,9 @@ fi
 
 echo
 echo -e "${BOLD}Next steps:${RESET}"
-echo -e "  ${DIM}zeroclaw status${RESET}"
-echo -e "  ${DIM}zeroclaw agent -m \"Hello, ZeroClaw!\"${RESET}"
-echo -e "  ${DIM}zeroclaw gateway${RESET}"
+echo -e "  ${DIM}R.A.I.N. status${RESET}"
+echo -e "  ${DIM}R.A.I.N. agent -m \"Hello, R.A.I.N.!\"${RESET}"
+echo -e "  ${DIM}R.A.I.N. gateway${RESET}"
 echo
-echo -e "${BOLD}Docs:${RESET} ${BLUE}https://www.zeroclawlabs.ai/docs${RESET}"
+echo -e "${BOLD}Docs:${RESET} ${BLUE}https://www.R.A.I.N.labs.ai/docs${RESET}"
 echo

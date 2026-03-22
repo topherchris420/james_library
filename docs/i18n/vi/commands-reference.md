@@ -16,17 +16,17 @@ Chế độ thường dùng:
 - `--mode models`
 - `--mode backup -- --json`
 
-## Lệnh cầu nối runtime ZeroClaw
+## Lệnh cầu nối runtime R.A.I.N.
 
 Điểm vào cho runtime Rust:
 
 ```bash
-zeroclaw gateway
-zeroclaw daemon
+R.A.I.N. gateway
+R.A.I.N. daemon
 ```
 
 Ghi chú:
 
-- `zeroclaw gateway` và `zeroclaw daemon` dùng `gateway.port` từ config khi không truyền `--port`.
-- Nếu muốn mặc định cầu nối Body-daemon, đặt `gateway.port = 4200` trong config hoặc `ZEROCLAW_GATEWAY_PORT=4200` trong môi trường.
+- `R.A.I.N. gateway` và `R.A.I.N. daemon` dùng `gateway.port` từ config khi không truyền `--port`.
+- Nếu muốn mặc định cầu nối Body-daemon, đặt `gateway.port = 4200` trong config hoặc `R.A.I.N._GATEWAY_PORT=4200` trong môi trường.
 - Khởi động sẽ bị chặn nếu dừng khẩn cấp đang bật ở mức `kill-all` hoặc `network-kill`.

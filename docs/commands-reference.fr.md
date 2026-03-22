@@ -16,19 +16,19 @@ Modes principaux:
 - `--mode models`
 - `--mode backup -- --json`
 
-## Commandes du pont runtime ZeroClaw
+## Commandes du pont runtime R.A.I.N.
 
 Point d'entrée pour le runtime Rust:
 
 ```bash
-zeroclaw gateway
-zeroclaw daemon
+R.A.I.N. gateway
+R.A.I.N. daemon
 ```
 
 Notes:
 
-- `zeroclaw gateway` et `zeroclaw daemon` utilisent `gateway.port` depuis la config quand `--port` n'est pas fourni.
-- Pour un pont Body-daemon par défaut, définissez `gateway.port = 4200` dans la config ou `ZEROCLAW_GATEWAY_PORT=4200` dans l'environnement.
+- `R.A.I.N. gateway` et `R.A.I.N. daemon` utilisent `gateway.port` depuis la config quand `--port` n'est pas fourni.
+- Pour un pont Body-daemon par défaut, définissez `gateway.port = 4200` dans la config ou `R.A.I.N._GATEWAY_PORT=4200` dans l'environnement.
 - Le démarrage est bloqué si l'arrêt d'urgence est actif au niveau `kill-all` ou `network-kill`.
 
 Voir aussi: [`troubleshooting.fr.md`](troubleshooting.fr.md).

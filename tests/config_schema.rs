@@ -3,7 +3,7 @@
 //! Validates: config defaults, backward compatibility, invalid input rejection,
 //! and gateway/security/agent config boundary conditions.
 
-use zeroclaw::config::{AutonomyConfig, ChannelsConfig, Config, GatewayConfig, SecurityConfig};
+use R.A.I.N.::config::{AutonomyConfig, ChannelsConfig, Config, GatewayConfig, SecurityConfig};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Invalid value fail-fast
@@ -271,7 +271,7 @@ cli = true
 
 [channels_config.telegram]
 bot_token = "test_token"
-allowed_users = ["zeroclaw_user"]
+allowed_users = ["R.A.I.N._user"]
 
 [channels_config.discord]
 bot_token = "test_token"

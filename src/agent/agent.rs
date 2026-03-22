@@ -802,7 +802,7 @@ impl Agent {
     }
 
     pub async fn run_interactive(&mut self) -> Result<()> {
-        println!("🦀 ZeroClaw Interactive Mode");
+        println!("🦀 R.A.I.N. Interactive Mode");
         println!("Type /quit to exit.\n");
 
         let (tx, mut rx) = tokio::sync::mpsc::channel(32);
@@ -1184,11 +1184,11 @@ mod tests {
         config.memory.auto_save = false;
         config.extra_headers.insert(
             "User-Agent".to_string(),
-            "zeroclaw-web-test/1.0".to_string(),
+            "R.A.I.N.-web-test/1.0".to_string(),
         );
         config
             .extra_headers
-            .insert("X-Title".to_string(), "zeroclaw-web".to_string());
+            .insert("X-Title".to_string(), "R.A.I.N.-web".to_string());
 
         let mut agent = Agent::from_config(&config)
             .await
@@ -1204,11 +1204,11 @@ mod tests {
             .expect("captured headers");
         assert_eq!(
             headers.get("user-agent").map(String::as_str),
-            Some("zeroclaw-web-test/1.0")
+            Some("R.A.I.N.-web-test/1.0")
         );
         assert_eq!(
             headers.get("x-title").map(String::as_str),
-            Some("zeroclaw-web")
+            Some("R.A.I.N.-web")
         );
 
         server_handle.abort();

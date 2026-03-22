@@ -467,7 +467,7 @@ pub(crate) async fn deliver_announcement(
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("matrix channel not configured"))?;
                 let room_id = resolve_matrix_delivery_room(&mx.room_id, target);
-                let channel = MatrixChannel::new_with_session_hint_and_zeroclaw_dir(
+                let channel = MatrixChannel::new_with_session_hint_and_R.A.I.N._dir(
                     mx.homeserver.clone(),
                     mx.access_token.clone(),
                     room_id,
@@ -591,7 +591,7 @@ async fn run_job_command_with_timeout(
 
 /// Build a shell `Command` for cron job execution.
 ///
-/// Uses `sh -c <command>` (non-login shell). On Windows, ZeroClaw users
+/// Uses `sh -c <command>` (non-login shell). On Windows, R.A.I.N. users
 /// typically have Git Bash installed which provides `sh` in PATH, and
 /// cron commands are written with Unix shell syntax. The previous `-lc`
 /// (login shell) flag was dropped: login shells load the full user

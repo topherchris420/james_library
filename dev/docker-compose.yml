@@ -1,4 +1,4 @@
-# Development Environment for ZeroClaw Agentic Testing
+# Development Environment for R.A.I.N. Agentic Testing
 #
 # Use this for:
 # - Running the agent in a sandboxed environment
@@ -8,37 +8,37 @@
 # Usage:
 #   cd dev && ./cli.sh up
 #   or from root: ./dev/cli.sh up
-name: zeroclaw-dev
+name: R.A.I.N.-dev
 services:
   # ── The Agent (Development Image) ──
   # Builds from source using the 'dev' stage of the root Dockerfile
-  zeroclaw-dev:
+  R.A.I.N.-dev:
     build:
       context: ..
       dockerfile: Dockerfile
       target: dev
-    container_name: zeroclaw-dev
+    container_name: R.A.I.N.-dev
     restart: unless-stopped
     environment:
-      - ZEROCLAW_GATEWAY_PORT=42617
-      - SANDBOX_HOST=zeroclaw-sandbox
+      - R.A.I.N._GATEWAY_PORT=42617
+      - SANDBOX_HOST=R.A.I.N.-sandbox
     secrets:
-      - source: zeroclaw_env
-        target: zeroclaw_env
+      - source: R.A.I.N._env
+        target: R.A.I.N._env
     entrypoint: ["/bin/bash", "-lc"]
     command:
       - |
-        if [ -f /run/secrets/zeroclaw_env ]; then
+        if [ -f /run/secrets/R.A.I.N._env ]; then
           set -a
-          . /run/secrets/zeroclaw_env
+          . /run/secrets/R.A.I.N._env
           set +a
         fi
-        exec zeroclaw gateway --port "${ZEROCLAW_GATEWAY_PORT:-42617}" --host "[::]"
+        exec R.A.I.N. gateway --port "${R.A.I.N._GATEWAY_PORT:-42617}" --host "[::]"
     volumes:
-      # Mount single config file (avoids shadowing other files in .zeroclaw)
-      - ../target/.zeroclaw/config.toml:/zeroclaw-data/.zeroclaw/config.toml
+      # Mount single config file (avoids shadowing other files in .R.A.I.N.)
+      - ../target/.R.A.I.N./config.toml:/R.A.I.N.-data/.R.A.I.N./config.toml
       # Mount shared workspace
-      - ../playground:/zeroclaw-data/workspace
+      - ../playground:/R.A.I.N.-data/workspace
     ports:
       - "127.0.0.1:42617:42617"
     networks:
@@ -50,7 +50,7 @@ services:
     build:
       context: sandbox # Context relative to dev/
       dockerfile: Dockerfile
-    container_name: zeroclaw-sandbox
+    container_name: R.A.I.N.-sandbox
     hostname: dev-box
     command: ["tail", "-f", "/dev/null"]
     working_dir: /home/developer/workspace
@@ -68,5 +68,5 @@ networks:
     driver: bridge
 
 secrets:
-  zeroclaw_env:
+  R.A.I.N._env:
     file: ../.env

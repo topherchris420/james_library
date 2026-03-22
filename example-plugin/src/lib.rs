@@ -1,4 +1,4 @@
-//! Example ZeroClaw weather plugin.
+//! Example R.A.I.N. weather plugin.
 //!
 //! Demonstrates how to create a WASM tool plugin using extism-pdk.
 //! Build with: cargo build --target wasm32-wasip1 --release

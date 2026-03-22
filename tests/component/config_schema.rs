@@ -3,7 +3,7 @@
 //! Validates: config defaults, backward compatibility, invalid input rejection,
 //! and gateway/security/agent config boundary conditions.
 
-use zeroclaw::config::{AutonomyConfig, ChannelsConfig, Config, GatewayConfig, SecurityConfig};
+use R.A.I.N.::config::{AutonomyConfig, ChannelsConfig, Config, GatewayConfig, SecurityConfig};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Invalid value fail-fast
@@ -128,7 +128,7 @@ fn gateway_config_toml_roundtrip() {
         host: "0.0.0.0".into(),
         require_pairing: false,
         pair_rate_limit_per_minute: 5,
-        path_prefix: Some("/zeroclaw".into()),
+        path_prefix: Some("/R.A.I.N.".into()),
         ..Default::default()
     };
 
@@ -139,7 +139,7 @@ fn gateway_config_toml_roundtrip() {
     assert_eq!(parsed.host, "0.0.0.0");
     assert!(!parsed.require_pairing);
     assert_eq!(parsed.pair_rate_limit_per_minute, 5);
-    assert_eq!(parsed.path_prefix.as_deref(), Some("/zeroclaw"));
+    assert_eq!(parsed.path_prefix.as_deref(), Some("/R.A.I.N."));
 }
 
 #[test]
@@ -176,7 +176,7 @@ port = 9090
 #[test]
 fn gateway_path_prefix_rejects_missing_leading_slash() {
     let mut config = Config::default();
-    config.gateway.path_prefix = Some("zeroclaw".into());
+    config.gateway.path_prefix = Some("R.A.I.N.".into());
     let err = config.validate().unwrap_err();
     assert!(
         err.to_string().contains("must start with '/'"),
@@ -187,7 +187,7 @@ fn gateway_path_prefix_rejects_missing_leading_slash() {
 #[test]
 fn gateway_path_prefix_rejects_trailing_slash() {
     let mut config = Config::default();
-    config.gateway.path_prefix = Some("/zeroclaw/".into());
+    config.gateway.path_prefix = Some("/R.A.I.N./".into());
     let err = config.validate().unwrap_err();
     assert!(
         err.to_string().contains("must not end with '/'"),
@@ -208,7 +208,7 @@ fn gateway_path_prefix_rejects_bare_slash() {
 
 #[test]
 fn gateway_path_prefix_accepts_valid_prefixes() {
-    for prefix in ["/zeroclaw", "/apps/zeroclaw", "/api/hassio_ingress/abc123"] {
+    for prefix in ["/R.A.I.N.", "/apps/R.A.I.N.", "/api/hassio_ingress/abc123"] {
         let mut config = Config::default();
         config.gateway.path_prefix = Some(prefix.into());
         config
@@ -237,7 +237,7 @@ fn gateway_path_prefix_rejects_unsafe_characters() {
     }
     // Leading/trailing whitespace is rejected by the starts_with('/') or
     // invalid-character check — either way it must not pass validation.
-    for prefix in [" /zeroclaw ", " /zeroclaw"] {
+    for prefix in [" /R.A.I.N. ", " /R.A.I.N."] {
         let mut config = Config::default();
         config.gateway.path_prefix = Some(prefix.into());
         assert!(
@@ -383,7 +383,7 @@ default_temperature = 0.7
 
 [channels_config.telegram]
 bot_token = "test_token"
-allowed_users = ["zeroclaw_user"]
+allowed_users = ["R.A.I.N._user"]
 
 [channels_config.discord]
 bot_token = "test_token"

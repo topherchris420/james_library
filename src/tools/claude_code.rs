@@ -15,7 +15,7 @@ const SAFE_ENV_VARS: &[&str] = &[
 
 /// Delegates coding tasks to the Claude Code CLI (`claude -p`).
 ///
-/// This creates a two-tier agent architecture: ZeroClaw orchestrates high-level
+/// This creates a two-tier agent architecture: R.A.I.N. orchestrates high-level
 /// tasks and delegates complex coding work to Claude Code, which has its own
 /// agent loop with Read/Edit/Bash tools.
 ///

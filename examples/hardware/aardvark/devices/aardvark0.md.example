@@ -1,6 +1,6 @@
 # aardvark0 — <Device Name> (<Part Number>)
 
-<!-- Copy this file to ~/.zeroclaw/hardware/devices/aardvark0.md  -->
+<!-- Copy this file to ~/.R.A.I.N./hardware/devices/aardvark0.md  -->
 <!-- Fill in the device details from the datasheet.               -->
 
 ## Connection
@@ -22,7 +22,7 @@
 
 ## Datasheet
 
-- File: `~/.zeroclaw/hardware/datasheets/<device>.pdf`
+- File: `~/.R.A.I.N./hardware/datasheets/<device>.pdf`
 - Source: <!-- URL where you downloaded the datasheet -->
 
 ## Verified Working Commands

@@ -1,4 +1,4 @@
-# Justfile - Convenient command runner for ZeroClaw development
+# Justfile - Convenient command runner for R.A.I.N. development
 # https://github.com/casey/just
 
 # Default recipe to display help
@@ -41,7 +41,7 @@ build-debug:
 clean:
     cargo clean
 
-# Run zeroclaw with example config (for development)
+# Run R.A.I.N. with example config (for development)
 dev *ARGS:
     cargo run -- {{ARGS}}
 

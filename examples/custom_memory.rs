@@ -1,4 +1,4 @@
-//! Example: Implementing a custom Memory backend for ZeroClaw
+//! Example: Implementing a custom Memory backend for R.A.I.N.
 //!
 //! This demonstrates how to create a Redis-backed memory backend.
 //! The Memory trait is async and pluggable — implement it for any storage.
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-// ── Re-define the trait types (in your app, import from zeroclaw::memory) ──
+// ── Re-define the trait types (in your app, import from R.A.I.N.::memory) ──
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum MemoryCategory {
@@ -125,7 +125,7 @@ impl Memory for InMemoryBackend {
 async fn main() -> anyhow::Result<()> {
     let brain = InMemoryBackend::new();
 
-    println!("🧠 ZeroClaw Memory Demo — InMemoryBackend\n");
+    println!("🧠 R.A.I.N. Memory Demo — InMemoryBackend\n");
 
     // Store some memories
     brain

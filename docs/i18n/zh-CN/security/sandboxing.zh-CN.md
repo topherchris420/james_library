@@ -1,4 +1,4 @@
-# ZeroClaw 沙箱策略
+# R.A.I.N. 沙箱策略
 
 > ⚠️ **状态：提案 / 路线图**
 >
@@ -7,7 +7,7 @@
 
 ## 问题
 
-ZeroClaw 当前具有应用层安全（白名单、路径阻止、命令注入保护），但缺少操作系统级别的 containment。如果攻击者在白名单中，他们可以使用 zeroclaw 的用户权限运行任何允许的命令。
+R.A.I.N. 当前具有应用层安全（白名单、路径阻止、命令注入保护），但缺少操作系统级别的 containment。如果攻击者在白名单中，他们可以使用 R.A.I.N. 的用户权限运行任何允许的命令。
 
 ## 提议的解决方案
 
@@ -169,7 +169,7 @@ extra_args = [\"--seccomp\", \"--caps.drop=all\"]
 # Landlock 特定配置
 [security.sandbox.landlock]
 readonly_paths = [\"/usr\", \"/bin\", \"/lib\"]
-readwrite_paths = [\"$HOME/workspace\", \"/tmp/zeroclaw\"]
+readwrite_paths = [\"$HOME/workspace\", \"/tmp/R.A.I.N.\"]
 ```
 
 ## 测试策略

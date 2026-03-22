@@ -32,11 +32,11 @@ impl Microsoft365Tool {
     pub fn new(
         config: types::Microsoft365ResolvedConfig,
         security: Arc<SecurityPolicy>,
-        zeroclaw_dir: &std::path::Path,
+        R.A.I.N._dir: &std::path::Path,
     ) -> anyhow::Result<Self> {
         let http_client =
             crate::config::build_runtime_proxy_client_with_timeouts("tool.microsoft365", 60, 10);
-        let token_cache = Arc::new(auth::TokenCache::new(config.clone(), zeroclaw_dir)?);
+        let token_cache = Arc::new(auth::TokenCache::new(config.clone(), R.A.I.N._dir)?);
         Ok(Self {
             config,
             security,

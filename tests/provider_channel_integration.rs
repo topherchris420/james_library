@@ -4,7 +4,7 @@
 //! the ChannelMessage contract is maintained across the provider->channel boundary.
 
 use async_trait::async_trait;
-use zeroclaw::channels::traits::{Channel, ChannelMessage, SendMessage};
+use R.A.I.N.::channels::traits::{Channel, ChannelMessage, SendMessage};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock Channel for integration testing

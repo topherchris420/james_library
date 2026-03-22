@@ -1,13 +1,13 @@
-//! `zeroclaw update` — self-update pipeline with rollback.
+//! `R.A.I.N. update` — self-update pipeline with rollback.
 
 use anyhow::{bail, Context, Result};
 use std::path::Path;
 use tracing::{info, warn};
 
 const GITHUB_RELEASES_LATEST_URL: &str =
-    "https://api.github.com/repos/zeroclaw-labs/zeroclaw/releases/latest";
+    "https://api.github.com/repos/R.A.I.N.-labs/R.A.I.N./releases/latest";
 const GITHUB_RELEASES_TAG_URL: &str =
-    "https://api.github.com/repos/zeroclaw-labs/zeroclaw/releases/tags";
+    "https://api.github.com/repos/R.A.I.N.-labs/R.A.I.N./releases/tags";
 
 #[derive(Debug)]
 pub struct UpdateInfo {
@@ -24,7 +24,7 @@ pub async fn check(target_version: Option<&str>) -> Result<UpdateInfo> {
     let current = env!("CARGO_PKG_VERSION").to_string();
 
     let client = reqwest::Client::builder()
-        .user_agent(format!("zeroclaw/{current}"))
+        .user_agent(format!("R.A.I.N./{current}"))
         .timeout(std::time::Duration::from_secs(15))
         .build()?;
 
@@ -96,7 +96,7 @@ pub async fn run(target_version: Option<&str>) -> Result<()> {
     // Phase 2: Download
     info!("Phase 2/6: Downloading...");
     let temp_dir = tempfile::tempdir().context("failed to create temp dir")?;
-    let download_path = temp_dir.path().join("zeroclaw_new");
+    let download_path = temp_dir.path().join("R.A.I.N._new");
     download_binary(&download_url, &download_path).await?;
 
     // Phase 3: Backup
@@ -183,7 +183,7 @@ fn version_is_newer(current: &str, candidate: &str) -> bool {
 
 async fn download_binary(url: &str, dest: &Path) -> Result<()> {
     let client = reqwest::Client::builder()
-        .user_agent(format!("zeroclaw/{}", env!("CARGO_PKG_VERSION")))
+        .user_agent(format!("R.A.I.N./{}", env!("CARGO_PKG_VERSION")))
         .timeout(std::time::Duration::from_secs(300))
         .build()?;
 
@@ -233,8 +233,8 @@ async fn validate_binary(path: &Path) -> Result<()> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    if !stdout.contains("zeroclaw") {
-        bail!("downloaded binary does not appear to be zeroclaw");
+    if !stdout.contains("R.A.I.N.") {
+        bail!("downloaded binary does not appear to be R.A.I.N.");
     }
 
     Ok(())

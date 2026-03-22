@@ -29,8 +29,8 @@ Các mẫu allowlist được chọn:
 Dùng các lệnh sau để xuất chính sách hiệu lực hiện tại phục vụ kiểm toán/kiểm soát thay đổi:
 
 ```bash
-gh api repos/zeroclaw-labs/zeroclaw/actions/permissions
-gh api repos/zeroclaw-labs/zeroclaw/actions/permissions/selected-actions
+gh api repos/R.A.I.N.-labs/R.A.I.N./actions/permissions
+gh api repos/R.A.I.N.-labs/R.A.I.N./actions/permissions/selected-actions
 ```
 
 Ghi lại mỗi thay đổi chính sách với:

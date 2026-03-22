@@ -3,13 +3,13 @@ members = [".", "crates/robot-kit", "crates/logic_prover", "crates/aardvark-sys"
 resolver = "2"
 
 [package]
-name = "zeroclawlabs"
+name = "R.A.I.N.labs"
 version = "0.5.6"
 edition = "2021"
 authors = ["theonlyhennygod"]
 license = "MIT OR Apache-2.0"
 description = "Zero overhead. Zero compromise. 100% Rust. The fastest, smallest AI assistant."
-repository = "https://github.com/zeroclaw-labs/zeroclaw"
+repository = "https://github.com/R.A.I.N.-labs/R.A.I.N."
 readme = "README.md"
 keywords = ["ai", "agent", "cli", "assistant", "chatbot"]
 categories = ["command-line-utilities", "api-bindings"]
@@ -26,11 +26,11 @@ include = [
 ]
 
 [[bin]]
-name = "zeroclaw"
+name = "R.A.I.N."
 path = "src/main.rs"
 
 [lib]
-name = "zeroclaw"
+name = "R.A.I.N."
 path = "src/lib.rs"
 
 [dependencies]
@@ -176,7 +176,7 @@ mime_guess = "2"
 
 # OpenTelemetry — OTLP trace + metrics export.
 # Use the blocking HTTP exporter client to avoid Tokio-reactor panics in
-# OpenTelemetry background batch threads when ZeroClaw emits spans/metrics from
+# OpenTelemetry background batch threads when R.A.I.N. emits spans/metrics from
 # non-Tokio contexts.
 opentelemetry = { version = "0.31", default-features = false, features = ["trace", "metrics"], optional = true }
 opentelemetry_sdk = { version = "0.31", default-features = false, features = ["trace", "metrics"], optional = true }

@@ -15,7 +15,7 @@ Mem0 auto-save works but the integration is missing key features from mem0 best 
 
 ### 1. `src/memory/mem0.rs` — Use session_id for multi-level scoping
 
-Map zeroclaw's `session_id` param to mem0's `user_id`. This enables per-user and per-group memory namespaces without changing the `Memory` trait.
+Map R.A.I.N.'s `session_id` param to mem0's `user_id`. This enables per-user and per-group memory namespaces without changing the `Memory` trait.
 
 ```rust
 // Add helper:

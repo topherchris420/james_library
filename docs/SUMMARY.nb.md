@@ -1,4 +1,4 @@
-# ZeroClaw Dokumentasjonssammendrag (Samlet innholdsfortegnelse)
+# R.A.I.N. Dokumentasjonssammendrag (Samlet innholdsfortegnelse)
 
 Denne filen er den kanoniske innholdsfortegnelsen for dokumentasjonssystemet.
 

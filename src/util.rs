@@ -1,4 +1,4 @@
-//! Utility functions for `ZeroClaw`.
+//! Utility functions for `R.A.I.N.`.
 //!
 //! This module contains reusable helper functions used across the codebase.
 
@@ -37,7 +37,7 @@ pub fn is_serial_path_allowed(path: &str) -> bool {
 ///
 /// # Examples
 /// ```ignore
-/// use zeroclaw::util::truncate_with_ellipsis;
+/// use R.A.I.N.::util::truncate_with_ellipsis;
 ///
 /// // ASCII string - no truncation needed
 /// assert_eq!(truncate_with_ellipsis("hello", 10), "hello");

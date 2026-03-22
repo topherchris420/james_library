@@ -1,4 +1,4 @@
-# ZeroClaw Documentation Hub (Hindi)
+# R.A.I.N. Documentation Hub (Hindi)
 
 This locale hub is enabled for Hindi community support.
 

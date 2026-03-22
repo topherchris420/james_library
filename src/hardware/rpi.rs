@@ -273,13 +273,13 @@ impl RpiSystemContext {
         s
     }
 
-    /// Write an `rpi0.md` hardware context file to `~/.zeroclaw/hardware/devices/`.
+    /// Write an `rpi0.md` hardware context file to `~/.R.A.I.N./hardware/devices/`.
     /// Silently skips on failure so boot is never blocked.
     pub fn write_hardware_context_file(&self) {
         let Some(home) = directories::BaseDirs::new().map(|b| b.home_dir().to_path_buf()) else {
             return;
         };
-        let devices_dir = home.join(".zeroclaw").join("hardware").join("devices");
+        let devices_dir = home.join(".R.A.I.N.").join("hardware").join("devices");
         if let Err(e) = fs::create_dir_all(&devices_dir) {
             tracing::warn!("Failed to create hardware devices dir: {e}");
             return;
@@ -304,7 +304,7 @@ impl RpiSystemContext {
         let _ = writeln!(s, "- RAM: {}MB total", self.total_ram_mb);
         let _ = writeln!(
             s,
-            "- Runtime: ZeroClaw native (rppal — no serial, no mpremote)"
+            "- Runtime: R.A.I.N. native (rppal — no serial, no mpremote)"
         );
         if let Some(ref iface) = self.wifi_interface {
             let _ = writeln!(s, "- WiFi interface: {}", iface);

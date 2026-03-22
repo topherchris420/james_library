@@ -1001,8 +1001,8 @@ impl Channel for QQChannel {
                 "intents": intents,
                 "properties": {
                     "os": "linux",
-                    "browser": "zeroclaw",
-                    "device": "zeroclaw",
+                    "browser": "R.A.I.N.",
+                    "device": "R.A.I.N.",
                 }
             }
         });

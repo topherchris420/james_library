@@ -1,4 +1,4 @@
-# ZeroClaw Documentation Hub (German)
+# R.A.I.N. Documentation Hub (German)
 
 This locale hub is enabled for German community support.
 

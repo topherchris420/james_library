@@ -14,7 +14,7 @@ export function useDevices() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const token = localStorage.getItem('zeroclaw_token') || '';
+  const token = localStorage.getItem('R.A.I.N._token') || '';
 
   const fetchDevices = useCallback(async () => {
     try {

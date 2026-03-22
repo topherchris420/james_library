@@ -5,7 +5,7 @@
 
 ## Highlights
 
-James 2 represents a major evolution of the ZeroClaw agent runtime, introducing cognitive reasoning systems, swarm intelligence, episodic memory, MCP server support, academic research tools, and real-time visualization — all built on the high-performance Rust-first architecture.
+James 2 represents a major evolution of the R.A.I.N. agent runtime, introducing cognitive reasoning systems, swarm intelligence, episodic memory, MCP server support, academic research tools, and real-time visualization — all built on the high-performance Rust-first architecture.
 
 ## New Features
 
@@ -23,7 +23,7 @@ James 2 represents a major evolution of the ZeroClaw agent runtime, introducing 
 - **MCP-Compliant Server** — Model Context Protocol server exposing research corpus and peripherals for external tool integration (`mcp_server.py`)
 
 ### Academic Research Tools
-- **ArXiv Search Tool** — Full-featured academic paper search integrated into the ZeroClaw tool surface (`src/tools/arxiv_search.rs`)
+- **ArXiv Search Tool** — Full-featured academic paper search integrated into the R.A.I.N. tool surface (`src/tools/arxiv_search.rs`)
 
 ### Real-Time Visualization
 - **Cymatic Resonance Visualization** — Godot-based real-time cymatic resonance display for agent conversation state (`godot_client/`)
@@ -85,4 +85,4 @@ James 2 represents a major evolution of the ZeroClaw agent runtime, introducing 
 
 ---
 
-Built with the ZeroClaw agent runtime. MIT OR Apache-2.0 licensed.
+Built with the R.A.I.N. agent runtime. MIT OR Apache-2.0 licensed.

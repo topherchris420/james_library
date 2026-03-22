@@ -2,7 +2,7 @@
 //!
 //! Pipeline: Scout → Evaluate → Integrate
 //! Discovers skills from external sources, scores them, and generates
-//! ZeroClaw-compatible manifests for qualified candidates.
+//! R.A.I.N.-compatible manifests for qualified candidates.
 
 pub mod evaluate;
 pub mod integrate;

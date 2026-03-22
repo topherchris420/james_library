@@ -55,7 +55,7 @@ MEM0_EMBEDDER_DEVICE = os.environ.get("MEM0_EMBEDDER_DEVICE", "cuda")   # "cuda"
 
 # Vector store
 MEM0_VECTOR_PROVIDER = os.environ.get("MEM0_VECTOR_PROVIDER", "qdrant")  # "qdrant", "chroma", etc.
-MEM0_VECTOR_COLLECTION = os.environ.get("MEM0_VECTOR_COLLECTION", "zeroclaw_mem0")
+MEM0_VECTOR_COLLECTION = os.environ.get("MEM0_VECTOR_COLLECTION", "R.A.I.N._mem0")
 MEM0_VECTOR_PATH = os.environ.get("MEM0_VECTOR_PATH", os.path.expanduser("~/mem0-data/qdrant"))
 
 config = {

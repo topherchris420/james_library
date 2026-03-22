@@ -22,7 +22,7 @@ export interface WebSocketClientOptions {
 const DEFAULT_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 30000;
 
-const SESSION_STORAGE_KEY = 'zeroclaw_session_id';
+const SESSION_STORAGE_KEY = 'R.A.I.N._session_id';
 
 /** Return a stable session ID, persisted in sessionStorage across reconnects. */
 function getOrCreateSessionId(): string {
@@ -72,7 +72,7 @@ export class WebSocketClient {
     params.set('session_id', sessionId);
     const url = `${this.baseUrl}${basePath}/ws/chat?${params.toString()}`;
 
-    const protocols: string[] = ['zeroclaw.v1'];
+    const protocols: string[] = ['R.A.I.N..v1'];
     if (token) protocols.push(`bearer.${token}`);
     this.ws = new WebSocket(url, protocols);
 

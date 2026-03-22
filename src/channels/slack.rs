@@ -54,7 +54,7 @@ const SLACK_USER_CACHE_MAX_ENTRIES: usize = 1000;
 const SLACK_ATTACHMENT_SAVE_SUBDIR: &str = "slack_files";
 const SLACK_ATTACHMENT_MAX_FILES_PER_MESSAGE: usize = 8;
 
-/// Extract the Slack message timestamp from a ZeroClaw message ID.
+/// Extract the Slack message timestamp from a R.A.I.N. message ID.
 ///
 /// Message IDs follow the format `slack_{channel_id}_{ts}` where `ts`
 /// contains a dot (e.g. `"1234567890.123456"`). If the format is

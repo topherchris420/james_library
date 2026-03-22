@@ -1,4 +1,4 @@
-# Rezumatul Documentației ZeroClaw (Cuprins Unificat)
+# Rezumatul Documentației R.A.I.N. (Cuprins Unificat)
 
 Acest fișier constituie cuprinsul canonic al sistemului de documentație.
 

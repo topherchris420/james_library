@@ -19,9 +19,9 @@
 
 - **R.A.I.N. Lab** : l'expérience produit côté utilisateur final
 - **James Library** : la couche Python de recherche/workflows
-- **ZeroClaw** : la couche runtime Rust (crate `zeroclaw`)
+- **R.A.I.N.** : la couche runtime Rust (crate `R.A.I.N.`)
 
-Flux d'exécution : `Utilisateur -> interface R.A.I.N. Lab -> runtime ZeroClaw -> workflows de recherche James Library -> API modèle/provider`
+Flux d'exécution : `Utilisateur -> interface R.A.I.N. Lab -> runtime R.A.I.N. -> workflows de recherche James Library -> API modèle/provider`
 
 ## Démarrage rapide
 

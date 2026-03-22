@@ -1,4 +1,4 @@
-# ZeroClaw Docs Summary (Arabic)
+# R.A.I.N. Docs Summary (Arabic)
 
 This is the Arabic locale summary entry point.
 

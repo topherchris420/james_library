@@ -19,9 +19,9 @@
 
 - **R.A.I.N. Lab**：エンドユーザー向けの製品体験
 - **James Library**：Python の研究/ワークフローレイヤー
-- **ZeroClaw**：Rust ランタイムレイヤー（`zeroclaw` crate）
+- **R.A.I.N.**：Rust ランタイムレイヤー（`R.A.I.N.` crate）
 
-実行フロー：`ユーザー -> R.A.I.N. Lab インターフェース -> ZeroClaw ランタイム -> James Library 研究ワークフロー -> モデル/Provider API`
+実行フロー：`ユーザー -> R.A.I.N. Lab インターフェース -> R.A.I.N. ランタイム -> James Library 研究ワークフロー -> モデル/Provider API`
 
 ## クイックスタート
 

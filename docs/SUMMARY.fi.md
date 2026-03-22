@@ -1,4 +1,4 @@
-# ZeroClaw-dokumentaation yhteenveto (Yhtenäinen sisällysluettelo)
+# R.A.I.N.-dokumentaation yhteenveto (Yhtenäinen sisällysluettelo)
 
 Tämä tiedosto muodostaa dokumentaatiojärjestelmän kanonisen sisällysluettelon.
 

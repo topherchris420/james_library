@@ -314,7 +314,7 @@ impl Tool for DeviceWriteCodeTool {
         // Write code to an atomic, owner-only temp file via tempfile crate.
         let named_tmp = match tokio::task::spawn_blocking(|| {
             tempfile::Builder::new()
-                .prefix("zeroclaw_main_")
+                .prefix("R.A.I.N._main_")
                 .suffix(".py")
                 .tempfile()
         })
@@ -487,7 +487,7 @@ impl Tool for DeviceExecTool {
         // Write snippet to an atomic, owner-only temp file via tempfile crate.
         let named_tmp = match tokio::task::spawn_blocking(|| {
             tempfile::Builder::new()
-                .prefix("zeroclaw_exec_")
+                .prefix("R.A.I.N._exec_")
                 .suffix(".py")
                 .tempfile()
         })

@@ -170,7 +170,7 @@ impl NextcloudTalkChannel {
             tracing::warn!(
                 "Nextcloud Talk: ignoring message from unauthorized actor: {actor_id}. \
                 Add to channels.nextcloud_talk.allowed_users in config.toml, \
-                or run `zeroclaw onboard --channels-only` to configure interactively."
+                or run `R.A.I.N. onboard --channels-only` to configure interactively."
             );
             return messages;
         }
@@ -260,7 +260,7 @@ impl NextcloudTalkChannel {
             tracing::warn!(
                 "Nextcloud Talk: ignoring message from unauthorized actor: {actor_id}. \
                 Add to channels.nextcloud_talk.allowed_users in config.toml, \
-                or run `zeroclaw onboard --channels-only` to configure interactively."
+                or run `R.A.I.N. onboard --channels-only` to configure interactively."
             );
             return messages;
         }

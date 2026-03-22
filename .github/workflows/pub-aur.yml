@@ -112,7 +112,7 @@ jobs:
           srcinfo_file="$(mktemp)"
           sed -e "s/pkgver = .*/pkgver = ${VERSION}/" \
               -e "s/sha256sums = .*/sha256sums = ${TARBALL_SHA}/" \
-              -e "s|zeroclaw-[0-9.]*.tar.gz|zeroclaw-${VERSION}.tar.gz|g" \
+              -e "s|R.A.I.N.-[0-9.]*.tar.gz|R.A.I.N.-${VERSION}.tar.gz|g" \
               -e "s|/v[0-9.]*\.tar\.gz|/v${VERSION}.tar.gz|g" \
               dist/aur/.SRCINFO > "$srcinfo_file"
 
@@ -157,16 +157,16 @@ jobs:
           ssh -T -o BatchMode=yes -o ConnectTimeout=10 aur@aur.archlinux.org 2>&1 || true
 
           tmp_dir="$(mktemp -d)"
-          git clone ssh://aur@aur.archlinux.org/zeroclaw.git "$tmp_dir/aur"
+          git clone ssh://aur@aur.archlinux.org/R.A.I.N..git "$tmp_dir/aur"
 
           cp "$PKGBUILD_FILE" "$tmp_dir/aur/PKGBUILD"
           cp "$SRCINFO_FILE" "$tmp_dir/aur/.SRCINFO"
 
           cd "$tmp_dir/aur"
-          git config user.name "zeroclaw-bot"
-          git config user.email "bot@zeroclaw.dev"
+          git config user.name "R.A.I.N.-bot"
+          git config user.email "bot@R.A.I.N..dev"
           git add PKGBUILD .SRCINFO
-          git commit -m "zeroclaw ${VERSION}"
+          git commit -m "R.A.I.N. ${VERSION}"
           git push origin HEAD
 
           echo "AUR package updated to ${VERSION}"

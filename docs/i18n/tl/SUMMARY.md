@@ -1,4 +1,4 @@
-# ZeroClaw Docs Summary (Tagalog)
+# R.A.I.N. Docs Summary (Tagalog)
 
 This is the Tagalog locale summary entry point.
 

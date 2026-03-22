@@ -1,4 +1,4 @@
-# ZeroClaw Docs Summary (Bengali)
+# R.A.I.N. Docs Summary (Bengali)
 
 This is the Bengali locale summary entry point.
 

@@ -20,9 +20,9 @@ Common key patterns:
 ### 2.1 Definition-level CLI
 
 ```bash
-zeroclaw sop list
-zeroclaw sop validate [name]
-zeroclaw sop show <name>
+R.A.I.N. sop list
+R.A.I.N. sop validate [name]
+R.A.I.N. sop show <name>
 ```
 
 ### 2.2 Runtime run-state tools
@@ -37,5 +37,5 @@ SOP run state is queried from in-agent tools:
 ## 3. Metrics
 
 - `/metrics` exposes observer metrics when `[observability] backend = "prometheus"`.
-- Current exported names are `zeroclaw_*` families (general runtime metrics).
+- Current exported names are `R.A.I.N._*` families (general runtime metrics).
 - SOP-specific aggregates are available through `sop_status` with `include_metrics: true`.

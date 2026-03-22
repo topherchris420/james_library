@@ -9188,7 +9188,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zeroclaw-robot-kit"
+name = "R.A.I.N.-robot-kit"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -9210,7 +9210,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zeroclawlabs"
+name = "R.A.I.N.labs"
 version = "0.5.6"
 dependencies = [
  "aardvark-sys",

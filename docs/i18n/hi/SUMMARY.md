@@ -1,4 +1,4 @@
-# ZeroClaw Docs Summary (Hindi)
+# R.A.I.N. Docs Summary (Hindi)
 
 This is the Hindi locale summary entry point.
 

@@ -1,4 +1,4 @@
-//! `pico_flash` tool — flash ZeroClaw firmware to a Pico in BOOTSEL mode.
+//! `pico_flash` tool — flash R.A.I.N. firmware to a Pico in BOOTSEL mode.
 //!
 //! # Happy path
 //! 1. User holds BOOTSEL while plugging in Pico → RPI-RP2 drive appears.
@@ -8,7 +8,7 @@
 //! 5. Tool waits up to 20 s for `/dev/cu.usbmodem*` to appear.
 //! 6. Tool deploys `main.py` via `mpremote` and resets the Pico.
 //! 7. Tool waits for the serial port to reappear after reset.
-//! 8. Tool returns success; user restarts ZeroClaw to get `pico0`.
+//! 8. Tool returns success; user restarts R.A.I.N. to get `pico0`.
 
 use super::device::DeviceRegistry;
 use super::uf2;
@@ -26,12 +26,12 @@ const PORT_POLL_MS: u64 = 500;
 
 // ── PicoFlashTool ─────────────────────────────────────────────────────────────
 
-/// Tool: flash ZeroClaw MicroPython firmware to a Pico in BOOTSEL mode.
+/// Tool: flash R.A.I.N. MicroPython firmware to a Pico in BOOTSEL mode.
 ///
 /// The Pico must be connected with BOOTSEL held so it mounts as `RPI-RP2`.
 /// After flashing, the tool deploys `main.py` via `mpremote`, then reconnects
 /// the serial transport in the [`DeviceRegistry`] so subsequent `gpio_write`
-/// calls work immediately without restarting ZeroClaw.
+/// calls work immediately without restarting R.A.I.N..
 pub struct PicoFlashTool {
     registry: Arc<RwLock<DeviceRegistry>>,
 }
@@ -49,7 +49,7 @@ impl Tool for PicoFlashTool {
     }
 
     fn description(&self) -> &str {
-        "Flash ZeroClaw firmware to a Raspberry Pi Pico in BOOTSEL mode. \
+        "Flash R.A.I.N. firmware to a Raspberry Pi Pico in BOOTSEL mode. \
          The Pico must be connected with the BOOTSEL button held (shows as RPI-RP2 drive in Finder). \
          After flashing the Pico reboots, main.py is deployed, and the serial \
          connection is refreshed automatically — no restart needed."
@@ -145,7 +145,7 @@ impl Tool for PicoFlashTool {
                     error: Some(format!(
                         "UF2 copied to {} but serial port did not appear within {PORT_WAIT_SECS}s. \
                          Unplug and replug the Pico, then run:\n  \
-                         mpremote connect <port> cp ~/.zeroclaw/firmware/pico/main.py :main.py + reset",
+                         mpremote connect <port> cp ~/.R.A.I.N./firmware/pico/main.py :main.py + reset",
                         mount.display()
                     )),
                 });
@@ -211,7 +211,7 @@ impl Tool for PicoFlashTool {
                 let suffix = if reconnected {
                     "pico0 is ready — you can use gpio_write immediately."
                 } else {
-                    "Restart ZeroClaw to reconnect as pico0."
+                    "Restart R.A.I.N. to reconnect as pico0."
                 };
                 Ok(ToolResult {
                     success: true,
@@ -227,7 +227,7 @@ impl Tool for PicoFlashTool {
                 output: format!(
                     "Pico flashed and main.py deployed. \
                          Serial port did not reappear within {PORT_WAIT_SECS}s after reset — \
-                         unplug and replug the Pico, then restart ZeroClaw to connect as pico0."
+                         unplug and replug the Pico, then restart R.A.I.N. to connect as pico0."
                 ),
                 error: None,
             }),

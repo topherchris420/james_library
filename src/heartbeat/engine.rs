@@ -646,7 +646,7 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_heartbeat_file_creates_file() {
-        let dir = std::env::temp_dir().join("zeroclaw_test_heartbeat");
+        let dir = std::env::temp_dir().join("R.A.I.N._test_heartbeat");
         let _ = tokio::fs::remove_dir_all(&dir).await;
         tokio::fs::create_dir_all(&dir).await.unwrap();
 
@@ -663,7 +663,7 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_heartbeat_file_does_not_overwrite() {
-        let dir = std::env::temp_dir().join("zeroclaw_test_heartbeat_no_overwrite");
+        let dir = std::env::temp_dir().join("R.A.I.N._test_heartbeat_no_overwrite");
         let _ = tokio::fs::remove_dir_all(&dir).await;
         tokio::fs::create_dir_all(&dir).await.unwrap();
 
@@ -680,7 +680,7 @@ mod tests {
 
     #[tokio::test]
     async fn tick_returns_zero_when_no_file() {
-        let dir = std::env::temp_dir().join("zeroclaw_test_tick_no_file");
+        let dir = std::env::temp_dir().join("R.A.I.N._test_tick_no_file");
         let _ = tokio::fs::remove_dir_all(&dir).await;
         tokio::fs::create_dir_all(&dir).await.unwrap();
 
@@ -702,7 +702,7 @@ mod tests {
 
     #[tokio::test]
     async fn tick_counts_tasks_from_file() {
-        let dir = std::env::temp_dir().join("zeroclaw_test_tick_count");
+        let dir = std::env::temp_dir().join("R.A.I.N._test_tick_count");
         let _ = tokio::fs::remove_dir_all(&dir).await;
         tokio::fs::create_dir_all(&dir).await.unwrap();
 
@@ -745,7 +745,7 @@ mod tests {
 
     #[tokio::test]
     async fn collect_runnable_tasks_sorts_by_priority() {
-        let dir = std::env::temp_dir().join("zeroclaw_test_runnable_sort");
+        let dir = std::env::temp_dir().join("R.A.I.N._test_runnable_sort");
         let _ = tokio::fs::remove_dir_all(&dir).await;
         tokio::fs::create_dir_all(&dir).await.unwrap();
 

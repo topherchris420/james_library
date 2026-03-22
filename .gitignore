@@ -1,51 +1,69 @@
-/target
-/target-*/
-firmware/*/target
-web/dist/*
-!web/dist/.gitkeep
-*.db
-*.db-journal
-.DS_Store
-._*
-.wt-pr37/
+# Python
 __pycache__/
-*.pyc
-docker-compose.override.yml
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Environment files (may contain secrets)
-.env
-
-# Python virtual environments
-
+# Virtual environments
 .venv/
 venv/
+ENV/
+env/
 
-# ESP32 build cache (esp-idf-sys managed)
+# Testing
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
 
-.embuild/
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project-specific
+james_library-main/
+openclaw-main/
+vers3dynamics_lab/
+backups/
+meeting_archives/runtime_events.jsonl
+meeting_archives/godot_events.jsonl
+meeting_archives/tts_audio/
+
+# Sensitive files (DO NOT COMMIT)
+config.toml
+secret.key
+*.sqlite
+.env
 .env.local
-.env.*.local
+logs/
+*.log
 
-# Secret keys and credentials
-.secret_key
-*.key
-*.pem
-credentials.json
-.worktrees/
-.zeroclaw/*
+# Build artifacts (Rust)
+target/
 
-# Skill eval workspaces (test outputs, transcripts, grading)
-.claude/skills/*-workspace/
-
-# Local state backups
-.local-state-backups/
-*.local-state-backup/
-
-# Coverage artifacts
-lcov.info
-
-# IDE's stuff
-.idea
-
-# Wrangler cache
-.wrangler/
+# Jupyter
+.ipynb_checkpoints/

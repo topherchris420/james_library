@@ -1181,7 +1181,7 @@ mod tests {
         let config = McpServerConfig {
             name: "test-stdio".into(),
             transport: McpTransport::Stdio,
-            command: "/usr/bin/zeroclaw_nonexistent_binary_abc123".into(),
+            command: "/usr/bin/R.A.I.N._nonexistent_binary_abc123".into(),
             ..Default::default()
         };
         let result = create_transport(&config);

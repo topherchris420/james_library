@@ -1,5 +1,5 @@
 # research.ps1 - Vers3Dynamics Research Launcher
-# Bridges ZeroClaw (Rust) with James Library (Python) for acoustic physics research
+# Bridges R.A.I.N. (Rust) with James Library (Python) for acoustic physics research
 
 param(
     [Parameter(Mandatory=$true)]

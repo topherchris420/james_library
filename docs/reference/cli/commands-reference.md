@@ -1,6 +1,6 @@
-# ZeroClaw Commands Reference
+# R.A.I.N. Commands Reference
 
-This reference is derived from the current CLI surface (`zeroclaw --help`).
+This reference is derived from the current CLI surface (`R.A.I.N. --help`).
 
 Last verified: **February 21, 2026**.
 
@@ -32,13 +32,13 @@ Last verified: **February 21, 2026**.
 
 ### `onboard`
 
-- `zeroclaw onboard`
-- `zeroclaw onboard --channels-only`
-- `zeroclaw onboard --force`
-- `zeroclaw onboard --reinit`
-- `zeroclaw onboard --api-key <KEY> --provider <ID> --memory <sqlite|lucid|markdown|none>`
-- `zeroclaw onboard --api-key <KEY> --provider <ID> --model <MODEL_ID> --memory <sqlite|lucid|markdown|none>`
-- `zeroclaw onboard --api-key <KEY> --provider <ID> --model <MODEL_ID> --memory <sqlite|lucid|markdown|none> --force`
+- `R.A.I.N. onboard`
+- `R.A.I.N. onboard --channels-only`
+- `R.A.I.N. onboard --force`
+- `R.A.I.N. onboard --reinit`
+- `R.A.I.N. onboard --api-key <KEY> --provider <ID> --memory <sqlite|lucid|markdown|none>`
+- `R.A.I.N. onboard --api-key <KEY> --provider <ID> --model <MODEL_ID> --memory <sqlite|lucid|markdown|none>`
+- `R.A.I.N. onboard --api-key <KEY> --provider <ID> --model <MODEL_ID> --memory <sqlite|lucid|markdown|none> --force`
 
 `onboard` safety behavior:
 
@@ -46,15 +46,15 @@ Last verified: **February 21, 2026**.
   - Full onboarding (overwrite `config.toml`)
   - Provider-only update (update provider/model/API key while preserving existing channels, tunnel, memory, hooks, and other settings)
 - In non-interactive environments, existing `config.toml` causes a safe refusal unless `--force` is passed.
-- Use `zeroclaw onboard --channels-only` when you only need to rotate channel tokens/allowlists.
-- Use `zeroclaw onboard --reinit` to start fresh. This backs up your existing config directory with a timestamp suffix and creates a new configuration from scratch.
+- Use `R.A.I.N. onboard --channels-only` when you only need to rotate channel tokens/allowlists.
+- Use `R.A.I.N. onboard --reinit` to start fresh. This backs up your existing config directory with a timestamp suffix and creates a new configuration from scratch.
 
 ### `agent`
 
-- `zeroclaw agent`
-- `zeroclaw agent -m "Hello"`
-- `zeroclaw agent --provider <ID> --model <MODEL> --temperature <0.0-2.0>`
-- `zeroclaw agent --peripheral <board:path>`
+- `R.A.I.N. agent`
+- `R.A.I.N. agent -m "Hello"`
+- `R.A.I.N. agent --provider <ID> --model <MODEL> --temperature <0.0-2.0>`
+- `R.A.I.N. agent --peripheral <board:path>`
 
 Tip:
 
@@ -62,21 +62,21 @@ Tip:
 
 ### `gateway` / `daemon`
 
-- `zeroclaw gateway [--host <HOST>] [--port <PORT>]`
-- `zeroclaw daemon [--host <HOST>] [--port <PORT>]`
+- `R.A.I.N. gateway [--host <HOST>] [--port <PORT>]`
+- `R.A.I.N. daemon [--host <HOST>] [--port <PORT>]`
 
 ### `estop`
 
-- `zeroclaw estop` (engage `kill-all`)
-- `zeroclaw estop --level network-kill`
-- `zeroclaw estop --level domain-block --domain "*.chase.com" [--domain "*.paypal.com"]`
-- `zeroclaw estop --level tool-freeze --tool shell [--tool browser]`
-- `zeroclaw estop status`
-- `zeroclaw estop resume`
-- `zeroclaw estop resume --network`
-- `zeroclaw estop resume --domain "*.chase.com"`
-- `zeroclaw estop resume --tool shell`
-- `zeroclaw estop resume --otp <123456>`
+- `R.A.I.N. estop` (engage `kill-all`)
+- `R.A.I.N. estop --level network-kill`
+- `R.A.I.N. estop --level domain-block --domain "*.chase.com" [--domain "*.paypal.com"]`
+- `R.A.I.N. estop --level tool-freeze --tool shell [--tool browser]`
+- `R.A.I.N. estop status`
+- `R.A.I.N. estop resume`
+- `R.A.I.N. estop resume --network`
+- `R.A.I.N. estop resume --domain "*.chase.com"`
+- `R.A.I.N. estop resume --tool shell`
+- `R.A.I.N. estop resume --otp <123456>`
 
 Notes:
 
@@ -86,23 +86,23 @@ Notes:
 
 ### `service`
 
-- `zeroclaw service install`
-- `zeroclaw service start`
-- `zeroclaw service stop`
-- `zeroclaw service restart`
-- `zeroclaw service status`
-- `zeroclaw service uninstall`
+- `R.A.I.N. service install`
+- `R.A.I.N. service start`
+- `R.A.I.N. service stop`
+- `R.A.I.N. service restart`
+- `R.A.I.N. service status`
+- `R.A.I.N. service uninstall`
 
 ### `cron`
 
-- `zeroclaw cron list`
-- `zeroclaw cron add <expr> [--tz <IANA_TZ>] <command>`
-- `zeroclaw cron add-at <rfc3339_timestamp> <command>`
-- `zeroclaw cron add-every <every_ms> <command>`
-- `zeroclaw cron once <delay> <command>`
-- `zeroclaw cron remove <id>`
-- `zeroclaw cron pause <id>`
-- `zeroclaw cron resume <id>`
+- `R.A.I.N. cron list`
+- `R.A.I.N. cron add <expr> [--tz <IANA_TZ>] <command>`
+- `R.A.I.N. cron add-at <rfc3339_timestamp> <command>`
+- `R.A.I.N. cron add-every <every_ms> <command>`
+- `R.A.I.N. cron once <delay> <command>`
+- `R.A.I.N. cron remove <id>`
+- `R.A.I.N. cron pause <id>`
+- `R.A.I.N. cron resume <id>`
 
 Notes:
 
@@ -111,29 +111,29 @@ Notes:
 
 ### `models`
 
-- `zeroclaw models refresh`
-- `zeroclaw models refresh --provider <ID>`
-- `zeroclaw models refresh --force`
+- `R.A.I.N. models refresh`
+- `R.A.I.N. models refresh --provider <ID>`
+- `R.A.I.N. models refresh --force`
 
 `models refresh` currently supports live catalog refresh for provider IDs: `openrouter`, `openai`, `anthropic`, `groq`, `mistral`, `deepseek`, `xai`, `together-ai`, `gemini`, `ollama`, `llamacpp`, `sglang`, `vllm`, `astrai`, `venice`, `fireworks`, `cohere`, `moonshot`, `glm`, `zai`, `qwen`, and `nvidia`.
 
 ### `doctor`
 
-- `zeroclaw doctor`
-- `zeroclaw doctor models [--provider <ID>] [--use-cache]`
-- `zeroclaw doctor traces [--limit <N>] [--event <TYPE>] [--contains <TEXT>]`
-- `zeroclaw doctor traces --id <TRACE_ID>`
+- `R.A.I.N. doctor`
+- `R.A.I.N. doctor models [--provider <ID>] [--use-cache]`
+- `R.A.I.N. doctor traces [--limit <N>] [--event <TYPE>] [--contains <TEXT>]`
+- `R.A.I.N. doctor traces --id <TRACE_ID>`
 
 `doctor traces` reads runtime tool/model diagnostics from `observability.runtime_trace_path`.
 
 ### `channel`
 
-- `zeroclaw channel list`
-- `zeroclaw channel start`
-- `zeroclaw channel doctor`
-- `zeroclaw channel bind-telegram <IDENTITY>`
-- `zeroclaw channel add <type> <json>`
-- `zeroclaw channel remove <name>`
+- `R.A.I.N. channel list`
+- `R.A.I.N. channel start`
+- `R.A.I.N. channel doctor`
+- `R.A.I.N. channel bind-telegram <IDENTITY>`
+- `R.A.I.N. channel add <type> <json>`
+- `R.A.I.N. channel remove <name>`
 
 Runtime in-chat commands (Telegram/Discord while channel server is running):
 
@@ -154,14 +154,14 @@ Channel runtime also watches `config.toml` and hot-applies updates to:
 
 ### `integrations`
 
-- `zeroclaw integrations info <name>`
+- `R.A.I.N. integrations info <name>`
 
 ### `skills`
 
-- `zeroclaw skills list`
-- `zeroclaw skills audit <source_or_name>`
-- `zeroclaw skills install <source>`
-- `zeroclaw skills remove <name>`
+- `R.A.I.N. skills list`
+- `R.A.I.N. skills audit <source_or_name>`
+- `R.A.I.N. skills install <source>`
+- `R.A.I.N. skills remove <name>`
 
 `<source>` accepts git remotes (`https://...`, `http://...`, `ssh://...`, and `git@host:owner/repo.git`) or a local filesystem path.
 
@@ -177,43 +177,43 @@ Skill manifests (`SKILL.toml`) support `prompts` and `[[tools]]`; both are injec
 
 ### `migrate`
 
-- `zeroclaw migrate openclaw [--source <path>] [--dry-run]`
+- `R.A.I.N. migrate openclaw [--source <path>] [--dry-run]`
 
 ### `config`
 
-- `zeroclaw config schema`
+- `R.A.I.N. config schema`
 
 `config schema` prints a JSON Schema (draft 2020-12) for the full `config.toml` contract to stdout.
 
 ### `completions`
 
-- `zeroclaw completions bash`
-- `zeroclaw completions fish`
-- `zeroclaw completions zsh`
-- `zeroclaw completions powershell`
-- `zeroclaw completions elvish`
+- `R.A.I.N. completions bash`
+- `R.A.I.N. completions fish`
+- `R.A.I.N. completions zsh`
+- `R.A.I.N. completions powershell`
+- `R.A.I.N. completions elvish`
 
 `completions` is stdout-only by design so scripts can be sourced directly without log/warning contamination.
 
 ### `hardware`
 
-- `zeroclaw hardware discover`
-- `zeroclaw hardware introspect <path>`
-- `zeroclaw hardware info [--chip <chip_name>]`
+- `R.A.I.N. hardware discover`
+- `R.A.I.N. hardware introspect <path>`
+- `R.A.I.N. hardware info [--chip <chip_name>]`
 
 ### `peripheral`
 
-- `zeroclaw peripheral list`
-- `zeroclaw peripheral add <board> <path>`
-- `zeroclaw peripheral flash [--port <serial_port>]`
-- `zeroclaw peripheral setup-uno-q [--host <ip_or_host>]`
-- `zeroclaw peripheral flash-nucleo`
+- `R.A.I.N. peripheral list`
+- `R.A.I.N. peripheral add <board> <path>`
+- `R.A.I.N. peripheral flash [--port <serial_port>]`
+- `R.A.I.N. peripheral setup-uno-q [--host <ip_or_host>]`
+- `R.A.I.N. peripheral flash-nucleo`
 
 ## Validation Tip
 
 To verify docs against your current binary quickly:
 
 ```bash
-zeroclaw --help
-zeroclaw <command> --help
+R.A.I.N. --help
+R.A.I.N. <command> --help
 ```

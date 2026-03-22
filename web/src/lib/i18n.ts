@@ -246,7 +246,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'doctor.warnings_summary': '警告',
     'doctor.all_clear': '一切正常',
     'doctor.system_diagnostics': '系统诊断',
-    'doctor.empty_hint': '点击"运行诊断"检查您的 ZeroClaw 安装。',
+    'doctor.empty_hint': '点击"运行诊断"检查您的 R.A.I.N. 安装。',
 
     // Auth / Pairing
     'auth.pair': '配对设备',
@@ -576,7 +576,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'doctor.warnings_summary': 'Warnings',
     'doctor.all_clear': 'All Clear',
     'doctor.system_diagnostics': 'System Diagnostics',
-    'doctor.empty_hint': 'Click "Run Diagnostics" to check your ZeroClaw installation.',
+    'doctor.empty_hint': 'Click "Run Diagnostics" to check your R.A.I.N. installation.',
 
     // Auth / Pairing
     'auth.pair': 'Pair Device',
@@ -929,7 +929,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'doctor.warnings_summary': 'Uyarılar',
     'doctor.all_clear': 'Her Şey Yolunda',
     'doctor.system_diagnostics': 'Sistem Tanıları',
-    'doctor.empty_hint': 'ZeroClaw kurulumunuzu kontrol etmek için "Tanı Çalıştır" düğmesine tıklayın.',
+    'doctor.empty_hint': 'R.A.I.N. kurulumunuzu kontrol etmek için "Tanı Çalıştır" düğmesine tıklayın.',
 
     // Auth / Pairing
     'auth.pair': 'Cihaz Eşleştir',

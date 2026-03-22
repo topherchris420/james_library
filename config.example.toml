@@ -6,7 +6,7 @@
 # Core Settings
 # =============================================================================
 
-# API Key - Replace with YOUR_API_KEY_HERE or set ZEROCLAW_API_KEY env var
+# API Key - Replace with YOUR_API_KEY_HERE or set R.A.I.N._API_KEY env var
 api_key = "YOUR_API_KEY_HERE"
 
 # Provider configuration
@@ -22,8 +22,8 @@ api_url = "http://localhost:11434"
 # =============================================================================
 # Environment Variables (optional overrides)
 # =============================================================================
-# ZEROCLAW_API_KEY      - Override api_key
-# ZEROCLAW_WORKSPACE   - Override workspace_dir
+# R.A.I.N._API_KEY      - Override api_key
+# R.A.I.N._WORKSPACE   - Override workspace_dir
 # MINICONDA_PYTHON     - Path to Miniconda python.exe (research.ps1)
 # JAMES_LIBRARY_PATH   - Path to rain_lab.py (research.ps1)
 
@@ -31,9 +31,9 @@ api_url = "http://localhost:11434"
 # Workspace (cross-platform compatible paths)
 # =============================================================================
 # Use ~ for home directory (works on Windows, macOS, Linux)
-# Or set environment variable ZEROCLAW_WORKSPACE
-workspace_dir = "~/zeroclaw-data/workspace"
-config_path = "~/.zeroclaw/config.toml"
+# Or set environment variable R.A.I.N._WORKSPACE
+workspace_dir = "~/R.A.I.N.-data/workspace"
+config_path = "~/.R.A.I.N./config.toml"
 
 # =============================================================================
 # Gateway (webhook server)

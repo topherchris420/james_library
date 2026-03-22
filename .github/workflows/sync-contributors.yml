@@ -43,15 +43,15 @@ jobs:
       - name: Generate new NOTICE file
         run: |
           cat > NOTICE << 'EOF'
-          ZeroClaw
-          Copyright 2025 ZeroClaw Labs
+          R.A.I.N.
+          Copyright 2025 R.A.I.N. Labs
 
-          This product includes software developed at ZeroClaw Labs (https://github.com/zeroclaw-labs).
+          This product includes software developed at R.A.I.N. Labs (https://github.com/R.A.I.N.-labs).
 
           Contributors
           ============
 
-          The following individuals have contributed to ZeroClaw:
+          The following individuals have contributed to R.A.I.N.:
 
           EOF
 

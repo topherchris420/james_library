@@ -15,14 +15,14 @@ error() {
 
 usage() {
   cat <<'USAGE'
-ZeroClaw installer bootstrap engine
+R.A.I.N. installer bootstrap engine
 
 Usage:
-  ./zeroclaw_install.sh [options]
+  ./R.A.I.N._install.sh [options]
   ./bootstrap.sh [options]         # compatibility entrypoint
 
 Modes:
-  Default mode installs/builds ZeroClaw only (requires existing Rust toolchain).
+  Default mode installs/builds R.A.I.N. only (requires existing Rust toolchain).
   Guided mode asks setup questions and configures options interactively.
   Optional bootstrap mode can also install system dependencies and Rust.
 
@@ -46,30 +46,30 @@ Options:
   -h, --help                 Show help
 
 Examples:
-  ./zeroclaw_install.sh
-  ./zeroclaw_install.sh --guided
-  ./zeroclaw_install.sh --install-system-deps --install-rust
-  ./zeroclaw_install.sh --prefer-prebuilt
-  ./zeroclaw_install.sh --prebuilt-only
-  ./zeroclaw_install.sh --onboard --api-key "sk-..." --provider openrouter [--model "openrouter/auto"]
-  ./zeroclaw_install.sh --interactive-onboard
+  ./R.A.I.N._install.sh
+  ./R.A.I.N._install.sh --guided
+  ./R.A.I.N._install.sh --install-system-deps --install-rust
+  ./R.A.I.N._install.sh --prefer-prebuilt
+  ./R.A.I.N._install.sh --prebuilt-only
+  ./R.A.I.N._install.sh --onboard --api-key "sk-..." --provider openrouter [--model "openrouter/auto"]
+  ./R.A.I.N._install.sh --interactive-onboard
 
   # Compatibility entrypoint:
   ./bootstrap.sh --docker
 
   # Remote one-liner
-  curl -fsSL https://raw.githubusercontent.com/zeroclaw-labs/zeroclaw/main/scripts/bootstrap.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/R.A.I.N.-labs/R.A.I.N./main/scripts/bootstrap.sh | bash
 
 Environment:
-  ZEROCLAW_CONTAINER_CLI     Container CLI command (default: docker; auto-fallback: podman)
-  ZEROCLAW_DOCKER_DATA_DIR   Host path for Docker config/workspace persistence
-  ZEROCLAW_DOCKER_IMAGE      Docker image tag to build/run (default: zeroclaw-bootstrap:local)
-  ZEROCLAW_API_KEY           Used when --api-key is not provided
-  ZEROCLAW_PROVIDER          Used when --provider is not provided (default: openrouter)
-  ZEROCLAW_MODEL             Used when --model is not provided
-  ZEROCLAW_BOOTSTRAP_MIN_RAM_MB   Minimum RAM threshold for source build preflight (default: 2048)
-  ZEROCLAW_BOOTSTRAP_MIN_DISK_MB  Minimum free disk threshold for source build preflight (default: 6144)
-  ZEROCLAW_DISABLE_ALPINE_AUTO_DEPS
+  R.A.I.N._CONTAINER_CLI     Container CLI command (default: docker; auto-fallback: podman)
+  R.A.I.N._DOCKER_DATA_DIR   Host path for Docker config/workspace persistence
+  R.A.I.N._DOCKER_IMAGE      Docker image tag to build/run (default: R.A.I.N.-bootstrap:local)
+  R.A.I.N._API_KEY           Used when --api-key is not provided
+  R.A.I.N._PROVIDER          Used when --provider is not provided (default: openrouter)
+  R.A.I.N._MODEL             Used when --model is not provided
+  R.A.I.N._BOOTSTRAP_MIN_RAM_MB   Minimum RAM threshold for source build preflight (default: 2048)
+  R.A.I.N._BOOTSTRAP_MIN_DISK_MB  Minimum free disk threshold for source build preflight (default: 6144)
+  R.A.I.N._DISABLE_ALPINE_AUTO_DEPS
                             Set to 1 to disable Alpine auto-install of missing prerequisites
 USAGE
 }
@@ -137,8 +137,8 @@ should_attempt_prebuilt_for_resources() {
   local workspace="${1:-.}"
   local min_ram_mb min_disk_mb total_ram_mb free_disk_mb low_resource
 
-  min_ram_mb="${ZEROCLAW_BOOTSTRAP_MIN_RAM_MB:-2048}"
-  min_disk_mb="${ZEROCLAW_BOOTSTRAP_MIN_DISK_MB:-6144}"
+  min_ram_mb="${R.A.I.N._BOOTSTRAP_MIN_RAM_MB:-2048}"
+  min_disk_mb="${R.A.I.N._BOOTSTRAP_MIN_DISK_MB:-6144}"
   total_ram_mb="$(get_total_memory_mb || true)"
   free_disk_mb="$(get_available_disk_mb "$workspace" || true)"
   low_resource=false
@@ -186,9 +186,9 @@ install_prebuilt_binary() {
     return 1
   fi
 
-  archive_url="https://github.com/zeroclaw-labs/zeroclaw/releases/latest/download/zeroclaw-${target}.tar.gz"
-  temp_dir="$(mktemp -d -t zeroclaw-prebuilt-XXXXXX)"
-  archive_path="$temp_dir/zeroclaw-${target}.tar.gz"
+  archive_url="https://github.com/R.A.I.N.-labs/R.A.I.N./releases/latest/download/R.A.I.N.-${target}.tar.gz"
+  temp_dir="$(mktemp -d -t R.A.I.N.-prebuilt-XXXXXX)"
+  archive_path="$temp_dir/R.A.I.N.-${target}.tar.gz"
 
   info "Attempting pre-built binary install for target: $target"
   if ! curl -fsSL "$archive_url" -o "$archive_path"; then
@@ -203,22 +203,22 @@ install_prebuilt_binary() {
     return 1
   fi
 
-  extracted_bin="$temp_dir/zeroclaw"
+  extracted_bin="$temp_dir/R.A.I.N."
   if [[ ! -x "$extracted_bin" ]]; then
-    extracted_bin="$(find "$temp_dir" -maxdepth 2 -type f -name zeroclaw -perm -u+x | head -n 1 || true)"
+    extracted_bin="$(find "$temp_dir" -maxdepth 2 -type f -name R.A.I.N. -perm -u+x | head -n 1 || true)"
   fi
   if [[ -z "$extracted_bin" || ! -x "$extracted_bin" ]]; then
-    warn "Archive did not contain an executable zeroclaw binary."
+    warn "Archive did not contain an executable R.A.I.N. binary."
     rm -rf "$temp_dir"
     return 1
   fi
 
   install_dir="$HOME/.cargo/bin"
   mkdir -p "$install_dir"
-  install -m 0755 "$extracted_bin" "$install_dir/zeroclaw"
+  install -m 0755 "$extracted_bin" "$install_dir/R.A.I.N."
   rm -rf "$temp_dir"
 
-  info "Installed pre-built binary to $install_dir/zeroclaw"
+  info "Installed pre-built binary to $install_dir/R.A.I.N."
   if [[ ":$PATH:" != *":$install_dir:"* ]]; then
     warn "$install_dir is not in PATH for this shell."
     warn "Run: export PATH=\"$install_dir:\$PATH\""
@@ -263,7 +263,7 @@ run_pacman() {
 
   local pacman_cfg_tmp=""
   local pacman_rc=0
-  pacman_cfg_tmp="$(mktemp /tmp/zeroclaw-pacman.XXXXXX.conf)"
+  pacman_cfg_tmp="$(mktemp /tmp/R.A.I.N.-pacman.XXXXXX.conf)"
   cp /etc/pacman.conf "$pacman_cfg_tmp"
   if ! grep -Eq '^[[:space:]]*DisableSandboxSyscalls([[:space:]]|$)' "$pacman_cfg_tmp"; then
     printf '\nDisableSandboxSyscalls\n' >> "$pacman_cfg_tmp"
@@ -484,7 +484,7 @@ run_guided_installer() {
   fi
 
   echo
-  echo "ZeroClaw guided installer"
+  echo "R.A.I.N. guided installer"
   echo "Answer a few questions, then the installer will run automatically."
   echo
 
@@ -512,7 +512,7 @@ run_guided_installer() {
     SKIP_BUILD=true
   fi
 
-  if prompt_yes_no "Install zeroclaw into cargo bin now?" "yes"; then
+  if prompt_yes_no "Install R.A.I.N. into cargo bin now?" "yes"; then
     SKIP_INSTALL=false
   else
     SKIP_INSTALL=true
@@ -592,7 +592,7 @@ run_guided_installer() {
 
 resolve_container_cli() {
   local requested_cli
-  requested_cli="${ZEROCLAW_CONTAINER_CLI:-docker}"
+  requested_cli="${R.A.I.N._CONTAINER_CLI:-docker}"
 
   if have_cmd "$requested_cli"; then
     CONTAINER_CLI="$requested_cli"
@@ -607,9 +607,9 @@ resolve_container_cli() {
 
   error "Container CLI '$requested_cli' is not installed."
   if [[ "$requested_cli" != "docker" ]]; then
-    error "Set ZEROCLAW_CONTAINER_CLI to an installed Docker-compatible CLI (e.g., docker or podman)."
+    error "Set R.A.I.N._CONTAINER_CLI to an installed Docker-compatible CLI (e.g., docker or podman)."
   else
-    error "Install Docker, install podman, or set ZEROCLAW_CONTAINER_CLI to an available Docker-compatible CLI."
+    error "Install Docker, install podman, or set R.A.I.N._CONTAINER_CLI to an available Docker-compatible CLI."
   fi
   exit 1
 }
@@ -628,17 +628,17 @@ run_docker_bootstrap() {
   local docker_image docker_data_dir default_data_dir fallback_image
   local config_mount workspace_mount
   local -a container_run_user_args container_run_namespace_args
-  docker_image="${ZEROCLAW_DOCKER_IMAGE:-zeroclaw-bootstrap:local}"
-  fallback_image="ghcr.io/zeroclaw-labs/zeroclaw:latest"
+  docker_image="${R.A.I.N._DOCKER_IMAGE:-R.A.I.N.-bootstrap:local}"
+  fallback_image="ghcr.io/R.A.I.N.-labs/R.A.I.N.:latest"
   if [[ "$TEMP_CLONE" == true ]]; then
-    default_data_dir="$HOME/.zeroclaw-docker"
+    default_data_dir="$HOME/.R.A.I.N.-docker"
   else
-    default_data_dir="$WORK_DIR/.zeroclaw-docker"
+    default_data_dir="$WORK_DIR/.R.A.I.N.-docker"
   fi
-  docker_data_dir="${ZEROCLAW_DOCKER_DATA_DIR:-$default_data_dir}"
+  docker_data_dir="${R.A.I.N._DOCKER_DATA_DIR:-$default_data_dir}"
   DOCKER_DATA_DIR="$docker_data_dir"
 
-  mkdir -p "$docker_data_dir/.zeroclaw" "$docker_data_dir/workspace"
+  mkdir -p "$docker_data_dir/.R.A.I.N." "$docker_data_dir/workspace"
 
   if [[ "$SKIP_INSTALL" == true ]]; then
     warn "--skip-install has no effect with --docker."
@@ -651,7 +651,7 @@ run_docker_bootstrap() {
     info "Skipping Docker image build"
     if ! "$CONTAINER_CLI" image inspect "$docker_image" >/dev/null 2>&1; then
       warn "Local Docker image ($docker_image) was not found."
-      info "Pulling official ZeroClaw image ($fallback_image)"
+      info "Pulling official R.A.I.N. image ($fallback_image)"
       if ! "$CONTAINER_CLI" pull "$fallback_image"; then
         error "Failed to pull fallback Docker image: $fallback_image"
         error "Run without --skip-build to build locally, or verify access to GHCR."
@@ -664,8 +664,8 @@ run_docker_bootstrap() {
     fi
   fi
 
-  config_mount="$docker_data_dir/.zeroclaw:/zeroclaw-data/.zeroclaw"
-  workspace_mount="$docker_data_dir/workspace:/zeroclaw-data/workspace"
+  config_mount="$docker_data_dir/.R.A.I.N.:/R.A.I.N.-data/.R.A.I.N."
+  workspace_mount="$docker_data_dir/workspace:/R.A.I.N.-data/workspace"
   if [[ "$CONTAINER_CLI" == "podman" ]]; then
     config_mount+=":Z"
     workspace_mount+=":Z"
@@ -690,9 +690,9 @@ run_docker_bootstrap() {
 Use either:
   --api-key "sk-..."
 or:
-  ZEROCLAW_API_KEY="sk-..." ./zeroclaw_install.sh --docker
+  R.A.I.N._API_KEY="sk-..." ./R.A.I.N._install.sh --docker
 or run interactive:
-  ./zeroclaw_install.sh --docker --interactive-onboard
+  ./R.A.I.N._install.sh --docker --interactive-onboard
 MSG
       exit 1
     fi
@@ -710,8 +710,8 @@ MSG
   "$CONTAINER_CLI" run --rm -it \
     "${container_run_namespace_args[@]}" \
     "${container_run_user_args[@]}" \
-    -e HOME=/zeroclaw-data \
-    -e ZEROCLAW_WORKSPACE=/zeroclaw-data/workspace \
+    -e HOME=/R.A.I.N.-data \
+    -e R.A.I.N._WORKSPACE=/R.A.I.N.-data/workspace \
     -v "$config_mount" \
     -v "$workspace_mount" \
     "$docker_image" \
@@ -721,7 +721,7 @@ MSG
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd || pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd || pwd)"
-REPO_URL="https://github.com/zeroclaw-labs/zeroclaw.git"
+REPO_URL="https://github.com/R.A.I.N.-labs/R.A.I.N..git"
 ORIGINAL_ARG_COUNT=$#
 GUIDED_MODE="auto"
 
@@ -736,10 +736,10 @@ INTERACTIVE_ONBOARD=false
 SKIP_BUILD=false
 SKIP_INSTALL=false
 PREBUILT_INSTALLED=false
-CONTAINER_CLI="${ZEROCLAW_CONTAINER_CLI:-docker}"
-API_KEY="${ZEROCLAW_API_KEY:-}"
-PROVIDER="${ZEROCLAW_PROVIDER:-openrouter}"
-MODEL="${ZEROCLAW_MODEL:-}"
+CONTAINER_CLI="${R.A.I.N._CONTAINER_CLI:-docker}"
+API_KEY="${R.A.I.N._API_KEY:-}"
+PROVIDER="${R.A.I.N._PROVIDER:-openrouter}"
+MODEL="${R.A.I.N._MODEL:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -859,11 +859,11 @@ if [[ "$DOCKER_MODE" == true ]]; then
       warn "--install-rust is ignored with --docker."
   fi
 else
-  if [[ "$OS_NAME" == "Linux" && -z "${ZEROCLAW_DISABLE_ALPINE_AUTO_DEPS:-}" ]] && have_cmd apk; then
+  if [[ "$OS_NAME" == "Linux" && -z "${R.A.I.N._DISABLE_ALPINE_AUTO_DEPS:-}" ]] && have_cmd apk; then
     find_missing_alpine_prereqs
     if [[ ${#ALPINE_MISSING_PKGS[@]} -gt 0 && "$INSTALL_SYSTEM_DEPS" == false ]]; then
       info "Detected Alpine with missing prerequisites: ${ALPINE_MISSING_PKGS[*]}"
-      info "Auto-enabling system dependency installation (set ZEROCLAW_DISABLE_ALPINE_AUTO_DEPS=1 to disable)."
+      info "Auto-enabling system dependency installation (set R.A.I.N._DISABLE_ALPINE_AUTO_DEPS=1 to disable)."
       INSTALL_SYSTEM_DEPS=true
     fi
   fi
@@ -904,7 +904,7 @@ if [[ ! -f "$WORK_DIR/Cargo.toml" ]]; then
       exit 1
     fi
 
-    TEMP_DIR="$(mktemp -d -t zeroclaw-bootstrap-XXXXXX)"
+    TEMP_DIR="$(mktemp -d -t R.A.I.N.-bootstrap-XXXXXX)"
     info "No local repository detected; cloning latest main branch"
     git clone --depth 1 "$REPO_URL" "$TEMP_DIR"
     WORK_DIR="$TEMP_DIR"
@@ -912,7 +912,7 @@ if [[ ! -f "$WORK_DIR/Cargo.toml" ]]; then
   fi
 fi
 
-info "ZeroClaw bootstrap"
+info "R.A.I.N. bootstrap"
 echo "    workspace: $WORK_DIR"
 
 cd "$WORK_DIR"
@@ -939,14 +939,14 @@ if [[ "$DOCKER_MODE" == true ]]; then
 
 ✅ Docker bootstrap complete.
 
-Your containerized ZeroClaw data is persisted under:
+Your containerized R.A.I.N. data is persisted under:
 DONE
   echo "  $DOCKER_DATA_DIR"
   cat <<'DONE'
 
 Next steps:
-  ./zeroclaw_install.sh --docker --interactive-onboard
-  ./zeroclaw_install.sh --docker --api-key "sk-..." --provider openrouter
+  ./R.A.I.N._install.sh --docker --interactive-onboard
+  ./R.A.I.N._install.sh --docker --api-key "sk-..." --provider openrouter
 DONE
   exit 0
 fi
@@ -979,7 +979,7 @@ if [[ "$PREBUILT_INSTALLED" == false && ( "$SKIP_BUILD" == false || "$SKIP_INSTA
   cat <<'MSG' >&2
 Install Rust first: https://rustup.rs/
 or re-run with:
-  ./zeroclaw_install.sh --install-rust
+  ./R.A.I.N._install.sh --install-rust
 MSG
   exit 1
 fi
@@ -992,31 +992,31 @@ else
 fi
 
 if [[ "$SKIP_INSTALL" == false ]]; then
-  info "Installing zeroclaw to cargo bin"
+  info "Installing R.A.I.N. to cargo bin"
   cargo install --path "$WORK_DIR" --force --locked
 else
   info "Skipping install"
 fi
 
-ZEROCLAW_BIN=""
-if have_cmd zeroclaw; then
-  ZEROCLAW_BIN="zeroclaw"
-elif [[ -x "$HOME/.cargo/bin/zeroclaw" ]]; then
-  ZEROCLAW_BIN="$HOME/.cargo/bin/zeroclaw"
-elif [[ -x "$WORK_DIR/target/release/zeroclaw" ]]; then
-  ZEROCLAW_BIN="$WORK_DIR/target/release/zeroclaw"
+R.A.I.N._BIN=""
+if have_cmd R.A.I.N.; then
+  R.A.I.N._BIN="R.A.I.N."
+elif [[ -x "$HOME/.cargo/bin/R.A.I.N." ]]; then
+  R.A.I.N._BIN="$HOME/.cargo/bin/R.A.I.N."
+elif [[ -x "$WORK_DIR/target/release/R.A.I.N." ]]; then
+  R.A.I.N._BIN="$WORK_DIR/target/release/R.A.I.N."
 fi
 
 if [[ "$RUN_ONBOARD" == true ]]; then
-  if [[ -z "$ZEROCLAW_BIN" ]]; then
-    error "onboarding requested but zeroclaw binary is not available."
-    error "Run without --skip-install, or ensure zeroclaw is in PATH."
+  if [[ -z "$R.A.I.N._BIN" ]]; then
+    error "onboarding requested but R.A.I.N. binary is not available."
+    error "Run without --skip-install, or ensure R.A.I.N. is in PATH."
     exit 1
   fi
 
   if [[ "$INTERACTIVE_ONBOARD" == true ]]; then
     info "Running interactive onboarding"
-    "$ZEROCLAW_BIN" onboard --interactive
+    "$R.A.I.N._BIN" onboard --interactive
   else
     if [[ -z "$API_KEY" ]]; then
       cat <<'MSG'
@@ -1024,9 +1024,9 @@ if [[ "$RUN_ONBOARD" == true ]]; then
 Use either:
   --api-key "sk-..."
 or:
-  ZEROCLAW_API_KEY="sk-..." ./zeroclaw_install.sh --onboard
+  R.A.I.N._API_KEY="sk-..." ./R.A.I.N._install.sh --onboard
 or run interactive:
-  ./zeroclaw_install.sh --interactive-onboard
+  ./R.A.I.N._install.sh --interactive-onboard
 MSG
       exit 1
     fi
@@ -1035,7 +1035,7 @@ MSG
     else
       info "Running quick onboarding (provider: $PROVIDER)"
     fi
-    ONBOARD_CMD=("$ZEROCLAW_BIN" onboard --api-key "$API_KEY" --provider "$PROVIDER")
+    ONBOARD_CMD=("$R.A.I.N._BIN" onboard --api-key "$API_KEY" --provider "$PROVIDER")
     if [[ -n "$MODEL" ]]; then
       ONBOARD_CMD+=(--model "$MODEL")
     fi
@@ -1048,7 +1048,7 @@ cat <<'DONE'
 ✅ Bootstrap complete.
 
 Next steps:
-  zeroclaw status
-  zeroclaw agent -m "Hello, ZeroClaw!"
-  zeroclaw gateway
+  R.A.I.N. status
+  R.A.I.N. agent -m "Hello, R.A.I.N.!"
+  R.A.I.N. gateway
 DONE

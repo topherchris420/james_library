@@ -401,7 +401,7 @@ mod tests {
         use std::io::Write;
 
         static SCRIPT_ID: AtomicUsize = AtomicUsize::new(0);
-        let dir = std::env::temp_dir().join("zeroclaw_test_claude_code");
+        let dir = std::env::temp_dir().join("R.A.I.N._test_claude_code");
         std::fs::create_dir_all(&dir).unwrap();
 
         let script_id = SCRIPT_ID.fetch_add(1, Ordering::Relaxed);

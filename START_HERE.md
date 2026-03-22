@@ -23,7 +23,7 @@ You can safely ignore files like `rain_unique.py`, `james_reader.py`, `chat_with
 ## Name Guide (Plain English)
 
 - **R.A.I.N. Lab**: the product experience you use.
-- **ZeroClaw**: the Rust runtime engine under the hood.
+- **R.A.I.N.**: the Rust runtime engine under the hood.
 - **James Library**: the Python workflow collection in this repository.
 - **Vers3Dynamics**: the project/organization branding.
 

@@ -1,4 +1,4 @@
-# ZeroClaw Documentatieoverzicht (Uniforme Inhoudsopgave)
+# R.A.I.N. Documentatieoverzicht (Uniforme Inhoudsopgave)
 
 Dit bestand is de canonieke inhoudsopgave van het documentatiesysteem.
 

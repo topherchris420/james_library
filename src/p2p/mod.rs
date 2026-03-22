@@ -1,4 +1,4 @@
-//! ZeroClaw P2P Networking Module
+//! R.A.I.N. P2P Networking Module
 //!
 //! Provides peer-to-peer networking capabilities including:
 //! - Gossipsub for pub/sub messaging
@@ -189,10 +189,10 @@ pub async fn ensure_runtime_started() -> Result<()> {
 }
 
 async fn init_p2p_runtime() -> Result<Arc<P2pRuntime>> {
-    let listen_addr: Multiaddr = std::env::var("ZEROCLAW_P2P_LISTEN_ADDR")
+    let listen_addr: Multiaddr = std::env::var("R.A.I.N._P2P_LISTEN_ADDR")
         .unwrap_or_else(|_| DEFAULT_LISTEN_ADDR.to_string())
         .parse()
-        .context("invalid ZEROCLAW_P2P_LISTEN_ADDR")?;
+        .context("invalid R.A.I.N._P2P_LISTEN_ADDR")?;
 
     // Generate identity
     let key = identity::Keypair::generate_ed25519();
@@ -254,8 +254,8 @@ async fn init_p2p_runtime() -> Result<Arc<P2pRuntime>> {
 
     // Configure identify protocol
     let identify = IdentifyBehaviour::new(
-        IdentifyConfig::new("zeroclaw/0.5.0".to_string(), key.public())
-            .with_agent_version("ZeroClaw P2P/0.5".to_string()),
+        IdentifyConfig::new("R.A.I.N./0.5.0".to_string(), key.public())
+            .with_agent_version("R.A.I.N. P2P/0.5".to_string()),
     );
 
     // Configure DCUtR for direct connection upgrade
@@ -542,7 +542,7 @@ pub async fn subscribe_to_topic(topic: &str) -> Result<()> {
 
 /// Parse bootstrap addresses from environment
 fn parse_bootstrap_addrs() -> Vec<(PeerId, Multiaddr)> {
-    let raw = std::env::var("ZEROCLAW_P2P_BOOTSTRAP").unwrap_or_default();
+    let raw = std::env::var("R.A.I.N._P2P_BOOTSTRAP").unwrap_or_default();
     parse_bootstrap_addrs_from(&raw)
 }
 
@@ -568,7 +568,7 @@ fn extract_peer_id(addr: &Multiaddr) -> Option<PeerId> {
 }
 
 fn p2p_enabled() -> bool {
-    std::env::var("ZEROCLAW_P2P_ENABLE")
+    std::env::var("R.A.I.N._P2P_ENABLE")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
 }
@@ -580,12 +580,12 @@ fn now_unix() -> u64 {
 }
 
 fn current_node_id() -> String {
-    std::env::var("ZEROCLAW_NODE_ID")
+    std::env::var("R.A.I.N._NODE_ID")
         .ok()
         .filter(|v| !v.trim().is_empty())
         .unwrap_or_else(|| {
             hostname::get().map_or_else(
-                |_| "zeroclaw_node".to_string(),
+                |_| "R.A.I.N._node".to_string(),
                 |h| h.to_string_lossy().into_owned(),
             )
         })
@@ -599,7 +599,7 @@ mod tests {
     fn advisory_payload_serializes_correctly() {
         let payload = AdvisoryExperimentResult {
             ts: 1,
-            node: "zeroclaw_node".to_string(),
+            node: "R.A.I.N._node".to_string(),
             topic: RESEARCH_TOPIC,
             advisory: true,
             body: "test-body".to_string(),
@@ -619,22 +619,22 @@ mod tests {
     #[test]
     fn p2p_disabled_by_default() {
         // Clear env var if set
-        std::env::remove_var("ZEROCLAW_P2P_ENABLE");
+        std::env::remove_var("R.A.I.N._P2P_ENABLE");
         assert!(!p2p_enabled());
     }
 
     #[test]
     fn p2p_enabled_with_env_var() {
-        std::env::set_var("ZEROCLAW_P2P_ENABLE", "1");
+        std::env::set_var("R.A.I.N._P2P_ENABLE", "1");
         assert!(p2p_enabled());
 
-        std::env::set_var("ZEROCLAW_P2P_ENABLE", "true");
+        std::env::set_var("R.A.I.N._P2P_ENABLE", "true");
         assert!(p2p_enabled());
 
-        std::env::set_var("ZEROCLAW_P2P_ENABLE", "TRUE");
+        std::env::set_var("R.A.I.N._P2P_ENABLE", "TRUE");
         assert!(p2p_enabled());
 
-        std::env::set_var("ZEROCLAW_P2P_ENABLE", "false");
+        std::env::set_var("R.A.I.N._P2P_ENABLE", "false");
         assert!(!p2p_enabled());
     }
 

@@ -1,4 +1,4 @@
-# ZeroClaw Docs Summary (Korean)
+# R.A.I.N. Docs Summary (Korean)
 
 This is the Korean locale summary entry point.
 

@@ -3,21 +3,21 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "zeroclaw-tools"
+name = "R.A.I.N.-tools"
 version = "0.1.0"
-description = "Python companion package for ZeroClaw - LangGraph-based tool calling for consistent LLM agent execution"
+description = "Python companion package for R.A.I.N. - LangGraph-based tool calling for consistent LLM agent execution"
 readme = "README.md"
 license = { text = "MIT OR Apache-2.0" }
 requires-python = ">=3.10"
 authors = [
-    { name = "ZeroClaw Community" }
+    { name = "R.A.I.N. Community" }
 ]
 keywords = [
     "ai",
     "llm",
     "agent",
     "langgraph",
-    "zeroclaw",
+    "R.A.I.N.",
     "tool-calling",
 ]
 classifiers = [
@@ -39,7 +39,7 @@ dependencies = [
 ]
 
 [project.scripts]
-zeroclaw-tools = "zeroclaw_tools.__main__:main"
+R.A.I.N.-tools = "R.A.I.N._tools.__main__:main"
 
 [project.optional-dependencies]
 discord = ["discord.py>=2.3.0"]
@@ -51,13 +51,13 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/zeroclaw-labs/zeroclaw"
-Documentation = "https://github.com/zeroclaw-labs/zeroclaw/tree/master/python"
-Repository = "https://github.com/zeroclaw-labs/zeroclaw"
-Issues = "https://github.com/zeroclaw-labs/zeroclaw/issues"
+Homepage = "https://github.com/R.A.I.N.-labs/R.A.I.N."
+Documentation = "https://github.com/R.A.I.N.-labs/R.A.I.N./tree/master/python"
+Repository = "https://github.com/R.A.I.N.-labs/R.A.I.N."
+Issues = "https://github.com/R.A.I.N.-labs/R.A.I.N./issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["zeroclaw_tools"]
+packages = ["R.A.I.N._tools"]
 
 [tool.ruff]
 line-length = 100

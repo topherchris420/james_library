@@ -1,4 +1,4 @@
-# ZeroClaw Documentation Hub (Arabic)
+# R.A.I.N. Documentation Hub (Arabic)
 
 This locale hub is enabled for Arabic community support.
 

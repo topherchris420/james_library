@@ -1,17 +1,17 @@
-# Adding Boards and Tools — ZeroClaw Hardware Guide
+# Adding Boards and Tools — R.A.I.N. Hardware Guide
 
-This guide explains how to add new hardware boards and custom tools to ZeroClaw.
+This guide explains how to add new hardware boards and custom tools to R.A.I.N..
 
 ## Quick Start: Add a Board via CLI
 
 ```bash
-# Add a board (updates ~/.zeroclaw/config.toml)
-zeroclaw peripheral add nucleo-f401re /dev/ttyACM0
-zeroclaw peripheral add arduino-uno /dev/cu.usbmodem12345
-zeroclaw peripheral add rpi-gpio native   # for Raspberry Pi GPIO (Linux)
+# Add a board (updates ~/.R.A.I.N./config.toml)
+R.A.I.N. peripheral add nucleo-f401re /dev/ttyACM0
+R.A.I.N. peripheral add arduino-uno /dev/cu.usbmodem12345
+R.A.I.N. peripheral add rpi-gpio native   # for Raspberry Pi GPIO (Linux)
 
 # Restart daemon to apply
-zeroclaw daemon --host 127.0.0.1 --port 42617
+R.A.I.N. daemon --host 127.0.0.1 --port 42617
 ```
 
 ## Supported Boards
@@ -26,7 +26,7 @@ zeroclaw daemon --host 127.0.0.1 --port 42617
 
 ## Manual Config
 
-Edit `~/.zeroclaw/config.toml`:
+Edit `~/.R.A.I.N./config.toml`:
 
 ```toml
 [peripherals]
@@ -76,7 +76,7 @@ builtin_led: 13
 
 ### PDF Datasheets
 
-With the `rag-pdf` feature, ZeroClaw can index PDF files:
+With the `rag-pdf` feature, R.A.I.N. can index PDF files:
 
 ```bash
 cargo build --features hardware,rag-pdf
@@ -87,7 +87,7 @@ Place PDFs in the datasheet directory. They are extracted and chunked for RAG.
 ## Adding a New Board Type
 
 1. **Create a datasheet** — `docs/datasheets/my-board.md` with pin aliases and GPIO info.
-2. **Add to config** — `zeroclaw peripheral add my-board /dev/ttyUSB0`
+2. **Add to config** — `R.A.I.N. peripheral add my-board /dev/ttyUSB0`
 3. **Implement a peripheral** (optional) — For custom protocols, implement the `Peripheral` trait in `src/peripherals/` and register in `create_peripheral_tools`.
 
 See [`docs/hardware/hardware-peripherals-design.md`](../hardware/hardware-peripherals-design.md) for the full design.
@@ -102,12 +102,12 @@ See [`docs/hardware/hardware-peripherals-design.md`](../hardware/hardware-periph
 
 | Command | Description |
 |---------|-------------|
-| `zeroclaw peripheral list` | List configured boards |
-| `zeroclaw peripheral add <board> <path>` | Add board (writes config) |
-| `zeroclaw peripheral flash` | Flash Arduino firmware |
-| `zeroclaw peripheral flash-nucleo` | Flash Nucleo firmware |
-| `zeroclaw hardware discover` | List USB devices |
-| `zeroclaw hardware info` | Chip info via probe-rs |
+| `R.A.I.N. peripheral list` | List configured boards |
+| `R.A.I.N. peripheral add <board> <path>` | Add board (writes config) |
+| `R.A.I.N. peripheral flash` | Flash Arduino firmware |
+| `R.A.I.N. peripheral flash-nucleo` | Flash Nucleo firmware |
+| `R.A.I.N. hardware discover` | List USB devices |
+| `R.A.I.N. hardware info` | Chip info via probe-rs |
 
 ## Troubleshooting
 

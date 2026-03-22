@@ -13,7 +13,7 @@ def test_preview_text_uses_non_empty_lines():
 
 def test_run_experiments_reports_missing_runner(monkeypatch):
     monkeypatch.delenv("LAB_EXPERIMENT_CMD", raising=False)
-    monkeypatch.setattr(orchestrator, "ROOT", Path("/tmp/zeroclaw-lab-test"))
+    monkeypatch.setattr(orchestrator, "ROOT", Path("/tmp/R.A.I.N.-lab-test"))
 
     result = orchestrator.run_experiments({"prompt_variant": "v1"})
 

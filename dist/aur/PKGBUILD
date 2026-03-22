@@ -1,14 +1,14 @@
-# Maintainer: zeroclaw-labs <bot@zeroclaw.dev>
-pkgname=zeroclaw
+# Maintainer: R.A.I.N.-labs <bot@R.A.I.N..dev>
+pkgname=R.A.I.N.
 pkgver=0.5.6
 pkgrel=1
 pkgdesc="Zero overhead. Zero compromise. 100% Rust. The fastest, smallest AI assistant."
 arch=('x86_64')
-url="https://github.com/zeroclaw-labs/zeroclaw"
+url="https://github.com/R.A.I.N.-labs/R.A.I.N."
 license=('MIT' 'Apache-2.0')
 depends=('gcc-libs' 'openssl')
 makedepends=('cargo' 'git')
-source=("${pkgname}-${pkgver}.tar.gz::https://github.com/zeroclaw-labs/zeroclaw/archive/refs/tags/v${pkgver}.tar.gz")
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/R.A.I.N.-labs/R.A.I.N./archive/refs/tags/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 
 prepare() {
@@ -26,7 +26,7 @@ build() {
 
 package() {
   cd "${pkgname}-${pkgver}"
-  install -Dm0755 -t "${pkgdir}/usr/bin/" "target/dist/zeroclaw"
+  install -Dm0755 -t "${pkgdir}/usr/bin/" "target/dist/R.A.I.N."
   install -Dm0644 LICENSE-MIT "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-MIT"
   install -Dm0644 LICENSE-APACHE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-APACHE"
 }

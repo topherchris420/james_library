@@ -1,4 +1,4 @@
-# ZeroClaw Documentation Hub (Korean)
+# R.A.I.N. Documentation Hub (Korean)
 
 This locale hub is enabled for Korean community support.
 

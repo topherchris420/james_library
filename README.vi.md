@@ -19,9 +19,9 @@
 
 - **R.A.I.N. Lab**: trải nghiệm sản phẩm cho người dùng cuối
 - **James Library**: lớp nghiên cứu/quy trình Python
-- **ZeroClaw**: lớp runtime Rust (crate `zeroclaw`)
+- **R.A.I.N.**: lớp runtime Rust (crate `R.A.I.N.`)
 
-Luồng chạy: `Người dùng -> giao diện R.A.I.N. Lab -> runtime ZeroClaw -> quy trình nghiên cứu James Library -> API model/provider`
+Luồng chạy: `Người dùng -> giao diện R.A.I.N. Lab -> runtime R.A.I.N. -> quy trình nghiên cứu James Library -> API model/provider`
 
 ## Bắt đầu nhanh
 

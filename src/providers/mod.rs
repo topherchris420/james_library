@@ -684,7 +684,7 @@ fn zai_base_url(name: &str) -> Option<&'static str> {
 pub struct ProviderRuntimeOptions {
     pub auth_profile_override: Option<String>,
     pub provider_api_url: Option<String>,
-    pub zeroclaw_dir: Option<PathBuf>,
+    pub R.A.I.N._dir: Option<PathBuf>,
     pub secrets_encrypt: bool,
     pub reasoning_enabled: Option<bool>,
     pub reasoning_effort: Option<String>,
@@ -692,7 +692,7 @@ pub struct ProviderRuntimeOptions {
     /// `None` uses the provider's built-in default (120s for compatible providers).
     pub provider_timeout_secs: Option<u64>,
     /// Extra HTTP headers to include in provider API requests.
-    /// These are merged from the config file and `ZEROCLAW_EXTRA_HEADERS` env var.
+    /// These are merged from the config file and `R.A.I.N._EXTRA_HEADERS` env var.
     pub extra_headers: std::collections::HashMap<String, String>,
     /// Custom API path suffix for OpenAI-compatible providers
     /// (e.g. "/v2/generate" instead of the default "/chat/completions").
@@ -704,7 +704,7 @@ impl Default for ProviderRuntimeOptions {
         Self {
             auth_profile_override: None,
             provider_api_url: None,
-            zeroclaw_dir: None,
+            R.A.I.N._dir: None,
             secrets_encrypt: true,
             reasoning_enabled: None,
             reasoning_effort: None,
@@ -721,7 +721,7 @@ pub fn provider_runtime_options_from_config(
     ProviderRuntimeOptions {
         auth_profile_override: None,
         provider_api_url: config.api_url.clone(),
-        zeroclaw_dir: config.config_path.parent().map(PathBuf::from),
+        R.A.I.N._dir: config.config_path.parent().map(PathBuf::from),
         secrets_encrypt: config.secrets.encrypt,
         reasoning_enabled: config.runtime.reasoning_enabled,
         reasoning_effort: config.runtime.reasoning_effort.clone(),
@@ -821,7 +821,7 @@ pub async fn api_error(provider: &str, response: reqwest::Response) -> anyhow::E
 /// Resolution order:
 /// 1. Explicitly provided `api_key` parameter (trimmed, filtered if empty)
 /// 2. Provider-specific environment variable (e.g., `ANTHROPIC_OAUTH_TOKEN`, `OPENROUTER_API_KEY`)
-/// 3. Generic fallback variables (`ZEROCLAW_API_KEY`, `API_KEY`)
+/// 3. Generic fallback variables (`R.A.I.N._API_KEY`, `API_KEY`)
 ///
 /// For Anthropic, the provider-specific env var is `ANTHROPIC_OAUTH_TOKEN` (for setup-tokens)
 /// followed by `ANTHROPIC_API_KEY` (for regular API keys).
@@ -940,7 +940,7 @@ fn resolve_provider_credential(name: &str, credential_override: Option<&str>) ->
         return None;
     }
 
-    for env_var in ["ZEROCLAW_API_KEY", "API_KEY"] {
+    for env_var in ["R.A.I.N._API_KEY", "API_KEY"] {
         if let Ok(value) = std::env::var(env_var) {
             let value = value.trim();
             if !value.is_empty() {
@@ -1138,7 +1138,7 @@ fn create_provider_with_url_and_options(
         // Ollama uses api_url for custom base URL (e.g. remote Ollama instance)
         "ollama" => {
 
-                let env_url = std::env::var("ZEROCLAW_PROVIDER_URL").ok();
+                let env_url = std::env::var("R.A.I.N._PROVIDER_URL").ok();
 
                 let api_url = env_url
                     .as_deref()
@@ -1152,12 +1152,12 @@ fn create_provider_with_url_and_options(
         },
         "gemini" | "google" | "google-gemini" => {
             let state_dir = options
-                .zeroclaw_dir
+                .R.A.I.N._dir
                 .clone()
                 .unwrap_or_else(|| {
                     directories::UserDirs::new().map_or_else(
-                        || PathBuf::from(".zeroclaw"),
-                        |dirs| dirs.home_dir().join(".zeroclaw"),
+                        || PathBuf::from(".R.A.I.N."),
+                        |dirs| dirs.home_dir().join(".R.A.I.N."),
                     )
                 });
             let auth_service = AuthService::new(&state_dir, options.secrets_encrypt);
@@ -1542,7 +1542,7 @@ fn create_provider_with_url_and_options(
         }
 
         _ => anyhow::bail!(
-            "Unknown provider: {name}. Check README for supported providers or run `zeroclaw onboard` to reconfigure.\n\
+            "Unknown provider: {name}. Check README for supported providers or run `R.A.I.N. onboard` to reconfigure.\n\
              Tip: Use \"custom:https://your-api.com\" for OpenAI-compatible endpoints.\n\
              Tip: Use \"anthropic-custom:https://your-api.com\" for Anthropic-compatible endpoints."
         ),
@@ -1758,7 +1758,7 @@ pub struct ProviderInfo {
     pub local: bool,
 }
 
-/// Return the list of all known providers for display in `zeroclaw providers list`.
+/// Return the list of all known providers for display in `R.A.I.N. providers list`.
 ///
 /// This is intentionally separate from the factory match in `create_provider`
 /// (display concern vs. construction concern).
@@ -2280,7 +2280,7 @@ mod tests {
     #[test]
     fn resolve_qwen_oauth_context_prefers_explicit_override() {
         let _env_lock = env_lock();
-        let fake_home = format!("/tmp/zeroclaw-qwen-oauth-home-{}", std::process::id());
+        let fake_home = format!("/tmp/R.A.I.N.-qwen-oauth-home-{}", std::process::id());
         let _home_guard = EnvGuard::set("HOME", Some(fake_home.as_str()));
         let _token_guard = EnvGuard::set(QWEN_OAUTH_TOKEN_ENV, Some("oauth-token"));
         let _resource_guard = EnvGuard::set(
@@ -2297,7 +2297,7 @@ mod tests {
     #[test]
     fn resolve_qwen_oauth_context_uses_env_token_and_resource_url() {
         let _env_lock = env_lock();
-        let fake_home = format!("/tmp/zeroclaw-qwen-oauth-home-{}-env", std::process::id());
+        let fake_home = format!("/tmp/R.A.I.N.-qwen-oauth-home-{}-env", std::process::id());
         let _home_guard = EnvGuard::set("HOME", Some(fake_home.as_str()));
         let _token_guard = EnvGuard::set(QWEN_OAUTH_TOKEN_ENV, Some("oauth-token"));
         let _refresh_guard = EnvGuard::set(QWEN_OAUTH_REFRESH_TOKEN_ENV, None);
@@ -2319,7 +2319,7 @@ mod tests {
     #[test]
     fn resolve_qwen_oauth_context_reads_cached_credentials_file() {
         let _env_lock = env_lock();
-        let fake_home = format!("/tmp/zeroclaw-qwen-oauth-home-{}-file", std::process::id());
+        let fake_home = format!("/tmp/R.A.I.N.-qwen-oauth-home-{}-file", std::process::id());
         let creds_dir = PathBuf::from(&fake_home).join(".qwen");
         std::fs::create_dir_all(&creds_dir).unwrap();
         let creds_path = creds_dir.join("oauth_creds.json");
@@ -2348,7 +2348,7 @@ mod tests {
     fn resolve_qwen_oauth_context_placeholder_does_not_use_dashscope_fallback() {
         let _env_lock = env_lock();
         let fake_home = format!(
-            "/tmp/zeroclaw-qwen-oauth-home-{}-placeholder",
+            "/tmp/R.A.I.N.-qwen-oauth-home-{}-placeholder",
             std::process::id()
         );
         let _home_guard = EnvGuard::set("HOME", Some(fake_home.as_str()));
@@ -2569,7 +2569,7 @@ mod tests {
         let _env_lock = env_lock();
         let _provider_guard = EnvGuard::set("OPENCODE_GO_API_KEY", Some("go-test-key"));
         let _generic_guard = EnvGuard::set("API_KEY", None);
-        let _zeroclaw_guard = EnvGuard::set("ZEROCLAW_API_KEY", None);
+        let _R.A.I.N._guard = EnvGuard::set("R.A.I.N._API_KEY", None);
 
         let resolved = resolve_provider_credential("opencode-go", None);
         assert_eq!(resolved.as_deref(), Some("go-test-key"));
@@ -3541,18 +3541,18 @@ mod tests {
     #[test]
     fn provider_runtime_options_extra_headers_passed_through() {
         let mut extra_headers = std::collections::HashMap::new();
-        extra_headers.insert("X-Title".to_string(), "zeroclaw".to_string());
+        extra_headers.insert("X-Title".to_string(), "R.A.I.N.".to_string());
         let options = ProviderRuntimeOptions {
             extra_headers,
             ..ProviderRuntimeOptions::default()
         };
         assert_eq!(options.extra_headers.len(), 1);
-        assert_eq!(options.extra_headers.get("X-Title").unwrap(), "zeroclaw");
+        assert_eq!(options.extra_headers.get("X-Title").unwrap(), "R.A.I.N.");
     }
 
     #[test]
     fn env_provider_url_overrides_api_url() {
-        std::env::set_var("ZEROCLAW_PROVIDER_URL", "http://env-ollama:11434");
+        std::env::set_var("R.A.I.N._PROVIDER_URL", "http://env-ollama:11434");
 
         let options = ProviderRuntimeOptions::default();
 
@@ -3565,6 +3565,6 @@ mod tests {
 
         assert!(provider.is_ok());
 
-        std::env::remove_var("ZEROCLAW_PROVIDER_URL");
+        std::env::remove_var("R.A.I.N._PROVIDER_URL");
     }
 }

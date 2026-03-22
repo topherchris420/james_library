@@ -382,7 +382,7 @@ impl Provider for OpenRouterProvider {
         temperature: f64,
     ) -> anyhow::Result<String> {
         let credential = self.credential.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("OpenRouter API key not set. Run `zeroclaw onboard` or set OPENROUTER_API_KEY env var."))?;
+            .ok_or_else(|| anyhow::anyhow!("OpenRouter API key not set. Run `R.A.I.N. onboard` or set OPENROUTER_API_KEY env var."))?;
 
         let mut messages = Vec::new();
 
@@ -408,8 +408,8 @@ impl Provider for OpenRouterProvider {
             .http_client()
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("Authorization", format!("Bearer {credential}"))
-            .header("HTTP-Referer", "https://github.com/zeroclaw-labs/zeroclaw")
-            .header("X-Title", "ZeroClaw")
+            .header("HTTP-Referer", "https://github.com/R.A.I.N.-labs/R.A.I.N.")
+            .header("X-Title", "R.A.I.N.")
             .json(&request)
             .send()
             .await?;
@@ -437,7 +437,7 @@ impl Provider for OpenRouterProvider {
         temperature: f64,
     ) -> anyhow::Result<String> {
         let credential = self.credential.as_ref()
-            .ok_or_else(|| anyhow::anyhow!("OpenRouter API key not set. Run `zeroclaw onboard` or set OPENROUTER_API_KEY env var."))?;
+            .ok_or_else(|| anyhow::anyhow!("OpenRouter API key not set. Run `R.A.I.N. onboard` or set OPENROUTER_API_KEY env var."))?;
 
         let api_messages: Vec<Message> = messages
             .iter()
@@ -457,8 +457,8 @@ impl Provider for OpenRouterProvider {
             .http_client()
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("Authorization", format!("Bearer {credential}"))
-            .header("HTTP-Referer", "https://github.com/zeroclaw-labs/zeroclaw")
-            .header("X-Title", "ZeroClaw")
+            .header("HTTP-Referer", "https://github.com/R.A.I.N.-labs/R.A.I.N.")
+            .header("X-Title", "R.A.I.N.")
             .json(&request)
             .send()
             .await?;
@@ -487,7 +487,7 @@ impl Provider for OpenRouterProvider {
     ) -> anyhow::Result<ProviderChatResponse> {
         let credential = self.credential.as_ref().ok_or_else(|| {
             anyhow::anyhow!(
-            "OpenRouter API key not set. Run `zeroclaw onboard` or set OPENROUTER_API_KEY env var."
+            "OpenRouter API key not set. Run `R.A.I.N. onboard` or set OPENROUTER_API_KEY env var."
         )
         })?;
 
@@ -504,8 +504,8 @@ impl Provider for OpenRouterProvider {
             .http_client()
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("Authorization", format!("Bearer {credential}"))
-            .header("HTTP-Referer", "https://github.com/zeroclaw-labs/zeroclaw")
-            .header("X-Title", "ZeroClaw")
+            .header("HTTP-Referer", "https://github.com/R.A.I.N.-labs/R.A.I.N.")
+            .header("X-Title", "R.A.I.N.")
             .json(&native_request)
             .send()
             .await?;
@@ -546,7 +546,7 @@ impl Provider for OpenRouterProvider {
     ) -> anyhow::Result<ProviderChatResponse> {
         let credential = self.credential.as_ref().ok_or_else(|| {
             anyhow::anyhow!(
-                "OpenRouter API key not set. Run `zeroclaw onboard` or set OPENROUTER_API_KEY env var."
+                "OpenRouter API key not set. Run `R.A.I.N. onboard` or set OPENROUTER_API_KEY env var."
             )
         })?;
 
@@ -598,8 +598,8 @@ impl Provider for OpenRouterProvider {
             .http_client()
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("Authorization", format!("Bearer {credential}"))
-            .header("HTTP-Referer", "https://github.com/zeroclaw-labs/zeroclaw")
-            .header("X-Title", "ZeroClaw")
+            .header("HTTP-Referer", "https://github.com/R.A.I.N.-labs/R.A.I.N.")
+            .header("X-Title", "R.A.I.N.")
             .json(&native_request)
             .send()
             .await?;

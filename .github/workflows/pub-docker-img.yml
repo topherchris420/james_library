@@ -54,18 +54,18 @@ jobs:
                   load: true
                   provenance: false
                   sbom: false
-                  tags: zeroclaw-pr-smoke:latest
+                  tags: R.A.I.N.-pr-smoke:latest
                   labels: ${{ steps.meta.outputs.labels || '' }}
                   platforms: linux/amd64
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
 
             - name: Verify image
-              run: docker run --rm zeroclaw-pr-smoke:latest --version
+              run: docker run --rm R.A.I.N.-pr-smoke:latest --version
 
     publish:
         name: Build and Push Docker Image
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'zeroclaw-labs/zeroclaw'
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && github.repository == 'R.A.I.N.-labs/R.A.I.N.'
         runs-on: blacksmith-2vcpu-ubuntu-2404
         timeout-minutes: 45
         permissions:

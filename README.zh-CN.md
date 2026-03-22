@@ -19,9 +19,9 @@
 
 - **R.A.I.N. Lab**：面向最终用户的一体化产品体验
 - **James Library**：Python 研究与工作流层
-- **ZeroClaw**：Rust 运行时层（`zeroclaw` crate）
+- **R.A.I.N.**：Rust 运行时层（`R.A.I.N.` crate）
 
-运行路径：`用户 -> R.A.I.N. Lab 界面 -> ZeroClaw 运行时 -> James Library 研究工作流 -> 模型/Provider API`
+运行路径：`用户 -> R.A.I.N. Lab 界面 -> R.A.I.N. 运行时 -> James Library 研究工作流 -> 模型/Provider API`
 
 ## 快速开始
 

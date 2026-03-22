@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start mem0 + reranker GPU container for ZeroClaw memory backend.
+# Start mem0 + reranker GPU container for R.A.I.N. memory backend.
 #
 # Required env vars:
 #   MEM0_LLM_API_KEY or ZAI_API_KEY  — API key for the LLM used in fact extraction
@@ -11,7 +11,7 @@
 #   MEM0_EMBEDDER_MODEL  — embedding model (default: "BAAI/bge-m3")
 #   MEM0_EMBEDDER_DIMS   — embedding dimensions (default: "1024")
 #   MEM0_EMBEDDER_DEVICE — "cuda", "cpu", or "auto" (default: "cuda")
-#   MEM0_VECTOR_COLLECTION — Qdrant collection name (default: "zeroclaw_mem0")
+#   MEM0_VECTOR_COLLECTION — Qdrant collection name (default: "R.A.I.N._mem0")
 #   RERANKER_MODEL       — reranker model (default: "BAAI/bge-reranker-v2-m3")
 #   RERANKER_DEVICE      — "cuda" or "cpu" (default: "cuda")
 #   MEM0_PORT            — mem0 server port (default: 8765)

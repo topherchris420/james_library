@@ -1,5 +1,5 @@
-# ZeroClaw Robot Kit Configuration
-# Copy to ~/.zeroclaw/robot.toml
+# R.A.I.N. Robot Kit Configuration
+# Copy to ~/.R.A.I.N./robot.toml
 
 # =============================================================================
 # DRIVE SYSTEM

@@ -53,14 +53,14 @@ pub const MAX_BODY_SIZE: usize = 65_536;
 /// Default request timeout (30s) — prevents slow-loris attacks.
 pub const REQUEST_TIMEOUT_SECS: u64 = 30;
 
-/// Read gateway request timeout from `ZEROCLAW_GATEWAY_TIMEOUT_SECS` env var
+/// Read gateway request timeout from `R.A.I.N._GATEWAY_TIMEOUT_SECS` env var
 /// at runtime, falling back to [`REQUEST_TIMEOUT_SECS`].
 ///
 /// Agentic workloads with tool use (web search, MCP tools, sub-agent
 /// delegation) regularly exceed 30 seconds. This allows operators to
 /// increase the timeout without recompiling.
 pub fn gateway_request_timeout_secs() -> u64 {
-    std::env::var("ZEROCLAW_GATEWAY_TIMEOUT_SECS")
+    std::env::var("R.A.I.N._GATEWAY_TIMEOUT_SECS")
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(REQUEST_TIMEOUT_SECS)
@@ -395,7 +395,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
         &providers::ProviderRuntimeOptions {
             auth_profile_override: None,
             provider_api_url: config.api_url.clone(),
-            zeroclaw_dir: config.config_path.parent().map(std::path::PathBuf::from),
+            R.A.I.N._dir: config.config_path.parent().map(std::path::PathBuf::from),
             secrets_encrypt: config.secrets.encrypt,
             reasoning_enabled: config.runtime.reasoning_enabled,
             reasoning_effort: config.runtime.reasoning_effort.clone(),
@@ -539,7 +539,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
 
     // WhatsApp app secret for webhook signature verification
     // Priority: environment variable > config file
-    let whatsapp_app_secret: Option<Arc<str>> = std::env::var("ZEROCLAW_WHATSAPP_APP_SECRET")
+    let whatsapp_app_secret: Option<Arc<str>> = std::env::var("R.A.I.N._WHATSAPP_APP_SECRET")
         .ok()
         .and_then(|secret| {
             let secret = secret.trim();
@@ -567,7 +567,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
 
     // Linq signing secret for webhook signature verification
     // Priority: environment variable > config file
-    let linq_signing_secret: Option<Arc<str>> = std::env::var("ZEROCLAW_LINQ_SIGNING_SECRET")
+    let linq_signing_secret: Option<Arc<str>> = std::env::var("R.A.I.N._LINQ_SIGNING_SECRET")
         .ok()
         .and_then(|secret| {
             let secret = secret.trim();
@@ -608,7 +608,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
     // Nextcloud Talk webhook secret for signature verification
     // Priority: environment variable > config file
     let nextcloud_talk_webhook_secret: Option<Arc<str>> =
-        std::env::var("ZEROCLAW_NEXTCLOUD_TALK_WEBHOOK_SECRET")
+        std::env::var("R.A.I.N._NEXTCLOUD_TALK_WEBHOOK_SECRET")
             .ok()
             .and_then(|secret| {
                 let secret = secret.trim();
@@ -701,7 +701,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
     }
 
     let pfx = path_prefix.unwrap_or("");
-    println!("🦀 ZeroClaw Gateway listening on http://{display_addr}{pfx}");
+    println!("🦀 R.A.I.N. Gateway listening on http://{display_addr}{pfx}");
     if let Some(ref url) = tunnel_url {
         println!("  🌐 Public URL: {url}");
     }
@@ -715,7 +715,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
         println!("     Send: POST {pfx}/pair with header X-Pairing-Code: {code}");
     } else if pairing.require_pairing() {
         println!("  🔒 Pairing: ACTIVE (bearer token required)");
-        println!("     To pair a new device: zeroclaw gateway get-paircode --new");
+        println!("     To pair a new device: R.A.I.N. gateway get-paircode --new");
         println!();
     } else {
         println!("  ⚠️  Pairing: DISABLED (all requests accepted)");
@@ -923,7 +923,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
     )
     .with_graceful_shutdown(async move {
         let _ = shutdown_rx.changed().await;
-        tracing::info!("🦀 ZeroClaw Gateway shutting down...");
+        tracing::info!("🦀 R.A.I.N. Gateway shutting down...");
     })
     .await?;
 
@@ -1947,7 +1947,7 @@ mod tests {
     #[test]
     fn gateway_timeout_falls_back_to_default() {
         // When env var is not set, should return the default constant
-        std::env::remove_var("ZEROCLAW_GATEWAY_TIMEOUT_SECS");
+        std::env::remove_var("R.A.I.N._GATEWAY_TIMEOUT_SECS");
         assert_eq!(gateway_request_timeout_secs(), 30);
     }
 
@@ -2073,7 +2073,7 @@ mod tests {
 
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let text = String::from_utf8(body.to_vec()).unwrap();
-        assert!(text.contains("zeroclaw_heartbeat_ticks_total 1"));
+        assert!(text.contains("R.A.I.N._heartbeat_ticks_total 1"));
     }
 
     #[test]

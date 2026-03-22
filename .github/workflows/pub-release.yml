@@ -149,28 +149,28 @@ jobs:
                 include:
                     - os: ubuntu-latest
                       target: x86_64-unknown-linux-gnu
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: ""
                       linker_env: ""
                       linker: ""
                     - os: ubuntu-latest
                       target: aarch64-unknown-linux-gnu
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: gcc-aarch64-linux-gnu
                       linker_env: CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER
                       linker: aarch64-linux-gnu-gcc
                     - os: ubuntu-latest
                       target: armv7-unknown-linux-gnueabihf
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: gcc-arm-linux-gnueabihf
                       linker_env: CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER
                       linker: arm-linux-gnueabihf-gcc
                     - os: ubuntu-latest
                       target: armv7-linux-androideabi
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: ""
                       linker_env: ""
@@ -179,7 +179,7 @@ jobs:
                       android_api: 21
                     - os: ubuntu-latest
                       target: aarch64-linux-android
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: ""
                       linker_env: ""
@@ -188,21 +188,21 @@ jobs:
                       android_api: 21
                     - os: macos-15-intel
                       target: x86_64-apple-darwin
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: ""
                       linker_env: ""
                       linker: ""
                     - os: macos-14
                       target: aarch64-apple-darwin
-                      artifact: zeroclaw
+                      artifact: R.A.I.N.
                       archive_ext: tar.gz
                       cross_compiler: ""
                       linker_env: ""
                       linker: ""
                     - os: windows-latest
                       target: x86_64-pc-windows-msvc
-                      artifact: zeroclaw.exe
+                      artifact: R.A.I.N..exe
                       archive_ext: zip
                       cross_compiler: ""
                       linker_env: ""
@@ -310,19 +310,19 @@ jobs:
               if: runner.os != 'Windows'
               run: |
                   cd target/${{ matrix.target }}/release-fast
-                  tar czf ../../../zeroclaw-${{ matrix.target }}.${{ matrix.archive_ext }} ${{ matrix.artifact }}
+                  tar czf ../../../R.A.I.N.-${{ matrix.target }}.${{ matrix.archive_ext }} ${{ matrix.artifact }}
 
             - name: Package (Windows)
               if: runner.os == 'Windows'
               run: |
                   cd target/${{ matrix.target }}/release-fast
-                  7z a ../../../zeroclaw-${{ matrix.target }}.${{ matrix.archive_ext }} ${{ matrix.artifact }}
+                  7z a ../../../R.A.I.N.-${{ matrix.target }}.${{ matrix.archive_ext }} ${{ matrix.artifact }}
 
             - name: Upload artifact
               uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
               with:
-                  name: zeroclaw-${{ matrix.target }}
-                  path: zeroclaw-${{ matrix.target }}.${{ matrix.archive_ext }}
+                  name: R.A.I.N.-${{ matrix.target }}
+                  path: R.A.I.N.-${{ matrix.target }}.${{ matrix.archive_ext }}
                   retention-days: 7
 
     verify-artifacts:
@@ -340,14 +340,14 @@ jobs:
               run: |
                   set -euo pipefail
                   expected=(
-                    "zeroclaw-x86_64-unknown-linux-gnu.tar.gz"
-                    "zeroclaw-aarch64-unknown-linux-gnu.tar.gz"
-                    "zeroclaw-armv7-unknown-linux-gnueabihf.tar.gz"
-                    "zeroclaw-armv7-linux-androideabi.tar.gz"
-                    "zeroclaw-aarch64-linux-android.tar.gz"
-                    "zeroclaw-x86_64-apple-darwin.tar.gz"
-                    "zeroclaw-aarch64-apple-darwin.tar.gz"
-                    "zeroclaw-x86_64-pc-windows-msvc.zip"
+                    "R.A.I.N.-x86_64-unknown-linux-gnu.tar.gz"
+                    "R.A.I.N.-aarch64-unknown-linux-gnu.tar.gz"
+                    "R.A.I.N.-armv7-unknown-linux-gnueabihf.tar.gz"
+                    "R.A.I.N.-armv7-linux-androideabi.tar.gz"
+                    "R.A.I.N.-aarch64-linux-android.tar.gz"
+                    "R.A.I.N.-x86_64-apple-darwin.tar.gz"
+                    "R.A.I.N.-aarch64-apple-darwin.tar.gz"
+                    "R.A.I.N.-x86_64-pc-windows-msvc.zip"
                   )
 
                   missing=0
@@ -386,11 +386,11 @@ jobs:
 
             - name: Generate SBOM (CycloneDX)
               run: |
-                  syft dir:. --source-name zeroclaw -o cyclonedx-json=artifacts/zeroclaw.cdx.json -o spdx-json=artifacts/zeroclaw.spdx.json
+                  syft dir:. --source-name R.A.I.N. -o cyclonedx-json=artifacts/R.A.I.N..cdx.json -o spdx-json=artifacts/R.A.I.N..spdx.json
                   {
                     echo "### SBOM Generated"
-                    echo "- CycloneDX: zeroclaw.cdx.json"
-                    echo "- SPDX: zeroclaw.spdx.json"
+                    echo "- CycloneDX: R.A.I.N..cdx.json"
+                    echo "- SPDX: R.A.I.N..spdx.json"
                   } >> "$GITHUB_STEP_SUMMARY"
 
             - name: Attach license and notice files

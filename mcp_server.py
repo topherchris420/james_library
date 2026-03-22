@@ -8,7 +8,7 @@ Design constraints:
 - Secure by default: no filesystem writes, no shell access, no secret leakage.
 - Read-only corpus access: agents can search and read papers but not modify them.
 - Hardware peripheral status is read-only and gated behind an explicit opt-in.
-- Does NOT modify or replace the Rust ZeroClaw daemon routing — this server
+- Does NOT modify or replace the Rust R.A.I.N. daemon routing — this server
   runs alongside the existing Python agent layer.
 
 Usage::
@@ -172,7 +172,7 @@ def create_mcp_server(
         library_path: Path to the research library. Defaults to cwd.
         enable_peripheral_status: If True, expose a read-only peripheral
             status tool (requires Rust daemon connectivity).
-        rust_daemon_url: Base URL for the ZeroClaw Rust daemon (e.g.
+        rust_daemon_url: Base URL for the R.A.I.N. Rust daemon (e.g.
             ``http://127.0.0.1:4200``).  Only used when
             ``enable_peripheral_status`` is True.
     """
@@ -289,7 +289,7 @@ def create_mcp_server(
         def peripheral_status() -> dict[str, Any]:
             """Query read-only status of connected hardware peripherals.
 
-            Returns status information from the ZeroClaw Rust daemon about
+            Returns status information from the R.A.I.N. Rust daemon about
             connected boards (STM32, RPi GPIO, etc.).  This tool is
             read-only and cannot actuate hardware.
 
@@ -343,7 +343,7 @@ def main() -> None:
     parser.add_argument(
         "--daemon-url",
         default=os.environ.get("RAIN_RUST_DAEMON_API_URL", "http://127.0.0.1:4200"),
-        help="ZeroClaw Rust daemon API URL (used with --enable-peripherals)",
+        help="R.A.I.N. Rust daemon API URL (used with --enable-peripherals)",
     )
     args = parser.parse_args()
 

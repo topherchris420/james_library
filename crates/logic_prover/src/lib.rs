@@ -1,4 +1,4 @@
-//! Lightweight DPLL SAT solver — WASM plugin for ZeroClaw's R.A.I.N. Lab.
+//! Lightweight DPLL SAT solver — WASM plugin for R.A.I.N.'s R.A.I.N. Lab.
 //!
 //! Accepts a JSON-encoded propositional formula in CNF-like human notation,
 //! parses it, and returns satisfiability + a witness model (if SAT).

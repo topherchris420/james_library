@@ -152,7 +152,7 @@ impl WeatherTool {
         let builder = reqwest::Client::builder()
             .timeout(Duration::from_secs(WTTR_TIMEOUT_SECS))
             .connect_timeout(Duration::from_secs(WTTR_CONNECT_TIMEOUT_SECS))
-            .user_agent("zeroclaw-weather/1.0");
+            .user_agent("R.A.I.N.-weather/1.0");
 
         let builder = crate::config::apply_runtime_proxy_to_builder(builder, "tool.weather");
         let client = builder.build()?;

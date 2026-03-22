@@ -1,7 +1,7 @@
 import type { ThemeName, AccentColor, UiFont, MonoFont } from './ThemeContextDef';
 import { uiFontStacks, monoFontStacks } from './ThemeContextDef';
 
-export const STORAGE_KEY = 'zeroclaw-theme';
+export const STORAGE_KEY = 'R.A.I.N.-theme';
 
 export interface StoredTheme {
   theme: ThemeName;

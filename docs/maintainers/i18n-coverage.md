@@ -1,6 +1,6 @@
-# ZeroClaw i18n Coverage and Structure
+# R.A.I.N. i18n Coverage and Structure
 
-This document defines the localization structure for ZeroClaw docs and tracks current coverage.
+This document defines the localization structure for R.A.I.N. docs and tracks current coverage.
 
 Last refreshed: **February 21, 2026**.
 

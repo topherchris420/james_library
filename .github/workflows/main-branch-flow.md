@@ -79,7 +79,7 @@ Notes:
 
 ### 2) PR from fork -> `dev`
 
-1. External contributor opens PR from `fork/<branch>` into `zeroclaw:dev`.
+1. External contributor opens PR from `fork/<branch>` into `R.A.I.N.:dev`.
 2. Immediately on `opened`:
    - `pull_request_target` workflows start with base-repo context and base-repo token:
      - `pr-intake-checks.yml`

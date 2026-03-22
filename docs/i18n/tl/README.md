@@ -1,4 +1,4 @@
-# ZeroClaw Documentation Hub (Tagalog)
+# R.A.I.N. Documentation Hub (Tagalog)
 
 This locale hub is enabled for Tagalog community support.
 

@@ -1,4 +1,4 @@
-# ZeroClaw Config Reference (Operator-Oriented)
+# R.A.I.N. Config Reference (Operator-Oriented)
 
 This is a high-signal reference for common config sections and defaults.
 
@@ -6,17 +6,17 @@ Last verified: **February 21, 2026**.
 
 Config path resolution at startup:
 
-1. `ZEROCLAW_WORKSPACE` override (if set)
-2. persisted `~/.zeroclaw/active_workspace.toml` marker (if present)
-3. default `~/.zeroclaw/config.toml`
+1. `R.A.I.N._WORKSPACE` override (if set)
+2. persisted `~/.R.A.I.N./active_workspace.toml` marker (if present)
+3. default `~/.R.A.I.N./config.toml`
 
-ZeroClaw logs the resolved config on startup at `INFO` level:
+R.A.I.N. logs the resolved config on startup at `INFO` level:
 
 - `Config loaded` with fields: `path`, `workspace`, `source`, `initialized`
 
 Schema export command:
 
-- `zeroclaw config schema` (prints JSON Schema draft 2020-12 to stdout)
+- `R.A.I.N. config schema` (prints JSON Schema draft 2020-12 to stdout)
 
 ## Core Keys
 
@@ -32,7 +32,7 @@ Schema export command:
 |---|---|---|
 | `backend` | `none` | Observability backend: `none`, `noop`, `log`, `prometheus`, `otel`, `opentelemetry`, or `otlp` |
 | `otel_endpoint` | `http://localhost:4318` | OTLP HTTP endpoint used when backend is `otel` |
-| `otel_service_name` | `zeroclaw` | Service name emitted to OTLP collector |
+| `otel_service_name` | `R.A.I.N.` | Service name emitted to OTLP collector |
 | `runtime_trace_mode` | `none` | Runtime trace storage mode: `none`, `rolling`, or `full` |
 | `runtime_trace_path` | `state/runtime-trace.jsonl` | Runtime trace JSONL path (relative to workspace unless absolute) |
 | `runtime_trace_max_entries` | `200` | Maximum retained events when `runtime_trace_mode = "rolling"` |
@@ -43,9 +43,9 @@ Notes:
 - Alias values `opentelemetry` and `otlp` map to the same OTel backend.
 - Runtime traces are intended for debugging tool-call failures and malformed model tool payloads. They can contain model output text, so keep this disabled by default on shared hosts.
 - Query runtime traces with:
-  - `zeroclaw doctor traces --limit 20`
-  - `zeroclaw doctor traces --event tool_call_result --contains \"error\"`
-  - `zeroclaw doctor traces --id <trace-id>`
+  - `R.A.I.N. doctor traces --limit 20`
+  - `R.A.I.N. doctor traces --event tool_call_result --contains \"error\"`
+  - `R.A.I.N. doctor traces --id <trace-id>`
 
 Example:
 
@@ -53,7 +53,7 @@ Example:
 [observability]
 backend = "otel"
 otel_endpoint = "http://localhost:4318"
-otel_service_name = "zeroclaw"
+otel_service_name = "R.A.I.N."
 runtime_trace_mode = "rolling"
 runtime_trace_path = "state/runtime-trace.jsonl"
 runtime_trace_max_entries = 200
@@ -63,14 +63,14 @@ runtime_trace_max_entries = 200
 
 Provider selection can also be controlled by environment variables. Precedence is:
 
-1. `ZEROCLAW_PROVIDER` (explicit override, always wins when non-empty)
+1. `R.A.I.N._PROVIDER` (explicit override, always wins when non-empty)
 2. `PROVIDER` (legacy fallback, only applied when config provider is unset or still `openrouter`)
 3. `default_provider` in `config.toml`
 
 Operational note for container users:
 
 - If your `config.toml` sets an explicit custom provider like `custom:https://.../v1`, a default `PROVIDER=openrouter` from Docker/container env will no longer replace it.
-- Use `ZEROCLAW_PROVIDER` when you intentionally want runtime env to override a non-default configured provider.
+- Use `R.A.I.N._PROVIDER` when you intentionally want runtime env to override a non-default configured provider.
 
 ## `[agent]`
 
@@ -167,7 +167,7 @@ Notes:
 - Domain patterns support wildcard `*`.
 - Category presets expand to curated domain sets during validation.
 - Invalid domain globs or unknown categories fail fast at startup.
-- When `enabled = true` and no OTP secret exists, ZeroClaw generates one and prints an enrollment URI once.
+- When `enabled = true` and no OTP secret exists, R.A.I.N. generates one and prints an enrollment URI once.
 
 Example:
 
@@ -187,14 +187,14 @@ gated_domain_categories = ["banking"]
 | Key | Default | Purpose |
 |---|---|---|
 | `enabled` | `false` | Enable emergency-stop state machine and CLI |
-| `state_file` | `~/.zeroclaw/estop-state.json` | Persistent estop state path |
+| `state_file` | `~/.R.A.I.N./estop-state.json` | Persistent estop state path |
 | `require_otp_to_resume` | `true` | Require OTP validation before resume operations |
 
 Notes:
 
 - Estop state is persisted atomically and reloaded on startup.
 - Corrupted/unreadable estop state falls back to fail-closed `kill_all`.
-- Use CLI command `zeroclaw estop` to engage and `zeroclaw estop resume` to clear levels.
+- Use CLI command `R.A.I.N. estop` to engage and `R.A.I.N. estop resume` to clear levels.
 
 ## `[agents.<name>]`
 
@@ -271,14 +271,14 @@ Notes:
 
 Notes:
 
-- Security-first default: ZeroClaw does **not** clone or sync `open-skills` unless `open_skills_enabled = true`.
+- Security-first default: R.A.I.N. does **not** clone or sync `open-skills` unless `open_skills_enabled = true`.
 - Environment overrides:
-  - `ZEROCLAW_OPEN_SKILLS_ENABLED` accepts `1/0`, `true/false`, `yes/no`, `on/off`.
-  - `ZEROCLAW_OPEN_SKILLS_DIR` overrides the repository path when non-empty.
-  - `ZEROCLAW_SKILLS_PROMPT_MODE` accepts `full` or `compact`.
-- Precedence for enable flag: `ZEROCLAW_OPEN_SKILLS_ENABLED` → `skills.open_skills_enabled` in `config.toml` → default `false`.
+  - `R.A.I.N._OPEN_SKILLS_ENABLED` accepts `1/0`, `true/false`, `yes/no`, `on/off`.
+  - `R.A.I.N._OPEN_SKILLS_DIR` overrides the repository path when non-empty.
+  - `R.A.I.N._SKILLS_PROMPT_MODE` accepts `full` or `compact`.
+- Precedence for enable flag: `R.A.I.N._OPEN_SKILLS_ENABLED` → `skills.open_skills_enabled` in `config.toml` → default `false`.
 - `prompt_injection_mode = "compact"` is recommended on low-context local models to reduce startup prompt size while keeping skill files available on demand.
-- Skill loading and `zeroclaw skills install` both apply a static security audit. Skills that contain symlinks, script-like files, high-risk shell payload snippets, or unsafe markdown link traversal are rejected.
+- Skill loading and `R.A.I.N. skills install` both apply a static security audit. Skills that contain symlinks, script-like files, high-risk shell payload snippets, or unsafe markdown link traversal are rejected.
 
 ## `[composio]`
 
@@ -292,7 +292,7 @@ Notes:
 
 - Backward compatibility: legacy `enable = true` is accepted as an alias for `enabled = true`.
 - If `enabled = false` or `api_key` is missing, the `composio` tool is not registered.
-- ZeroClaw requests Composio v3 tools with `toolkit_versions=latest` and executes tools with `version="latest"` to avoid stale default tool revisions.
+- R.A.I.N. requests Composio v3 tools with `toolkit_versions=latest` and executes tools with `version="latest"` to avoid stale default tool revisions.
 - Typical flow: call `connect`, complete browser OAuth, then run `execute` for the desired tool action.
 - If Composio returns a missing connected-account reference error, call `list_accounts` (optionally with `app`) and pass the returned `connected_account_id` to `execute`.
 
@@ -453,10 +453,10 @@ Notes:
 | `port` | `42617` | gateway listen port |
 | `require_pairing` | `true` | require pairing before bearer auth |
 | `allow_public_bind` | `false` | block accidental public exposure |
-| `path_prefix` | _(none)_ | URL path prefix for reverse-proxy deployments (e.g. `"/zeroclaw"`) |
+| `path_prefix` | _(none)_ | URL path prefix for reverse-proxy deployments (e.g. `"/R.A.I.N."`) |
 
-When deploying behind a reverse proxy that maps ZeroClaw to a sub-path,
-set `path_prefix` to that sub-path (e.g. `"/zeroclaw"`). All gateway
+When deploying behind a reverse proxy that maps R.A.I.N. to a sub-path,
+set `path_prefix` to that sub-path (e.g. `"/R.A.I.N."`). All gateway
 routes will be served under this prefix. The value must start with `/`
 and must not end with `/`.
 
@@ -515,8 +515,8 @@ Mem0 (OpenMemory) backend — connects to a self-hosted mem0 server for vector-b
 | Key | Default | Env var | Purpose |
 |---|---|---|---|
 | `url` | `http://localhost:8765` | `MEM0_URL` | OpenMemory server URL |
-| `user_id` | `zeroclaw` | `MEM0_USER_ID` | User ID for scoping memories |
-| `app_name` | `zeroclaw` | `MEM0_APP_NAME` | Application name registered in mem0 |
+| `user_id` | `R.A.I.N.` | `MEM0_USER_ID` | User ID for scoping memories |
+| `app_name` | `R.A.I.N.` | `MEM0_APP_NAME` | Application name registered in mem0 |
 | `infer` | `true` | — | Use LLM to extract facts from stored text (`true`) or store raw (`false`) |
 | `extraction_prompt` | unset | `MEM0_EXTRACTION_PROMPT` | Custom prompt for LLM fact extraction (e.g. for non-English content) |
 
@@ -526,7 +526,7 @@ backend = "mem0"
 
 [memory.mem0]
 url = "http://192.168.0.171:8765"
-user_id = "zeroclaw-bot"
+user_id = "R.A.I.N.-bot"
 extraction_prompt = "Extract facts in the original language..."
 ```
 
@@ -575,7 +575,7 @@ Upgrade strategy:
 
 1. Keep hints stable (`hint:reasoning`, `hint:semantic`).
 2. Update only `model = "...new-version..."` in the route entries.
-3. Validate with `zeroclaw doctor` before restart/rollout.
+3. Validate with `R.A.I.N. doctor` before restart/rollout.
 
 Natural-language config path:
 
@@ -653,7 +653,7 @@ Notes:
 - When a timeout occurs, users receive: `⚠️ Request timed out while waiting for the model. Please try again.`
 - Telegram-only interruption behavior is controlled with `channels_config.telegram.interrupt_on_new_message` (default `false`).
   When enabled, a newer message from the same sender in the same chat cancels the in-flight request and preserves interrupted user context.
-- While `zeroclaw channel start` is running, updates to `default_provider`, `default_model`, `default_temperature`, `api_key`, `api_url`, and `reliability.*` are hot-applied from `config.toml` on the next inbound message.
+- While `R.A.I.N. channel start` is running, updates to `default_provider`, `default_model`, `default_temperature`, `api_key`, `api_url`, and `reliability.*` are hot-applied from `config.toml` on the next inbound message.
 
 ### `[channels_config.nostr]`
 
@@ -712,7 +712,7 @@ Linq Partner V3 API integration for iMessage, RCS, and SMS.
 Notes:
 
 - Webhook endpoint is `POST /linq`.
-- `ZEROCLAW_LINQ_SIGNING_SECRET` overrides `signing_secret` when set.
+- `R.A.I.N._LINQ_SIGNING_SECRET` overrides `signing_secret` when set.
 - Signatures use `X-Webhook-Signature` and `X-Webhook-Timestamp` headers; stale timestamps (>300s) are rejected.
 - See [channels-reference.md](channels-reference.md) for full config examples.
 
@@ -730,7 +730,7 @@ Native Nextcloud Talk bot integration (webhook receive + OCS send API).
 Notes:
 
 - Webhook endpoint is `POST /nextcloud-talk`.
-- `ZEROCLAW_NEXTCLOUD_TALK_WEBHOOK_SECRET` overrides `webhook_secret` when set.
+- `R.A.I.N._NEXTCLOUD_TALK_WEBHOOK_SECRET` overrides `webhook_secret` when set.
 - See [nextcloud-talk-setup.md](../../setup-guides/nextcloud-talk-setup.md) for setup and troubleshooting.
 
 ## `[hardware]`
@@ -803,10 +803,10 @@ Notes:
 After editing config:
 
 ```bash
-zeroclaw status
-zeroclaw doctor
-zeroclaw channel doctor
-zeroclaw service restart
+R.A.I.N. status
+R.A.I.N. doctor
+R.A.I.N. channel doctor
+R.A.I.N. service restart
 ```
 
 ## Related Docs

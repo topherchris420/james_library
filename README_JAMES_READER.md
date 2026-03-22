@@ -34,10 +34,10 @@ James Reader uses Google Gemini. Set your API key via environment variable:
 
 ```bash
 # Linux/macOS
-export ZEROCLAW_API_KEY="your-google-api-key"
+export R.A.I.N._API_KEY="your-google-api-key"
 
 # Windows (PowerShell)
-$env:ZEROCLAW_API_KEY="your-google-api-key"
+$env:R.A.I.N._API_KEY="your-google-api-key"
 
 # Or use OPENAI_API_KEY if you have an OpenAI key
 export OPENAI_API_KEY="your-openai-key"

@@ -60,7 +60,7 @@ def _directory_not_found_message(directory: str) -> str:
 
 def _missing_api_key_message() -> str:
     """Return instructions for configuring an API key."""
-    return "Missing API key. Set one of these environment variables, then retry:\n- ZEROCLAW_API_KEY\n- OPENAI_API_KEY"
+    return "Missing API key. Set one of these environment variables, then retry:\n- R.A.I.N._API_KEY\n- OPENAI_API_KEY"
 
 
 def _no_supported_documents_message(directory: str) -> str:
@@ -501,7 +501,7 @@ async def run_research(topic: str, path: str, model: str, max_steps: int = 20) -
     print(f"{'=' * 60}\n")
 
     # Initialize agent with API key
-    api_key = os.getenv("ZEROCLAW_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("R.A.I.N._API_KEY") or os.getenv("OPENAI_API_KEY")
     if not api_key:
         print(f"ERROR: {_missing_api_key_message()}")
         sys.exit(1)

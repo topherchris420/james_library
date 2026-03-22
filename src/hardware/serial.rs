@@ -5,7 +5,7 @@
 //! received. This means multiple tools can use the same device path without
 //! one holding the port exclusively.
 //!
-//! Wire protocol (ZeroClaw serial JSON):
+//! Wire protocol (R.A.I.N. serial JSON):
 //! ```text
 //! Host → Device:  {"cmd":"gpio_write","params":{"pin":25,"value":1}}\n
 //! Device → Host:  {"ok":true,"data":{"pin":25,"value":1,"state":"HIGH"}}\n
@@ -24,7 +24,7 @@ use tokio_serial::SerialPortBuilderExt;
 /// Default timeout for a single send→receive round-trip (seconds).
 const SEND_TIMEOUT_SECS: u64 = 5;
 
-/// Default baud rate for ZeroClaw serial devices.
+/// Default baud rate for R.A.I.N. serial devices.
 pub const DEFAULT_BAUD: u32 = 115_200;
 
 /// Timeout for the ping handshake during device discovery (milliseconds).
@@ -33,7 +33,7 @@ const PING_TIMEOUT_MS: u64 = 300;
 /// Allowed serial device path prefixes — reject arbitrary paths for security.
 use crate::util::is_serial_path_allowed as is_path_allowed;
 
-/// Serial transport for ZeroClaw hardware devices.
+/// Serial transport for R.A.I.N. hardware devices.
 ///
 /// The port is **opened lazily** on each `send()` call and released immediately
 /// after the response is read. This avoids exclusive-hold conflicts between
@@ -64,12 +64,12 @@ impl HardwareSerialTransport {
         &self.port_path
     }
 
-    /// Attempt a ping handshake to verify ZeroClaw firmware is running.
+    /// Attempt a ping handshake to verify R.A.I.N. firmware is running.
     ///
     /// Opens the port, sends `{"cmd":"ping","params":{}}`, waits up to
-    /// `PING_TIMEOUT_MS` for a response with `data.firmware == "zeroclaw"`.
+    /// `PING_TIMEOUT_MS` for a response with `data.firmware == "R.A.I.N."`.
     ///
-    /// Returns `true` if a ZeroClaw device responds, `false` otherwise.
+    /// Returns `true` if a R.A.I.N. device responds, `false` otherwise.
     /// This method never returns an error — discovery must not hang on failure.
     pub async fn ping_handshake(&self) -> bool {
         let ping = ZcCommand::simple("ping");
@@ -85,13 +85,13 @@ impl HardwareSerialTransport {
 
         match result {
             Ok(Ok(resp)) => {
-                // Accept if firmware field is "zeroclaw" (in data or top-level)
+                // Accept if firmware field is "R.A.I.N." (in data or top-level)
                 resp.ok
                     && resp
                         .data
                         .get("firmware")
                         .and_then(|v| v.as_str())
-                        .map(|s| s == "zeroclaw")
+                        .map(|s| s == "R.A.I.N.")
                         .unwrap_or(false)
             }
             _ => false,

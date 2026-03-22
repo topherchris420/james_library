@@ -81,7 +81,7 @@ pub async fn run_wizard(force: bool) -> Result<Config> {
 
     println!(
         "  {}",
-        style("Welcome to ZeroClaw — the fastest, smallest AI assistant.")
+        style("Welcome to R.A.I.N. — the fastest, smallest AI assistant.")
             .white()
             .bold()
     );
@@ -103,7 +103,7 @@ pub async fn run_wizard(force: bool) -> Result<Config> {
     print_step(2, 9, "AI Provider & API Key");
     let (provider, api_key, model, provider_api_url) = setup_provider(&workspace_dir).await?;
 
-    print_step(3, 9, "Channels (How You Talk to ZeroClaw)");
+    print_step(3, 9, "Channels (How You Talk to R.A.I.N.)");
     let channels_config = setup_channels()?;
 
     print_step(4, 9, "Tunnel (Expose to Internet)");
@@ -242,7 +242,7 @@ pub async fn run_wizard(force: bool) -> Result<Config> {
             );
             println!();
             // Signal to main.rs to call start_channels after wizard returns
-            std::env::set_var("ZEROCLAW_AUTOSTART_CHANNELS", "1");
+            std::env::set_var("R.A.I.N._AUTOSTART_CHANNELS", "1");
         }
     }
 
@@ -262,7 +262,7 @@ pub async fn run_channels_repair_wizard() -> Result<Config> {
 
     let mut config = Box::pin(Config::load_or_init()).await?;
 
-    print_step(1, 1, "Channels (How You Talk to ZeroClaw)");
+    print_step(1, 1, "Channels (How You Talk to R.A.I.N.)");
     config.channels_config = setup_channels()?;
     config.save().await?;
     persist_workspace_selection(&config.config_path).await?;
@@ -294,7 +294,7 @@ pub async fn run_channels_repair_wizard() -> Result<Config> {
             );
             println!();
             // Signal to main.rs to call start_channels after wizard returns
-            std::env::set_var("ZEROCLAW_AUTOSTART_CHANNELS", "1");
+            std::env::set_var("R.A.I.N._AUTOSTART_CHANNELS", "1");
         }
     }
 
@@ -356,7 +356,7 @@ async fn run_provider_update_wizard(workspace_dir: &Path, config_path: &Path) ->
                 style("Starting channel server...").white().bold()
             );
             println!();
-            std::env::set_var("ZEROCLAW_AUTOSTART_CHANNELS", "1");
+            std::env::set_var("R.A.I.N._AUTOSTART_CHANNELS", "1");
         }
     }
 
@@ -383,7 +383,7 @@ fn apply_provider_update(
 // ── Quick setup (zero prompts) ───────────────────────────────────
 
 /// Non-interactive setup: generates a sensible default config instantly.
-/// Use `zeroclaw onboard` or `zeroclaw onboard --api-key sk-... --provider openrouter --memory sqlite|lucid`.
+/// Use `R.A.I.N. onboard` or `R.A.I.N. onboard --api-key sk-... --provider openrouter --memory sqlite|lucid`.
 fn backend_key_from_choice(choice: usize) -> &'static str {
     selectable_memory_backends()
         .get(choice)
@@ -449,7 +449,7 @@ pub async fn run_quick_setup(
 }
 
 fn resolve_quick_setup_dirs_with_home(home: &Path) -> (PathBuf, PathBuf) {
-    if let Ok(custom_config_dir) = std::env::var("ZEROCLAW_CONFIG_DIR") {
+    if let Ok(custom_config_dir) = std::env::var("R.A.I.N._CONFIG_DIR") {
         let trimmed = custom_config_dir.trim();
         if !trimmed.is_empty() {
             let config_dir = PathBuf::from(shellexpand::tilde(trimmed).as_ref());
@@ -457,7 +457,7 @@ fn resolve_quick_setup_dirs_with_home(home: &Path) -> (PathBuf, PathBuf) {
         }
     }
 
-    if let Ok(custom_workspace) = std::env::var("ZEROCLAW_WORKSPACE") {
+    if let Ok(custom_workspace) = std::env::var("R.A.I.N._WORKSPACE") {
         let trimmed = custom_workspace.trim();
         if !trimmed.is_empty() {
             let expanded = shellexpand::tilde(trimmed);
@@ -467,22 +467,22 @@ fn resolve_quick_setup_dirs_with_home(home: &Path) -> (PathBuf, PathBuf) {
         }
     }
 
-    let config_dir = home.join(".zeroclaw");
+    let config_dir = home.join(".R.A.I.N.");
     (config_dir.clone(), config_dir.join("workspace"))
 }
 
 fn homebrew_prefix_for_exe(exe: &Path) -> Option<&'static str> {
     let exe = exe.to_string_lossy();
-    if exe == "/opt/homebrew/bin/zeroclaw"
-        || exe.starts_with("/opt/homebrew/Cellar/zeroclaw/")
-        || exe.starts_with("/opt/homebrew/opt/zeroclaw/")
+    if exe == "/opt/homebrew/bin/R.A.I.N."
+        || exe.starts_with("/opt/homebrew/Cellar/R.A.I.N./")
+        || exe.starts_with("/opt/homebrew/opt/R.A.I.N./")
     {
         return Some("/opt/homebrew");
     }
 
-    if exe == "/usr/local/bin/zeroclaw"
-        || exe.starts_with("/usr/local/Cellar/zeroclaw/")
-        || exe.starts_with("/usr/local/opt/zeroclaw/")
+    if exe == "/usr/local/bin/R.A.I.N."
+        || exe.starts_with("/usr/local/Cellar/R.A.I.N./")
+        || exe.starts_with("/usr/local/opt/R.A.I.N./")
     {
         return Some("/usr/local");
     }
@@ -496,7 +496,7 @@ fn quick_setup_homebrew_service_note(
     exe: &Path,
 ) -> Option<String> {
     let prefix = homebrew_prefix_for_exe(exe)?;
-    let service_root = Path::new(prefix).join("var").join("zeroclaw");
+    let service_root = Path::new(prefix).join("var").join("R.A.I.N.");
     let service_config = service_root.join("config.toml");
     let service_workspace = service_root.join("workspace");
 
@@ -505,7 +505,7 @@ fn quick_setup_homebrew_service_note(
     }
 
     Some(format!(
-        "Homebrew service note: `brew services` uses {} (config {}) by default. Your onboarding just wrote {}. If you plan to run ZeroClaw as a service, copy or link this workspace first.",
+        "Homebrew service note: `brew services` uses {} (config {}) by default. Your onboarding just wrote {}. If you plan to run R.A.I.N. as a service, copy or link this workspace first.",
         service_workspace.display(),
         service_config.display(),
         config_path.display(),
@@ -530,8 +530,8 @@ async fn run_quick_setup_with_home(
     );
     println!();
 
-    let (zeroclaw_dir, workspace_dir) = resolve_quick_setup_dirs_with_home(home);
-    let config_path = zeroclaw_dir.join("config.toml");
+    let (R.A.I.N._dir, workspace_dir) = resolve_quick_setup_dirs_with_home(home);
+    let config_path = R.A.I.N._dir.join("config.toml");
 
     ensure_onboard_overwrite_allowed(&config_path, force)?;
     fs::create_dir_all(&workspace_dir)
@@ -633,7 +633,7 @@ async fn run_quick_setup_with_home(
     let default_ctx = ProjectContext {
         user_name: std::env::var("USER").unwrap_or_else(|_| "User".into()),
         timezone: "UTC".into(),
-        agent_name: "ZeroClaw".into(),
+        agent_name: "R.A.I.N.".into(),
         communication_style:
             "Be warm, natural, and clear. Use occasional relevant emojis (1-2 max) and avoid robotic phrasing."
                 .into(),
@@ -719,35 +719,35 @@ async fn run_quick_setup_with_home(
     println!("  {}", style("Next steps:").white().bold());
     if credential_override.is_none() {
         if provider_supports_keyless_local_usage(&provider_name) {
-            println!("    1. Chat:     zeroclaw agent -m \"Hello!\"");
-            println!("    2. Gateway:  zeroclaw gateway");
-            println!("    3. Status:   zeroclaw status");
+            println!("    1. Chat:     R.A.I.N. agent -m \"Hello!\"");
+            println!("    2. Gateway:  R.A.I.N. gateway");
+            println!("    3. Status:   R.A.I.N. status");
         } else if provider_supports_device_flow(&provider_name) {
             if canonical_provider_name(&provider_name) == "copilot" {
-                println!("    1. Chat:              zeroclaw agent -m \"Hello!\"");
+                println!("    1. Chat:              R.A.I.N. agent -m \"Hello!\"");
                 println!("       (device / OAuth auth will prompt on first run)");
-                println!("    2. Gateway:           zeroclaw gateway");
-                println!("    3. Status:            zeroclaw status");
+                println!("    2. Gateway:           R.A.I.N. gateway");
+                println!("    3. Status:            R.A.I.N. status");
             } else {
                 println!(
-                    "    1. Login:             zeroclaw auth login --provider {}",
+                    "    1. Login:             R.A.I.N. auth login --provider {}",
                     provider_name
                 );
-                println!("    2. Chat:              zeroclaw agent -m \"Hello!\"");
-                println!("    3. Gateway:           zeroclaw gateway");
-                println!("    4. Status:            zeroclaw status");
+                println!("    2. Chat:              R.A.I.N. agent -m \"Hello!\"");
+                println!("    3. Gateway:           R.A.I.N. gateway");
+                println!("    4. Status:            R.A.I.N. status");
             }
         } else {
             let env_var = provider_env_var(&provider_name);
             println!("    1. Set your API key:  export {env_var}=\"sk-...\"");
-            println!("    2. Or edit:           ~/.zeroclaw/config.toml");
-            println!("    3. Chat:              zeroclaw agent -m \"Hello!\"");
-            println!("    4. Gateway:           zeroclaw gateway");
+            println!("    2. Or edit:           ~/.R.A.I.N./config.toml");
+            println!("    3. Chat:              R.A.I.N. agent -m \"Hello!\"");
+            println!("    4. Gateway:           R.A.I.N. gateway");
         }
     } else {
-        println!("    1. Chat:     zeroclaw agent -m \"Hello!\"");
-        println!("    2. Gateway:  zeroclaw gateway");
-        println!("    3. Status:   zeroclaw status");
+        println!("    1. Chat:     R.A.I.N. agent -m \"Hello!\"");
+        println!("    2. Gateway:  R.A.I.N. gateway");
+        println!("    3. Status:   R.A.I.N. status");
     }
     println!();
 
@@ -1908,7 +1908,7 @@ pub async fn run_models_refresh(
             print_model_preview(&cached.models);
             println!();
             println!(
-                "Tip: run `zeroclaw models refresh --force --provider {}` to fetch latest now.",
+                "Tip: run `R.A.I.N. models refresh --force --provider {}` to fetch latest now.",
                 provider_name
             );
             return Ok(());
@@ -1971,7 +1971,7 @@ pub async fn run_models_list(config: &Config, provider_override: Option<&str>) -
     let Some(cached) = cached else {
         println!();
         println!(
-            "  No cached models for '{provider_name}'. Run: zeroclaw models refresh --provider {provider_name}"
+            "  No cached models for '{provider_name}'. Run: R.A.I.N. models refresh --provider {provider_name}"
         );
         println!();
         return Ok(());
@@ -2376,7 +2376,7 @@ async fn setup_provider(workspace_dir: &Path) -> Result<(String, String, String,
             style("Custom Provider Setup").white().bold(),
             style("— any OpenAI-compatible API").dim()
         );
-        print_bullet("ZeroClaw works with ANY API that speaks the OpenAI chat completions format.");
+        print_bullet("R.A.I.N. works with ANY API that speaks the OpenAI chat completions format.");
         print_bullet("Examples: LiteLLM, LocalAI, vLLM, text-generation-webui, LM Studio, etc.");
         println!();
 
@@ -2607,7 +2607,7 @@ async fn setup_provider(workspace_dir: &Path) -> Result<(String, String, String,
                 "{} Gemini CLI credentials detected! You can skip the API key.",
                 style("✓").green().bold()
             ));
-            print_bullet("ZeroClaw will reuse your existing Gemini CLI authentication.");
+            print_bullet("R.A.I.N. will reuse your existing Gemini CLI authentication.");
             println!();
 
             let use_cli: bool = dialoguer::Confirm::new()
@@ -3076,7 +3076,7 @@ fn provider_supports_device_flow(provider_name: &str) -> bool {
 // ── Step 5: Tool Mode & Security ────────────────────────────────
 
 fn setup_tool_mode() -> Result<(ComposioConfig, SecretsConfig)> {
-    print_bullet("Choose how ZeroClaw connects to external apps.");
+    print_bullet("Choose how R.A.I.N. connects to external apps.");
     print_bullet("You can always change this later in config.toml.");
     println!();
 
@@ -3099,7 +3099,7 @@ fn setup_tool_mode() -> Result<(ComposioConfig, SecretsConfig)> {
             style("— 1000+ OAuth integrations (Gmail, Notion, GitHub, Slack, ...)").dim()
         );
         print_bullet("Get your API key at: https://app.composio.dev/settings");
-        print_bullet("ZeroClaw uses Composio as a tool — your core agent stays local.");
+        print_bullet("R.A.I.N. uses Composio as a tool — your core agent stays local.");
         println!();
 
         let api_key: String = Input::new()
@@ -3136,7 +3136,7 @@ fn setup_tool_mode() -> Result<(ComposioConfig, SecretsConfig)> {
 
     // ── Encrypted secrets ──
     println!();
-    print_bullet("ZeroClaw can encrypt API keys stored in config.toml.");
+    print_bullet("R.A.I.N. can encrypt API keys stored in config.toml.");
     print_bullet("A local key file protects against plaintext exposure and accidental leaks.");
 
     let encrypt = Confirm::new()
@@ -3166,7 +3166,7 @@ fn setup_tool_mode() -> Result<(ComposioConfig, SecretsConfig)> {
 // ── Step 6: Hardware (Physical World) ───────────────────────────
 
 fn setup_hardware() -> Result<HardwareConfig> {
-    print_bullet("ZeroClaw can talk to physical hardware (LEDs, sensors, motors).");
+    print_bullet("R.A.I.N. can talk to physical hardware (LEDs, sensors, motors).");
     print_bullet("Scanning for connected devices...");
     println!();
 
@@ -3223,7 +3223,7 @@ fn setup_hardware() -> Result<HardwareConfig> {
     let recommended = hardware::recommended_wizard_default(&devices);
 
     let choice = Select::new()
-        .with_prompt("  How should ZeroClaw interact with the physical world?")
+        .with_prompt("  How should R.A.I.N. interact with the physical world?")
         .items(&options)
         .default(recommended)
         .interact()?;
@@ -3398,7 +3398,7 @@ fn setup_project_context() -> Result<ProjectContext> {
 
     let agent_name: String = Input::new()
         .with_prompt("  Agent name")
-        .default("ZeroClaw")
+        .default("R.A.I.N.")
         .interact_text()?;
 
     let style_options = vec![
@@ -3452,7 +3452,7 @@ fn setup_project_context() -> Result<ProjectContext> {
 // ── Step 6: Memory Configuration ───────────────────────────────
 
 fn setup_memory() -> Result<MemoryConfig> {
-    print_bullet("Choose how ZeroClaw stores and searches memories.");
+    print_bullet("Choose how R.A.I.N. stores and searches memories.");
     print_bullet("You can always change this later in config.toml.");
     println!();
 
@@ -3539,7 +3539,7 @@ fn channel_menu_choices() -> &'static [ChannelMenuChoice] {
 
 #[allow(clippy::too_many_lines)]
 fn setup_channels() -> Result<ChannelsConfig> {
-    print_bullet("Channels let you talk to ZeroClaw from anywhere.");
+    print_bullet("Channels let you talk to R.A.I.N. from anywhere.");
     print_bullet("CLI is always available. Connect more channels now.");
     println!();
 
@@ -3703,7 +3703,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                 println!(
                     "  {} {}",
                     style("Telegram Setup").white().bold(),
-                    style("— talk to ZeroClaw from Telegram").dim()
+                    style("— talk to R.A.I.N. from Telegram").dim()
                 );
                 print_bullet("1. Open Telegram and message @BotFather");
                 print_bullet("2. Send /newbot and follow the prompts");
@@ -3803,7 +3803,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                 println!(
                     "  {} {}",
                     style("Discord Setup").white().bold(),
-                    style("— talk to ZeroClaw from Discord").dim()
+                    style("— talk to R.A.I.N. from Discord").dim()
                 );
                 print_bullet("1. Go to https://discord.com/developers/applications");
                 print_bullet("2. Create a New Application → Bot → Copy token");
@@ -3904,7 +3904,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                 println!(
                     "  {} {}",
                     style("Slack Setup").white().bold(),
-                    style("— talk to ZeroClaw from Slack").dim()
+                    style("— talk to R.A.I.N. from Slack").dim()
                 );
                 print_bullet("1. Go to https://api.slack.com/apps → Create New App");
                 print_bullet("2. Add Bot Token Scopes: chat:write, channels:history");
@@ -4046,7 +4046,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                     continue;
                 }
 
-                print_bullet("ZeroClaw reads your iMessage database and replies via AppleScript.");
+                print_bullet("R.A.I.N. reads your iMessage database and replies via AppleScript.");
                 print_bullet(
                     "You need to grant Full Disk Access to your terminal in System Settings.",
                 );
@@ -4326,7 +4326,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
 
                     let session_path: String = Input::new()
                         .with_prompt("  Session database path")
-                        .default("~/.zeroclaw/state/whatsapp-web/session.db")
+                        .default("~/.R.A.I.N./state/whatsapp-web/session.db")
                         .interact_text()?;
 
                     if session_path.trim().is_empty() {
@@ -4421,7 +4421,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
 
                 let verify_token: String = Input::new()
                     .with_prompt("  Webhook verify token (create your own)")
-                    .default("zeroclaw-whatsapp-verify")
+                    .default("R.A.I.N.-whatsapp-verify")
                     .interact_text()?;
 
                 // Test connection (run entirely in separate thread — Response must be used/dropped there)
@@ -4477,7 +4477,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                     access_token: Some(access_token.trim().to_string()),
                     phone_number_id: Some(phone_number_id.trim().to_string()),
                     verify_token: Some(verify_token.trim().to_string()),
-                    app_secret: None, // Can be set via ZEROCLAW_WHATSAPP_APP_SECRET env var
+                    app_secret: None, // Can be set via R.A.I.N._WHATSAPP_APP_SECRET env var
                     session_path: None,
                     pair_phone: None,
                     pair_code: None,
@@ -4992,7 +4992,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                 println!(
                     "  {} {}",
                     style(format!("{provider_label} Setup")).white().bold(),
-                    style(format!("— talk to ZeroClaw from {provider_label}")).dim()
+                    style(format!("— talk to R.A.I.N. from {provider_label}")).dim()
                 );
                 print_bullet(&format!(
                     "1. Go to {provider_label} Open Platform ({provider_host})"
@@ -5172,7 +5172,7 @@ fn setup_channels() -> Result<ChannelsConfig> {
                     style("Nostr Setup").white().bold(),
                     style("— private messages via NIP-04 & NIP-17").dim()
                 );
-                print_bullet("ZeroClaw will listen for encrypted DMs on Nostr relays.");
+                print_bullet("R.A.I.N. will listen for encrypted DMs on Nostr relays.");
                 print_bullet("You need a Nostr private key (hex or nsec) and at least one relay.");
                 println!();
 
@@ -5438,7 +5438,7 @@ async fn scaffold_workspace(
     memory_backend: &str,
 ) -> Result<()> {
     let agent = if ctx.agent_name.is_empty() {
-        "ZeroClaw"
+        "R.A.I.N."
     } else {
         &ctx.agent_name
     };
@@ -5745,7 +5745,7 @@ fn print_summary(config: &Config) {
     println!(
         "  {}  {}",
         style("⚡").cyan(),
-        style("ZeroClaw is ready!").white().bold()
+        style("R.A.I.N. is ready!").white().bold()
     );
     println!(
         "  {}",
@@ -5890,7 +5890,7 @@ fn print_summary(config: &Config) {
             );
             println!(
                 "       {}",
-                style("zeroclaw auth login --provider openai-codex --device-code").yellow()
+                style("R.A.I.N. auth login --provider openai-codex --device-code").yellow()
             );
         } else if provider == "anthropic" {
             println!(
@@ -5904,7 +5904,7 @@ fn print_summary(config: &Config) {
             println!(
                 "       {}",
                 style(
-                    "or: zeroclaw auth paste-token --provider anthropic --auth-kind authorization"
+                    "or: R.A.I.N. auth paste-token --provider anthropic --auth-kind authorization"
                 )
                 .yellow()
             );
@@ -5930,7 +5930,7 @@ fn print_summary(config: &Config) {
             style(format!("{step}.")).cyan().bold(),
             style("Launch your channels").white().bold()
         );
-        println!("       {}", style("zeroclaw channel start").yellow());
+        println!("       {}", style("R.A.I.N. channel start").yellow());
         println!();
         step += 1;
     }
@@ -5941,7 +5941,7 @@ fn print_summary(config: &Config) {
     );
     println!(
         "       {}",
-        style("zeroclaw agent -m \"Hello, ZeroClaw!\"").yellow()
+        style("R.A.I.N. agent -m \"Hello, R.A.I.N.!\"").yellow()
     );
     println!();
     step += 1;
@@ -5950,7 +5950,7 @@ fn print_summary(config: &Config) {
         "    {} Start interactive CLI mode:",
         style(format!("{step}.")).cyan().bold()
     );
-    println!("       {}", style("zeroclaw agent").yellow());
+    println!("       {}", style("R.A.I.N. agent").yellow());
     println!();
     step += 1;
 
@@ -5958,7 +5958,7 @@ fn print_summary(config: &Config) {
         "    {} Check full status:",
         style(format!("{step}.")).cyan().bold()
     );
-    println!("       {}", style("zeroclaw status").yellow());
+    println!("       {}", style("R.A.I.N. status").yellow());
 
     println!();
     println!(
@@ -6076,8 +6076,8 @@ mod tests {
     #[tokio::test]
     async fn quick_setup_model_override_persists_to_config_toml() {
         let _env_guard = env_lock().lock().await;
-        let _workspace_env = EnvVarGuard::unset("ZEROCLAW_WORKSPACE");
-        let _config_env = EnvVarGuard::unset("ZEROCLAW_CONFIG_DIR");
+        let _workspace_env = EnvVarGuard::unset("R.A.I.N._WORKSPACE");
+        let _config_env = EnvVarGuard::unset("R.A.I.N._CONFIG_DIR");
         let tmp = TempDir::new().unwrap();
 
         let config = Box::pin(run_quick_setup_with_home(
@@ -6103,8 +6103,8 @@ mod tests {
     #[tokio::test]
     async fn quick_setup_without_model_uses_provider_default_model() {
         let _env_guard = env_lock().lock().await;
-        let _workspace_env = EnvVarGuard::unset("ZEROCLAW_WORKSPACE");
-        let _config_env = EnvVarGuard::unset("ZEROCLAW_CONFIG_DIR");
+        let _workspace_env = EnvVarGuard::unset("R.A.I.N._WORKSPACE");
+        let _config_env = EnvVarGuard::unset("R.A.I.N._CONFIG_DIR");
         let tmp = TempDir::new().unwrap();
 
         let config = Box::pin(run_quick_setup_with_home(
@@ -6126,13 +6126,13 @@ mod tests {
     #[tokio::test]
     async fn quick_setup_existing_config_requires_force_when_non_interactive() {
         let _env_guard = env_lock().lock().await;
-        let _workspace_env = EnvVarGuard::unset("ZEROCLAW_WORKSPACE");
-        let _config_env = EnvVarGuard::unset("ZEROCLAW_CONFIG_DIR");
+        let _workspace_env = EnvVarGuard::unset("R.A.I.N._WORKSPACE");
+        let _config_env = EnvVarGuard::unset("R.A.I.N._CONFIG_DIR");
         let tmp = TempDir::new().unwrap();
-        let zeroclaw_dir = tmp.path().join(".zeroclaw");
-        let config_path = zeroclaw_dir.join("config.toml");
+        let R.A.I.N._dir = tmp.path().join(".R.A.I.N.");
+        let config_path = R.A.I.N._dir.join("config.toml");
 
-        tokio::fs::create_dir_all(&zeroclaw_dir).await.unwrap();
+        tokio::fs::create_dir_all(&R.A.I.N._dir).await.unwrap();
         tokio::fs::write(&config_path, "default_provider = \"openrouter\"\n")
             .await
             .unwrap();
@@ -6156,13 +6156,13 @@ mod tests {
     #[tokio::test]
     async fn quick_setup_existing_config_overwrites_with_force() {
         let _env_guard = env_lock().lock().await;
-        let _workspace_env = EnvVarGuard::unset("ZEROCLAW_WORKSPACE");
-        let _config_env = EnvVarGuard::unset("ZEROCLAW_CONFIG_DIR");
+        let _workspace_env = EnvVarGuard::unset("R.A.I.N._WORKSPACE");
+        let _config_env = EnvVarGuard::unset("R.A.I.N._CONFIG_DIR");
         let tmp = TempDir::new().unwrap();
-        let zeroclaw_dir = tmp.path().join(".zeroclaw");
-        let config_path = zeroclaw_dir.join("config.toml");
+        let R.A.I.N._dir = tmp.path().join(".R.A.I.N.");
+        let config_path = R.A.I.N._dir.join("config.toml");
 
-        tokio::fs::create_dir_all(&zeroclaw_dir).await.unwrap();
+        tokio::fs::create_dir_all(&R.A.I.N._dir).await.unwrap();
         tokio::fs::write(
             &config_path,
             "default_provider = \"anthropic\"\ndefault_model = \"stale-model\"\n",
@@ -6194,15 +6194,15 @@ mod tests {
     async fn quick_setup_respects_zero_claw_workspace_env_layout() {
         let _env_guard = env_lock().lock().await;
         let tmp = TempDir::new().unwrap();
-        let workspace_root = tmp.path().join("zeroclaw-data");
+        let workspace_root = tmp.path().join("R.A.I.N.-data");
         let workspace_dir = workspace_root.join("workspace");
-        let expected_config_path = workspace_root.join(".zeroclaw").join("config.toml");
+        let expected_config_path = workspace_root.join(".R.A.I.N.").join("config.toml");
 
         let _workspace_env = EnvVarGuard::set(
-            "ZEROCLAW_WORKSPACE",
+            "R.A.I.N._WORKSPACE",
             workspace_dir.to_string_lossy().as_ref(),
         );
-        let _config_env = EnvVarGuard::unset("ZEROCLAW_CONFIG_DIR");
+        let _config_env = EnvVarGuard::unset("R.A.I.N._CONFIG_DIR");
 
         let config = Box::pin(run_quick_setup_with_home(
             Some("sk-env"),
@@ -6213,7 +6213,7 @@ mod tests {
             tmp.path(),
         ))
         .await
-        .expect("quick setup should honor ZEROCLAW_WORKSPACE");
+        .expect("quick setup should honor R.A.I.N._WORKSPACE");
 
         assert_eq!(config.workspace_dir, workspace_dir);
         assert_eq!(config.config_path, expected_config_path);
@@ -6222,45 +6222,45 @@ mod tests {
     #[test]
     fn homebrew_prefix_for_exe_detects_supported_layouts() {
         assert_eq!(
-            homebrew_prefix_for_exe(Path::new("/opt/homebrew/bin/zeroclaw")),
+            homebrew_prefix_for_exe(Path::new("/opt/homebrew/bin/R.A.I.N.")),
             Some("/opt/homebrew")
         );
         assert_eq!(
             homebrew_prefix_for_exe(Path::new(
-                "/opt/homebrew/Cellar/zeroclaw/0.5.0/bin/zeroclaw",
+                "/opt/homebrew/Cellar/R.A.I.N./0.5.0/bin/R.A.I.N.",
             )),
             Some("/opt/homebrew")
         );
         assert_eq!(
-            homebrew_prefix_for_exe(Path::new("/usr/local/bin/zeroclaw")),
+            homebrew_prefix_for_exe(Path::new("/usr/local/bin/R.A.I.N.")),
             Some("/usr/local")
         );
-        assert_eq!(homebrew_prefix_for_exe(Path::new("/tmp/zeroclaw")), None);
+        assert_eq!(homebrew_prefix_for_exe(Path::new("/tmp/R.A.I.N.")), None);
     }
 
     #[test]
     fn quick_setup_homebrew_service_note_mentions_service_workspace() {
         let note = quick_setup_homebrew_service_note(
-            Path::new("/Users/alix/.zeroclaw/config.toml"),
-            Path::new("/Users/alix/.zeroclaw/workspace"),
-            Path::new("/opt/homebrew/bin/zeroclaw"),
+            Path::new("/Users/alix/.R.A.I.N./config.toml"),
+            Path::new("/Users/alix/.R.A.I.N./workspace"),
+            Path::new("/opt/homebrew/bin/R.A.I.N."),
         )
         .expect("homebrew installs should emit a service workspace note");
 
-        assert!(note.contains("/opt/homebrew/var/zeroclaw/workspace"));
-        assert!(note.contains("/opt/homebrew/var/zeroclaw/config.toml"));
-        assert!(note.contains("/Users/alix/.zeroclaw/config.toml"));
+        assert!(note.contains("/opt/homebrew/var/R.A.I.N./workspace"));
+        assert!(note.contains("/opt/homebrew/var/R.A.I.N./config.toml"));
+        assert!(note.contains("/Users/alix/.R.A.I.N./config.toml"));
     }
 
     #[test]
     fn quick_setup_homebrew_service_note_skips_matching_service_layout() {
-        let service_config = Path::new("/opt/homebrew/var/zeroclaw/config.toml");
-        let service_workspace = Path::new("/opt/homebrew/var/zeroclaw/workspace");
+        let service_config = Path::new("/opt/homebrew/var/R.A.I.N./config.toml");
+        let service_workspace = Path::new("/opt/homebrew/var/R.A.I.N./workspace");
 
         assert!(quick_setup_homebrew_service_note(
             service_config,
             service_workspace,
-            Path::new("/opt/homebrew/bin/zeroclaw"),
+            Path::new("/opt/homebrew/bin/R.A.I.N."),
         )
         .is_none());
     }
@@ -6463,8 +6463,8 @@ mod tests {
             .await
             .unwrap();
         assert!(
-            identity.contains("**Name:** ZeroClaw"),
-            "should default agent name to ZeroClaw"
+            identity.contains("**Name:** R.A.I.N."),
+            "should default agent name to R.A.I.N."
         );
 
         let user_md = tokio::fs::read_to_string(tmp.path().join("USER.md"))
@@ -6690,7 +6690,7 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let ctx = ProjectContext {
             user_name: "José María".into(),
-            agent_name: "ZeroClaw-v2".into(),
+            agent_name: "R.A.I.N.-v2".into(),
             timezone: "Europe/Madrid".into(),
             communication_style: "Be direct.".into(),
         };
@@ -6706,7 +6706,7 @@ mod tests {
         let soul = tokio::fs::read_to_string(tmp.path().join("SOUL.md"))
             .await
             .unwrap();
-        assert!(soul.contains("ZeroClaw-v2"));
+        assert!(soul.contains("R.A.I.N.-v2"));
     }
 
     // ── scaffold_workspace: full personalization round-trip ─────

@@ -1,4 +1,4 @@
-# ZeroClaw Docs Structure Map
+# R.A.I.N. Docs Structure Map
 
 This page defines the documentation structure across three axes:
 

@@ -28,7 +28,7 @@ Most multi-agent AI systems either agree too quickly (groupthink) or argue in ci
 R.A.I.N. Lab is built from two layers:
 
 - James Library (Python): Research workflows, lab meetings, synthesis, acoustic physics simulations.
-- ZeroClaw (Rust): Agent runtime, orchestration, tool execution, channels, memory, security. Optional but adds speed and advanced features.
+- R.A.I.N. (Rust): Agent runtime, orchestration, tool execution, channels, memory, security. Optional but adds speed and advanced features.
 
 Python research workflows work without Rust installed.
 

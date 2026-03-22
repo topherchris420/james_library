@@ -255,7 +255,7 @@ def invoke_logic_prover(
     """Invoke the logic_prover WASM plugin and return the result.
 
     Tries two execution paths in order:
-    1. HTTP call to the ZeroClaw runtime API (if runtime_api_url is set).
+    1. HTTP call to the R.A.I.N. runtime API (if runtime_api_url is set).
     2. Direct subprocess invocation via wasmtime/wasmi CLI.
 
     Both paths send the same JSON payload and expect the same response schema.
@@ -287,7 +287,7 @@ def invoke_logic_prover(
 
 
 def _invoke_via_runtime_api(api_url: str, payload_json: str) -> ProverResult | None:
-    """Call the ZeroClaw runtime API to execute the WASM plugin."""
+    """Call the R.A.I.N. runtime API to execute the WASM plugin."""
     try:
         import httpx
         url = api_url.rstrip("/") + "/v1/plugins/logic_prover/execute"
@@ -420,7 +420,7 @@ def run_circuit_breaker(
         hypothesis_tree: A ``HypothesisTree`` instance with the current debate state.
         node_id: Specific node to evaluate. If None, uses the tree's UCB1 selection.
         plugin_dir: Override path to the logic_prover plugin directory.
-        runtime_api_url: ZeroClaw runtime API URL for WASM execution.
+        runtime_api_url: R.A.I.N. runtime API URL for WASM execution.
 
     Returns:
         A ``CircuitBreakerVerdict`` with the override message for chat injection.

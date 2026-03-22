@@ -1,4 +1,4 @@
-# ZeroClaw Documentation Hub (Bengali)
+# R.A.I.N. Documentation Hub (Bengali)
 
 This locale hub is enabled for Bengali community support.
 

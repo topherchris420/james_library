@@ -1,6 +1,6 @@
-# ZeroClaw Robot Kit
+# R.A.I.N. Robot Kit
 
-A complete toolkit for building AI-powered robots with ZeroClaw. Designed for Raspberry Pi deployment with offline Ollama inference.
+A complete toolkit for building AI-powered robots with R.A.I.N.. Designed for Raspberry Pi deployment with offline Ollama inference.
 
 ## Features
 
@@ -17,7 +17,7 @@ A complete toolkit for building AI-powered robots with ZeroClaw. Designed for Ra
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                 ZeroClaw + Ollama                       │
+│                 R.A.I.N. + Ollama                       │
 │              (High-Level AI Brain)                      │
 └─────────────────────┬───────────────────────────────────┘
                       │
@@ -84,25 +84,25 @@ pip install piper-tts
 
 ## Quick Start
 
-### 1. Build ZeroClaw with robot tools
+### 1. Build R.A.I.N. with robot tools
 
 ```bash
 # Clone and build
-git clone https://github.com/zeroclaw-labs/zeroclaw
-cd zeroclaw
-cargo build -p zeroclaw-robot-kit --release
+git clone https://github.com/R.A.I.N.-labs/R.A.I.N.
+cd R.A.I.N.
+cargo build -p R.A.I.N.-robot-kit --release
 ```
 
 ### 2. Configure
 
 ```bash
 # Copy config
-mkdir -p ~/.zeroclaw
-cp crates/robot-kit/robot.toml ~/.zeroclaw/
-cp crates/robot-kit/SOUL.md ~/.zeroclaw/workspace/
+mkdir -p ~/.R.A.I.N.
+cp crates/robot-kit/robot.toml ~/.R.A.I.N./
+cp crates/robot-kit/SOUL.md ~/.R.A.I.N./workspace/
 
 # Edit for your hardware
-nano ~/.zeroclaw/robot.toml
+nano ~/.R.A.I.N./robot.toml
 ```
 
 ### 3. Test
@@ -112,11 +112,11 @@ nano ~/.zeroclaw/robot.toml
 ollama serve &
 
 # Test in mock mode
-./target/release/zeroclaw agent -m "Say hello and show a happy face"
+./target/release/R.A.I.N. agent -m "Say hello and show a happy face"
 
 # Test with real hardware
 # (after configuring robot.toml)
-./target/release/zeroclaw agent -m "Move forward 1 meter"
+./target/release/R.A.I.N. agent -m "Move forward 1 meter"
 ```
 
 ## Integration
@@ -127,7 +127,7 @@ It is not auto-registered in the core runtime by default.
 Use it directly from Rust:
 
 ```rust
-use zeroclaw_robot_kit::{create_tools, RobotConfig};
+use R.A.I.N._robot_kit::{create_tools, RobotConfig};
 
 fn build_robot_tools() {
     let config = RobotConfig::default();
@@ -136,7 +136,7 @@ fn build_robot_tools() {
 }
 ```
 
-If you want runtime registration in `zeroclaw`, add a thin adapter that maps this
+If you want runtime registration in `R.A.I.N.`, add a thin adapter that maps this
 crate's tools to the project's `src/tools::Tool` and register it in the factory.
 
 ## Usage Examples
@@ -183,21 +183,21 @@ Robot:
 
 ```bash
 # Package everything needed
-mkdir zeroclaw-robot-kit
-cp -r target/release/zeroclaw zeroclaw-robot-kit/
-cp -r examples/robot_kit zeroclaw-robot-kit/
-cp -r ~/.zeroclaw zeroclaw-robot-kit/dot-zeroclaw
+mkdir R.A.I.N.-robot-kit
+cp -r target/release/R.A.I.N. R.A.I.N.-robot-kit/
+cp -r examples/robot_kit R.A.I.N.-robot-kit/
+cp -r ~/.R.A.I.N. R.A.I.N.-robot-kit/dot-R.A.I.N.
 
 # Include models
-mkdir -p zeroclaw-robot-kit/models
-cp ~/.zeroclaw/models/ggml-base.bin zeroclaw-robot-kit/models/
+mkdir -p R.A.I.N.-robot-kit/models
+cp ~/.R.A.I.N./models/ggml-base.bin R.A.I.N.-robot-kit/models/
 # Note: Ollama models are large, may want to download on target
 
 # Create tarball
-tar -czvf zeroclaw-robot-kit.tar.gz zeroclaw-robot-kit/
+tar -czvf R.A.I.N.-robot-kit.tar.gz R.A.I.N.-robot-kit/
 
 # Copy to USB
-cp zeroclaw-robot-kit.tar.gz /media/usb/TarBalls/
+cp R.A.I.N.-robot-kit.tar.gz /media/usb/TarBalls/
 ```
 
 ## Safety Notes
@@ -210,4 +210,4 @@ cp zeroclaw-robot-kit.tar.gz /media/usb/TarBalls/
 
 ## License
 
-MIT - Same as ZeroClaw
+MIT - Same as R.A.I.N.

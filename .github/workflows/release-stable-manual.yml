@@ -125,7 +125,7 @@ jobs:
           ALL_CONTRIBUTORS=$(printf "%s\n%s" "$GIT_AUTHORS" "$CO_AUTHORS" \
             | sort -uf \
             | grep -v '^$' \
-            | grep -viE '\[bot\]$|^dependabot|^github-actions|^copilot|^ZeroClaw Bot|^ZeroClaw Runner|^ZeroClaw Agent|^blacksmith' \
+            | grep -viE '\[bot\]$|^dependabot|^github-actions|^copilot|^R.A.I.N. Bot|^R.A.I.N. Runner|^R.A.I.N. Agent|^blacksmith' \
             | while IFS= read -r name; do echo "- ${name}"; done || true)
 
           BODY=$(cat <<NOTES_EOF
@@ -161,18 +161,18 @@ jobs:
           # ensuring compatibility with Ubuntu 22.04+ (#3573).
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            artifact: zeroclaw
+            artifact: R.A.I.N.
             ext: tar.gz
           - os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
-            artifact: zeroclaw
+            artifact: R.A.I.N.
             ext: tar.gz
             cross_compiler: gcc-aarch64-linux-gnu
             linker_env: CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER
             linker: aarch64-linux-gnu-gcc
           - os: ubuntu-22.04
             target: armv7-unknown-linux-gnueabihf
-            artifact: zeroclaw
+            artifact: R.A.I.N.
             ext: tar.gz
             cross_compiler: gcc-arm-linux-gnueabihf
             linker_env: CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER
@@ -180,7 +180,7 @@ jobs:
             skip_prometheus: true
           - os: ubuntu-22.04
             target: arm-unknown-linux-gnueabihf
-            artifact: zeroclaw
+            artifact: R.A.I.N.
             ext: tar.gz
             cross_compiler: gcc-arm-linux-gnueabihf
             linker_env: CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER
@@ -188,16 +188,16 @@ jobs:
             skip_prometheus: true
           - os: macos-14
             target: aarch64-apple-darwin
-            artifact: zeroclaw
+            artifact: R.A.I.N.
             ext: tar.gz
           - os: ubuntu-latest
             target: aarch64-linux-android
-            artifact: zeroclaw
+            artifact: R.A.I.N.
             ext: tar.gz
             ndk: true
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: zeroclaw.exe
+            artifact: R.A.I.N..exe
             ext: zip
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -241,18 +241,18 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../zeroclaw-${{ matrix.target }}.${{ matrix.ext }} ${{ matrix.artifact }}
+          tar czf ../../../R.A.I.N.-${{ matrix.target }}.${{ matrix.ext }} ${{ matrix.artifact }}
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          7z a ../../../zeroclaw-${{ matrix.target }}.${{ matrix.ext }} ${{ matrix.artifact }}
+          7z a ../../../R.A.I.N.-${{ matrix.target }}.${{ matrix.ext }} ${{ matrix.artifact }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: zeroclaw-${{ matrix.target }}
-          path: zeroclaw-${{ matrix.target }}.${{ matrix.ext }}
+          name: R.A.I.N.-${{ matrix.target }}
+          path: R.A.I.N.-${{ matrix.target }}.${{ matrix.ext }}
           retention-days: 14
 
   publish:
@@ -264,7 +264,7 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          pattern: zeroclaw-*
+          pattern: R.A.I.N.-*
           path: artifacts
 
       - name: Generate checksums
@@ -366,8 +366,8 @@ jobs:
           curl -fsSL -X POST \
             -H "Authorization: token $PAT" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/zeroclaw-labs/zeroclaw-website/dispatches \
-            -d '{"event_type":"new-release","client_payload":{"install_script_url":"https://raw.githubusercontent.com/zeroclaw-labs/zeroclaw/master/install.sh"}}'
+            https://api.github.com/repos/R.A.I.N.-labs/R.A.I.N.-website/dispatches \
+            -d '{"event_type":"new-release","client_payload":{"install_script_url":"https://raw.githubusercontent.com/R.A.I.N.-labs/R.A.I.N./master/install.sh"}}'
 
   docker:
     name: Push Docker Image
@@ -379,24 +379,24 @@ jobs:
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: zeroclaw-x86_64-unknown-linux-gnu
+          name: R.A.I.N.-x86_64-unknown-linux-gnu
           path: artifacts/
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: zeroclaw-aarch64-unknown-linux-gnu
+          name: R.A.I.N.-aarch64-unknown-linux-gnu
           path: artifacts/
 
       - name: Prepare Docker context with pre-built binaries
         run: |
           mkdir -p docker-ctx/bin/amd64 docker-ctx/bin/arm64
-          tar xzf artifacts/zeroclaw-x86_64-unknown-linux-gnu.tar.gz -C docker-ctx/bin/amd64
-          tar xzf artifacts/zeroclaw-aarch64-unknown-linux-gnu.tar.gz -C docker-ctx/bin/arm64
+          tar xzf artifacts/R.A.I.N.-x86_64-unknown-linux-gnu.tar.gz -C docker-ctx/bin/amd64
+          tar xzf artifacts/R.A.I.N.-aarch64-unknown-linux-gnu.tar.gz -C docker-ctx/bin/arm64
 
-          mkdir -p docker-ctx/zeroclaw-data/.zeroclaw docker-ctx/zeroclaw-data/workspace
+          mkdir -p docker-ctx/R.A.I.N.-data/.R.A.I.N. docker-ctx/R.A.I.N.-data/workspace
           printf '%s\n' \
-            'workspace_dir = "/zeroclaw-data/workspace"' \
-            'config_path = "/zeroclaw-data/.zeroclaw/config.toml"' \
+            'workspace_dir = "/R.A.I.N.-data/workspace"' \
+            'config_path = "/R.A.I.N.-data/.R.A.I.N./config.toml"' \
             'api_key = ""' \
             'default_provider = "openrouter"' \
             'default_model = "anthropic/claude-sonnet-4-20250514"' \
@@ -406,7 +406,7 @@ jobs:
             'port = 42617' \
             'host = "[::]"' \
             'allow_public_bind = true' \
-            > docker-ctx/zeroclaw-data/.zeroclaw/config.toml
+            > docker-ctx/R.A.I.N.-data/.R.A.I.N./config.toml
 
           cp Dockerfile.ci docker-ctx/Dockerfile
           cp Dockerfile.debian.ci docker-ctx/Dockerfile.debian
@@ -470,5 +470,5 @@ jobs:
     uses: ./.github/workflows/tweet-release.yml
     with:
       release_tag: ${{ needs.validate.outputs.tag }}
-      release_url: https://github.com/zeroclaw-labs/zeroclaw/releases/tag/${{ needs.validate.outputs.tag }}
+      release_url: https://github.com/R.A.I.N.-labs/R.A.I.N./releases/tag/${{ needs.validate.outputs.tag }}
     secrets: inherit

@@ -3,9 +3,9 @@
 
 declare global {
   interface Window {
-    __ZEROCLAW_BASE__?: string;
+    __R.A.I.N._BASE__?: string;
   }
 }
 
-/** Gateway path prefix (e.g. "/zeroclaw"), or empty string when served at root. */
-export const basePath: string = (window.__ZEROCLAW_BASE__ ?? '').replace(/\/+$/, '');
+/** Gateway path prefix (e.g. "/R.A.I.N."), or empty string when served at root. */
+export const basePath: string = (window.__R.A.I.N._BASE__ ?? '').replace(/\/+$/, '');

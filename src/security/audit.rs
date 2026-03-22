@@ -218,8 +218,8 @@ impl AuditLogger {
     ///
     /// If the log file already exists, the chain state is recovered from the last
     /// entry so that new writes continue the existing hash chain.
-    pub fn new(config: AuditConfig, zeroclaw_dir: PathBuf) -> Result<Self> {
-        let log_path = zeroclaw_dir.join(&config.log_path);
+    pub fn new(config: AuditConfig, R.A.I.N._dir: PathBuf) -> Result<Self> {
+        let log_path = R.A.I.N._dir.join(&config.log_path);
         let chain_state = recover_chain_state(&log_path);
         Ok(Self {
             log_path,
@@ -438,14 +438,14 @@ mod tests {
         let event = AuditEvent::new(AuditEventType::CommandExecution).with_actor(
             "telegram".to_string(),
             Some("123".to_string()),
-            Some("@zeroclaw_user".to_string()),
+            Some("@R.A.I.N._user".to_string()),
         );
 
         assert!(event.actor.is_some());
         let actor = event.actor.as_ref().unwrap();
         assert_eq!(actor.channel, "telegram");
         assert_eq!(actor.user_id, Some("123".to_string()));
-        assert_eq!(actor.username, Some("@zeroclaw_user".to_string()));
+        assert_eq!(actor.username, Some("@R.A.I.N._user".to_string()));
     }
 
     #[test]

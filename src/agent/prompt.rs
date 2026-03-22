@@ -372,7 +372,7 @@ mod tests {
     #[test]
     fn identity_section_with_aieos_includes_workspace_files() {
         let workspace =
-            std::env::temp_dir().join(format!("zeroclaw_prompt_test_{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("R.A.I.N._prompt_test_{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&workspace).unwrap();
         std::fs::write(
             workspace.join("AGENTS.md"),

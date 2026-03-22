@@ -30,7 +30,7 @@ You'll see three names in this lab — here's what each one means:
 
 - **R.A.I.N. Lab** — the product you interact with (the interface, the chat, the experience)
 - **James Library** — the Python code that powers the research workflows (debates, synthesis, analysis)
-- **ZeroClaw** — the fast Rust engine running behind the scenes (networking, security, orchestration)
+- **R.A.I.N.** — the fast Rust engine running behind the scenes (networking, security, orchestration)
 
 All you need to know is the **R.A.I.N. Lab**. Everything else just works.
 
@@ -61,7 +61,7 @@ All you need to know is the **R.A.I.N. Lab**. Everything else just works.
 
 ## Why R.A.I.N. Lab?
 
-* **Runs on almost anything:** The core engine is ZeroClaw, a 3.1 MB program that works on laptops, desktops, and even low-powered devices.
+* **Runs on almost anything:** The core engine is R.A.I.N., a 3.1 MB program that works on laptops, desktops, and even low-powered devices.
 * **Your data stays on your machine:** All conversations and files are stored locally with strong encryption. Nothing is sent to the cloud unless you choose to connect a cloud AI provider.
 * **Extensible with plugins:** If you need the AI to use a custom math solver or physics engine, you can drop it in as a plugin — no restart required.
 * **Two languages, best of both worlds:** Python handles the AI conversations and research workflows; Rust handles the fast, security-critical parts like verification and networking.
@@ -359,14 +359,14 @@ This project ships as one product (**R.A.I.N. Lab**) built from two layers:
 | Layer | What it does | Language |
 |---|---|---|
 | **James Library** | Research workflows — lab meetings, synthesis, acoustic physics | Python |
-| **ZeroClaw** | Agent runtime — orchestration, tools, channels, memory, security | Rust (optional) |
+| **R.A.I.N.** | Agent runtime — orchestration, tools, channels, memory, security | Rust (optional) |
 
 You interact with R.A.I.N. Lab as a single product. The Python layer handles research workflows and delegates to the Rust runtime for fast orchestration when available. **Python research flows work without Rust installed** — the Rust runtime adds speed, channels, and tool execution for advanced users.
 
 ```mermaid
 graph TB
     subgraph "R.A.I.N. Lab"
-        subgraph "ZeroClaw (Rust Runtime)"
+        subgraph "R.A.I.N. (Rust Runtime)"
             CLI[CLI and Gateway]
             Agent[Agent Orchestrator]
             Providers[Model Providers]
@@ -433,7 +433,7 @@ python rain_lab.py --mode first-run
 
 ```text
 james_library/
-|-- src/                      # ZeroClaw Rust source
+|-- src/                      # R.A.I.N. Rust source
 |   |-- agent/
 |   |-- channels/
 |   |-- gateway/
@@ -514,7 +514,7 @@ MIT License. See [LICENSE](LICENSE).
 
 ## Acknowledgements
 
-R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project, built on the high-performance [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) Rust runtime — inspired by research from MIT CSAIL. We're grateful to both teams for making this lab possible.
+R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project, built on the high-performance [R.A.I.N.](https://github.com/R.A.I.N.-labs/R.A.I.N.) Rust runtime — inspired by research from MIT CSAIL. We're grateful to both teams for making this lab possible.
 
 Special thanks to Peter for releasing OpenClaw on my birthday.
 

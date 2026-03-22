@@ -1,4 +1,4 @@
-# Khắc phục sự cố ZeroClaw
+# Khắc phục sự cố R.A.I.N.
 
 Các lỗi thường gặp khi cài đặt và chạy, kèm cách khắc phục.
 
@@ -78,7 +78,7 @@ cargo build --release --locked --no-default-features --features hardware
 
 Triệu chứng:
 
-- `cargo check` / `cargo build` dừng lâu ở `Checking zeroclaw`
+- `cargo check` / `cargo build` dừng lâu ở `Checking R.A.I.N.`
 - Lặp lại thông báo `Blocking waiting for file lock on package cache` hoặc `build directory`
 
 Nguyên nhân:
@@ -119,17 +119,17 @@ pgrep -af "cargo (check|build|test)|cargo check|cargo build|cargo test"
 
 Dừng các cargo job không liên quan trước khi build.
 
-### Không tìm thấy lệnh `zeroclaw` sau cài đặt
+### Không tìm thấy lệnh `R.A.I.N.` sau cài đặt
 
 Triệu chứng:
 
-- Cài đặt thành công nhưng shell không tìm thấy `zeroclaw`
+- Cài đặt thành công nhưng shell không tìm thấy `R.A.I.N.`
 
 Khắc phục:
 
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
-which zeroclaw
+which R.A.I.N.
 ```
 
 Thêm vào shell profile nếu cần giữ lâu dài.
@@ -141,11 +141,11 @@ Thêm vào shell profile nếu cần giữ lâu dài.
 Kiểm tra:
 
 ```bash
-zeroclaw status
-zeroclaw doctor
+R.A.I.N. status
+R.A.I.N. doctor
 ```
 
-Xác minh `~/.zeroclaw/config.toml`:
+Xác minh `~/.R.A.I.N./config.toml`:
 
 - `[gateway].host` (mặc định `127.0.0.1`)
 - `[gateway].port` (mặc định `3000`)
@@ -160,7 +160,7 @@ Kiểm tra:
 3. Chạy lại chẩn đoán:
 
 ```bash
-zeroclaw doctor
+R.A.I.N. doctor
 ```
 
 ## Sự cố kênh
@@ -174,14 +174,14 @@ Nguyên nhân:
 Khắc phục:
 
 - Chỉ giữ một runtime đang chạy cho token đó
-- Dừng các tiến trình `zeroclaw daemon` / `zeroclaw channel start` thừa
+- Dừng các tiến trình `R.A.I.N. daemon` / `R.A.I.N. channel start` thừa
 
 ### Kênh không khỏe trong `channel doctor`
 
 Kiểm tra:
 
 ```bash
-zeroclaw channel doctor
+R.A.I.N. channel doctor
 ```
 
 Sau đó xác minh thông tin xác thực và trường allowlist cho từng kênh trong config.
@@ -193,26 +193,26 @@ Sau đó xác minh thông tin xác thực và trường allowlist cho từng kê
 Kiểm tra:
 
 ```bash
-zeroclaw service status
+R.A.I.N. service status
 ```
 
 Khôi phục:
 
 ```bash
-zeroclaw service stop
-zeroclaw service start
+R.A.I.N. service stop
+R.A.I.N. service start
 ```
 
 Xem log trên Linux:
 
 ```bash
-journalctl --user -u zeroclaw.service -f
+journalctl --user -u R.A.I.N..service -f
 ```
 
 ## URL cài đặt
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zeroclaw-labs/zeroclaw/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/R.A.I.N.-labs/R.A.I.N./master/install.sh | bash
 ```
 
 ## Vẫn chưa giải quyết được?
@@ -220,10 +220,10 @@ curl -fsSL https://raw.githubusercontent.com/zeroclaw-labs/zeroclaw/master/insta
 Thu thập và đính kèm các thông tin sau khi tạo issue:
 
 ```bash
-zeroclaw --version
-zeroclaw status
-zeroclaw doctor
-zeroclaw channel doctor
+R.A.I.N. --version
+R.A.I.N. status
+R.A.I.N. doctor
+R.A.I.N. channel doctor
 ```
 
 Kèm thêm: hệ điều hành, cách cài đặt, và đoạn config đã ẩn bí mật.

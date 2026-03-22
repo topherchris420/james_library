@@ -1,4 +1,4 @@
-# ZeroClaw Docs Summary (German)
+# R.A.I.N. Docs Summary (German)
 
 This is the German locale summary entry point.
 

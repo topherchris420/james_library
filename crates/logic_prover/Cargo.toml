@@ -2,7 +2,7 @@
 name = "logic_prover"
 version = "0.1.0"
 edition = "2021"
-description = "Lightweight DPLL SAT solver exposed as a WASM plugin for ZeroClaw"
+description = "Lightweight DPLL SAT solver exposed as a WASM plugin for R.A.I.N."
 
 [lib]
 crate-type = ["cdylib"]

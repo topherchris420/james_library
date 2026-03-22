@@ -721,7 +721,7 @@ mod tests {
         let expert = graph
             .add_node(
                 NodeType::Expert,
-                "zeroclaw_user",
+                "R.A.I.N._user",
                 "Backend expert",
                 &[],
                 None,
@@ -751,7 +751,7 @@ mod tests {
 
         let experts = graph.find_experts(&["caching".into()]).unwrap();
         assert_eq!(experts.len(), 1);
-        assert_eq!(experts[0].node.title, "zeroclaw_user");
+        assert_eq!(experts[0].node.title, "R.A.I.N._user");
         assert!((experts[0].score - 2.0).abs() < f64::EPSILON);
     }
 

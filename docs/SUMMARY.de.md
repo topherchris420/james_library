@@ -1,4 +1,4 @@
-# ZeroClaw Dokumentationsübersicht (Einheitliches Inhaltsverzeichnis)
+# R.A.I.N. Dokumentationsübersicht (Einheitliches Inhaltsverzeichnis)
 
 Diese Datei ist das kanonische Inhaltsverzeichnis des Dokumentationssystems.
 

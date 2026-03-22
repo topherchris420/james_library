@@ -1,14 +1,14 @@
 # Skill: github-issue
 
-File a structured GitHub issue (bug report or feature request) for ZeroClaw interactively from Claude Code.
+File a structured GitHub issue (bug report or feature request) for R.A.I.N. interactively from Claude Code.
 
 ## When to Use
 
-Trigger when the user wants to file a GitHub issue, report a bug, or request a feature for ZeroClaw. Keywords: "file issue", "report bug", "feature request", "open issue", "create issue", "github issue".
+Trigger when the user wants to file a GitHub issue, report a bug, or request a feature for R.A.I.N.. Keywords: "file issue", "report bug", "feature request", "open issue", "create issue", "github issue".
 
 ## Instructions
 
-You are filing a GitHub issue against the ZeroClaw repository using structured issue forms. Follow this workflow exactly.
+You are filing a GitHub issue against the R.A.I.N. repository using structured issue forms. Follow this workflow exactly.
 
 ### Step 1: Detect Issue Type and Read the Template
 
@@ -41,7 +41,7 @@ git diff --stat HEAD~1 2>/dev/null
 uname -s -r -m                          # OS info
 sw_vers 2>/dev/null                     # macOS version
 rustc --version 2>/dev/null             # Rust version
-cargo metadata --format-version=1 --no-deps 2>/dev/null | jq -r '.packages[] | select(.name=="zeroclaw") | .version' 2>/dev/null   # ZeroClaw version
+cargo metadata --format-version=1 --no-deps 2>/dev/null | jq -r '.packages[] | select(.name=="R.A.I.N.") | .version' 2>/dev/null   # R.A.I.N. version
 git rev-parse --short HEAD              # commit SHA fallback
 ```
 
@@ -127,7 +127,7 @@ Return the resulting issue URL to the user.
 
 - **Always read the template file** — never assume field names, options, or structure. The templates are the source of truth and may change over time.
 - **Never include personal/sensitive data** in the issue. Redact secrets, tokens, emails, real names.
-- **Use neutral project-scoped placeholders** per ZeroClaw's privacy contract.
+- **Use neutral project-scoped placeholders** per R.A.I.N.'s privacy contract.
 - **One concept per issue** — enforce the scope guard.
 - **Auto-detect, don't guess** — use real command output for environment fields.
 - **Match GitHub's rendering** — use `### Field Label` sections so issues look consistent whether filed via web UI or this skill.

@@ -7,7 +7,7 @@
 //! and config file round-trips to verify workspace discovery and persistence.
 
 use std::fs;
-use zeroclaw::config::{AgentConfig, Config, MemoryConfig};
+use R.A.I.N.::config::{AgentConfig, Config, MemoryConfig};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Config default construction
@@ -178,7 +178,7 @@ fn config_file_write_read_roundtrip() {
     let config = Config {
         default_provider: Some("mistral".into()),
         default_model: Some("mistral-large".into()),
-        agent: zeroclaw::config::AgentConfig {
+        agent: R.A.I.N.::config::AgentConfig {
             max_tool_iterations: 15,
             ..Default::default()
         },

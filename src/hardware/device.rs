@@ -72,7 +72,7 @@ pub enum DeviceKind {
     Esp32,
     /// STM32 Nucleo (VID `0x0483`).
     Nucleo,
-    /// Unknown VID that passed the ZeroClaw firmware ping handshake.
+    /// Unknown VID that passed the R.A.I.N. firmware ping handshake.
     Generic,
     /// Total Phase Aardvark USB adapter (VID `0x2B76`).
     Aardvark,
@@ -480,7 +480,7 @@ impl DeviceRegistry {
     /// 1. Call `discover::scan_serial_devices()` to enumerate port paths + VID/PID.
     /// 2. For each device with a recognised VID: register and attach a transport.
     /// 3. For unknown VID (`0`): attempt a 300 ms ping handshake; register only
-    ///    if the device responds with ZeroClaw firmware.
+    ///    if the device responds with R.A.I.N. firmware.
     /// 4. Return the populated registry.
     ///
     /// Returns an empty registry when no devices are found or the `hardware`
@@ -505,7 +505,7 @@ impl DeviceRegistry {
                 if !probe.ping_handshake().await {
                     tracing::debug!(
                         port = %info.port_path,
-                        "skipping unknown device: no ZeroClaw firmware response"
+                        "skipping unknown device: no R.A.I.N. firmware response"
                     );
                     continue;
                 }
@@ -557,7 +557,7 @@ impl DeviceRegistry {
     ///
     /// Drops the old transport, creates a fresh [`HardwareSerialTransport`] for
     /// the given (or existing) port path, runs the ping handshake to confirm
-    /// ZeroClaw firmware is alive, and re-attaches the transport.
+    /// R.A.I.N. firmware is alive, and re-attaches the transport.
     ///
     /// Pass `new_port` when the OS assigned a different path after reboot;
     /// pass `None` to reuse the device's current path.

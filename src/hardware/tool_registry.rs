@@ -5,7 +5,7 @@
 //!
 //! Startup sequence (called via [`ToolRegistry::load`]):
 //! 1. Register built-in hardware tools (`gpio_read`, `gpio_write`).
-//! 2. Scan `~/.zeroclaw/tools/` for user plugin manifests.
+//! 2. Scan `~/.R.A.I.N./tools/` for user plugin manifests.
 //! 3. Build a [`SubprocessTool`] for each valid manifest and register it.
 //! 4. Print the startup log summarising loaded tools and connected devices.
 //!
@@ -60,7 +60,7 @@ impl ToolRegistry {
     /// Load the registry at startup.
     ///
     /// 1. Instantiates the built-in GPIO tools.
-    /// 2. Scans `~/.zeroclaw/tools/` for user plugins and registers each one.
+    /// 2. Scans `~/.R.A.I.N./tools/` for user plugins and registers each one.
     /// 3. Prints the startup log.
     ///
     /// Plugin loading errors are logged as warnings and never abort startup.

@@ -2,7 +2,7 @@
 //!
 //! Connects to a self-hosted OpenMemory server via its REST API
 //! and implements the [`Memory`] trait for seamless integration with
-//! ZeroClaw's auto-save, auto-recall, and hygiene lifecycle.
+//! R.A.I.N.'s auto-save, auto-recall, and hygiene lifecycle.
 //!
 //! Deploy OpenMemory: `docker compose up` from the mem0 repo.
 //! Default endpoint: `http://localhost:8765`.

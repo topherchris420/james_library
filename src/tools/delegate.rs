@@ -1356,7 +1356,7 @@ mod tests {
 
         let tools: Vec<Box<dyn Tool>> = vec![Box::new(EchoTool)];
         let workspace = std::env::temp_dir().join(format!(
-            "zeroclaw_delegate_enrich_test_{}",
+            "R.A.I.N._delegate_enrich_test_{}",
             uuid::Uuid::new_v4()
         ));
         std::fs::create_dir_all(&workspace).unwrap();
@@ -1730,7 +1730,7 @@ mod tests {
     #[test]
     fn enriched_prompt_loads_skills_from_scoped_directory() {
         let workspace = std::env::temp_dir().join(format!(
-            "zeroclaw_delegate_skills_test_{}",
+            "R.A.I.N._delegate_skills_test_{}",
             uuid::Uuid::new_v4()
         ));
         let scoped_skills_dir = workspace.join("skills/code-review");
@@ -1776,7 +1776,7 @@ mod tests {
     #[test]
     fn enriched_prompt_falls_back_to_default_skills_dir() {
         let workspace = std::env::temp_dir().join(format!(
-            "zeroclaw_delegate_fallback_test_{}",
+            "R.A.I.N._delegate_fallback_test_{}",
             uuid::Uuid::new_v4()
         ));
         let default_skills_dir = workspace.join("skills");
