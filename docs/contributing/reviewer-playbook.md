@@ -109,7 +109,22 @@ For high-risk PRs, verify at least one concrete example in each category:
 - **Observability:** failures are diagnosable without leaking secrets.
 - **Rollback safety:** revert path and blast radius are clear.
 
-### 3.4 Review comment outcome style
+### 3.4 CI failure remediation (governance contracts)
+
+If a PR fails the governance contract checks, ask the contributor to run the same scripts locally before requesting re-review:
+
+```bash
+scripts/ci/docs_parity_check.sh
+BASE_SHA=<target-base-sha> scripts/ci/arch_boundary_check.sh
+```
+
+Quick remediation guide:
+
+- **`docs_parity_check.sh` failure:** ensure README/docs hub/SUMMARY entries stay aligned for `en`, `zh-CN`, `ja`, `ru`, `fr`, `vi` (root README files, docs hubs, and summary links).
+- **`arch_boundary_check.sh` failure:** remove newly introduced cross-subsystem imports and re-route dependencies through traits/public facades (no provider↔channel internals, no tool↔gateway coupling).
+- Re-run both scripts after fixes and include command output in the PR validation notes.
+
+### 3.5 Review comment outcome style
 
 Prefer checklist-style comments with one explicit outcome:
 

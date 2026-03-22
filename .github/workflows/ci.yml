@@ -1,17 +1,18 @@
 name: CI
+
 permissions:
   contents: read
+
 on:
   push:
-      - '**'
+    branches:
+      - "**"
   pull_request:
     branches: [dev, main]
 
 concurrency:
-  group: ci-py-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-  pull_request:
-    branches: [dev, main]
 
 jobs:
   lint-and-test:
@@ -39,3 +40,45 @@ jobs:
           fi
       - run: ruff check . --output-format=full
       - run: pytest tests/ -v -ra --tb=long
+
+  governance-contracts:
+    name: Governance Contract Checks
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect governance-relevant changes
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_SHA" ]; then
+            echo "run_checks=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" HEAD || true)"
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "run_checks=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if printf '%s\n' "$CHANGED_FILES" | rg -q '^(src/|README\.md$|README\.(zh-CN|ja|ru|fr|vi)\.md$|docs/README\.md$|docs/README\.(zh-CN|ja|ru|fr)\.md$|docs/i18n/vi/README\.md$|docs/SUMMARY\.md$)'; then
+            echo "run_checks=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_checks=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Docs parity check
+        if: steps.scope.outputs.run_checks == 'true'
+        run: scripts/ci/docs_parity_check.sh
+
+      - name: Architecture boundary check
+        if: steps.scope.outputs.run_checks == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: scripts/ci/arch_boundary_check.sh
