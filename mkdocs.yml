@@ -44,4 +44,4 @@ nav:
       - First Run Checklist: docs/FIRST_RUN_CHECKLIST.md
       - Production Readiness: docs/PRODUCTION_READINESS.md
       - Backup & Restore: docs/BACKUP_RESTORE.md
-      - Troubleshooting: docs/TROUBLESHOOTING.md
+      - Troubleshooting: docs/troubleshooting.md

@@ -14,7 +14,7 @@ Use this as a pass/fail checklist before calling R.A.I.N. Lab "production-ready.
 | Config safety | Runtime config errors are explicit and non-local endpoints require API key. | `python rain_lab.py --mode chat --config bad.toml --topic "test"` |
 | Backup/restore | Backup command returns success and files can be restored. | `python rain_lab.py --mode backup -- --json` and validate restore path. |
 | CI quality gate | Test and lint pipelines are green for main branch. | Verify GitHub Actions checks: tests/lint/security workflows. |
-| Release hygiene | Changelog and docs match current commands and options. | Review `CHANGELOG.md`, `README.md`, `docs/TROUBLESHOOTING.md`. |
+| Release hygiene | Changelog and docs match current commands and options. | Review `CHANGELOG.md`, `README.md`, `docs/troubleshooting.md`. |
 
 ## Recommended Launch Defaults
 

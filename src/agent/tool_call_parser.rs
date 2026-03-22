@@ -1589,9 +1589,16 @@ pub(crate) fn resolve_display_text(
     response_text: &str,
     parsed_text: &str,
     has_tool_calls: bool,
+    has_native_tool_calls: bool,
 ) -> String {
     if has_tool_calls {
-        return parsed_text.to_string();
+        if !parsed_text.is_empty() {
+            return parsed_text.to_string();
+        }
+        if has_native_tool_calls {
+            return response_text.to_string();
+        }
+        return String::new();
     }
 
     if parsed_text.is_empty() {

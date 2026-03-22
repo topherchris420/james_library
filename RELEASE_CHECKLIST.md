@@ -24,7 +24,7 @@ Use this checklist before tagging a public local-first release.
 
 - [ ] Update `CHANGELOG.md` with release notes and date.
 - [ ] Confirm `README.md` quick-start commands are accurate.
-- [ ] Confirm `docs/TROUBLESHOOTING.md` reflects known issues and fixes.
+- [ ] Confirm `docs/troubleshooting.md` reflects known issues and fixes.
 - [ ] Confirm `docs/BACKUP_RESTORE.md` matches current backup behavior.
 
 ## 4. Release + Verification

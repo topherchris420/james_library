@@ -136,5 +136,6 @@ Last refreshed: **February 18, 2026**.
 ### 7) Project Status & Snapshot
 
 - [maintainers/README.md](maintainers/README.md)
+- [project/stability-tiers.md](project/stability-tiers.md)
 - [project-triage-snapshot-2026-02-18.md](maintainers/project-triage-snapshot-2026-02-18.md)
 - [docs-inventory.md](maintainers/docs-inventory.md)

@@ -2,9 +2,12 @@
 pub mod agent;
 pub mod classifier;
 pub mod dispatcher;
+pub(crate) mod history;
 pub mod loop_;
 pub mod memory_loader;
 pub mod prompt;
+pub(crate) mod tool_call_parser;
+pub(crate) mod tool_filter;
 
 #[cfg(test)]
 mod tests;

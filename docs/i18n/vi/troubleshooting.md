@@ -1,6 +1,5 @@
-# Khắc phục sự cố (VI)
+# Khac phuc su co (VI)
 
-Điểm vào canonical cho tiếng Việt:
+Diem vao canonical cho tieng Viet:
 
 - [`../../troubleshooting.md`](../../troubleshooting.md)
-- [`../../TROUBLESHOOTING.md`](../../TROUBLESHOOTING.md)

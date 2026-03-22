@@ -36,7 +36,7 @@ def _print_next_steps(topic: str) -> None:
 
     print(f"  {rich_ui.bold('1. Start Chat:')} python rain_lab.py --mode chat --topic \"{topic}\"")
     print(f"  {rich_ui.bold('2. Backup:')}     python rain_lab.py --mode backup")
-    print(f"  {rich_ui.bold('3. Docs:')}       Review docs/TROUBLESHOOTING.md")
+    print(f"  {rich_ui.bold('3. Docs:')}       Review docs/troubleshooting.md")
 
     print(rich_ui.color("─" * 65, "bright_black"))
     print(f"  {rich_ui.color('🎮 Want the 3D Avatar experience?', 'bright_cyan')}")

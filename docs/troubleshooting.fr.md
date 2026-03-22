@@ -1,6 +1,6 @@
-# Dépannage (FR)
+# Depannage (FR)
 
-Entrée FR de dépannage:
+Entree FR de depannage:
 
 - Version canonique: [`troubleshooting.md`](troubleshooting.md)
-- Détails existants: [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)
+- Guide detaille: [`troubleshooting.md`](troubleshooting.md)
