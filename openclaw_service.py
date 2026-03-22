@@ -127,7 +127,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="OpenClaw background supervisor for james_library")
     parser.add_argument("--service-name", default="james-library")
     parser.add_argument("--target", default="rain_lab.py", help="Python entrypoint or raw command to supervise")
-    parser.add_argument("--raw-command", action="store_true", help="Run target as a raw command instead of a Python script")
+    parser.add_argument(
+        "--raw-command", action="store_true", help="Run target as a raw command instead of a Python script"
+    )
     parser.add_argument("--interval", type=int, default=60, help="Heartbeat interval in seconds")
     parser.add_argument("target_args", nargs=argparse.REMAINDER, help="Arguments passed to target")
     return parser.parse_args(argv)

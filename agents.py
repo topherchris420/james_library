@@ -177,7 +177,11 @@ RESPOND: 50-100 words, conversational, as a scientist.
             role="Quantum Information Theorist",
             focus="Check information bounds and computational limits with mathematical rigor.",
             color="\033[95m",
-            tool_instruction="ELENA: Audit computational feasibility. Challenge hand-waving with math. Use verify_logic() to formally verify logical consistency of hypotheses before accepting them.",
+            tool_instruction=(
+                "ELENA: Audit computational feasibility. Challenge hand-waving with math. "
+                "Use verify_logic() to formally verify logical consistency of hypotheses "
+                "before accepting them."
+            ),
         ),
         Agent(
             name="Luca",

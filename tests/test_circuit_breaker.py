@@ -16,7 +16,7 @@ from circuit_breaker import (
     run_circuit_breaker,
 )
 from hypothesis_tree import HypothesisTree
-from stagnation_monitor import MonitorVerdict, StagnationMonitor
+from stagnation_monitor import StagnationMonitor
 
 
 # ---------------------------------------------------------------------------
@@ -38,9 +38,7 @@ class TestParseArgument:
         assert len(formula.clauses[0]) == 2
 
     def test_implication(self):
-        formula = parse_argument_to_formula(
-            "if the plate is thin then resonance amplifies"
-        )
+        formula = parse_argument_to_formula("if the plate is thin then resonance amplifies")
         assert len(formula.variables) == 2
         # IF A THEN B => [-A, B]
         assert len(formula.clauses) == 1
@@ -56,9 +54,7 @@ class TestParseArgument:
         assert formula.clauses[1][0] > 0
 
     def test_mixed_and_or(self):
-        formula = parse_argument_to_formula(
-            "plate is circular AND frequency matches OR medium is water"
-        )
+        formula = parse_argument_to_formula("plate is circular AND frequency matches OR medium is water")
         assert len(formula.variables) == 3
         # Distributed: (A AND B) OR C => [A,C], [B,C]
         assert len(formula.clauses) == 2

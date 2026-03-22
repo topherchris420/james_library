@@ -46,13 +46,9 @@ def parse_args():
 
 def fetch_runs(repo, date_str, page=1, per_page=100):
     """Fetch completed workflow runs for a given date."""
-    url = (
-        f"https://api.github.com/repos/{repo}/actions/runs"
-        f"?created={date_str}&per_page={per_page}&page={page}"
-    )
+    url = f"https://api.github.com/repos/{repo}/actions/runs?created={date_str}&per_page={per_page}&page={page}"
     result = subprocess.run(
-        ["curl", "-sS", "-H", "Accept: application/vnd.github+json", url],
-        capture_output=True, text=True
+        ["curl", "-sS", "-H", "Accept: application/vnd.github+json", url], capture_output=True, text=True
     )
     return json.loads(result.stdout)
 
@@ -61,8 +57,7 @@ def fetch_jobs(repo, run_id):
     """Fetch jobs for a specific run."""
     url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
     result = subprocess.run(
-        ["curl", "-sS", "-H", "Accept: application/vnd.github+json", url],
-        capture_output=True, text=True
+        ["curl", "-sS", "-H", "Accept: application/vnd.github+json", url], capture_output=True, text=True
     )
     return json.loads(result.stdout)
 
@@ -150,11 +145,7 @@ def main():
             stats["estimated_total_seconds"] = stats["total_job_seconds"]
 
     # Print summary sorted by estimated cost (descending)
-    sorted_workflows = sorted(
-        workflow_stats.items(),
-        key=lambda x: x[1]["estimated_total_seconds"],
-        reverse=True
-    )
+    sorted_workflows = sorted(workflow_stats.items(), key=lambda x: x[1]["estimated_total_seconds"], reverse=True)
 
     if brief:
         # Brief mode: compact billable hours table
@@ -164,10 +155,10 @@ def main():
         for name, stats in sorted_workflows:
             est_mins = stats["estimated_total_seconds"] / 60
             grand_total_minutes += est_mins
-            print(f"{name:<40} {stats['count']:>5} {est_mins:>9.1f} {est_mins/60:>10.2f}")
+            print(f"{name:<40} {stats['count']:>5} {est_mins:>9.1f} {est_mins / 60:>10.2f}")
         print("-" * 68)
-        print(f"{'TOTAL':<40} {len(all_runs):>5} {grand_total_minutes:>9.0f} {grand_total_minutes/60:>10.1f}")
-        print(f"\nProjected monthly: ~{grand_total_minutes/60*30:.0f} hours")
+        print(f"{'TOTAL':<40} {len(all_runs):>5} {grand_total_minutes:>9.0f} {grand_total_minutes / 60:>10.1f}")
+        print(f"\nProjected monthly: ~{grand_total_minutes / 60 * 30:.0f} hours")
     else:
         # Full mode: detailed breakdown with per-run list
         print("=" * 100)
@@ -189,7 +180,13 @@ def main():
 
         print("-" * 100)
         print(f"{'GRAND TOTAL':>40} {len(all_runs):>5} {'':>12} {'':>12} {grand_total_minutes:>14.1f}")
-        print(f"\nEstimated total billable minutes on {date_str}: {grand_total_minutes:.0f} min ({grand_total_minutes/60:.1f} hours)")
+        print(
+            (
+                f"\nEstimated total billable minutes on {date_str}: "
+                f"{grand_total_minutes:.0f} min "
+                f"({grand_total_minutes / 60:.1f} hours)"
+            )
+        )
         print()
 
         # Also show raw run list

@@ -1,6 +1,10 @@
 """Minimal OpenMemory-compatible REST server wrapping mem0 Python SDK."""
+
 import asyncio
-import json, os, uuid, httpx
+import json
+import os
+import uuid
+import httpx
 from datetime import datetime, timezone
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
@@ -42,7 +46,7 @@ Return a list of procedures in JSON format: {"facts": ["procedure1", "procedure2
 
 # ── Configurable via environment variables ─────────────────────────
 # LLM (for fact extraction when infer=true)
-MEM0_LLM_PROVIDER = os.environ.get("MEM0_LLM_PROVIDER", "openai")      # "openai" (compatible), "anthropic", etc.
+MEM0_LLM_PROVIDER = os.environ.get("MEM0_LLM_PROVIDER", "openai")  # "openai" (compatible), "anthropic", etc.
 MEM0_LLM_MODEL = os.environ.get("MEM0_LLM_MODEL", "glm-5-turbo")
 MEM0_LLM_API_KEY = os.environ.get("MEM0_LLM_API_KEY") or os.environ.get("ZAI_API_KEY", "")
 MEM0_LLM_BASE_URL = os.environ.get("MEM0_LLM_BASE_URL", "https://api.z.ai/api/coding/paas/v4")
@@ -51,7 +55,7 @@ MEM0_LLM_BASE_URL = os.environ.get("MEM0_LLM_BASE_URL", "https://api.z.ai/api/co
 MEM0_EMBEDDER_PROVIDER = os.environ.get("MEM0_EMBEDDER_PROVIDER", "huggingface")  # "huggingface", "openai", etc.
 MEM0_EMBEDDER_MODEL = os.environ.get("MEM0_EMBEDDER_MODEL", "BAAI/bge-m3")
 MEM0_EMBEDDER_DIMS = int(os.environ.get("MEM0_EMBEDDER_DIMS", "1024"))
-MEM0_EMBEDDER_DEVICE = os.environ.get("MEM0_EMBEDDER_DEVICE", "cuda")   # "cuda", "cpu", "auto"
+MEM0_EMBEDDER_DEVICE = os.environ.get("MEM0_EMBEDDER_DEVICE", "cuda")  # "cuda", "cpu", "auto"
 
 # Vector store
 MEM0_VECTOR_PROVIDER = os.environ.get("MEM0_VECTOR_PROVIDER", "qdrant")  # "qdrant", "chroma", etc.
@@ -145,7 +149,8 @@ async def add_procedural_memory(req: ProceduralMemoryRequest):
         meta.update(req.metadata)
 
     # Use mem0's native message list support + procedural prompt
-    result = await asyncio.to_thread(m.add,
+    result = await asyncio.to_thread(
+        m.add,
         req.messages,
         user_id=req.user_id,
         metadata=meta,
@@ -160,12 +165,14 @@ def _parse_mem0_results(raw_results) -> list:
     items = []
     for r in raw:
         item = r if isinstance(r, dict) else {"memory": str(r)}
-        items.append({
-            "id": item.get("id", str(uuid.uuid4())),
-            "memory": item.get("memory", item.get("text", "")),
-            "created_at": item.get("created_at", datetime.now(timezone.utc).isoformat()),
-            "metadata_": item.get("metadata", {}),
-        })
+        items.append(
+            {
+                "id": item.get("id", str(uuid.uuid4())),
+                "memory": item.get("memory", item.get("text", "")),
+                "created_at": item.get("created_at", datetime.now(timezone.utc).isoformat()),
+                "metadata_": item.get("metadata", {}),
+            }
+        )
     return items
 
 
@@ -238,7 +245,8 @@ async def list_or_search_memories(
     if search_query:
         # Fetch more results than needed so reranker has candidates to work with
         fetch_size = min(size * 3, 50)
-        results = await asyncio.to_thread(m.search,
+        results = await asyncio.to_thread(
+            m.search,
             search_query,
             user_id=user_id,
             limit=fetch_size,
@@ -252,7 +260,7 @@ async def list_or_search_memories(
             items = items[:size]
         return {"items": items, "total": len(items)}
     else:
-        results = await asyncio.to_thread(m.get_all,user_id=user_id, filters=sdk_filters)
+        results = await asyncio.to_thread(m.get_all, user_id=user_id, filters=sdk_filters)
         items = _parse_mem0_results(results)
         items = _apply_post_filters(items, created_after, created_before)
         return {"items": items, "total": len(items)}
@@ -274,7 +282,13 @@ async def get_memory_history(memory_id: str):
         history = await asyncio.to_thread(m.history, memory_id)
         # Normalize to list of dicts
         entries = []
-        raw = history if isinstance(history, list) else history.get("results", history) if isinstance(history, dict) else [history]
+        raw = (
+            history
+            if isinstance(history, list)
+            else history.get("results", history)
+            if isinstance(history, dict)
+            else [history]
+        )
         for h in raw:
             entry = h if isinstance(h, dict) else {"event": str(h)}
             entries.append(entry)
@@ -285,4 +299,5 @@ async def get_memory_history(memory_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8765)

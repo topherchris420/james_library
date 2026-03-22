@@ -5,7 +5,8 @@ import socket
 import threading
 from arduino.app_utils import App, Bridge
 
-R.A.I.N._PORT = 9999
+RAIN_PORT = 9999
+
 
 def handle_client(conn):
     try:
@@ -38,6 +39,7 @@ def handle_client(conn):
     finally:
         conn.close()
 
+
 def accept_loop(server):
     while True:
         try:
@@ -48,19 +50,22 @@ def accept_loop(server):
         except Exception:
             break
 
+
 def loop():
     App.sleep(1)
+
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(("127.0.0.1", R.A.I.N._PORT))
+    server.bind(("127.0.0.1", RAIN_PORT))
     server.listen(5)
     server.settimeout(1.0)
     t = threading.Thread(target=accept_loop, args=(server,))
     t.daemon = True
     t.start()
     App.run(user_loop=loop)
+
 
 if __name__ == "__main__":
     main()
