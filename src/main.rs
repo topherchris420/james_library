@@ -146,12 +146,15 @@ enum EstopLevelArg {
     ToolFreeze,
 }
 
-/// `R.A.I.N.` - Zero overhead. Zero compromise. 100% Rust.
+/// `R.A.I.N.` - Local-first AI runtime and automation toolkit.
 #[derive(Parser, Debug)]
 #[command(name = "R.A.I.N.")]
 #[command(author = "theonlyhennygod")]
 #[command(version)]
-#[command(about = "The fastest, smallest AI assistant.", long_about = None)]
+#[command(
+    about = "Local-first AI runtime with supervised automation, security controls, and multi-provider orchestration.",
+    long_about = None
+)]
 struct Cli {
     #[arg(long, global = true)]
     config_dir: Option<String>,

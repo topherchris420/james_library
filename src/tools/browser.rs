@@ -812,17 +812,17 @@ impl BrowserTool {
 
         if let Ok(parsed) = serde_json::from_str::<ComputerUseResponse>(&body) {
             if status.is_success() && parsed.success.unwrap_or(true) {
-                let output = parsed
-                    .data
-                    .map(|data| serde_json::to_string_pretty(&data).unwrap_or_default())
-                    .unwrap_or_else(|| {
+                let output = parsed.data.map_or_else(
+                    || {
                         serde_json::to_string_pretty(&json!({
                             "backend": "computer_use",
                             "action": action,
                             "ok": true,
                         }))
                         .unwrap_or_default()
-                    });
+                    },
+                    |data| serde_json::to_string_pretty(&data).unwrap_or_default(),
+                );
 
                 return Ok(ToolResult {
                     success: true,

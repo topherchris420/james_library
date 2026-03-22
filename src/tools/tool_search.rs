@@ -70,8 +70,9 @@ impl Tool for ToolSearchTool {
         let max_results = args
             .get("max_results")
             .and_then(|v| v.as_u64())
-            .map(|v| usize::try_from(v).unwrap_or(DEFAULT_MAX_RESULTS))
-            .unwrap_or(DEFAULT_MAX_RESULTS);
+            .map_or(DEFAULT_MAX_RESULTS, |v| {
+                usize::try_from(v).unwrap_or(DEFAULT_MAX_RESULTS)
+            });
 
         if query.is_empty() {
             return Ok(ToolResult {

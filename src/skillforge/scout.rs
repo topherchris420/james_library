@@ -138,7 +138,7 @@ impl GitHubScout {
                     .and_then(|v| v.as_str())
                     .unwrap_or("unknown")
                     .to_string();
-                let has_license = item.get("license").map(|v| !v.is_null()).unwrap_or(false);
+                let has_license = item.get("license").is_some_and(|v| !v.is_null());
 
                 Some(ScoutResult {
                     name,

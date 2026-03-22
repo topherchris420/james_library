@@ -214,7 +214,7 @@ impl NevisAuthProvider {
             .filter(|s| !s.trim().is_empty())
             .context("Token has missing or empty `sub` claim")?;
 
-        let mut roles = body.realm_access.map(|ra| ra.roles).unwrap_or_default();
+        let mut roles = body.realm_access.map_or_else(Vec::new, |ra| ra.roles);
         roles.sort();
         roles.dedup();
 
@@ -298,7 +298,7 @@ impl NevisAuthProvider {
             .unwrap_or_default()
             .as_secs();
 
-        let mut roles = body.realm_access.map(|ra| ra.roles).unwrap_or_default();
+        let mut roles = body.realm_access.map_or_else(Vec::new, |ra| ra.roles);
         roles.sort();
         roles.dedup();
 

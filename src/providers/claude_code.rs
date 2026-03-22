@@ -242,7 +242,7 @@ impl Provider for ClaudeCodeProvider {
 
         // If there's only one user message, use the simple path.
         if turns.len() <= 1 {
-            let last_user = turns.first().map(|m| m.content.as_str()).unwrap_or("");
+            let last_user = turns.first().map_or("", |m| m.content.as_str());
             let full_message = match system {
                 Some(s) if !s.is_empty() => format!("{s}\n\n{last_user}"),
                 _ => last_user.to_string(),

@@ -679,7 +679,7 @@ fn ensure_rain_user() -> Result<()> {
 
     if is_alpine {
         let group_output = Command::new("getent").args(["group", "R.A.I.N."]).output();
-        let group_exists = group_output.map(|o| o.status.success()).unwrap_or(false);
+        let group_exists = group_output.is_ok_and(|o| o.status.success());
 
         if !group_exists {
             let output = Command::new("addgroup")

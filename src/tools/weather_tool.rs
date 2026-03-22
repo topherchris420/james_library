@@ -226,9 +226,9 @@ impl WeatherTool {
         };
 
         let astronomy = day.astronomy.first();
-        let sunrise = astronomy.map(|a| a.sunrise.as_str()).unwrap_or("N/A");
-        let sunset = astronomy.map(|a| a.sunset.as_str()).unwrap_or("N/A");
-        let moon = astronomy.map(|a| a.moon_phase.as_str()).unwrap_or("N/A");
+        let sunrise = astronomy.map_or("N/A", |a| a.sunrise.as_str());
+        let sunset = astronomy.map_or("N/A", |a| a.sunset.as_str());
+        let moon = astronomy.map_or("N/A", |a| a.moon_phase.as_str());
 
         let snow_note = if day.total_snow_cm != "0.0" && day.total_snow_cm != "0" {
             let snow_str = if metric {
@@ -272,24 +272,24 @@ impl WeatherTool {
         };
 
         let area = data.nearest_area.first();
-        let location_str = area
-            .map(|a| {
-                let city = a.area_name.first().map(|v| v.value.as_str()).unwrap_or("");
-                let region = a.region.first().map(|v| v.value.as_str()).unwrap_or("");
-                let country = a.country.first().map(|v| v.value.as_str()).unwrap_or("");
+        let location_str = area.map_or_else(
+            || "Unknown location".to_string(),
+            |a| {
+                let city = a.area_name.first().map_or("", |v| v.value.as_str());
+                let region = a.region.first().map_or("", |v| v.value.as_str());
+                let country = a.country.first().map_or("", |v| v.value.as_str());
                 match (city.is_empty(), region.is_empty()) {
                     (false, false) => format!("{city}, {region}, {country}"),
                     (false, true) => format!("{city}, {country}"),
                     _ => country.to_string(),
                 }
-            })
-            .unwrap_or_else(|| "Unknown location".to_string());
+            },
+        );
 
         let desc = current
             .weather_desc
             .first()
-            .map(|v| v.value.trim().to_string())
-            .unwrap_or_else(|| "Unknown".to_string());
+            .map_or_else(|| "Unknown".to_string(), |v| v.value.trim().to_string());
 
         let (temp, feels_like, wind_speed, precip, visibility, pressure) = if metric {
             (

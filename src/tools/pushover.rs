@@ -55,7 +55,7 @@ impl PushoverTool {
             if line.starts_with('#') || line.is_empty() {
                 continue;
             }
-            let line = line.strip_prefix("export ").map(str::trim).unwrap_or(line);
+            let line = line.strip_prefix("export ").map_or(line, str::trim);
             if let Some((key, value)) = line.split_once('=') {
                 let key = key.trim();
                 let value = Self::parse_env_value(value);
