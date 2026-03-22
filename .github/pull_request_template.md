@@ -50,6 +50,16 @@ cargo test
 - Evidence provided (test/log/trace/screenshot/perf):
 - If any command is intentionally skipped, explain why:
 
+## Quality Delta (required for medium/high risk changes)
+
+- Quality delta required? (`Yes/No`):
+- Expected panic count impact (production path):
+- Expected unwrap count impact (production path):
+- Expected flaky test rate impact:
+- Expected mean PR size impact (if stacked/split work):
+- Expected critical-path test coverage impact:
+- If any metric regresses, justify why and note containment/rollback:
+
 ## Security Impact (required)
 
 - New permissions/capabilities? (`Yes/No`)

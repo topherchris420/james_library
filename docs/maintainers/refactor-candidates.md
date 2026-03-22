@@ -1,5 +1,25 @@
 # Refactor Candidates
 
+## Monthly quality metrics review (2026-03)
+
+This section is updated monthly using `docs/project/quality-metrics.md` and CI quality report artifacts.
+
+### Current priorities
+
+1. Reduce production `panic!` usage in provider/pairing/runtime paths.
+2. Drive down non-test `.unwrap()` count in `src/**` with explicit error propagation.
+3. Reduce flaky tests to <=1.0% by quarantining or fixing nondeterministic cases.
+4. Keep mean PR size manageable (target <=400 LOC) by splitting high-risk work into reviewable slices.
+5. Raise critical-path test coverage to >=90% near term (>=95% target).
+
+### Monthly review checklist
+
+- Compare the latest CI quality report against baseline/target thresholds.
+- Update priority ordering based on the largest regressions or missed targets.
+- Open/refresh tracked follow-up issues for any metric outside threshold policy.
+
+---
+
 Largest source files in `src/`, ranked by severity. Each does multiple jobs in a single file, hurting readability, testability, and merge conflict frequency.
 
 | File | Lines | Problem |

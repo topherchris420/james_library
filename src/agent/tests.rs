@@ -59,7 +59,6 @@ impl ScriptedProvider {
             requests: Mutex::new(Vec::new()),
         }
     }
-
 }
 
 #[async_trait]
