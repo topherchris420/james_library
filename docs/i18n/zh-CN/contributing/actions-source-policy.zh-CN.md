@@ -33,8 +33,8 @@
 
 | 工作流 | 文件 | 触发条件 |
 |----------|------|---------|
-| 质量门控 | `.github/workflows/checks-on-pr.yml` | 指向 `master` 的拉取请求 |
-| Beta 发布 | `.github/workflows/release-beta-on-push.yml` | 推送到 `master` |
+| 质量门控 | `.github/workflows/checks-on-pr.yml` | 指向 `main` 的拉取请求 |
+| Beta 发布 | `.github/workflows/release-beta-on-push.yml` | 推送到 `main` |
 | 稳定发布 | `.github/workflows/release-stable-manual.yml` | 手动 `workflow_dispatch` |
 
 ## 变更控制

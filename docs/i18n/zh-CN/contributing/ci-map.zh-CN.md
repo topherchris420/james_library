@@ -2,7 +2,7 @@
 
 本文档解释每个 GitHub 工作流的作用、运行时机以及是否应该阻塞合并。
 
-关于 PR、合并、推送和发布的逐事件交付行为，请参见 [`.github/workflows/master-branch-flow.md`](../../../../.github/workflows/master-branch-flow.md)。
+关于 PR、合并、推送和发布的逐事件交付行为，请参见 [`.github/workflows/main-branch-flow.md`](../../../../.github/workflows/main-branch-flow.md)。
 
 ## 合并阻塞 vs 可选
 
@@ -25,7 +25,7 @@
 ### 非阻塞但重要
 
 - `.github/workflows/pub-docker-img.yml`（`Docker`）
-    - 目的：`master` PR 的 Docker 冒烟检查，仅在标签推送（`v*`）时发布镜像
+    - 目的：`main` PR 的 Docker 冒烟检查，仅在标签推送（`v*`）时发布镜像
 - `.github/workflows/sec-audit.yml`（`Security Audit`）
     - 目的：依赖项安全公告检查（`rustsec/audit-check`，固定 SHA）和政策/许可证检查（`cargo deny`）
 - `.github/workflows/sec-codeql.yml`（`CodeQL Analysis`）
@@ -72,14 +72,14 @@
 
 ## 触发地图
 
-- `CI`：推送到 `master`、针对 `master` 的 PR
-- `Docker`：标签推送（`v*`）用于发布，匹配的 `master` PR 用于冒烟构建，手动触发仅用于冒烟测试
+- `CI`：推送到 `main`、针对 `main` 的 PR
+- `Docker`：标签推送（`v*`）用于发布，匹配的 `main` PR 用于冒烟构建，手动触发仅用于冒烟测试
 - `Release`：标签推送（`v*`）、每周计划（仅验证）、手动触发（验证或发布）
 - `Pub Homebrew Core`：仅手动触发
-- `Security Audit`：推送到 `master`、针对 `master` 的 PR、每周计划
+- `Security Audit`：推送到 `main`、针对 `main` 的 PR、每周计划
 - `Sec Vorpal Reviewdog`：仅手动触发
 - `Workflow Sanity`：当 `.github/workflows/**`、`.github/*.yml` 或 `.github/*.yaml` 变更时的 PR/推送
-- `Dependabot`：所有更新 PR 指向 `master`
+- `Dependabot`：所有更新 PR 指向 `main`
 - `PR Intake Checks`：`pull_request_target` 事件（opened/reopened/synchronize/edited/ready_for_review）
 - `Label Policy Sanity`：当 `.github/label-policy.json`、`.github/workflows/pr-labeler.yml` 或 `.github/workflows/pr-auto-response.yml` 变更时的 PR/推送
 - `PR Labeler`：`pull_request_target` 生命周期事件

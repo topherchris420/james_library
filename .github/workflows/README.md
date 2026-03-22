@@ -14,4 +14,4 @@ Repository convention:
 
 Workflow behavior documentation in this directory:
 
-- `.github/workflows/master-branch-flow.md`
+- `.github/workflows/main-branch-flow.md`

@@ -7,7 +7,7 @@ Last verified: **February 21, 2026**.
 ## Release Goals
 
 - Keep releases predictable and repeatable.
-- Publish only from code already in `master`.
+- Publish only from code already in `main`.
 - Verify multi-target artifacts before publish.
 - Keep release cadence regular even with high PR volume.
 
@@ -36,24 +36,24 @@ Publish-mode guardrails:
 
 - Tag must match semver-like format `vX.Y.Z[-suffix]`.
 - Tag must already exist on origin.
-- Tag commit must be reachable from `origin/master`.
+- Tag commit must be reachable from `origin/main`.
 - Matching GHCR image tag (`ghcr.io/<owner>/<repo>:<tag>`) must be available before GitHub Release publish completes.
 - Artifacts are verified before publish.
 
 ## Maintainer Procedure
 
-### 1) Preflight on `master`
+### 1) Preflight on `main`
 
-1. Ensure required checks are green on latest `master`.
+1. Ensure required checks are green on latest `main`.
 2. Confirm no high-priority incidents or known regressions are open.
-3. Confirm installer and Docker workflows are healthy on recent `master` commits.
+3. Confirm installer and Docker workflows are healthy on recent `main` commits.
 
 ### 2) Run verification build (no publish)
 
 Run `Pub Release` manually:
 
 - `publish_release`: `false`
-- `release_ref`: `master`
+- `release_ref`: `main`
 
 Expected outcome:
 
@@ -63,7 +63,7 @@ Expected outcome:
 
 ### 3) Cut release tag
 
-From a clean local checkout synced to `origin/master`:
+From a clean local checkout synced to `origin/main`:
 
 ```bash
 scripts/release/cut_release_tag.sh vX.Y.Z --push
@@ -72,7 +72,7 @@ scripts/release/cut_release_tag.sh vX.Y.Z --push
 This script enforces:
 
 - clean working tree
-- `HEAD == origin/master`
+- `HEAD == origin/main`
 - non-duplicate tag
 - semver-like tag format
 
@@ -156,7 +156,7 @@ Workflow guardrails:
 
 If tag-push release fails after artifacts are validated:
 
-1. Fix workflow or packaging issue on `master`.
+1. Fix workflow or packaging issue on `main`.
 2. Re-run manual `Pub Release` in publish mode with:
    - `publish_release=true`
    - `release_tag=<existing tag>`

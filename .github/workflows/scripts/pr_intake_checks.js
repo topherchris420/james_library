@@ -85,13 +85,11 @@ module.exports = async ({ github, context, core }) => {
   if (dangerousProblems.length > 0) {
     blockingFindings.push(`Dangerous patch markers found (${dangerousProblems.length})`);
   }
-  const promotionAuthorAllowlist = new Set(["willsarg", "theonlyhennygod"]);
-  const shouldRetargetToDev =
-    prBaseRef === "main" && !promotionAuthorAllowlist.has(prAuthor);
+  const targetIsNonCanonical = prBaseRef !== "main";
 
-  if (shouldRetargetToDev) {
+  if (targetIsNonCanonical) {
     advisoryFindings.push(
-      "This PR targets `main`, but normal contributions must target `dev`. Retarget this PR to `dev` unless this is an authorized promotion PR.",
+      `This PR targets \`${prBaseRef || "(unknown)"}\`, but the canonical branch policy requires all PRs to target \`main\`. Retarget this PR to \`main\`.`,
     );
   }
 
@@ -165,8 +163,8 @@ module.exports = async ({ github, context, core }) => {
     "   - `./scripts/ci/rust_quality_gate.sh`",
     "   - `./scripts/ci/rust_strict_delta_gate.sh`",
     "   - `./scripts/ci/docs_quality_gate.sh`",
-    ...(shouldRetargetToDev
-      ? ["4. Retarget this PR base branch from `main` to `dev`."]
+    ...(targetIsNonCanonical
+      ? [`4. Retarget this PR base branch from \`${prBaseRef || "(unknown)"}\` to \`main\`.`]
       : []),
     "",
     `Run logs: ${runUrl}`,

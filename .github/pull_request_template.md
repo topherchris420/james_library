@@ -2,7 +2,7 @@
 
 Describe this PR in 2-5 bullets:
 
-- Base branch target (`dev` for normal contributions; `main` only for `dev` promotion):
+- Base branch target (`main` for all contributions):
 - Problem:
 - Why it matters:
 - What changed:

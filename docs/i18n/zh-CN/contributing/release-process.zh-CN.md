@@ -7,7 +7,7 @@
 ## 发布目标
 
 - 保持发布可预测和可重复。
-- 仅从 `master` 分支已有的代码发布。
+- 仅从 `main` 分支已有的代码发布。
 - 发布前验证多目标产物。
 - 即使在高 PR 量下也保持定期发布节奏。
 
@@ -34,24 +34,24 @@
 
 - 标签必须符合类 semver（语义化版本）格式 `vX.Y.Z[-后缀]`。
 - 标签必须已存在于 origin 上。
-- 标签提交必须可以从 `origin/master` 访问。
+- 标签提交必须可以从 `origin/main` 访问。
 - GitHub Release 发布完成前，匹配的 GHCR 镜像标签（`ghcr.io/<所有者>/<仓库>:<标签>`）必须可用。
 - 发布前验证产物。
 
 ## 维护者流程
 
-### 1) `master` 分支预检查
+### 1) `main` 分支预检查
 
-1. 确保最新 `master` 分支上的必需检查为绿色。
+1. 确保最新 `main` 分支上的必需检查为绿色。
 2. 确认没有高优先级事件或已知回归未解决。
-3. 确认最近 `master` 提交上的安装程序和 Docker 工作流健康。
+3. 确认最近 `main` 提交上的安装程序和 Docker 工作流健康。
 
 ### 2) 运行验证构建（不发布）
 
 手动运行 `Pub Release`：
 
 - `publish_release`: `false`
-- `release_ref`: `master`
+- `release_ref`: `main`
 
 预期结果：
 
@@ -61,7 +61,7 @@
 
 ### 3) 创建发布标签
 
-在同步到 `origin/master` 的干净本地检出上：
+在同步到 `origin/main` 的干净本地检出上：
 
 ```bash
 scripts/release/cut_release_tag.sh vX.Y.Z --push
@@ -70,7 +70,7 @@ scripts/release/cut_release_tag.sh vX.Y.Z --push
 此脚本强制要求：
 
 - 工作树干净
-- `HEAD == origin/master`
+- `HEAD == origin/main`
 - 标签不重复
 - 符合类 semver 标签格式
 
@@ -119,7 +119,7 @@ scripts/release/cut_release_tag.sh vX.Y.Z --push
 
 如果标签推送发布在产物验证后失败：
 
-1. 在 `master` 上修复工作流或打包问题。
+1. 在 `main` 上修复工作流或打包问题。
 2. 以发布模式重新运行手动 `Pub Release`，参数：
    - `publish_release=true`
    - `release_tag=<现有标签>`

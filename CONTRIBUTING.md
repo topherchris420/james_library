@@ -1,7 +1,7 @@
 # Contributing to R.A.I.N. Lab
 
 Thank you for your interest in contributing to the **Recursive Architecture of Intelligent Nexus** project. This document describes the rules every
-contributor—human or bot—must follow before code lands on `dev`.
+contributor—human or bot—must follow before code lands on `main`.
 
 ---
 
@@ -18,15 +18,15 @@ contributor—human or bot—must follow before code lands on `dev`.
 
 ### Human PRs
 
-- One approval required before merging to `dev`.
+- One approval required before merging to `main`.
 - Squash-merge preferred.
 - Keep PR descriptions concise: state *what* changed, *why*, and link any
   relevant issue.
 
 ### All PRs
 
-- Must target `dev` for normal feature/fix/docs work.
-- Use `main` only for release-promotion PRs from `dev`.
+- Must target `main` for all feature/fix/docs/release work.
+- Do not use a `dev` -> `main` promotion branch; merge through PRs to `main` only.
 - Must not introduce regressions—existing tests must stay green.
 - Large changes should be broken into reviewable chunks (< 400 lines diff
   where practical).
@@ -62,20 +62,15 @@ Pre-built templates live in `.github/ISSUE_TEMPLATE/`.
 
 ## Branch Protection (Maintainers)
 
-Configure branch protections for both `dev` and `main` in
+Configure branch protection for `main` in
 **Settings → Branches → Add rule**:
 
-**`dev` (primary integration branch):**
+**`main` (single default branch):**
 - [x] Require pull request reviews: **1**
-- [x] Require status checks to pass: **CI** workflow
+- [x] Require status checks to pass: **CI Required Gate**
 - [x] Include administrators
 - [x] Do not allow bypassing the above settings
-
-**`main` (release-promotion only):**
-- [x] Require pull request reviews: **1**
-- [x] Require status checks to pass: **CI** workflow
-- [x] Include administrators
-- [x] Do not allow bypassing the above settings
+- [x] Restrict direct pushes; all changes land via pull request
 
 ---
 

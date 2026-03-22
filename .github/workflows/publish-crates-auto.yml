@@ -2,7 +2,7 @@ name: Auto-sync crates.io
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "Cargo.toml"
 
