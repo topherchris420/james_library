@@ -1078,7 +1078,10 @@ impl GeminiProvider {
                             (token, proj)
                         }
                         GeminiAuth::ManagedOAuth => {
-                            let auth_service = self.auth_service.as_ref().unwrap();
+                            let auth_service = self
+                                .auth_service
+                                .as_ref()
+                                .ok_or_else(|| anyhow::anyhow!("ManagedOAuth requires auth_service"))?;
                             let token = auth_service
                                 .get_valid_gemini_access_token(
                                     self.auth_profile_override.as_deref(),
