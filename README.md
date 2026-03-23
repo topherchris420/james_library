@@ -26,9 +26,9 @@ Your data stays on your machine by default. The system runs locally, keeps conve
 
 ---
 
-## Project Structure
+## Who We Are
 
-**R.A.I.N. Lab** is the product and the main name users should remember.
+The **R.A.I.N. Lab** is what we service to you.
 
 Under the hood, R.A.I.N. Lab is built from two core layers:
 
@@ -36,9 +36,9 @@ Under the hood, R.A.I.N. Lab is built from two core layers:
 - **ZeroClaw** — the runtime engine that handles execution, orchestration, networking, and security.
 
 
-If you are new here, you can think of it like this:
+you can think of it like this:
 
-- **R.A.I.N. Lab** = the service
+- **R.A.I.N. Lab** = the R&D arm of Vers3Dynamics
 - **James Library** = the reasoning layer
 - **ZeroClaw** = the runtime engine
 
