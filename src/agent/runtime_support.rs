@@ -130,19 +130,6 @@ pub(crate) fn check_tool_loop_budget() -> Option<BudgetCheck> {
         })
 }
 
-/// Get the global model switch request state.
-pub(crate) fn get_model_switch_state() -> ModelSwitchCallback {
-    Arc::clone(&MODEL_SWITCH_REQUEST)
-}
-
-/// Clear any pending model switch request.
-pub(crate) fn clear_model_switch_request() {
-    if let Ok(guard) = MODEL_SWITCH_REQUEST.lock() {
-        let mut guard = guard;
-        *guard = None;
-    }
-}
-
 /// Scrub credentials from tool output to prevent accidental exfiltration.
 /// Replaces known credential patterns with a redacted placeholder while preserving
 /// a small prefix for context.
@@ -229,8 +216,9 @@ impl std::fmt::Display for ModelSwitchRequested {
 impl std::error::Error for ModelSwitchRequested {}
 
 pub(crate) fn is_model_switch_requested(err: &anyhow::Error) -> Option<(String, String)> {
-    err.chain()
-        .filter_map(|source| source.downcast_ref::<ModelSwitchRequested>())
-        .map(|request| (request.provider.clone(), request.model.clone()))
-        .next()
+    err.chain().find_map(|source| {
+        source
+            .downcast_ref::<ModelSwitchRequested>()
+            .map(|request| (request.provider.clone(), request.model.clone()))
+    })
 }

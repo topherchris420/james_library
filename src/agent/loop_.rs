@@ -3,13 +3,13 @@ use crate::agent::history::{
     load_interactive_session_history, memory_session_id_from_state_file,
     save_interactive_session_history, trim_history, DEFAULT_MAX_HISTORY_MESSAGES,
 };
+use crate::agent::runtime_support::record_tool_loop_cost_usage;
 pub(crate) use crate::agent::runtime_support::{
-    check_tool_loop_budget, clear_model_switch_request, get_model_switch_state,
-    is_model_switch_requested, scrub_credentials, ModelSwitchCallback, ModelSwitchRequested,
+    check_tool_loop_budget, is_model_switch_requested, scrub_credentials,
+    truncate_tool_args_for_progress, ModelSwitchCallback, ModelSwitchRequested,
     ToolLoopCostTrackingContext, DRAFT_CLEAR_SENTINEL, TOOL_CHOICE_OVERRIDE,
     TOOL_LOOP_COST_TRACKING_CONTEXT,
 };
-use crate::agent::runtime_support::{record_tool_loop_cost_usage, truncate_tool_args_for_progress};
 use crate::agent::tool_call_parser::{
     build_native_assistant_history, build_native_assistant_history_from_parsed_calls,
     detect_tool_call_parse_issue, parse_structured_tool_calls, parse_tool_calls,
@@ -51,7 +51,7 @@ use std::collections::HashSet;
 use std::fmt::Write;
 use std::io::Write as _;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
@@ -66,10 +66,6 @@ const DEFAULT_MAX_TOOL_ITERATIONS: usize = 10;
 /// Minimum user-message length (in chars) for auto-save to memory.
 /// Matches the channel-side constant in `channels/mod.rs`.
 const AUTOSAVE_MIN_MESSAGE_CHARS: usize = 20;
-
-/// Callback type for checking if model has been switched during tool execution.
-/// Returns Some((provider, model)) if a switch was requested, None otherwise.
-pub type ModelSwitchCallback = Arc<Mutex<Option<(String, String)>>>;
 
 /// Per-runtime model switch request state shared by the tool registry and agent loop.
 #[derive(Clone, Default)]
@@ -96,78 +92,6 @@ impl ModelSwitchState {
     }
 }
 
-static SENSITIVE_KV_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)(token|api[_-]?key|password|secret|user[_-]?key|bearer|credential)["']?\s*[:=]\s*(?:"([^"]{8,})"|'([^']{8,})'|([a-zA-Z0-9_\-\.]{8,}))"#).unwrap()
-});
-
-/// Scrub credentials from tool output to prevent accidental exfiltration.
-/// Replaces known credential patterns with a redacted placeholder while preserving
-/// a small prefix for context.
-pub(crate) fn scrub_credentials(input: &str) -> String {
-    SENSITIVE_KV_REGEX
-        .replace_all(input, |caps: &regex::Captures| {
-            let full_match = &caps[0];
-            let key = &caps[1];
-            let val = caps
-                .get(2)
-                .or(caps.get(3))
-                .or(caps.get(4))
-                .map(|m| m.as_str())
-                .unwrap_or("");
-
-            // Preserve first 4 chars for context, then redact.
-            // Use char_indices to find the byte offset of the 4th character
-            // so we never slice in the middle of a multi-byte UTF-8 sequence.
-            let prefix = if val.len() > 4 {
-                val.char_indices()
-                    .nth(4)
-                    .map(|(byte_idx, _)| &val[..byte_idx])
-                    .unwrap_or(val)
-            } else {
-                ""
-            };
-
-            if full_match.contains(':') {
-                if full_match.contains('"') {
-                    format!("\"{}\": \"{}*[REDACTED]\"", key, prefix)
-                } else {
-                    format!("{}: {}*[REDACTED]", key, prefix)
-                }
-            } else if full_match.contains('=') {
-                if full_match.contains('"') {
-                    format!("{}=\"{}*[REDACTED]\"", key, prefix)
-                } else {
-                    format!("{}={}*[REDACTED]", key, prefix)
-                }
-            } else {
-                format!("{}: {}*[REDACTED]", key, prefix)
-            }
-        })
-        .to_string()
-}
-
-/// Build a short hint string from a tool's JSON arguments for progress display.
-/// Returns the most informative single argument value, truncated to `max_chars`.
-fn truncate_tool_args_for_progress(
-    _tool_name: &str,
-    args: &serde_json::Value,
-    max_chars: usize,
-) -> String {
-    let hint = match args {
-        serde_json::Value::Object(map) => map
-            .values()
-            .find_map(|v| v.as_str())
-            .unwrap_or("")
-            .to_string(),
-        serde_json::Value::String(s) => s.clone(),
-        _ => return String::new(),
-    };
-    if hint.is_empty() {
-        return String::new();
-    }
-    truncate_with_ellipsis(&scrub_credentials(&hint), max_chars)
-}
-
 /// Find a tool by name in the registry.
 fn find_tool<'a>(tools: &'a [Box<dyn Tool>], name: &str) -> Option<&'a dyn Tool> {
     tools.iter().find(|t| t.name() == name).map(|t| t.as_ref())
@@ -186,31 +110,6 @@ impl std::error::Error for ToolLoopCancelled {}
 
 pub(crate) fn is_tool_loop_cancelled(err: &anyhow::Error) -> bool {
     err.chain().any(|source| source.is::<ToolLoopCancelled>())
-}
-
-#[derive(Debug)]
-pub(crate) struct ModelSwitchRequested {
-    pub provider: String,
-    pub model: String,
-}
-
-impl std::fmt::Display for ModelSwitchRequested {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "model switch requested to {} {}",
-            self.provider, self.model
-        )
-    }
-}
-
-impl std::error::Error for ModelSwitchRequested {}
-
-pub(crate) fn is_model_switch_requested(err: &anyhow::Error) -> Option<(String, String)> {
-    err.chain()
-        .filter_map(|source| source.downcast_ref::<ModelSwitchRequested>())
-        .map(|e| (e.provider.clone(), e.model.clone()))
-        .next()
 }
 
 pub(crate) struct AgentTurnContext<'a> {
