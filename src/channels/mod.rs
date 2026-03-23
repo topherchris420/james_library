@@ -47,6 +47,7 @@ pub mod session_sqlite;
 pub mod session_store;
 pub mod signal;
 pub mod slack;
+mod startup;
 pub mod telegram;
 pub mod traits;
 pub mod transcription;

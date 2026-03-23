@@ -3,6 +3,13 @@ use crate::agent::history::{
     load_interactive_session_history, memory_session_id_from_state_file,
     save_interactive_session_history, trim_history, DEFAULT_MAX_HISTORY_MESSAGES,
 };
+pub(crate) use crate::agent::runtime_support::{
+    check_tool_loop_budget, clear_model_switch_request, get_model_switch_state,
+    is_model_switch_requested, scrub_credentials, ModelSwitchCallback, ModelSwitchRequested,
+    ToolLoopCostTrackingContext, DRAFT_CLEAR_SENTINEL, TOOL_CHOICE_OVERRIDE,
+    TOOL_LOOP_COST_TRACKING_CONTEXT,
+};
+use crate::agent::runtime_support::{record_tool_loop_cost_usage, truncate_tool_args_for_progress};
 use crate::agent::tool_call_parser::{
     build_native_assistant_history, build_native_assistant_history_from_parsed_calls,
     detect_tool_call_parse_issue, parse_structured_tool_calls, parse_tool_calls,
@@ -26,10 +33,8 @@ use crate::agent::tool_call_parser::{
 use crate::agent::tool_filter::{filter_tool_specs_for_turn, glob_match};
 
 use crate::approval::{ApprovalManager, ApprovalRequest, ApprovalResponse};
-use crate::config::schema::ModelPricing;
 use crate::config::Config;
-use crate::cost::types::{BudgetCheck, TokenUsage as CostTokenUsage};
-use crate::cost::CostTracker;
+use crate::cost::types::BudgetCheck;
 use crate::i18n::ToolDescriptions;
 use crate::memory::{self, Memory, MemoryCategory};
 use crate::multimodal;
@@ -42,131 +47,17 @@ use crate::security::{AutonomyLevel, SecurityPolicy};
 use crate::tools::{self, Tool};
 use crate::util::truncate_with_ellipsis;
 use anyhow::Result;
-use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Write;
 use std::io::Write as _;
 use std::path::PathBuf;
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
-// ── Cost tracking via task-local ──
-
-/// Context for cost tracking within the tool call loop.
-/// Scoped via `tokio::task_local!` at call sites (channels, gateway).
-#[derive(Clone)]
-pub(crate) struct ToolLoopCostTrackingContext {
-    pub tracker: Arc<CostTracker>,
-    pub prices: Arc<std::collections::HashMap<String, ModelPricing>>,
-}
-
-impl ToolLoopCostTrackingContext {
-    pub(crate) fn new(
-        tracker: Arc<CostTracker>,
-        prices: Arc<std::collections::HashMap<String, ModelPricing>>,
-    ) -> Self {
-        Self { tracker, prices }
-    }
-}
-
-tokio::task_local! {
-    pub(crate) static TOOL_LOOP_COST_TRACKING_CONTEXT: Option<ToolLoopCostTrackingContext>;
-}
-
-/// 3-tier model pricing lookup:
-/// 1. Direct model name
-/// 2. Qualified `provider/model`
-/// 3. Suffix after last `/`
-fn lookup_model_pricing<'a>(
-    prices: &'a std::collections::HashMap<String, ModelPricing>,
-    provider_name: &str,
-    model: &str,
-) -> Option<&'a ModelPricing> {
-    prices
-        .get(model)
-        .or_else(|| prices.get(&format!("{provider_name}/{model}")))
-        .or_else(|| {
-            model
-                .rsplit_once('/')
-                .and_then(|(_, suffix)| prices.get(suffix))
-        })
-}
-
-/// Record token usage from an LLM response via the task-local cost tracker.
-/// Returns `(total_tokens, cost_usd)` on success, `None` when not scoped or no usage.
-fn record_tool_loop_cost_usage(
-    provider_name: &str,
-    model: &str,
-    usage: &crate::providers::traits::TokenUsage,
-) -> Option<(u64, f64)> {
-    let input_tokens = usage.input_tokens.unwrap_or(0);
-    let output_tokens = usage.output_tokens.unwrap_or(0);
-    let total_tokens = input_tokens.saturating_add(output_tokens);
-    if total_tokens == 0 {
-        return None;
-    }
-
-    let ctx = TOOL_LOOP_COST_TRACKING_CONTEXT
-        .try_with(Clone::clone)
-        .ok()
-        .flatten()?;
-    let pricing = lookup_model_pricing(&ctx.prices, provider_name, model);
-    let cost_usage = CostTokenUsage::new(
-        model,
-        input_tokens,
-        output_tokens,
-        pricing.map_or(0.0, |entry| entry.input),
-        pricing.map_or(0.0, |entry| entry.output),
-    );
-
-    if pricing.is_none() {
-        tracing::debug!(
-            provider = provider_name,
-            model,
-            "Cost tracking recorded token usage with zero pricing (no pricing entry found)"
-        );
-    }
-
-    if let Err(error) = ctx.tracker.record_usage(cost_usage.clone()) {
-        tracing::warn!(
-            provider = provider_name,
-            model,
-            "Failed to record cost tracking usage: {error}"
-        );
-    }
-
-    Some((cost_usage.total_tokens, cost_usage.cost_usd))
-}
-
-/// Check budget before an LLM call. Returns `None` when no cost tracking
-/// context is scoped (tests, delegate, CLI without cost config).
-pub(crate) fn check_tool_loop_budget() -> Option<BudgetCheck> {
-    TOOL_LOOP_COST_TRACKING_CONTEXT
-        .try_with(Clone::clone)
-        .ok()
-        .flatten()
-        .map(|ctx| {
-            ctx.tracker
-                .check_budget(0.0)
-                .unwrap_or(BudgetCheck::Allowed)
-        })
-}
-
 /// Minimum characters per chunk when relaying LLM text to a streaming draft.
 const STREAM_CHUNK_MIN_CHARS: usize = 80;
-
-/// Sentinel value sent on the streaming delta channel to signal the receiver
-/// to clear any accumulated draft text before the final answer is streamed.
-pub(crate) const DRAFT_CLEAR_SENTINEL: &str = "\x00__draft_clear__";
-
-// Task-local override for the Anthropic `tool_choice` parameter.
-// Set by the agent loop (e.g. "any" to force tool use for hardware requests)
-// and read by providers that support native tool calling.
-tokio::task_local! {
-    pub(crate) static TOOL_CHOICE_OVERRIDE: Option<String>;
-}
 
 /// Default maximum agentic tool-use iterations per user message to prevent runaway loops.
 /// Used as a safe fallback when `max_tool_iterations` is unset or configured as zero.
@@ -1270,7 +1161,7 @@ pub(crate) async fn run_tool_call_loop(
 
             // ── Progress: tool start ────────────────────────────
             if let Some(ref tx) = on_delta {
-                let hint = truncate_tool_args_for_progress(&tool_name, &tool_args, 60);
+                let hint = truncate_tool_args_for_progress(&tool_args, 60);
                 let progress = if hint.is_empty() {
                     format!("\u{23f3} {}\n", tool_name)
                 } else {
