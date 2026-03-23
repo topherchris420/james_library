@@ -38,7 +38,7 @@ Under the hood, R.A.I.N. Lab is built from two core layers:
 
 If you are new here, you can think of it like this:
 
-- **R.A.I.N. Lab** = the product
+- **R.A.I.N. Lab** = the service
 - **James Library** = the reasoning layer
 - **ZeroClaw** = the runtime engine
 
