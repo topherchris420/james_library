@@ -20,40 +20,49 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-Vers3Dynamics' R.A.I.N. Lab is the multi-agentic research team of assistants built for **academic researchers, R&D teams, and privacy-conscious individuals** who need conclusions they can actually trust. It solves the fundamental problem with AI agents that either agree too quickly or argue in circles forever, by automatically settling unresolved debates with mathematical proof via a sandboxed SAT solver. It runs entirely locally on your computer; your data never leaves your machine.
+R.A.I.N. Lab is an open-source, local-first AI research system built for **academic researchers, R&D teams, and privacy-conscious individuals** who need conclusions they can actually trust. Instead of letting agents agree too quickly or argue in circles forever, R.A.I.N. Lab forces unresolved debates toward resolution by translating disagreements into formal logic and settling them with a sandboxed verification engine.
+
+Your data stays on your machine by default. The system runs locally, keeps conversations and files under your control, and only talks to external providers when you explicitly configure them.
 
 ---
 
-## Who We Are
+## Project Structure
 
-You'll see three names in this lab — here's what each one means:
+**R.A.I.N. Lab** is the product and the main name users should remember.
 
-- **R.A.I.N. Lab** — the product you interact with (the interface, the chat, the experience)
-- **James Library** — the Python code that powers the research workflows (debates, synthesis, analysis)
-- **ZeroClaw** — the fast Rust engine running behind the scenes (networking, security, orchestration)
+Under the hood, R.A.I.N. Lab is built from two core layers:
 
-All you need to know is the **R.A.I.N. Lab**. Everything else just works.
+- **James Library** — the research and reasoning workflow layer that drives debate, synthesis, and analysis.
+- **ZeroClaw** — the runtime engine that handles execution, orchestration, networking, and security.
+
+These names reflect the system's history and architecture. This repository brings them together under the **R.A.I.N. Lab** open-source project while preserving credit to the underlying systems.
+
+If you are new here, you can think of it like this:
+
+- **R.A.I.N. Lab** = the product
+- **James Library** = the reasoning layer
+- **ZeroClaw** = the runtime engine
 
 ---
 
 ## The Breakthrough: "The Circuit Breaker" Architecture
 
-**The problem:** Most AI multi-agent systems eventually get stuck — the agents either politely agree with each other or argue in circles forever, never concluding.
+**The problem:** Most multi-agent systems eventually get stuck. The agents either converge too early, miss important disagreement, or debate endlessly without reaching a conclusion.
 
 **R.A.I.N. Lab's solution**
 
-1. **Explore:** Specialist agents each investigate different angles of your question, like researchers branching out across a library.
-2. **Debate:** The agents challenge each other's reasoning in multiple rounds — no free passes.
-3. **Break the deadlock:** When the system detects that the debate is going in circles, it steps in automatically. It translates the core disagreement into a math problem and solves it with a guaranteed-correct solver running in a secure sandbox.
-4. **Move forward:** The proven answer is injected back into the conversation, forcing the agents to accept the settled fact and build on it.
+1. **Explore:** Specialist agents investigate different angles of your question.
+2. **Debate:** The agents challenge each other's reasoning in multiple rounds.
+3. **Break the deadlock:** When the system detects circular disagreement, it converts the dispute into a formal logic problem and sends it to a sandboxed verification engine.
+4. **Move forward:** The verified result is injected back into the workflow so the agents must build on a settled fact instead of repeating the same argument.
 
 <details>
 <summary><strong>Technical details (for developers)</strong></summary>
 
-- Step 1 uses a UCB1-Bandit algorithm to explore hypothesis trees efficiently.
-- Step 3 compiles the argument into a Boolean formula and runs it against a WASM-compiled DPLL SAT Solver.
-- Step 4 injects the result as a `SYSTEM_OVERRIDE` into the agent context window.
-- The entire verification step runs inside a WebAssembly (WASM) sandbox for security isolation.
+- Exploration can use search-style branching over competing hypotheses.
+- Disagreements can be compiled into symbolic logic for deterministic verification.
+- Verification runs inside a sandboxed execution path for safety.
+- Proven results are fed back into the agent workflow as higher-priority context.
 
 </details>
 
@@ -61,10 +70,10 @@ All you need to know is the **R.A.I.N. Lab**. Everything else just works.
 
 ## Why the R.A.I.N. Lab?
 
-* **Runs on almost anything:** The core engine is ZeroClaw, a 3.1 MB program that works on laptops, desktops, and even low-powered devices.
-* **Your data stays on your machine:** All conversations and files are stored locally with strong encryption. Nothing is sent to the cloud unless you choose to connect a cloud AI provider.
-* **Extensible with plugins:** If you need the AI to use a custom math solver or physics engine, you can drop it in as a plugin — no restart required.
-* **Two languages, best of both worlds:** Python handles the AI conversations and research workflows; Rust handles the fast, security-critical parts like verification and networking.
+* **Local-first by default:** your data remains under your control.
+* **Built for serious reasoning:** the system is designed to resolve disagreement, not just generate plausible text.
+* **Extensible architecture:** workflow logic and runtime infrastructure are separated cleanly.
+* **Best of both worlds:** James Library powers the research workflow layer, while ZeroClaw powers the systems layer underneath.
 
 ---
 
