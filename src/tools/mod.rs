@@ -330,14 +330,19 @@ fn filter_tool_pool_arcs(
     denylist: &[String],
     profiles: &[String],
 ) -> Vec<Arc<dyn Tool>> {
-    let mut allow_selectors = expand_profiles(profiles);
-    allow_selectors.extend(
-        allowlist
-            .iter()
-            .map(|item| item.trim())
-            .filter(|item| !item.is_empty())
-            .map(ToOwned::to_owned),
-    );
+    let explicit_allow: Vec<String> = allowlist
+        .iter()
+        .map(|item| item.trim())
+        .filter(|item| !item.is_empty())
+        .map(ToOwned::to_owned)
+        .collect();
+    // Least privilege: when an explicit allowlist is provided, it is treated
+    // as the narrowing gate and profile expansion must not silently broaden it.
+    let allow_selectors: HashSet<String> = if explicit_allow.is_empty() {
+        expand_profiles(profiles)
+    } else {
+        explicit_allow.into_iter().collect()
+    };
     let deny_selectors: HashSet<String> = denylist
         .iter()
         .map(|item| item.trim())
