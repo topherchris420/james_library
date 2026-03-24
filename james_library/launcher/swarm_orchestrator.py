@@ -335,15 +335,23 @@ async def run_blackboard_lab(
 
     room_context = (
         "You are operating in a shared lab blackboard. "
-        "Read peer notes and contribute only your specialist perspective."
+        "Review any prior peer notes and contribute only your specialist perspective."
     )
     per_agent_notes: list[dict[str, str]] = []
 
     for manifest in manifests:
         memory_hint = ", ".join(manifest.memory.categories) if manifest.memory.categories else "default"
         tool_hint = ", ".join(manifest.tools.allowed) if manifest.tools.allowed else "none"
+        if per_agent_notes:
+            peer_section = (
+                f"Peer notes so far:\n"
+                f"{json.dumps(per_agent_notes, ensure_ascii=False, indent=2)}\n\n"
+            )
+        else:
+            peer_section = "No peer notes yet — you are the first specialist.\n\n"
         user_message = (
             f"{room_context}\n\n"
+            f"{peer_section}"
             f"User query: {query}\n"
             f"Your role: {manifest.identity.role}\n"
             f"Allowed tools: {tool_hint}\n"
