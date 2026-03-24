@@ -422,17 +422,6 @@ impl Agent {
         );
 
         let manifest = load_agent_manifest(&config.workspace_dir)?;
-        if let Some(agent_manifest) = manifest.as_ref() {
-            if !agent_manifest.tools.allowed.is_empty() {
-                tools.retain(|tool| {
-                    agent_manifest
-                        .tools
-                        .allowed
-                        .iter()
-                        .any(|allowed| allowed == tool.name())
-                });
-            }
-        }
 
         // ── Wire MCP tools (non-fatal) ─────────────────────────────
         // Replicates the same MCP initialization logic used in the CLI
@@ -491,6 +480,19 @@ impl Agent {
                 Err(e) => {
                     tracing::error!("MCP registry failed to initialize: {e:#}");
                 }
+            }
+        }
+
+        // ── Apply manifest tool allowlist (after all tools are registered) ──
+        if let Some(agent_manifest) = manifest.as_ref() {
+            if !agent_manifest.tools.allowed.is_empty() {
+                tools.retain(|tool| {
+                    agent_manifest
+                        .tools
+                        .allowed
+                        .iter()
+                        .any(|allowed| allowed == tool.name())
+                });
             }
         }
 
