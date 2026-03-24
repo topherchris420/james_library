@@ -175,10 +175,38 @@ fn find_asset_url(release: &serde_json::Value) -> Option<String> {
 }
 
 fn version_is_newer(current: &str, candidate: &str) -> bool {
-    let parse = |v: &str| -> Vec<u32> { v.split('.').filter_map(|p| p.parse().ok()).collect() };
-    let cur = parse(current);
-    let cand = parse(candidate);
-    cand > cur
+    let parse = |version: &str| -> Vec<u32> {
+        version
+            .trim()
+            .trim_start_matches('v')
+            .split('.')
+            .map(|segment| {
+                let digits: String = segment
+                    .chars()
+                    .skip_while(|c| !c.is_ascii_digit())
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect();
+                digits.parse::<u32>().unwrap_or(0)
+            })
+            .collect()
+    };
+
+    let current_parts = parse(current);
+    let candidate_parts = parse(candidate);
+    let max_len = current_parts.len().max(candidate_parts.len());
+
+    for i in 0..max_len {
+        let cur = *current_parts.get(i).unwrap_or(&0);
+        let cand = *candidate_parts.get(i).unwrap_or(&0);
+        if cand > cur {
+            return true;
+        }
+        if cand < cur {
+            return false;
+        }
+    }
+
+    false
 }
 
 async fn download_binary(url: &str, dest: &Path) -> Result<()> {
