@@ -49,6 +49,13 @@ impl PluginHost {
         let entries = std::fs::read_dir(&self.plugins_dir)?;
         for entry in entries.flatten() {
             let path = entry.path();
+            // Skip hidden/internal directories (e.g. .marketplace-staging)
+            if path
+                .file_name()
+                .map_or(false, |n| n.to_string_lossy().starts_with('.'))
+            {
+                continue;
+            }
             if path.is_dir() {
                 let manifest_path = path.join("manifest.toml");
                 if manifest_path.exists() {
@@ -223,6 +230,12 @@ impl PluginHost {
                 wasm_path: wasm_dest,
             },
         );
+
+        // Clean up marketplace staging directory if it exists.
+        let staging_dir = self.plugins_dir.join(".marketplace-staging");
+        if staging_dir.exists() {
+            let _ = std::fs::remove_dir_all(&staging_dir);
+        }
 
         self.rebuild_agent_registry()?;
         Ok(())

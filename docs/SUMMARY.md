@@ -91,6 +91,7 @@ Last refreshed: **February 18, 2026**.
 - [custom-providers.md](contributing/custom-providers.md)
 - [zai-glm-setup.md](setup-guides/zai-glm-setup.md)
 - [langgraph-integration.md](contributing/langgraph-integration.md)
+- [plugin-agent-pack-authoring.md](reference/plugin-agent-pack-authoring.md)
 
 ### 3) Operations & Deployment
 

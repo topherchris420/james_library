@@ -206,6 +206,23 @@ temperature = 0.2
 - 建议在低上下文本地模型上使用 `prompt_injection_mode = \"compact\"`，以减少启动提示大小，同时按需保留技能文件可用。
 - 技能加载和 `R.A.I.N. skills install` 都会应用静态安全审计。包含符号链接、类脚本文件、高风险 shell  payload 片段或不安全 markdown 链接遍历的技能会被拒绝。
 
+## `[plugins]`
+
+| 键 | 默认值 | 用途 |
+|---|---|---|
+| `enabled` | `false` | 启用 WASM 插件发现和注册 |
+| `plugins_dir` | `~/.R.A.I.N./plugins` | 扫描插件 `manifest.toml` 文件的文件系统路径 |
+| `auto_discover` | `false` | 启动时自动发现插件元数据 |
+| `max_plugins` | `50` | 已加载插件条目的上限 |
+| `marketplace_enabled` | `false` | 允许从远程 `http(s)` 市场源执行 `plugin install` |
+| `allowed_permissions` | `["http_client","file_read","file_write","env_read","memory_read","memory_write"]` | 安装时插件声明权限的允许列表 |
+
+注意事项：
+
+- 远程市场安装默认为故障关闭。需显式设置 `marketplace_enabled = true` 以允许网络插件源。
+- `allowed_permissions` 在安装时强制执行：如果插件请求的权限不在此列表中，安装将被拒绝。
+- 插件元数据可通过 `agent_manifests` 暴露代理包；即使 WASM 执行桥不可用，这些代理包也会被发现。
+
 ## `[composio]`
 
 | 键 | 默认值 | 用途 |

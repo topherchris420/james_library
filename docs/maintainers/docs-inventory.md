@@ -53,6 +53,7 @@ Last reviewed: **February 18, 2026**.
 | `docs/custom-providers.md` | Current Integration Guide | integration developers |
 | `docs/zai-glm-setup.md` | Current Provider Setup Guide | users/operators |
 | `docs/langgraph-integration.md` | Current Integration Guide | integration developers |
+| `docs/reference/plugin-agent-pack-authoring.md` | Current Reference | plugin authors |
 | `docs/operations-runbook.md` | Current Guide | operators |
 | `docs/troubleshooting.md` | Current Guide | users/operators |
 | `docs/network-deployment.md` | Current Guide | operators |

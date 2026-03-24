@@ -16,6 +16,10 @@ Structured reference index for commands, providers, channels, config, and integr
 - Nextcloud Talk bot integration: [../setup-guides/nextcloud-talk-setup.md](../setup-guides/nextcloud-talk-setup.md)
 - LangGraph-based integration patterns: [../contributing/langgraph-integration.md](../contributing/langgraph-integration.md)
 
+## Plugins
+
+- Plugin agent pack authoring: [plugin-agent-pack-authoring.md](plugin-agent-pack-authoring.md)
+
 ## Usage
 
 Use this collection when you need precise CLI/config details or provider integration patterns rather than step-by-step tutorials.
