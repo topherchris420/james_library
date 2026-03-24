@@ -335,7 +335,7 @@ impl AgentBuilder {
             autonomy_level: self
                 .autonomy_level
                 .unwrap_or(crate::security::AutonomyLevel::Supervised),
-            manifest: None,
+            manifest: self.manifest,
         })
     }
 }
@@ -638,7 +638,21 @@ impl Agent {
             let _ = write!(
                 prompt,
                 "- Agent: {}\n- Role: {}\n\n{}",
-                name, role, system_prompt
+                manifest
+                    .identity
+                    .name
+                    .as_deref()
+                    .unwrap_or("unknown"),
+                manifest
+                    .identity
+                    .role
+                    .as_deref()
+                    .unwrap_or("unknown"),
+                manifest
+                    .identity
+                    .system_prompt
+                    .as_deref()
+                    .unwrap_or_default()
             );
         }
         Ok(prompt)
@@ -1542,21 +1556,18 @@ mod tests {
 schema_version = "1.0"
 
 [identity]
-name = "R.A.I.N.Agent"
-role = "R.A.I.N.Maintainer"
+name = "James"
+role = "Lead Scientist"
 system_prompt = "Focus on resonance."
 
 [tools]
 allow = ["file_read", "web_search"]
-deny = []
-session_scope = "current"
 
 [memory]
-category = "core"
-session_scope = "current"
-recall_limit = 3
+recall_limit = 8
 min_relevance_score = 0.6
-	"#;
+category = "core"
+"#;
         std::fs::write(dir.path().join("agent_manifest.toml"), manifest)
             .expect("manifest should be written");
 
@@ -1564,11 +1575,11 @@ min_relevance_score = 0.6
             .expect("manifest should parse")
             .expect("manifest should exist");
 
-        assert_eq!(parsed.identity.name.as_deref(), Some("R.A.I.N.Agent"));
+        assert_eq!(parsed.identity.name.as_deref(), Some("James"));
         assert_eq!(parsed.tools.allow, vec!["file_read", "web_search"]);
-        let memory = parsed.memory.expect("memory should be parsed");
-        assert_eq!(memory.category, Some(crate::memory::MemoryCategory::Core));
-        assert_eq!(memory.recall_limit, Some(3));
+        let memory = parsed.memory.expect("memory config should be present");
+        assert_eq!(memory.recall_limit, Some(8));
         assert_eq!(memory.min_relevance_score, Some(0.6));
+        assert_eq!(memory.category, Some(MemoryCategory::Core));
     }
 }
