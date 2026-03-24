@@ -21,6 +21,11 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python <3.11 fallback
+    tomllib = None
+
 
 # ---------------------------------------------------------------------------
 # 1. Reviewer Persona Generator
@@ -240,6 +245,143 @@ class SwarmTranscript:
     started_at: str = ""
     finished_at: str = ""
     total_duration_s: float = 0.0
+
+
+@dataclass
+class AgentToolScope:
+    """Manifest-defined tool access scopes for one specialist."""
+
+    allowed: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AgentMemoryRouting:
+    """Manifest-defined memory and RAG routing hints."""
+
+    categories: list[str] = field(default_factory=list)
+    session_id: str | None = None
+
+
+@dataclass
+class AgentIdentity:
+    """Strict agent identity contract sourced from manifest."""
+
+    agent_id: str
+    display_name: str
+    role: str
+    system_prompt: str
+
+
+@dataclass
+class AgentManifest:
+    """Schema-first manifest replacing loose *_SOUL.md files."""
+
+    schema_version: str
+    identity: AgentIdentity
+    tools: AgentToolScope = field(default_factory=AgentToolScope)
+    memory: AgentMemoryRouting = field(default_factory=AgentMemoryRouting)
+
+
+def load_agent_manifest(manifest_path: str | Path) -> AgentManifest:
+    """Load a strict TOML agent manifest from disk."""
+    path = Path(manifest_path)
+    if tomllib is None:
+        raise RuntimeError("tomllib unavailable; Python 3.11+ required for TOML manifests")
+    raw = tomllib.loads(path.read_text(encoding="utf-8"))
+
+    identity = raw.get("identity", {})
+    return AgentManifest(
+        schema_version=str(raw.get("schema_version", "")),
+        identity=AgentIdentity(
+            agent_id=str(identity.get("id", "")),
+            display_name=str(identity.get("display_name", "")),
+            role=str(identity.get("role", "")),
+            system_prompt=str(identity.get("system_prompt", "")),
+        ),
+        tools=AgentToolScope(allowed=list(raw.get("tools", {}).get("allowed", []))),
+        memory=AgentMemoryRouting(
+            categories=list(raw.get("memory", {}).get("categories", [])),
+            session_id=raw.get("memory", {}).get("session_id"),
+        ),
+    )
+
+
+async def run_blackboard_lab(
+    query: str,
+    manifests: list[AgentManifest],
+    config: SwarmConfig | None = None,
+) -> dict[str, Any]:
+    """Prototype blackboard orchestrator for multi-specialist collaboration.
+
+    Each specialist receives the same shared room context plus a role-specific
+    sub-task. The output is synthesized into a single response envelope.
+    """
+    cfg = config or SwarmConfig(rounds=1, temperature=0.3, max_tokens_per_turn=384)
+    model = cfg.model_name or os.environ.get("LM_STUDIO_MODEL", "qwen2.5-coder-7b-instruct")
+    base_url = cfg.base_url or os.environ.get("LM_STUDIO_BASE_URL", "http://localhost:1234/v1")
+    api_key = cfg.api_key or os.environ.get("LM_STUDIO_API_KEY", "not-needed")
+
+    try:
+        import openai as _openai
+    except ImportError as exc:
+        raise RuntimeError("openai package required for lab orchestration: pip install openai") from exc
+
+    try:
+        import httpx
+        timeout = httpx.Timeout(min(15.0, cfg.timeout), read=cfg.timeout, write=15.0, connect=15.0)
+        client = _openai.OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+    except ImportError:
+        client = _openai.OpenAI(base_url=base_url, api_key=api_key)
+
+    room_context = (
+        "You are operating in a shared lab blackboard. "
+        "Read peer notes and contribute only your specialist perspective."
+    )
+    per_agent_notes: list[dict[str, str]] = []
+
+    for manifest in manifests:
+        memory_hint = ", ".join(manifest.memory.categories) if manifest.memory.categories else "default"
+        tool_hint = ", ".join(manifest.tools.allowed) if manifest.tools.allowed else "none"
+        user_message = (
+            f"{room_context}\n\n"
+            f"User query: {query}\n"
+            f"Your role: {manifest.identity.role}\n"
+            f"Allowed tools: {tool_hint}\n"
+            f"Memory routes: {memory_hint}\n\n"
+            f"Provide findings, assumptions, and one recommended next step."
+        )
+        response = await _call_llm_async(
+            client=client,
+            model=model,
+            system_prompt=manifest.identity.system_prompt,
+            user_message=user_message,
+            temperature=cfg.temperature,
+            max_tokens=cfg.max_tokens_per_turn,
+        )
+        per_agent_notes.append(
+            {
+                "agent_id": manifest.identity.agent_id,
+                "agent_name": manifest.identity.display_name,
+                "role": manifest.identity.role,
+                "notes": response,
+            }
+        )
+
+    synthesis_prompt = (
+        "You are the lab chair. Synthesize specialist notes into one integrated answer.\n\n"
+        f"User query: {query}\n\n"
+        f"Specialist notes:\n{json.dumps(per_agent_notes, ensure_ascii=False, indent=2)}"
+    )
+    synthesis = await _call_llm_async(
+        client=client,
+        model=model,
+        system_prompt="Synthesize into a concise multi-perspective answer with clear action items.",
+        user_message=synthesis_prompt,
+        temperature=0.2,
+        max_tokens=768,
+    )
+
+    return {"query": query, "specialist_notes": per_agent_notes, "synthesized_response": synthesis}
 
 
 async def _call_llm_async(
