@@ -646,6 +646,20 @@ impl LocalWhisperProvider {
             timeout_secs: config.timeout_secs,
         })
     }
+
+    fn url_is_loopback(&self) -> bool {
+        let Ok(url) = reqwest::Url::parse(&self.url) else {
+            return false;
+        };
+        let Some(host) = url.host_str() else {
+            return false;
+        };
+        if host.eq_ignore_ascii_case("localhost") {
+            return true;
+        }
+        host.parse::<std::net::IpAddr>()
+            .is_ok_and(|ip| ip.is_loopback())
+    }
 }
 
 #[async_trait]
@@ -665,7 +679,17 @@ impl TranscriptionProvider for LocalWhisperProvider {
 
         let (normalized_name, mime) = resolve_audio_format(file_name)?;
 
-        let client = crate::config::build_runtime_proxy_client("transcription.local_whisper");
+        let client = if self.url_is_loopback() {
+            reqwest::Client::builder()
+                .no_proxy()
+                .build()
+                .unwrap_or_else(|error| {
+                    tracing::warn!("Failed to build direct local_whisper client: {error}");
+                    reqwest::Client::new()
+                })
+        } else {
+            crate::config::build_runtime_proxy_client("transcription.local_whisper")
+        };
 
         // to_vec() clones the buffer for the multipart payload; peak memory per
         // call is ~2× max_audio_bytes.  Streaming upload requires reqwest multipart

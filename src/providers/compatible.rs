@@ -255,6 +255,7 @@ impl OpenAiCompatibleProvider {
         let timeout = self.timeout_secs;
         let has_user_agent = self.user_agent.is_some();
         let has_extra_headers = !self.extra_headers.is_empty();
+        let bypass_proxy = self.base_url_is_loopback();
 
         if has_user_agent || has_extra_headers {
             let mut headers = HeaderMap::new();
@@ -281,8 +282,11 @@ impl OpenAiCompatibleProvider {
                 .timeout(std::time::Duration::from_secs(timeout))
                 .connect_timeout(std::time::Duration::from_secs(10))
                 .default_headers(headers);
-            let builder =
-                crate::config::apply_runtime_proxy_to_builder(builder, "provider.compatible");
+            let builder = if bypass_proxy {
+                builder.no_proxy()
+            } else {
+                crate::config::apply_runtime_proxy_to_builder(builder, "provider.compatible")
+            };
 
             return builder.build().unwrap_or_else(|error| {
                 tracing::warn!(
@@ -290,6 +294,18 @@ impl OpenAiCompatibleProvider {
                 );
                 Client::new()
             });
+        }
+
+        if bypass_proxy {
+            return Client::builder()
+                .timeout(std::time::Duration::from_secs(timeout))
+                .connect_timeout(std::time::Duration::from_secs(10))
+                .no_proxy()
+                .build()
+                .unwrap_or_else(|error| {
+                    tracing::warn!("Failed to build direct timeout client: {error}");
+                    Client::new()
+                });
         }
 
         crate::config::build_runtime_proxy_client_with_timeouts("provider.compatible", timeout, 10)
@@ -339,6 +355,20 @@ impl OpenAiCompatibleProvider {
 
         let path = url.path().trim_end_matches('/');
         !path.is_empty() && path != "/"
+    }
+
+    fn base_url_is_loopback(&self) -> bool {
+        let Ok(url) = reqwest::Url::parse(&self.base_url) else {
+            return false;
+        };
+        let Some(host) = url.host_str() else {
+            return false;
+        };
+        if host.eq_ignore_ascii_case("localhost") {
+            return true;
+        }
+        host.parse::<std::net::IpAddr>()
+            .is_ok_and(|ip| ip.is_loopback())
     }
 
     fn requires_tool_stream(&self) -> bool {

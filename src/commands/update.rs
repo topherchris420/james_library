@@ -175,7 +175,18 @@ fn find_asset_url(release: &serde_json::Value) -> Option<String> {
 }
 
 fn version_is_newer(current: &str, candidate: &str) -> bool {
-    let parse = |v: &str| -> Vec<u32> { v.split('.').filter_map(|p| p.parse().ok()).collect() };
+    let parse = |v: &str| -> Vec<u32> {
+        v.split('.')
+            .filter_map(|segment| {
+                let start = segment.find(|c: char| c.is_ascii_digit())?;
+                let digits: String = segment[start..]
+                    .chars()
+                    .take_while(|c| c.is_ascii_digit())
+                    .collect();
+                digits.parse().ok()
+            })
+            .collect()
+    };
     let cur = parse(current);
     let cand = parse(candidate);
     cand > cur

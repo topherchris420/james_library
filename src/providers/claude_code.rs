@@ -411,7 +411,7 @@ mod tests {
             script_id
         ));
         let mut f = std::fs::File::create(&path).unwrap();
-        writeln!(f, "#!/bin/sh\ncat /dev/stdin").unwrap();
+        writeln!(f, "#!/bin/sh\ncat").unwrap();
         drop(f);
         #[cfg(unix)]
         {
