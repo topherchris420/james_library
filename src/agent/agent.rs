@@ -13,8 +13,11 @@ use crate::runtime;
 use crate::security::SecurityPolicy;
 use crate::tools::{self, Tool, ToolSpec};
 use anyhow::Result;
+use serde::Deserialize;
 use std::collections::HashMap;
+use std::fmt::Write as FmtWrite;
 use std::io::Write as IoWrite;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -47,6 +50,49 @@ pub struct Agent {
     security_summary: Option<String>,
     /// Autonomy level from config; controls safety prompt instructions.
     autonomy_level: crate::security::AutonomyLevel,
+    manifest: Option<AgentManifest>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct AgentManifest {
+    pub schema_version: String,
+    pub identity: AgentIdentityManifest,
+    #[serde(default)]
+    pub tools: AgentToolScopeManifest,
+    #[serde(default)]
+    pub memory: AgentMemoryRoutingManifest,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+pub struct AgentIdentityManifest {
+    pub id: String,
+    pub display_name: String,
+    pub role: String,
+    pub system_prompt: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Default)]
+pub struct AgentToolScopeManifest {
+    #[serde(default)]
+    pub allowed: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq, Default)]
+pub struct AgentMemoryRoutingManifest {
+    #[serde(default)]
+    pub categories: Vec<String>,
+    #[serde(default)]
+    pub session_id: Option<String>,
+}
+
+fn load_agent_manifest(workspace_dir: &Path) -> Result<Option<AgentManifest>> {
+    let manifest_path = workspace_dir.join("agent_manifest.toml");
+    if !manifest_path.exists() {
+        return Ok(None);
+    }
+    let raw = std::fs::read_to_string(&manifest_path)?;
+    let manifest: AgentManifest = toml::from_str(&raw)?;
+    Ok(Some(manifest))
 }
 
 pub struct AgentBuilder {
@@ -289,6 +335,7 @@ impl AgentBuilder {
             autonomy_level: self
                 .autonomy_level
                 .unwrap_or(crate::security::AutonomyLevel::Supervised),
+            manifest: None,
         })
     }
 }
@@ -374,6 +421,19 @@ impl Agent {
             config,
             ModelSwitchState::default(),
         );
+
+        let manifest = load_agent_manifest(&config.workspace_dir)?;
+        if let Some(agent_manifest) = manifest.as_ref() {
+            if !agent_manifest.tools.allowed.is_empty() {
+                tools.retain(|tool| {
+                    agent_manifest
+                        .tools
+                        .allowed
+                        .iter()
+                        .any(|allowed| allowed == tool.name())
+                });
+            }
+        }
 
         // ── Wire MCP tools (non-fatal) ─────────────────────────────
         // Replicates the same MCP initialization logic used in the CLI
@@ -483,7 +543,7 @@ impl Agent {
             None
         };
 
-        Agent::builder()
+        let mut agent = Agent::builder()
             .provider(provider)
             .tools(tools)
             .memory(memory)
@@ -511,7 +571,14 @@ impl Agent {
             .auto_save(config.memory.auto_save)
             .security_summary(Some(security.prompt_summary()))
             .autonomy_level(config.autonomy.level)
-            .build()
+            .build()?;
+
+        if let Some(agent_manifest) = manifest {
+            agent.memory_session_id = agent_manifest.memory.session_id.clone();
+            agent.manifest = Some(agent_manifest);
+        }
+
+        Ok(agent)
     }
 
     fn trim_history(&mut self) {
@@ -555,7 +622,19 @@ impl Agent {
             security_summary: self.security_summary.clone(),
             autonomy_level: self.autonomy_level,
         };
-        self.prompt_builder.build(&ctx)
+        let mut prompt = self.prompt_builder.build(&ctx)?;
+        if let Some(manifest) = self.manifest.as_ref() {
+            prompt.push_str("\n\n## Agent Manifest Identity\n\n");
+            let _ = write!(
+                prompt,
+                "- Agent: {} ({})\n- Role: {}\n\n{}",
+                manifest.identity.display_name,
+                manifest.identity.id,
+                manifest.identity.role,
+                manifest.identity.system_prompt
+            );
+        }
+        Ok(prompt)
     }
 
     async fn execute_tool_call(&self, call: &ParsedToolCall) -> ToolExecutionResult {
@@ -888,6 +967,7 @@ mod tests {
     use async_trait::async_trait;
     use parking_lot::Mutex;
     use std::collections::HashMap;
+    use tempfile::tempdir;
 
     struct MockProvider {
         responses: Mutex<Vec<crate::providers::ChatResponse>>,
@@ -1322,5 +1402,40 @@ mod tests {
             matches!(&history[2], ConversationMessage::Chat(m) if m.role == "assistant" && m.content == "hi there")
         );
         assert_eq!(history.len(), 3);
+    }
+
+    #[test]
+    fn load_agent_manifest_reads_toml_schema() {
+        let dir = tempdir().expect("tempdir should be created");
+        let manifest = r#"
+schema_version = "1.0"
+
+[identity]
+id = "james"
+display_name = "James"
+role = "Lead Scientist"
+system_prompt = "Focus on resonance."
+
+[tools]
+allowed = ["file_read", "web_search"]
+
+[memory]
+categories = ["research", "notes"]
+session_id = "lab-session"
+"#;
+        std::fs::write(dir.path().join("agent_manifest.toml"), manifest)
+            .expect("manifest should be written");
+
+        let parsed = load_agent_manifest(dir.path())
+            .expect("manifest should parse")
+            .expect("manifest should exist");
+
+        assert_eq!(parsed.identity.id, "james");
+        assert_eq!(parsed.tools.allowed, vec!["file_read", "web_search"]);
+        assert_eq!(
+            parsed.memory.categories,
+            vec!["research".to_string(), "notes".to_string()]
+        );
+        assert_eq!(parsed.memory.session_id.as_deref(), Some("lab-session"));
     }
 }
