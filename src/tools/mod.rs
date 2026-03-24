@@ -330,19 +330,13 @@ fn filter_tool_pool_arcs(
     denylist: &[String],
     profiles: &[String],
 ) -> Vec<Arc<dyn Tool>> {
-    let explicit_allow: Vec<String> = allowlist
+    let profile_selectors = expand_profiles(profiles);
+    let allow_selectors: HashSet<String> = allowlist
         .iter()
         .map(|item| item.trim())
         .filter(|item| !item.is_empty())
         .map(ToOwned::to_owned)
         .collect();
-    // Least privilege: when an explicit allowlist is provided, it is treated
-    // as the narrowing gate and profile expansion must not silently broaden it.
-    let allow_selectors: HashSet<String> = if explicit_allow.is_empty() {
-        expand_profiles(profiles)
-    } else {
-        explicit_allow.into_iter().collect()
-    };
     let deny_selectors: HashSet<String> = denylist
         .iter()
         .map(|item| item.trim())
@@ -350,21 +344,27 @@ fn filter_tool_pool_arcs(
         .map(ToOwned::to_owned)
         .collect();
 
-    let has_allow = !allow_selectors.is_empty();
+    let has_profile_allow = !profile_selectors.is_empty();
+    let has_explicit_allow = !allow_selectors.is_empty();
+    let profile_allow_vec: Vec<String> = profile_selectors.into_iter().collect();
     let allow_vec: Vec<String> = allow_selectors.into_iter().collect();
     let deny_vec: Vec<String> = deny_selectors.into_iter().collect();
 
     pool.into_iter()
         .filter(|tool| {
             let name = tool.name();
-            let allowed = !has_allow
+            let allowed_by_profiles = !has_profile_allow
+                || profile_allow_vec
+                    .iter()
+                    .any(|selector| selector_matches_tool(selector, name));
+            let allowed_by_explicit = !has_explicit_allow
                 || allow_vec
                     .iter()
                     .any(|selector| selector_matches_tool(selector, name));
             let denied = deny_vec
                 .iter()
                 .any(|selector| selector_matches_tool(selector, name));
-            allowed && !denied
+            allowed_by_profiles && allowed_by_explicit && !denied
         })
         .collect()
 }
@@ -1376,12 +1376,7 @@ mod tests {
                 name: "filesystem__read_file".into(),
             }),
         ];
-        let filtered = filter_tool_pool(
-            pool,
-            &[String::from("mcp:browser/*")],
-            &[],
-            &[String::from("mcp_all")],
-        );
+        let filtered = filter_tool_pool(pool, &[String::from("mcp:browser/*")], &[], &[]);
         let names: Vec<&str> = filtered.iter().map(|t| t.name()).collect();
         assert_eq!(names, vec!["browser__navigate"]);
     }
