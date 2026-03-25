@@ -26,9 +26,7 @@ Your data stays on your machine by default. The system runs locally, keeps conve
 
 ---
 
-## Stable Core First
-
-The repository is intentionally broader than the default supported product.
+## Hello
 
 - The supported baseline is the Python launcher path (`python rain_lab.py`) plus the default Rust build.
 - Provider, channel, platform, and storage integrations stay opt-in through explicit Cargo features.
