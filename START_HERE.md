@@ -20,6 +20,20 @@ You can safely ignore files like `rain_unique.py`, `james_reader.py`, `chat_with
 
 ---
 
+## Stable Path
+
+Start with `python rain_lab.py`. That launcher, plus the default Rust build,
+is the stable core.
+
+Integrations such as Matrix, Lark, Nostr, WhatsApp Web, hardware, and
+experimental workflow automation are opt-in extensions. Treat them as add-ons,
+not the baseline product.
+
+If you need the full support boundary, see
+[`docs/project/stability-tiers.md`](docs/project/stability-tiers.md).
+
+---
+
 ## Name Guide (Plain English)
 
 - **R.A.I.N. Lab**: the product experience you use.

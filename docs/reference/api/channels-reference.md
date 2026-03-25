@@ -76,7 +76,8 @@ Operational notes:
 
 Matrix and Lark support are controlled at compile time.
 
-- Default builds are lean (`default = []`) and do not include Matrix/Lark.
+- Default builds target the stable core (`default = ["stable-core"]`) and do
+  not include Matrix/Lark.
 - Typical local check with only hardware support:
 
 ```bash

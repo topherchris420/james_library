@@ -5,7 +5,6 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex as StdMutex};
-#[cfg(unix)]
 use tempfile::TempDir;
 use tokio::sync::{Mutex, MutexGuard};
 use tokio::test;
@@ -1257,6 +1256,7 @@ async fn channels_config_with_imessage_and_matrix() {
         qq: None,
         twitter: None,
         mochat: None,
+        #[cfg(feature = "channel-nostr")]
         nostr: None,
         clawdtalk: None,
         reddit: None,
@@ -1576,6 +1576,7 @@ async fn channels_config_with_whatsapp() {
         qq: None,
         twitter: None,
         mochat: None,
+        #[cfg(feature = "channel-nostr")]
         nostr: None,
         clawdtalk: None,
         reddit: None,

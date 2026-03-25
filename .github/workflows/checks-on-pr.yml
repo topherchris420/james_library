@@ -32,7 +32,7 @@ jobs:
       - name: Check web app
         run: cd web && npm ci && npm run lint && npm run test -- --run && npm run build
   lint:
-    name: Lint
+    name: Stable Core Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -53,7 +53,7 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings
 
   test:
-    name: Test
+    name: Stable Core Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -81,7 +81,7 @@ jobs:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
 
   build:
-    name: Build ${{ matrix.target }}
+    name: Stable Core Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     strategy:
@@ -144,7 +144,7 @@ jobs:
         run: cargo deny check licenses sources
 
   check-32bit:
-    name: "Check (32-bit)"
+    name: "Stable Core Check (32-bit)"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -158,7 +158,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y gcc-multilib
       - name: Ensure web/dist placeholder exists
         run: mkdir -p web/dist && touch web/dist/.gitkeep
-      - name: Cargo check (32-bit, no default features)
+      - name: Cargo check (stable core, 32-bit)
         run: cargo check --target i686-unknown-linux-gnu --no-default-features
 
   # Composite status check — branch protection only needs to require this

@@ -1,12 +1,24 @@
 # Stability Tiers
 
-This document partitions the repository into release-critical core, supported extensions, and experimental lab surfaces so the project scope stays understandable on a standard clone.
+This document partitions the repository into the supported default product,
+opt-in integrations, and experimental lab surfaces so the project scope stays
+understandable on a standard clone.
+
+Default expectation:
+
+- `cargo build` and the required Rust CI gates target the stable core
+  (`default = ["stable-core"]`).
+- Tier 2 functionality is opt-in through explicit Cargo features, config, or
+  deployment choices.
+- Tier 3 paths are documented research surfaces and are not release-blocking by
+  default.
 
 ## Tier 1: Stable Core
 
 Changes here should be treated as release-blocking when they regress behavior or compatibility.
 
-- `src/`
+- core runtime, config, and operator paths under `src/`, excluding the
+  integration-oriented subtrees listed in Tier 2
 - `crates/`
 - `Cargo.toml`
 - `Cargo.lock`
@@ -33,7 +45,15 @@ These areas are part of the product surface, but they can evolve faster than the
 - `src/tools/`
 - `src/hardware/`
 - `src/peripherals/`
+- `src/integrations/`
+- `src/p2p/`
+- `src/rag/`
+- `src/nodes/`
+- `src/hands/`
+- `src/skillforge/`
+- `src/verifiable_intent/`
 - `src/tunnel/`
+- `src/plugins/`
 - `plugins/`
 - `example-plugin/`
 - `examples/`
@@ -44,6 +64,14 @@ Expectations:
 - Interfaces should stay coherent with the core runtime.
 - Compatibility is important, but narrower blast radius and platform-specific changes are expected.
 - Validation should focus on the touched integration path rather than the entire lab surface.
+
+## Build Defaults
+
+- Default stable-core build: `cargo build --locked`
+- Supported extension example:
+  `cargo build --locked --features channel-matrix,channel-lark,memory-postgres`
+- Experimental workflow example:
+  `cargo build --locked --features skill-creation`
 
 ## Tier 3: Experimental and Research Surfaces
 

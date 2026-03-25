@@ -19,7 +19,7 @@ env:
 
 jobs:
   lint:
-    name: Lint
+    name: Stable Core Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -64,7 +64,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
 
   test:
-    name: Test
+    name: Stable Core Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [lint]
@@ -93,7 +93,7 @@ jobs:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
 
   build:
-    name: Build ${{ matrix.target }}
+    name: Stable Core Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     needs: [lint]
@@ -134,10 +134,11 @@ jobs:
           CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
 
   check-all-features:
-    name: Check (all features)
+    name: Supported Extensions Check (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [lint]
+    continue-on-error: true
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -180,7 +181,7 @@ jobs:
   gate:
     name: CI Required Gate
     if: always()
-    needs: [lint, lint-strict-delta, test, build, docs-quality, check-all-features]
+    needs: [lint, lint-strict-delta, test, build, docs-quality]
     runs-on: ubuntu-latest
     steps:
       - name: Check upstream job results

@@ -26,6 +26,17 @@ Your data stays on your machine by default. The system runs locally, keeps conve
 
 ---
 
+## Stable Core First
+
+The repository is intentionally broader than the default supported product.
+
+- The supported baseline is the Python launcher path (`python rain_lab.py`) plus the default Rust build.
+- Provider, channel, platform, and storage integrations stay opt-in through explicit Cargo features.
+- Research and prototype surfaces stay documented, but they are not treated as release-blocking by default.
+- See [Stability Tiers](docs/project/stability-tiers.md) and [Production Readiness](docs/PRODUCTION_READINESS.md) before treating a new surface as part of the stable product.
+
+---
+
 ## Who We Are
 
 The **R.A.I.N. Lab** is what we service to you.
@@ -433,7 +444,9 @@ git clone https://github.com/topherchris420/james_library.git
 cd james_library
 
 python bootstrap_local.py
-cargo build --release --locked    # optional — Python flows work without Rust
+cargo build --release --locked    # stable-core build; Python flows work without Rust
+# opt into supported extensions only when needed
+# cargo build --release --locked --features channel-matrix,channel-lark,memory-postgres
 python rain_lab.py --mode first-run
 ```
 
@@ -474,7 +487,9 @@ pytest -q
 ```bash
 cargo fmt --all
 cargo clippy --all-targets -- -D warnings
-cargo test
+cargo test --locked
+# advisory extension sweep
+# cargo check --all-features --locked
 ```
 
 ### Benchmarks
@@ -510,6 +525,7 @@ python rain_lab.py --mode chat --ui on --topic "your topic"
 - [Product Roadmap](PRODUCT_ROADMAP.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
+- [Stability Tiers](docs/project/stability-tiers.md)
 - [Production Readiness](docs/PRODUCTION_READINESS.md)
 - [First Run Checklist](docs/FIRST_RUN_CHECKLIST.md)
 - [Binary Releases](docs/BINARY_RELEASES.md)

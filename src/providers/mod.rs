@@ -1733,7 +1733,7 @@ mod tests {
         static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
         LOCK.get_or_init(|| Mutex::new(()))
             .lock()
-            .expect("env lock poisoned")
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     #[test]
@@ -1781,6 +1781,7 @@ mod tests {
 
     #[test]
     fn resolve_provider_credential_bedrock_uses_internal_credential_path() {
+        let _env_lock = env_lock();
         let _generic_guard = EnvGuard::set("API_KEY", Some("generic-key"));
         let _override_guard = EnvGuard::set("OPENROUTER_API_KEY", Some("openrouter-key"));
 
@@ -3067,6 +3068,7 @@ mod tests {
 
     #[test]
     fn env_provider_url_overrides_api_url() {
+        let _env_lock = env_lock();
         std::env::set_var("rain_PROVIDER_URL", "http://env-ollama:11434");
 
         let options = ProviderRuntimeOptions::default();

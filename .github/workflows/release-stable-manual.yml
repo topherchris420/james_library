@@ -232,9 +232,9 @@ jobs:
             export "${{ matrix.linker_env }}=${{ matrix.linker }}"
           fi
           if [ "${{ matrix.skip_prometheus || 'false' }}" = "true" ]; then
-            cargo build --release --locked --no-default-features --features "${{ env.RELEASE_CARGO_FEATURES }},channel-nostr,skill-creation" --target ${{ matrix.target }}
+            cargo build --release --locked --no-default-features --features "stable-core,${{ env.RELEASE_CARGO_FEATURES }}" --target ${{ matrix.target }}
           else
-            cargo build --release --locked --features "${{ env.RELEASE_CARGO_FEATURES }}" --target ${{ matrix.target }}
+            cargo build --release --locked --features "stable-core,${{ env.RELEASE_CARGO_FEATURES }}" --target ${{ matrix.target }}
           fi
 
       - name: Package (Unix)
