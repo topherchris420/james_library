@@ -227,8 +227,7 @@ MIT License. See [LICENSE](LICENSE).
 
 ## Acknowledgements
 
-R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project built on the
-[ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw).
+R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project built on [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw).
 
 <a href="https://www.star-history.com/?repos=topherchris420%2Fjames_library&type=date&legend=top-left">
  <picture>
