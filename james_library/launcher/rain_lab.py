@@ -377,13 +377,17 @@ def _build_showcase_html(
 
     preset_cards = []
     for preset in BEGINNER_PRESETS.values():
+        preset_slug = html_escape(preset.slug)
+        preset_command = html_escape(
+            _command_for_mode("beginner", topic=preset.default_topic, preset=preset.slug)
+        )
         preset_cards.append(
             f"""
         <article class="preset-card">
           <div class="card-label">{html_escape(preset.title)}</div>
           <p>{html_escape(preset.summary)}</p>
-          <code id="preset-{html_escape(preset.slug)}">{html_escape(_command_for_mode('beginner', topic=preset.default_topic, preset=preset.slug))}</code>
-          <button type="button" data-copy-target="preset-{html_escape(preset.slug)}">Copy Command</button>
+          <code id="preset-{preset_slug}">{preset_command}</code>
+          <button type="button" data-copy-target="preset-{preset_slug}">Copy Command</button>
         </article>
 """
         )
@@ -644,7 +648,11 @@ def _build_showcase_html(
       <div>
         <div class="eyebrow">R.A.I.N. Lab / Start Here</div>
         <h1>{safe_hero_topic}</h1>
-        <p class="lede">This is the local-first front door for R.A.I.N. Lab. Start with the instant demo if you want a fast wow moment, then use the follow-up commands below to turn that spark into something you can keep, compare, or share.</p>
+        <p class="lede">
+          This is the local-first front door for R.A.I.N. Lab. Start with the instant demo if you
+          want a fast wow moment, then use the follow-up commands below to turn that spark into
+          something you can keep, compare, or share.
+        </p>
       </div>
       <aside class="hero-card">
         <div class="card-label">Latest surface</div>
@@ -666,7 +674,10 @@ def _build_showcase_html(
       <div class="section-head">
         <div>
           <h2>Pick A Vibe</h2>
-          <p>Each preset bends the same topic into a different experience, so it feels closer to a toy box than a terminal menu.</p>
+          <p>
+            Each preset bends the same topic into a different experience, so it feels closer to a
+            toy box than a terminal menu.
+          </p>
         </div>
       </div>
       <div class="preset-grid">{preset_cards_html}</div>
@@ -988,7 +999,12 @@ def _build_beginner_share_html(
         <div class="label">Caption</div>
         <p class="caption" id="caption">{safe_caption}</p>
         <div class="controls">
-          <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('caption').innerText)">Copy Caption</button>
+          <button
+            type="button"
+            onclick="navigator.clipboard.writeText(document.getElementById('caption').innerText)"
+          >
+            Copy Caption
+          </button>
           <a class="link secondary" href="{session_log.as_uri()}">Open Session Log</a>
         </div>
       </article>
@@ -1476,12 +1492,18 @@ def _build_beginner_share_html_v2(
       <article class="card card-primary fade-up delay-1">
         <div class="label">Caption</div>
         <p class="caption" id="caption">{safe_caption}</p>
-        <p class="microcopy">This page is designed to be screenshot-friendly. Copy the caption, grab the highlight, and send the result to someone immediately.</p>
+        <p class="microcopy">
+          This page is designed to be screenshot-friendly. Copy the caption, grab the highlight,
+          and send the result to someone immediately.
+        </p>
         <div class="controls">
           <button id="copy-caption" type="button">Copy Caption</button>
           <a class="link secondary" href="{session_log_uri}">Open Session Log</a>
         </div>
-        <div class="footer-note">Tip: the best social posts use the caption plus the pull-quote poster from the top of this page.</div>
+        <div class="footer-note">
+          Tip: the best social posts use the caption plus the pull-quote poster from the top of
+          this page.
+        </div>
       </article>
       <article class="card card-side fade-up delay-1">
         <div class="label">Spotlight Quote</div>
@@ -1520,7 +1542,10 @@ def _build_beginner_share_html_v2(
       </article>
       <article class="card card-wide fade-up delay-3">
         <div class="label">Try Next</div>
-        <p class="microcopy">Keep the same spark, but run it through a different preset so the result feels new instead of repetitive.</p>
+        <p class="microcopy">
+          Keep the same spark, but run it through a different preset so the result feels new
+          instead of repetitive.
+        </p>
         <div class="next-grid">{follow_up_cards_html}</div>
         <div class="controls" style="margin-top:14px;">
           <a class="link secondary" href="{showcase_uri}">Open Local Showcase</a>
@@ -1712,14 +1737,17 @@ Founder Voice:
 This could win because the pain is obvious, the value is easy to repeat, and the best version is surprisingly memorable.
 
 Skeptic Voice:
-Right now it still sounds generic. The wedge is weak, the first user is blurry, and the retention story is doing too much hand-waving.
+Right now it still sounds generic. The wedge is weak, the first user is blurry, and the
+retention story is doing too much hand-waving.
 
 Builder Voice:
-Shrink the surface. Make one painful job dramatically easier. Then give it one line that a user would actually say to a friend.
+Shrink the surface. Make one painful job dramatically easier. Then give it one line that a user
+would actually say to a friend.
 
 ## Punchy Takeaway
 
-The demo says the concept is not dead. It just needs a more precise buyer, a stronger promise, and one feature people would immediately miss.
+The demo says the concept is not dead. It just needs a more precise buyer, a stronger promise,
+and one feature people would immediately miss.
 """.strip()
     elif preset.slug == "idea-roast":
         body = f"""
@@ -1730,10 +1758,12 @@ James takes a swing at the idea: {topic}.
 ## Demo Exchange
 
 Roast:
-This version feels like three products wearing the same hoodie. It wants to be clever, social, premium, and frictionless all at once.
+This version feels like three products wearing the same hoodie. It wants to be clever, social,
+premium, and frictionless all at once.
 
 Rescue:
-Keep the strongest emotional hook. Cut the rest. If the pitch cannot survive in one sentence, the product is still hiding from itself.
+Keep the strongest emotional hook. Cut the rest. If the pitch cannot survive in one sentence,
+the product is still hiding from itself.
 
 ## Punchy Takeaway
 
@@ -1748,7 +1778,8 @@ James explains the topic in plain language: {topic}.
 ## Demo Exchange
 
 Simple Version:
-Think of it like pushing someone on a swing. Tiny pushes do almost nothing unless you hit the timing just right. When the timing matches, the motion suddenly gets bigger.
+Think of it like pushing someone on a swing. Tiny pushes do almost nothing unless you hit the
+timing just right. When the timing matches, the motion suddenly gets bigger.
 
 Why It Matters:
 That is the difference between noise and resonance. Same effort, much bigger effect.
@@ -2459,7 +2490,10 @@ def main(argv: list[str] | None = None) -> int:
         banner_printed = True
         showcase_path = _write_beginner_showcase_page(args, repo_root)
         print(f"\n{ANSI_CYAN}Welcome to R.A.I.N. Lab!{ANSI_RESET}")
-        print(f"{ANSI_DIM}I'll help you get started. Press Enter for a fast no-setup demo, or pick a path below.{ANSI_RESET}")
+        print(
+            f"{ANSI_DIM}I'll help you get started. Press Enter for a fast no-setup demo, "
+            f"or pick a path below.{ANSI_RESET}"
+        )
         print(f"{ANSI_DIM}Local showcase: {showcase_path}{ANSI_RESET}\n")
 
         print("What would you like to do first?")
@@ -2511,7 +2545,12 @@ def main(argv: list[str] | None = None) -> int:
         requested_mode = args.mode
 
     if requested_mode == "beginner":
-        if not args.topic and not getattr(args, "preset", None) and "-h" not in passthrough and "--help" not in passthrough:
+        if (
+            not args.topic
+            and not getattr(args, "preset", None)
+            and "-h" not in passthrough
+            and "--help" not in passthrough
+        ):
             if not banner_printed:
                 _print_banner()
                 banner_printed = True
@@ -2545,7 +2584,10 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"{ANSI_GREEN}Beginner mode: choosing {chosen_label}.{ANSI_RESET}")
             if args.ui == "auto":
-                print(f"{ANSI_DIM}If avatars are available, I will use them. Otherwise this stays in the CLI.{ANSI_RESET}")
+                print(
+                    f"{ANSI_DIM}If avatars are available, I will use them. Otherwise this stays "
+                    f"in the CLI.{ANSI_RESET}"
+                )
 
     if args.mode == "demo":
         args = _prepare_demo_args(args)
