@@ -27,14 +27,28 @@ This is the **Circuit Breaker architecture**: instead of guessing, R.A.I.N. Lab 
 
 ## Quick Start
 
+Windows one-click:
+
+```powershell
+git clone https://github.com/topherchris420/james_library.git
+cd james_library
+.\INSTALL_RAIN.cmd
+```
+
+macOS/Linux source checkout:
+
 ```bash
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
-python bootstrap_local.py
-python rain_lab.py
+uv python install 3.12
+uv venv .venv --python 3.12
+uv pip compile requirements-pinned.txt -o uv.lock
+uv pip sync --python .venv/bin/python uv.lock
+uv run --python .venv/bin/python bootstrap_local.py
+uv run --python .venv/bin/python rain_lab.py
 ```
 
-See the [full installation guide](../README.md#install-in-3-steps) for platform-specific instructions.
+After install, the main product entrypoint is `python rain_lab.py`.
 
 ---
 
@@ -45,9 +59,9 @@ R.A.I.N. Lab ships as one product built from two layers:
 | Layer | Role | Language |
 |---|---|---|
 | **James Library** | Research workflows, lab meetings, synthesis | Python |
-| **R.A.I.N.** | Agent runtime, orchestration, security, tools | Rust (optional) |
+| **R.A.I.N. Runtime** | Agent runtime, orchestration, security, tools | Rust (optional) |
 
-Python research workflows work without Rust. The Rust runtime adds speed, channels, and tool execution for advanced users.
+Python research workflows work without Rust. The R.A.I.N. Runtime adds speed, channels, and tool execution for advanced users.
 
 ---
 

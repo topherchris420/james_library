@@ -1,6 +1,10 @@
 """Unified launcher for R.A.I.N. Lab meeting modes.
 
-Quick Start (for everyone):
+Recommended front door:
+  Install with INSTALL_RAIN.cmd on Windows, or with the uv + bootstrap_local.py flow on macOS/Linux.
+  After setup, this launcher is the daily product entrypoint.
+
+Quick Start:
   python rain_lab.py           # Interactive wizard - asks what you want to do
   python rain_lab.py --mode chat --topic "your research topic"
   python rain_lab.py --mode validate  # Check if system is ready

@@ -28,13 +28,31 @@ The core differentiator is the "circuit breaker" workflow: when agents get stuck
 disagreement into a formal logic problem and push it through a sandboxed verification path instead of letting
 the conversation loop forever.
 
-## Start In 1 minute
+## Start Fast
+
+Choose one install route, then use `python rain_lab.py` as the everyday product entrypoint.
+
+### Windows One-Click
+
+```powershell
+git clone https://github.com/topherchris420/james_library.git
+cd james_library
+.\INSTALL_RAIN.cmd
+```
+
+The installer uses `uv`, fetches the prebuilt runtime, prepares `.env` and `config.toml`, and hands off to James automatically.
+
+### macOS / Linux Source Checkout
 
 ```bash
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
-python bootstrap_local.py
-python rain_lab.py
+uv python install 3.12
+uv venv .venv --python 3.12
+uv pip compile requirements-pinned.txt -o uv.lock
+uv pip sync --python .venv/bin/python uv.lock
+uv run --python .venv/bin/python bootstrap_local.py
+uv run --python .venv/bin/python rain_lab.py
 ```
 
 Then:
@@ -50,6 +68,7 @@ Beginner and demo runs generate:
 - a local showcase page with poster previews and follow-up commands
 
 Use `python rain_lab.py --open-browser off` if you want to keep everything local without auto-opening pages.
+On Windows, `INSTALL_RAIN.cmd` also creates desktop and Start Menu shortcuts.
 
 ## Why People Use It
 
@@ -138,10 +157,11 @@ R.A.I.N. Lab is one platform built from two main layers:
 | Layer | Role | Language |
 | --- | --- | --- |
 | James Library | Research workflows, debate, synthesis, launcher experience | Python |
-| ZeroClaw | Orchestration, channels, tools, memory, security | Rust |
+| R.A.I.N. Runtime | Orchestration, channels, tools, memory, security | Rust |
 
 You use it as one app.
 Python flows work without Rust installed, while the Rust runtime adds speed, orchestration, and integration depth.
+ZeroClaw is the runtime lineage behind that layer, but the user-facing product is R.A.I.N. Lab.
 
 ## For Developers
 
@@ -153,9 +173,12 @@ Python flows work without Rust installed, while the Rust runtime adds speed, orc
 ```bash
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
-python bootstrap_local.py
+uv python install 3.12
+uv venv .venv --python 3.12
+uv pip sync --python .venv/bin/python requirements-dev-pinned.txt
+uv run --python .venv/bin/python bootstrap_local.py --skip-preflight
 cargo build --release --locked
-python rain_lab.py --mode first-run
+uv run --python .venv/bin/python rain_lab.py --mode first-run
 ```
 
 ### Tests
@@ -216,4 +239,3 @@ R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project built on t
    <img alt="Star History Chart" src="https://api.star-history.com/image?repos=topherchris420/james_library&type=date&legend=top-left" />
  </picture>
 </a>
-

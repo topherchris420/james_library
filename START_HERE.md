@@ -8,16 +8,18 @@
 
 ## If You Only Read One Thing
 
-Use this command:
+Install once, then use this command every day:
 
 ```bash
 python rain_lab.py
 ```
 
-For non-technical users, this is the **only entry point you need**. The script opens a guided wizard, pressing Enter starts the no-setup instant demo, and every beginner/demo run updates a local showcase page in `meeting_archives/RAIN_LAB_SHOWCASE.html`.
+For non-technical users, this is the **only daily entry point you need**. The script opens a guided wizard, pressing Enter starts the no-setup instant demo, and every beginner/demo run updates a local showcase page in `meeting_archives/RAIN_LAB_SHOWCASE.html`.
 Those runs also generate a screenshot-friendly HTML share card plus a matching poster SVG in `meeting_archives/`, and interactive runs can open them automatically. Use `--open-browser off` if you want to suppress that behavior.
 
-You can safely ignore files like `rain_unique.py`, `james_reader.py`, `chat_with_james.py`, and other specialized scripts unless a maintainer tells you to use them.
+Windows users should start with `.\INSTALL_RAIN.cmd`. macOS/Linux users should use the fetch-first `uv` + `bootstrap_local.py` flow from the main `README.md`.
+
+You can safely ignore files like `rain_unique.py`, `james_reader.py`, and other specialized scripts unless a maintainer tells you to use them. `chat_with_james.py` is used for the first installer handoff, but it is not the main product launcher.
 
 ---
 
@@ -49,14 +51,12 @@ If you're just using the tool, think of all of this as one app and start with `p
 
 ## Checklist
 
-Before first use, install:
+Before first use, make sure you have one supported install route:
 
-1. **Python 3.10+**
-2. **Ollama**
-3. At least one model (example):
-   ```bash
-   ollama pull qwen2.5-coder
-   ```
+1. **Windows**: run `.\INSTALL_RAIN.cmd`
+2. **macOS/Linux**: install `uv`, create the `.venv`, sync dependencies, then run `bootstrap_local.py`
+3. **Optional local models**: install Ollama or LM Studio if you want local inference instead of the instant demo or a hosted provider
+4. **Optional hosted models**: paste an API key into the bootstrap prompt so `.env` is created for you
 
 If you are unsure whether setup is complete, run:
 
@@ -70,10 +70,10 @@ python rain_lab.py --mode validate
 
 For a new non-technical user:
 
-1. Install Python and Ollama.
-2. Run `python rain_lab.py --mode first-run` once.
-3. Run `python rain_lab.py` and choose **Beginner mode**, or launch it directly with `python rain_lab.py --mode beginner --topic "your idea"`.
-4. If you want a fast wow moment before local model setup, just run `python rain_lab.py` and press Enter, or use `python rain_lab.py --mode demo --preset startup-debate`.
+1. Run `.\INSTALL_RAIN.cmd` on Windows, or finish the `uv` + `bootstrap_local.py` setup on macOS/Linux.
+2. If the installer hands you off to James, use that as the welcome screen, then return to `python rain_lab.py` for the main product workflow.
+3. Run `python rain_lab.py` and press Enter for the instant demo, or choose **Beginner mode**.
+4. If you want to wire up local or hosted models, run `python rain_lab.py --mode first-run`.
 5. After a session, open `meeting_archives/RAIN_LAB_SHOWCASE.html` to revisit recent runs, poster previews, and copy the next commands.
 6. If anything fails, run `python rain_lab.py --mode validate`.
 
@@ -112,7 +112,7 @@ That's it. Just run that command, press Enter for the instant demo if you want t
 - Download and install from [python.org](https://python.org)
 
 **"Ollama not found"**
-- Download from [ollama.ai](https://ollama.ai)
+- Install Ollama only if you want local-model inference. Otherwise press Enter for the instant demo or use a hosted API key in `.env`.
 
 **Not sure what to do?**
 - Just run `python rain_lab.py` and it will ask you what you want to do
@@ -122,6 +122,6 @@ That's it. Just run that command, press Enter for the instant demo if you want t
 ## Need Help?
 
 - **Simplest start**: Run `python rain_lab.py` and choose from the menu
-- **Simple guide**: See `README_SIMPLE.md`
+- **Install routes**: See `README.md`
 - **Technical details**: See `README.md`
 - **Problems?**: Try `python rain_lab.py --mode validate`

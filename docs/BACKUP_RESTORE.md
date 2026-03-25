@@ -47,12 +47,13 @@ Safety behavior:
 1. Create a clean folder:
    - `mkdir rain_restore && cd rain_restore`
 2. Unzip the snapshot there.
-3. Recreate environment:
-   - `python bootstrap_local.py --recreate-venv`
+3. Recreate the environment with the current install route:
+   - Windows: run `.\INSTALL_RAIN.cmd`
+   - macOS/Linux: recreate `.venv` with `uv`, sync dependencies, then run `bootstrap_local.py`
 4. Validate:
-   - `python rain_lab.py --mode preflight`
+   - `python rain_lab.py --mode validate`
 5. Resume usage:
-   - `python rain_lab.py --mode chat --topic "..."`
+   - `python rain_lab.py`
 
 ## Verify backup integrity
 

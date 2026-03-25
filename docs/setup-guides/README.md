@@ -1,31 +1,33 @@
-# Getting Started Docs
+# Setup Guides
 
-For first-time setup and quick orientation.
+Use this section when you already know you are doing setup or platform-specific maintenance.
+If you are new to the product, start with [../../README.md](../../README.md) and [../../START_HERE.md](../../START_HERE.md).
 
 ## Start Path
 
-1. Main overview and quick start: [../../README.md](../../README.md)
-2. One-click setup and dual bootstrap mode: [one-click-bootstrap.md](one-click-bootstrap.md)
-3. Update or uninstall on macOS: [macos-update-uninstall.md](macos-update-uninstall.md)
-4. Find commands by tasks: [../reference/cli/commands-reference.md](../reference/cli/commands-reference.md)
+1. Main overview and install routes: [../../README.md](../../README.md)
+2. Plain-English product orientation: [../../START_HERE.md](../../START_HERE.md)
+3. Current bootstrap/install flow: [one-click-bootstrap.md](one-click-bootstrap.md)
+4. Update or uninstall on macOS: [macos-update-uninstall.md](macos-update-uninstall.md)
+5. Find commands by task: [../reference/cli/commands-reference.md](../reference/cli/commands-reference.md)
 
 ## Choose Your Path
 
-| Scenario | Command |
-|----------|---------|
-| I have an API key, want fastest setup | `R.A.I.N. onboard --api-key sk-... --provider openrouter` |
-| I want guided prompts | `R.A.I.N. onboard` |
-| Config exists, just fix channels | `R.A.I.N. onboard --channels-only` |
-| Config exists, I intentionally want full overwrite | `R.A.I.N. onboard --force` |
-| Using subscription auth | See [Subscription Auth](../../README.md#subscription-auth-openai-codex--claude-code) |
+| Scenario | Recommended path |
+|----------|------------------|
+| I want the fastest Windows install | Run `.\INSTALL_RAIN.cmd` from the repo root |
+| I am on macOS/Linux | Use the `uv` + `bootstrap_local.py` flow in [one-click-bootstrap.md](one-click-bootstrap.md) |
+| I want guided model/provider setup | `python rain_lab.py --mode first-run` |
+| I want the fastest preview with no model | `python rain_lab.py` and press Enter for the instant demo |
+| I just want a readiness check | `python rain_lab.py --mode validate` |
 
 ## Onboarding and Validation
 
-- Quick onboarding: `R.A.I.N. onboard --api-key "sk-..." --provider openrouter`
-- Guided onboarding: `R.A.I.N. onboard`
-- Existing config protection: reruns require explicit confirmation (or `--force` in non-interactive flows)
-- Ollama cloud models (`:cloud`) require a remote `api_url` and API key (for example `api_url = "https://ollama.com"`).
-- Validate environment: `R.A.I.N. status` + `R.A.I.N. doctor`
+- Main product entrypoint: `python rain_lab.py`
+- Guided setup: `python rain_lab.py --mode first-run`
+- Instant preview: `python rain_lab.py --mode demo --preset startup-debate`
+- Validate environment: `python rain_lab.py --mode validate`
+- Existing config protection still applies when setup rewrites `.env` or `config.toml`
 
 ## Next
 

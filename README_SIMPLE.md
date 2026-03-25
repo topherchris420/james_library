@@ -1,4 +1,13 @@
-# 🌧️ Vers3Dynamics R.A.I.N. - Novelty Detection System
+# R.A.I.N. Lab Focused Example: Novelty Detection (`rain_unique.py`)
+
+This document is for the narrow `rain_unique.py` novelty-detection workflow.
+It is not the main R.A.I.N. Lab product onboarding path.
+
+If you want the full product:
+
+- Windows: run `.\INSTALL_RAIN.cmd`
+- macOS/Linux: use the fetch-first `uv` + `bootstrap_local.py` flow from `README.md`
+- Everyday entrypoint after setup: `python rain_lab.py`
 
 ## The Simple Version - Exactly As Specified
 
