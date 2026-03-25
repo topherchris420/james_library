@@ -28,7 +28,7 @@ The core differentiator is the "circuit breaker" workflow: when agents get stuck
 disagreement into a formal logic problem and push it through a sandboxed verification path instead of letting
 the conversation loop forever.
 
-## Start In 60 Seconds
+## Start In 1 minute
 
 ```bash
 git clone https://github.com/topherchris420/james_library.git
