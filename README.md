@@ -123,10 +123,9 @@ Recommended local-first flow:
 
 ## Install And Onboarding
 
-The main README is now the front door, not the full handbook.
 Use the focused docs below depending on what you need:
 
-- [START_HERE.md](START_HERE.md) for the plain-English product walkthrough
+- [START_HERE.md](START_HERE.md) for the walkthrough
 - [Getting Started Docs](docs/getting-started/README.md) for onboarding
 - [One-Click Bootstrap](docs/one-click-bootstrap.md) for setup automation
 - [Releases Page](https://github.com/topherchris420/james_library/releases) for prebuilt packages
@@ -139,7 +138,7 @@ R.A.I.N. Lab is one platform built from two main layers:
 | Layer | Role | Language |
 | --- | --- | --- |
 | James Library | Research workflows, debate, synthesis, launcher experience | Python |
-| ZeroClaw runtime | Orchestration, channels, tools, memory, security | Rust |
+| ZeroClaw | Orchestration, channels, tools, memory, security | Rust |
 
 You use it as one app.
 Python flows work without Rust installed, while the Rust runtime adds speed, orchestration, and integration depth.
@@ -208,4 +207,4 @@ MIT License. See [LICENSE](LICENSE).
 ## Acknowledgements
 
 R.A.I.N. Lab is a [Vers3Dynamics](https://vers3dynamics.com/) project built on the
-[ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) runtime foundation.
+[ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw).
