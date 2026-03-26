@@ -16,7 +16,7 @@ Usage:
   ./install.sh [options]
 
 This installer mirrors the Windows INSTALL_RAIN.cmd flow:
-1. install uv (via curl) if missing
+1. verify uv is installed (see https://docs.astral.sh/uv/getting-started/installation/)
 2. create .venv with Python 3.12
 3. compile and sync pinned dependencies
 4. run bootstrap_local.py to fetch the prebuilt runtime and initialize config
@@ -89,13 +89,6 @@ ensure_uv() {
   fi
 
   install_uv
-
-  if uv_path="$(resolve_uv_path)"; then
-    printf '%s\n' "$uv_path"
-    return 0
-  fi
-
-  fail "uv installation completed but the uv executable was not found"
 }
 
 run_uv() {

@@ -29,7 +29,7 @@ Use the one-click repo installer:
 ./install.sh
 ```
 
-Under the hood, `install.sh` installs `uv` if needed, creates `.venv`, compiles and syncs the pinned requirements, runs `bootstrap_local.py`, and then hands off to James unless you pass `--no-greet`.
+Under the hood, `install.sh` requires `uv` to be pre-installed (see <https://docs.astral.sh/uv/getting-started/installation/>), creates `.venv`, compiles and syncs the pinned requirements, runs `bootstrap_local.py`, and then hands off to James unless you pass `--no-greet`.
 
 ## After Install
 
