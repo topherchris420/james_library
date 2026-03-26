@@ -78,19 +78,7 @@ resolve_uv_path() {
 }
 
 install_uv() {
-  local installer_path
-
-  if ! command -v curl >/dev/null 2>&1; then
-    fail "curl is required to install uv"
-  fi
-
-  installer_path="$(mktemp -t rain-install-uv.XXXXXX.sh)"
-
-  info "Downloading uv installer"
-  curl -LsSf "https://astral.sh/uv/install.sh" -o "$installer_path"
-  sh "$installer_path"
-  rm -f "$installer_path"
-  export PATH="$HOME/.local/bin:$PATH"
+  fail "uv is required but was not found. Please install uv first (https://docs.astral.sh/uv/getting-started/installation/) and re-run install.sh"
 }
 
 ensure_uv() {

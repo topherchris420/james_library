@@ -11,6 +11,7 @@ def test_posix_installer_uses_fetch_first_flow(repo_root: Path) -> None:
     assert "chat_with_james.py" in text
     assert "--greet" in text
     assert "requirements-pinned.txt" in text
-    assert '"https://astral.sh/uv/install.sh"' in text
+    assert "https://docs.astral.sh/uv/getting-started/installation/" in text
+    assert '"https://astral.sh/uv/install.sh"' not in text
     assert "cargo build --release" not in text
     assert "cargo install --path" not in text
