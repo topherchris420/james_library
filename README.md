@@ -20,7 +20,7 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-The R.A.I.N. Lab is a local-first AI research lab for people who want more than a single chatbot answer.
+The R.A.I.N. Lab is a local-first AI research lab for people who want deeper answers from their questions.
 It helps you test ideas, compare viewpoints, run structured debates, and generate shareable results without
 sending your data off-machine by default.
 
