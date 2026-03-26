@@ -22,7 +22,7 @@ Run the root installer:
 ./install.sh
 ```
 
-That installer installs `uv` if needed, creates `.venv`, syncs the pinned Python requirements, runs `bootstrap_local.py`, and then opens the James handoff unless you pass `--no-greet`.
+That installer requires `uv` to be pre-installed (see <https://docs.astral.sh/uv/getting-started/installation/>), creates `.venv`, syncs the pinned Python requirements, runs `bootstrap_local.py`, and then opens the James handoff unless you pass `--no-greet`.
 
 ## After Install
 
