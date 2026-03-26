@@ -47,6 +47,6 @@ python rain_lab.py
 
 ## Что читать дальше по роли (Who Should Read What Next)
 
-- **Новые пользователи / первый запуск**: начните с [`START_HERE.md`](START_HERE.md), затем перейдите к [`docs/getting-started/README.md`](docs/getting-started/README.md).
-- **Операторы / владельцы деплоя**: в первую очередь [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) и [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md).
-- **Интеграторы / разработчики расширений**: в первую очередь [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).
+- **Новые пользователи / первый запуск**: начните с [`START_HERE.md`](START_HERE.md), затем [`docs/getting-started/README.md`](docs/getting-started/README.md), затем [`docs/troubleshooting.md`](docs/troubleshooting.md).
+- **Операторы / владельцы деплоя**: в первую очередь [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md), [`docs/ops/network-deployment.md`](docs/ops/network-deployment.md), [`docs/security/README.md`](docs/security/README.md).
+- **Интеграторы / разработчики расширений**: в первую очередь [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).

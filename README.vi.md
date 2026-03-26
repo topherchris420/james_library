@@ -47,6 +47,6 @@ Trang này là điểm vào. Để xem đầy đủ bề mặt runtime (lệnh, 
 
 ## Ai nên đọc gì tiếp theo (Who Should Read What Next)
 
-- **Người dùng mới / lần đầu trải nghiệm**: bắt đầu từ [`START_HERE.md`](START_HERE.md), sau đó đọc [`docs/getting-started/README.md`](docs/getting-started/README.md).
-- **Vận hành / chủ sở hữu triển khai**: ưu tiên [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) và [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md).
-- **Tích hợp / phát triển mở rộng**: ưu tiên [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).
+- **Người dùng mới / lần đầu trải nghiệm**: bắt đầu từ [`START_HERE.md`](START_HERE.md), sau đó đọc [`docs/getting-started/README.md`](docs/getting-started/README.md), sau đó [`docs/troubleshooting.md`](docs/troubleshooting.md).
+- **Vận hành / chủ sở hữu triển khai**: ưu tiên [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md), [`docs/ops/network-deployment.md`](docs/ops/network-deployment.md), [`docs/security/README.md`](docs/security/README.md).
+- **Tích hợp / phát triển mở rộng**: ưu tiên [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).

@@ -47,6 +47,6 @@ python rain_lab.py
 
 ## 次に読むべき資料（Who Should Read What Next）
 
-- **新規ユーザー / 初回体験**：[`START_HERE.md`](START_HERE.md) から始め、次に [`docs/getting-started/README.md`](docs/getting-started/README.md) を参照。
-- **運用担当 / デプロイ担当**：[`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) と [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md) を優先。
-- **インテグレーター / 拡張開発者**：[`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md)、[`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md)、[`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md)、[`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md) を優先。
+- **新規ユーザー / 初回体験**：[`START_HERE.md`](START_HERE.md) から始め、次に [`docs/getting-started/README.md`](docs/getting-started/README.md)、そして [`docs/troubleshooting.md`](docs/troubleshooting.md) を参照。
+- **運用担当 / デプロイ担当**：[`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md)、[`docs/ops/network-deployment.md`](docs/ops/network-deployment.md)、[`docs/security/README.md`](docs/security/README.md) を優先。
+- **インテグレーター / 拡張開発者**：[`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md)、[`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md)、[`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md) を優先。

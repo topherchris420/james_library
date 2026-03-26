@@ -47,6 +47,6 @@ python rain_lab.py
 
 ## 我应该先读什么（Who Should Read What Next）
 
-- **新用户 / 首次体验**：从 [`START_HERE.md`](START_HERE.md) 开始，然后阅读 [`docs/getting-started/README.md`](docs/getting-started/README.md)。
-- **运维 / 部署负责人**：优先阅读 [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) 与 [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md)。
-- **集成方 / 二次开发者**：优先阅读 [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md)、[`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md)、[`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md)、[`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md)。
+- **新用户 / 首次体验**：从 [`START_HERE.md`](START_HERE.md) 开始，然后阅读 [`docs/getting-started/README.md`](docs/getting-started/README.md)，然后 [`docs/troubleshooting.md`](docs/troubleshooting.md)。
+- **运维 / 部署负责人**：优先阅读 [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md)、[`docs/ops/network-deployment.md`](docs/ops/network-deployment.md)、[`docs/security/README.md`](docs/security/README.md)。
+- **集成方 / 二次开发者**：优先阅读 [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md)、[`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md)、[`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md)。
