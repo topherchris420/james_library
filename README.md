@@ -105,6 +105,21 @@ Before treating an extension as production-ready, read:
 - [Stability Tiers](docs/project/stability-tiers.md)
 - [Production Readiness](docs/PRODUCTION_READINESS.md)
 
+## Capabilities At A Glance
+
+README is the front door. For the complete runtime surface (commands, channels, providers, operations, security, hardware),
+use the linked references below.
+
+| Capability area | What you get | Canonical reference |
+| --- | --- | --- |
+| CLI and automation | Onboarding, agent, gateway/daemon, service, diagnostics, estop, cron, skills, updates | [Commands Reference](docs/reference/cli/commands-reference.md) |
+| Channels and messaging | Multi-channel delivery, allowlists, webhook/polling modes, per-channel config | [Channels Reference](docs/reference/api/channels-reference.md) |
+| Providers and model routing | Local/cloud providers, aliases, auth env vars, model refresh workflows | [Providers Reference](docs/reference/api/providers-reference.md) |
+| Config and runtime contracts | Config schema and behavior guarantees | [Config Reference](docs/reference/api/config-reference.md) |
+| Operations and troubleshooting | Runbook, deployment patterns, diagnostics and failure recovery | [Operations Runbook](docs/ops/operations-runbook.md), [Troubleshooting](docs/ops/troubleshooting.md) |
+| Security model | Sandboxing, policy boundaries, audit posture | [Security Docs Hub](docs/security/README.md) |
+| Hardware and peripherals | Board setup and peripheral tool design | [Hardware Docs Hub](docs/hardware/README.md) |
+
 ## What Makes It Different
 
 Most AI tools follow a simple pattern: prompt, answer, retry.
@@ -220,6 +235,12 @@ cargo build --release --locked --features channel-matrix,channel-lark,memory-pos
 - [Setup Guides](docs/setup-guides/README.md)
 - [Releases Page](https://github.com/topherchris420/james_library/releases)
 - [Troubleshooting](docs/troubleshooting.md)
+
+## Who Should Read What Next
+
+- **New users**: [START_HERE.md](START_HERE.md) -> [Getting Started Docs](docs/getting-started/README.md) -> [Troubleshooting](docs/troubleshooting.md)
+- **Operators**: [Operations Runbook](docs/ops/operations-runbook.md) -> [Network Deployment](docs/ops/network-deployment.md) -> [Security Docs Hub](docs/security/README.md)
+- **Integrators / developers**: [Commands Reference](docs/reference/cli/commands-reference.md) -> [Providers Reference](docs/reference/api/providers-reference.md) -> [Channels Reference](docs/reference/api/channels-reference.md)
 
 ## License
 
