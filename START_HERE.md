@@ -40,7 +40,7 @@ If you need the full support boundary, see
 ## Name Guide (Plain English)
 
 - **R.A.I.N. Lab**: the product experience you use.
-- **R.A.I.N.**: the Rust runtime engine under the hood.
+- **ZeroClaw**: the Rust runtime engine under the hood.
 - **James Library**: the Python workflow collection in this repository.
 - **Vers3Dynamics**: the project/organization branding.
 
