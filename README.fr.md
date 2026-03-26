@@ -47,6 +47,6 @@ Cette page est la porte d’entrée. Pour la surface runtime complète (commande
 
 ## Qui doit lire quoi ensuite (Who Should Read What Next)
 
-- **Nouveaux utilisateurs / première expérience** : commencez par [`START_HERE.md`](START_HERE.md), puis continuez avec [`docs/getting-started/README.md`](docs/getting-started/README.md).
-- **Opérateurs / responsables déploiement** : priorisez [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) et [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md).
-- **Intégrateurs / développeurs d’extensions** : priorisez [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).
+- **Nouveaux utilisateurs / première expérience** : commencez par [`START_HERE.md`](START_HERE.md), puis [`docs/getting-started/README.md`](docs/getting-started/README.md), puis [`docs/troubleshooting.md`](docs/troubleshooting.md).
+- **Opérateurs / responsables déploiement** : priorisez [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md), [`docs/ops/network-deployment.md`](docs/ops/network-deployment.md), [`docs/security/README.md`](docs/security/README.md).
+- **Intégrateurs / développeurs d'extensions** : priorisez [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).
