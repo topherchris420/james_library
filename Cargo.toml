@@ -57,7 +57,7 @@ serde_yaml = "0.9"
 
 # Config
 directories = "6.0"
-toml = "1.0"
+toml = "1.1"
 shellexpand = "3.1"
 
 # JSON Schema generation for config export
@@ -90,7 +90,7 @@ indicatif = "0.18"
 tempfile = "3.26"
 
 # Zip extraction for ClawhHub / OpenClaw registry installers
-zip = { version = "8.3", default-features = false, features = ["deflate"] }
+zip = { version = "8.4", default-features = false, features = ["deflate"] }
 
 # Error handling
 anyhow = "1.0"
