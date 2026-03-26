@@ -1,4 +1,4 @@
-# R.A.I.N. Lab: Local-First AI Research Assistants
+# 🐙R.A.I.N. Lab: James and AI Research Assistants
 
 <p align="center">
   <img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="900" />
