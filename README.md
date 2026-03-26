@@ -75,6 +75,17 @@ On macOS/Linux, `./install.sh` is the equivalent one-click repo installer.
 - Structured reasoning: R.A.I.N. Lab can debate, compare, and resolve disagreements instead of just generating plausible text.
 - Shareable outputs: beginner and demo sessions end in polished artifacts people can screenshot, revisit, and pass around.
 
+## README Scope
+
+This README is the product quickstart, not the full contract surface.
+For complete behavior and extension coverage, use the reference docs:
+
+- [Commands Reference](docs/reference/cli/commands-reference.md)
+- [Providers Reference](docs/reference/api/providers-reference.md)
+- [Channels Reference](docs/reference/api/channels-reference.md)
+- [Configuration Reference](docs/reference/config/config-reference.md)
+- [Operations Runbook](docs/operations/operations-runbook.md)
+
 ## Pick A Path
 
 | Goal | Run this |
