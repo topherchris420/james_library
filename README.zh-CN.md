@@ -30,3 +30,23 @@ python rain_lab.py
 ```
 
 更多命令与配置说明请参考文档中心与运行时参考文档。
+
+## 能力速览（Capabilities At A Glance）
+
+本页是入口。完整运行时能力（命令、通道、Provider、运维、安全、硬件）请参考下表链接。
+
+| 能力领域 | 你可以获得什么 | 规范文档 |
+| --- | --- | --- |
+| CLI 与自动化 | 引导、agent、gateway/daemon、service、诊断、estop、cron、skills、更新 | [Commands Reference](docs/reference/cli/commands-reference.md) |
+| 通道与消息 | 多通道投递、allowlist、webhook/polling 模式、按通道配置 | [Channels Reference](docs/reference/api/channels-reference.md) |
+| Provider 与模型路由 | 本地/云 Provider、别名、认证环境变量、模型刷新流程 | [Providers Reference](docs/reference/api/providers-reference.md) |
+| 配置与运行时契约 | 配置结构与行为保证 | [Config Reference](docs/reference/api/config-reference.md) |
+| 运维与故障排查 | Runbook、部署模式、诊断与故障恢复 | [Operations Runbook](docs/ops/operations-runbook.md), [Troubleshooting](docs/ops/troubleshooting.md) |
+| 安全模型 | 沙箱、策略边界、审计姿态 | [Security Docs Hub](docs/security/README.md) |
+| 硬件与外设 | 开发板接入与外设工具设计 | [Hardware Docs Hub](docs/hardware/README.md) |
+
+## 我应该先读什么（Who Should Read What Next）
+
+- **新用户 / 首次体验**：从 [`START_HERE.md`](START_HERE.md) 开始，然后阅读 [`docs/getting-started/README.md`](docs/getting-started/README.md)。
+- **运维 / 部署负责人**：优先阅读 [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) 与 [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md)。
+- **集成方 / 二次开发者**：优先阅读 [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md)、[`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md)、[`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md)、[`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md)。

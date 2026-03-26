@@ -30,3 +30,23 @@ python rain_lab.py
 ```
 
 Xem thêm tài liệu lệnh và cấu hình trong docs hub và các trang tham chiếu runtime.
+
+## Năng lực tổng quan (Capabilities At A Glance)
+
+Trang này là điểm vào. Để xem đầy đủ bề mặt runtime (lệnh, kênh, provider, vận hành, bảo mật, phần cứng), dùng các liên kết bên dưới.
+
+| Nhóm năng lực | Bạn nhận được gì | Tài liệu chuẩn |
+| --- | --- | --- |
+| CLI và tự động hóa | Onboarding, agent, gateway/daemon, service, chẩn đoán, estop, cron, skills, cập nhật | [Commands Reference](docs/reference/cli/commands-reference.md) |
+| Kênh và nhắn tin | Phân phối đa kênh, allowlist, chế độ webhook/polling, cấu hình theo kênh | [Channels Reference](docs/reference/api/channels-reference.md) |
+| Provider và định tuyến mô hình | Provider local/cloud, alias, biến môi trường xác thực, quy trình làm mới mô hình | [Providers Reference](docs/reference/api/providers-reference.md) |
+| Cấu hình và hợp đồng runtime | Schema cấu hình và cam kết hành vi | [Config Reference](docs/reference/api/config-reference.md) |
+| Vận hành và xử lý sự cố | Runbook, mẫu triển khai, chẩn đoán và khôi phục lỗi | [Operations Runbook](docs/ops/operations-runbook.md), [Troubleshooting](docs/ops/troubleshooting.md) |
+| Mô hình bảo mật | Sandbox, ranh giới chính sách, tư thế kiểm toán | [Security Docs Hub](docs/security/README.md) |
+| Phần cứng và thiết bị ngoại vi | Thiết lập board và thiết kế công cụ ngoại vi | [Hardware Docs Hub](docs/hardware/README.md) |
+
+## Ai nên đọc gì tiếp theo (Who Should Read What Next)
+
+- **Người dùng mới / lần đầu trải nghiệm**: bắt đầu từ [`START_HERE.md`](START_HERE.md), sau đó đọc [`docs/getting-started/README.md`](docs/getting-started/README.md).
+- **Vận hành / chủ sở hữu triển khai**: ưu tiên [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) và [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md).
+- **Tích hợp / phát triển mở rộng**: ưu tiên [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).

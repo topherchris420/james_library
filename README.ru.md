@@ -30,3 +30,23 @@ python rain_lab.py
 ```
 
 Подробности по командам и конфигурации доступны в docs-хабе и справочных разделах.
+
+## Возможности в одном месте (Capabilities At A Glance)
+
+Эта страница — входная точка. Для полного покрытия runtime-поверхности (команды, каналы, провайдеры, эксплуатация, безопасность, железо) используйте ссылки ниже.
+
+| Область возможностей | Что доступно | Канонический справочник |
+| --- | --- | --- |
+| CLI и автоматизация | Онбординг, agent, gateway/daemon, service, диагностика, estop, cron, skills, обновления | [Commands Reference](docs/reference/cli/commands-reference.md) |
+| Каналы и сообщения | Мультиканальная доставка, allowlists, режимы webhook/polling, конфиг по каналам | [Channels Reference](docs/reference/api/channels-reference.md) |
+| Провайдеры и маршрутизация моделей | Локальные/облачные провайдеры, алиасы, env-переменные авторизации, обновление моделей | [Providers Reference](docs/reference/api/providers-reference.md) |
+| Конфигурация и runtime-контракты | Схема конфигурации и поведенческие гарантии | [Config Reference](docs/reference/api/config-reference.md) |
+| Эксплуатация и диагностика | Runbook, паттерны деплоя, диагностика и восстановление после сбоев | [Operations Runbook](docs/ops/operations-runbook.md), [Troubleshooting](docs/ops/troubleshooting.md) |
+| Модель безопасности | Песочница, границы политик, аудит | [Security Docs Hub](docs/security/README.md) |
+| Оборудование и периферия | Настройка плат и дизайн инструментов периферии | [Hardware Docs Hub](docs/hardware/README.md) |
+
+## Что читать дальше по роли (Who Should Read What Next)
+
+- **Новые пользователи / первый запуск**: начните с [`START_HERE.md`](START_HERE.md), затем перейдите к [`docs/getting-started/README.md`](docs/getting-started/README.md).
+- **Операторы / владельцы деплоя**: в первую очередь [`docs/ops/operations-runbook.md`](docs/ops/operations-runbook.md) и [`docs/ops/troubleshooting.md`](docs/ops/troubleshooting.md).
+- **Интеграторы / разработчики расширений**: в первую очередь [`docs/reference/cli/commands-reference.md`](docs/reference/cli/commands-reference.md), [`docs/reference/api/config-reference.md`](docs/reference/api/config-reference.md), [`docs/reference/api/providers-reference.md`](docs/reference/api/providers-reference.md), [`docs/reference/api/channels-reference.md`](docs/reference/api/channels-reference.md).
