@@ -31,7 +31,7 @@ the conversation loop forever.
 
 <p align="center">
   <a href="assets/hello.mp4" title="Play the R.A.I.N. Lab demo video">
-    <img src="assets/hello-preview.gif" alt="R.A.I.N. Lab demo video preview" width="760" />
+    <img src="assets/hello-preview.gif" alt="R.A.I.N. Lab demo video preview" width="520" />
   </a>
 </p>
 
