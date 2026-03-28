@@ -85,6 +85,22 @@ pub struct Agent {
     manifest: Option<AgentManifest>,
 }
 
+struct AgentPromptState<'a> {
+    prompt_builder: &'a SystemPromptBuilder,
+    toolbox_manager: &'a tools::ToolboxManager,
+    workspace_dir: &'a Path,
+    model_name: &'a str,
+    skills: &'a [crate::skills::Skill],
+    skills_prompt_mode: crate::config::SkillsPromptInjectionMode,
+    identity_config: &'a crate::config::IdentityConfig,
+    tool_descriptions: Option<&'a ToolDescriptions>,
+    security_summary: Option<&'a str>,
+    autonomy_level: crate::security::AutonomyLevel,
+    manifest: Option<&'a AgentManifest>,
+    tool_dispatch_mode: ToolDispatchMode,
+    provider_supports_native_tools: bool,
+}
+
 fn load_agent_manifest(workspace_dir: &Path) -> Result<Option<AgentManifest>> {
     let manifest_path = workspace_dir.join("agent_manifest.toml");
     if !manifest_path.exists() {
@@ -658,52 +674,41 @@ impl Agent {
         trim_chat_history(&mut self.history, self.config.max_history_messages);
     }
 
-    fn build_system_prompt_for_state(
-        prompt_builder: &SystemPromptBuilder,
-        toolbox_manager: &tools::ToolboxManager,
-        workspace_dir: &Path,
-        model_name: &str,
-        skills: &[crate::skills::Skill],
-        skills_prompt_mode: crate::config::SkillsPromptInjectionMode,
-        identity_config: &crate::config::IdentityConfig,
-        tool_descriptions: Option<&ToolDescriptions>,
-        security_summary: Option<String>,
-        autonomy_level: crate::security::AutonomyLevel,
-        manifest: Option<&AgentManifest>,
-        tool_dispatch_mode: ToolDispatchMode,
-        provider_supports_native_tools: bool,
-    ) -> Result<String> {
-        let active_tools = toolbox_manager.active_tools_boxed();
-        let tool_specs = toolbox_manager.active_tool_specs();
-        let use_native_tools = tool_dispatch_mode
-            .uses_native_tools(provider_supports_native_tools, !tool_specs.is_empty());
+    fn build_system_prompt_for_state(state: AgentPromptState<'_>) -> Result<String> {
+        let active_tools = state.toolbox_manager.active_tools_boxed();
+        let tool_specs = state.toolbox_manager.active_tool_specs();
+        let use_native_tools = state.tool_dispatch_mode.uses_native_tools(
+            state.provider_supports_native_tools,
+            !tool_specs.is_empty(),
+        );
         let instructions = if use_native_tools {
             String::new()
         } else {
-            build_tool_instructions_from_specs(&tool_specs, tool_descriptions)
+            build_tool_instructions_from_specs(&tool_specs, state.tool_descriptions)
         };
         let ctx = PromptContext {
-            workspace_dir,
-            model_name,
+            workspace_dir: state.workspace_dir,
+            model_name: state.model_name,
             tools: &active_tools,
-            skills,
-            skills_prompt_mode,
-            identity_config: Some(identity_config),
-            manifest_identity_prompt: manifest
+            skills: state.skills,
+            skills_prompt_mode: state.skills_prompt_mode,
+            identity_config: Some(state.identity_config),
+            manifest_identity_prompt: state
+                .manifest
                 .and_then(|value| value.identity.system_prompt.as_deref()),
             dispatcher_instructions: &instructions,
-            tool_descriptions,
-            security_summary,
-            autonomy_level,
+            tool_descriptions: state.tool_descriptions,
+            security_summary: state.security_summary.map(str::to_string),
+            autonomy_level: state.autonomy_level,
         };
-        let mut prompt = prompt_builder.build(&ctx)?;
-        let discovery_section = toolbox_manager.discovery_prompt_section();
+        let mut prompt = state.prompt_builder.build(&ctx)?;
+        let discovery_section = state.toolbox_manager.discovery_prompt_section();
         if !discovery_section.is_empty() {
             prompt.push('\n');
             prompt.push('\n');
             prompt.push_str(discovery_section.trim_end());
         }
-        if let Some(manifest) = manifest {
+        if let Some(manifest) = state.manifest {
             prompt.push_str("\n\n## Agent Manifest Identity\n\n");
             let name = manifest.identity.name.as_deref().unwrap_or("Unnamed agent");
             let role = manifest.identity.role.as_deref().unwrap_or("unspecified");
@@ -722,21 +727,21 @@ impl Agent {
     }
 
     fn build_system_prompt(&self) -> Result<String> {
-        Self::build_system_prompt_for_state(
-            &self.prompt_builder,
-            &self.toolbox_manager,
-            &self.workspace_dir,
-            &self.model_name,
-            &self.skills,
-            self.skills_prompt_mode,
-            &self.identity_config,
-            self.tool_descriptions.as_ref(),
-            self.security_summary.clone(),
-            self.autonomy_level,
-            self.manifest.as_ref(),
-            self.tool_dispatch_mode,
-            self.provider.supports_native_tools(),
-        )
+        Self::build_system_prompt_for_state(AgentPromptState {
+            prompt_builder: &self.prompt_builder,
+            toolbox_manager: &self.toolbox_manager,
+            workspace_dir: &self.workspace_dir,
+            model_name: &self.model_name,
+            skills: &self.skills,
+            skills_prompt_mode: self.skills_prompt_mode,
+            identity_config: &self.identity_config,
+            tool_descriptions: self.tool_descriptions.as_ref(),
+            security_summary: self.security_summary.as_deref(),
+            autonomy_level: self.autonomy_level,
+            manifest: self.manifest.as_ref(),
+            tool_dispatch_mode: self.tool_dispatch_mode,
+            provider_supports_native_tools: self.provider.supports_native_tools(),
+        })
     }
 
     fn ensure_current_system_prompt(&mut self) -> Result<()> {
@@ -867,21 +872,21 @@ impl Agent {
         let tool_dispatch_mode = self.tool_dispatch_mode;
         let provider_supports_native_tools = self.provider.supports_native_tools();
         let prompt_renderer = || {
-            Self::build_system_prompt_for_state(
+            Self::build_system_prompt_for_state(AgentPromptState {
                 prompt_builder,
                 toolbox_manager,
-                &workspace_dir,
-                &model_name,
+                workspace_dir: &workspace_dir,
+                model_name: &model_name,
                 skills,
                 skills_prompt_mode,
                 identity_config,
                 tool_descriptions,
-                security_summary.clone(),
+                security_summary: security_summary.as_deref(),
                 autonomy_level,
                 manifest,
                 tool_dispatch_mode,
                 provider_supports_native_tools,
-            )
+            })
             .unwrap_or_else(|err| {
                 tracing::error!(error = %err, "Failed to build agent system prompt");
                 String::new()

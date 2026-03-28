@@ -22,6 +22,7 @@ const LSH_BAND_COUNT: usize = 8;
 const LSH_BITS_PER_BAND: usize = 12;
 const LSH_CANDIDATE_MULTIPLIER: usize = 16;
 const LSH_MIN_CANDIDATES: usize = 64;
+const STARTUP_BAND_BACKFILL_BATCH_SIZE: usize = 256;
 
 /// SQLite-backed persistent memory — the brain
 ///
@@ -123,7 +124,7 @@ impl SqliteMemory {
             std::fs::create_dir_all(parent)?;
         }
 
-        let conn = Self::open_connection(&db_path, open_timeout_secs)?;
+        let mut conn = Self::open_connection(&db_path, open_timeout_secs)?;
 
         // ── Production-grade PRAGMA tuning ──────────────────────
         // WAL mode: concurrent reads during writes, crash-safe
@@ -140,6 +141,14 @@ impl SqliteMemory {
         )?;
 
         Self::init_schema(&conn)?;
+        let backfilled =
+            Self::backfill_missing_embedding_bands(&mut conn, STARTUP_BAND_BACKFILL_BATCH_SIZE)?;
+        if backfilled > 0 {
+            tracing::info!(
+                repaired_rows = backfilled,
+                "Backfilled legacy sqlite embedding band rows at startup"
+            );
+        }
 
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
@@ -354,6 +363,69 @@ impl SqliteMemory {
 
     fn band_candidate_limit(limit: usize) -> usize {
         std::cmp::max(limit.saturating_mul(LSH_CANDIDATE_MULTIPLIER), LSH_MIN_CANDIDATES)
+    }
+
+    fn load_missing_embedding_band_rows(
+        conn: &Connection,
+        limit: usize,
+    ) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut stmt = conn.prepare(
+            "SELECT m.id, m.embedding
+             FROM memories m
+             LEFT JOIN memory_embedding_bands b ON b.memory_id = m.id
+             WHERE m.embedding IS NOT NULL
+             GROUP BY m.id, m.embedding
+             HAVING COUNT(b.band) < ?1
+             LIMIT ?2",
+        )?;
+        #[allow(clippy::cast_possible_wrap)]
+        let band_count = LSH_BAND_COUNT as i64;
+        #[allow(clippy::cast_possible_wrap)]
+        let limit_i64 = limit as i64;
+        let rows = stmt.query_map(params![band_count, limit_i64], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, Vec<u8>>(1)?))
+        })?;
+
+        let mut missing = Vec::new();
+        for row in rows {
+            missing.push(row?);
+        }
+        Ok(missing)
+    }
+
+    fn backfill_missing_embedding_bands(
+        conn: &mut Connection,
+        batch_size: usize,
+    ) -> anyhow::Result<usize> {
+        if batch_size == 0 {
+            return Ok(0);
+        }
+
+        let mut repaired = 0;
+        loop {
+            let batch = Self::load_missing_embedding_band_rows(conn, batch_size)?;
+            if batch.is_empty() {
+                break;
+            }
+
+            let tx = conn.transaction()?;
+            for (memory_id, embedding_blob) in &batch {
+                let embedding = vector::bytes_to_vec(embedding_blob);
+                Self::replace_embedding_bands(&tx, memory_id, &embedding)?;
+                repaired += 1;
+            }
+            tx.commit()?;
+
+            if batch.len() < batch_size {
+                break;
+            }
+        }
+
+        Ok(repaired)
     }
 
     /// Get embedding from cache, or compute + cache it
@@ -1293,6 +1365,16 @@ mod tests {
         .unwrap();
     }
 
+    fn count_embedding_bands(mem: &SqliteMemory, memory_id: &str) -> i64 {
+        let conn = mem.conn.lock();
+        conn.query_row(
+            "SELECT COUNT(*) FROM memory_embedding_bands WHERE memory_id = ?1",
+            params![memory_id],
+            |row| row.get(0),
+        )
+        .unwrap()
+    }
+
     #[tokio::test]
     async fn sqlite_name() {
         let (_tmp, mem) = temp_sqlite();
@@ -1960,14 +2042,7 @@ mod tests {
             .unwrap();
 
         let entry = mem.get("keep").await.unwrap().unwrap();
-        let conn = mem.conn.lock();
-        let count: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM memory_embedding_bands WHERE memory_id = ?1",
-                params![entry.id],
-                |row| row.get(0),
-            )
-            .unwrap();
+        let count = count_embedding_bands(&mem, &entry.id);
         assert_eq!(count, LSH_BAND_COUNT as i64);
     }
 
@@ -1981,15 +2056,90 @@ mod tests {
 
         mem.forget("keep").await.unwrap();
 
-        let conn = mem.conn.lock();
-        let count: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM memory_embedding_bands WHERE memory_id = ?1",
-                params![entry.id],
-                |row| row.get(0),
+        let count = count_embedding_bands(&mem, &entry.id);
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn startup_backfill_restores_missing_embedding_bands_for_legacy_rows() {
+        let tmp = TempDir::new().unwrap();
+        let mem = SqliteMemory::with_embedder(
+            tmp.path(),
+            Arc::new(TestEmbedding),
+            0.7,
+            0.3,
+            1000,
+            None,
+        )
+        .unwrap();
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            mem.store("legacy", "velvet keep notes", MemoryCategory::Core, None)
+                .await
+                .unwrap();
+        });
+        let entry = rt.block_on(async { mem.get("legacy").await.unwrap().unwrap() });
+
+        {
+            let conn = mem.conn.lock();
+            conn.execute(
+                "DELETE FROM memory_embedding_bands WHERE memory_id = ?1",
+                params![&entry.id],
             )
             .unwrap();
-        assert_eq!(count, 0);
+        }
+        drop(mem);
+
+        let reopened = SqliteMemory::new(tmp.path()).unwrap();
+        assert_eq!(count_embedding_bands(&reopened, &entry.id), LSH_BAND_COUNT as i64);
+
+        let candidate_ids = {
+            let conn = reopened.conn.lock();
+            SqliteMemory::load_vector_candidate_ids(
+                &conn,
+                &SqliteMemory::embedding_band_hashes(&embedding_for_text("querysun")),
+                RecallFilters::default(),
+                8,
+            )
+            .unwrap()
+        };
+        assert_eq!(candidate_ids, vec![entry.id]);
+    }
+
+    #[test]
+    fn startup_backfill_repairs_partial_embedding_band_rows() {
+        let tmp = TempDir::new().unwrap();
+        let mem = SqliteMemory::with_embedder(
+            tmp.path(),
+            Arc::new(TestEmbedding),
+            0.7,
+            0.3,
+            1000,
+            None,
+        )
+        .unwrap();
+
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            mem.store("legacy", "velvet keep notes", MemoryCategory::Core, None)
+                .await
+                .unwrap();
+        });
+        let entry = rt.block_on(async { mem.get("legacy").await.unwrap().unwrap() });
+
+        {
+            let conn = mem.conn.lock();
+            conn.execute(
+                "DELETE FROM memory_embedding_bands WHERE memory_id = ?1 AND band >= ?2",
+                params![&entry.id, 3_i64],
+            )
+            .unwrap();
+        }
+        drop(mem);
+
+        let reopened = SqliteMemory::new(tmp.path()).unwrap();
+        assert_eq!(count_embedding_bands(&reopened, &entry.id), LSH_BAND_COUNT as i64);
     }
 
     // ── FTS5 sync trigger tests ──────────────────────────────────
