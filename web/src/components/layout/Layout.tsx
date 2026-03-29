@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
+import SecurityBanner from '@/components/SecurityBanner';
 import Sidebar from '@/components/layout/Sidebar';
 import Header from '@/components/layout/Header';
 import { ErrorBoundary } from '@/App';
@@ -13,6 +14,7 @@ export default function Layout() {
 
       {/* Main area offset by sidebar width (240px / w-60) */}
       <div className="ml-60 flex flex-col flex-1 min-w-0 h-screen">
+        <SecurityBanner />
         <Header />
 
         {/* Page content — ErrorBoundary keyed by pathname so the nav shell
