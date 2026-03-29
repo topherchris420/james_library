@@ -840,7 +840,7 @@ impl Agent {
             None
         };
 
-        if let (Some(ref cache), Some(ref key)) = (&self.response_cache, &cache_key) {
+        if let (Some(cache), Some(key)) = (&self.response_cache, &cache_key) {
             if let Ok(Some(cached)) = cache.get(key) {
                 self.observer.record_event(&ObserverEvent::CacheHit {
                     cache_type: "response".into(),
@@ -929,7 +929,7 @@ impl Agent {
         });
 
         if !used_tools {
-            if let (Some(ref cache), Some(ref key)) = (&self.response_cache, &cache_key) {
+            if let (Some(cache), Some(key)) = (&self.response_cache, &cache_key) {
                 let _ = cache.put(key, &effective_model, &response, 0);
             }
         }

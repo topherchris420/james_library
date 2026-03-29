@@ -619,22 +619,22 @@ mod tests {
     #[test]
     fn p2p_disabled_by_default() {
         // Clear env var if set
-        std::env::remove_var("rain_P2P_ENABLE");
+        unsafe { std::env::remove_var("rain_P2P_ENABLE") };
         assert!(!p2p_enabled());
     }
 
     #[test]
     fn p2p_enabled_with_env_var() {
-        std::env::set_var("rain_P2P_ENABLE", "1");
+        unsafe { std::env::set_var("rain_P2P_ENABLE", "1") };
         assert!(p2p_enabled());
 
-        std::env::set_var("rain_P2P_ENABLE", "true");
+        unsafe { std::env::set_var("rain_P2P_ENABLE", "true") };
         assert!(p2p_enabled());
 
-        std::env::set_var("rain_P2P_ENABLE", "TRUE");
+        unsafe { std::env::set_var("rain_P2P_ENABLE", "TRUE") };
         assert!(p2p_enabled());
 
-        std::env::set_var("rain_P2P_ENABLE", "false");
+        unsafe { std::env::set_var("rain_P2P_ENABLE", "false") };
         assert!(!p2p_enabled());
     }
 

@@ -1711,8 +1711,8 @@ mod tests {
         fn set(key: &'static str, value: Option<&str>) -> Self {
             let original = std::env::var(key).ok();
             match value {
-                Some(next) => std::env::set_var(key, next),
-                None => std::env::remove_var(key),
+                Some(next) => unsafe { std::env::set_var(key, next) },
+                None => unsafe { std::env::remove_var(key) },
             }
 
             Self { key, original }
@@ -1722,9 +1722,9 @@ mod tests {
     impl Drop for EnvGuard {
         fn drop(&mut self) {
             if let Some(original) = self.original.as_deref() {
-                std::env::set_var(self.key, original);
+                unsafe { std::env::set_var(self.key, original) };
             } else {
-                std::env::remove_var(self.key);
+                unsafe { std::env::remove_var(self.key) };
             }
         }
     }
@@ -3078,7 +3078,7 @@ mod tests {
     #[test]
     fn env_provider_url_overrides_api_url() {
         let _env_lock = env_lock();
-        std::env::set_var("rain_PROVIDER_URL", "http://env-ollama:11434");
+        unsafe { std::env::set_var("rain_PROVIDER_URL", "http://env-ollama:11434") };
 
         let options = ProviderRuntimeOptions::default();
 
@@ -3091,6 +3091,6 @@ mod tests {
 
         assert!(provider.is_ok());
 
-        std::env::remove_var("rain_PROVIDER_URL");
+        unsafe { std::env::remove_var("rain_PROVIDER_URL") };
     }
 }

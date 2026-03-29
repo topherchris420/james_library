@@ -532,7 +532,7 @@ mod tests {
     impl EnvVarRestore {
         fn set(key: &'static str, value: &str) -> Self {
             let original = std::env::var(key).ok();
-            std::env::set_var(key, value);
+            unsafe { std::env::set_var(key, value) };
             Self { key, original }
         }
     }
@@ -540,9 +540,9 @@ mod tests {
     impl Drop for EnvVarRestore {
         fn drop(&mut self) {
             if let Some(ref original) = self.original {
-                std::env::set_var(self.key, original);
+                unsafe { std::env::set_var(self.key, original) };
             } else {
-                std::env::remove_var(self.key);
+                unsafe { std::env::remove_var(self.key) };
             }
         }
     }

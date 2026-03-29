@@ -715,7 +715,7 @@ mod tests {
     fn resolve_embedding_config_uses_embedding_provider_env_key_not_default_provider_key() {
         // COHERE_API_KEY is almost certainly unset in normal dev environments.
         let prev = std::env::var("COHERE_API_KEY").ok();
-        std::env::set_var("COHERE_API_KEY", "cohere-from-env");
+        unsafe { std::env::set_var("COHERE_API_KEY", "cohere-from-env") };
 
         let cfg = MemoryConfig {
             embedding_provider: "cohere".into(),
@@ -729,8 +729,8 @@ mod tests {
 
         // Restore env.
         match prev {
-            Some(v) => std::env::set_var("COHERE_API_KEY", v),
-            None => std::env::remove_var("COHERE_API_KEY"),
+            Some(v) => unsafe { std::env::set_var("COHERE_API_KEY", v) },
+            None => unsafe { std::env::remove_var("COHERE_API_KEY") },
         }
 
         assert_eq!(

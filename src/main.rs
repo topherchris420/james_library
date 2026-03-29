@@ -795,7 +795,8 @@ async fn main() -> Result<()> {
         if config_dir.trim().is_empty() {
             bail!("--config-dir cannot be empty");
         }
-        std::env::set_var("rain_CONFIG_DIR", config_dir);
+        // SAFETY: single-threaded CLI startup; no concurrent env readers at this point.
+        unsafe { std::env::set_var("rain_CONFIG_DIR", config_dir) };
     }
 
     // Completions must remain stdout-only and should not load config or initialize logging.

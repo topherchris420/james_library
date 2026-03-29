@@ -1953,7 +1953,7 @@ mod tests {
     #[test]
     fn gateway_timeout_falls_back_to_default() {
         // When env var is not set, should return the default constant
-        std::env::remove_var("rain_GATEWAY_TIMEOUT_SECS");
+        unsafe { std::env::remove_var("rain_GATEWAY_TIMEOUT_SECS") };
         assert_eq!(gateway_request_timeout_secs(), 30);
     }
 

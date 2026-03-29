@@ -249,12 +249,12 @@ mod tests {
     fn new_uses_env_override() {
         let _guard = env_lock();
         let orig = std::env::var(KILO_CLI_PATH_ENV).ok();
-        std::env::set_var(KILO_CLI_PATH_ENV, "/usr/local/bin/kilo");
+        unsafe { std::env::set_var(KILO_CLI_PATH_ENV, "/usr/local/bin/kilo") };
         let provider = KiloCliProvider::new();
         assert_eq!(provider.binary_path, PathBuf::from("/usr/local/bin/kilo"));
         match orig {
-            Some(v) => std::env::set_var(KILO_CLI_PATH_ENV, v),
-            None => std::env::remove_var(KILO_CLI_PATH_ENV),
+            Some(v) => unsafe { std::env::set_var(KILO_CLI_PATH_ENV, v) },
+            None => unsafe { std::env::remove_var(KILO_CLI_PATH_ENV) },
         }
     }
 
@@ -262,11 +262,11 @@ mod tests {
     fn new_defaults_to_kilo() {
         let _guard = env_lock();
         let orig = std::env::var(KILO_CLI_PATH_ENV).ok();
-        std::env::remove_var(KILO_CLI_PATH_ENV);
+        unsafe { std::env::remove_var(KILO_CLI_PATH_ENV) };
         let provider = KiloCliProvider::new();
         assert_eq!(provider.binary_path, PathBuf::from("kilo"));
         if let Some(v) = orig {
-            std::env::set_var(KILO_CLI_PATH_ENV, v);
+            unsafe { std::env::set_var(KILO_CLI_PATH_ENV, v) };
         }
     }
 
@@ -274,12 +274,12 @@ mod tests {
     fn new_ignores_blank_env_override() {
         let _guard = env_lock();
         let orig = std::env::var(KILO_CLI_PATH_ENV).ok();
-        std::env::set_var(KILO_CLI_PATH_ENV, "   ");
+        unsafe { std::env::set_var(KILO_CLI_PATH_ENV, "   ") };
         let provider = KiloCliProvider::new();
         assert_eq!(provider.binary_path, PathBuf::from("kilo"));
         match orig {
-            Some(v) => std::env::set_var(KILO_CLI_PATH_ENV, v),
-            None => std::env::remove_var(KILO_CLI_PATH_ENV),
+            Some(v) => unsafe { std::env::set_var(KILO_CLI_PATH_ENV, v) },
+            None => unsafe { std::env::remove_var(KILO_CLI_PATH_ENV) },
         }
     }
 
