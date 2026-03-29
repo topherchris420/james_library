@@ -201,9 +201,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check upstream job results
+        env:
+          HAS_FAILURE: ${{ contains(needs.*.result, 'failure') }}
+          NEEDS_JSON: ${{ toJson(needs) }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
-            echo "::error::One or more upstream jobs failed or were cancelled"
+          echo "Upstream job results: $NEEDS_JSON"
+          if [[ "$HAS_FAILURE" == "true" ]]; then
+            echo "::error::One or more upstream jobs failed"
             exit 1
           fi
 

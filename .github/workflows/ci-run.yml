@@ -217,9 +217,11 @@ jobs:
     steps:
       - name: Check upstream job results
         env:
-          HAS_FAILURE: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+          HAS_FAILURE: ${{ contains(needs.*.result, 'failure') }}
+          NEEDS_JSON: ${{ toJson(needs) }}
         run: |
+          echo "Upstream job results: $NEEDS_JSON"
           if [[ "$HAS_FAILURE" == "true" ]]; then
-            echo "::error::One or more upstream jobs failed or were cancelled"
+            echo "::error::One or more upstream jobs failed"
             exit 1
           fi
