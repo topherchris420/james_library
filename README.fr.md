@@ -23,6 +23,18 @@
 
 Flux d'exécution : `Utilisateur -> interface R.A.I.N. Lab -> runtime R.A.I.N. -> workflows de recherche James Library -> API modèle/provider`
 
+## À qui s'adresse R.A.I.N. Lab
+
+R.A.I.N. Lab est conçu pour les personnes qui ont besoin de réponses défendables, pas simplement de réponses qui sonnent bien.
+
+| Rôle | Ce que vous pouvez faire avec R.A.I.N. Lab |
+| --- | --- |
+| Fondateurs et responsables produit | Tester vos décisions stratégiques par un débat structuré avant d'engager la feuille de route ou le budget |
+| Chercheurs et analystes | Comparer des hypothèses concurrentes, préserver les désaccords et conserver des pistes de raisonnement auditables |
+| Opérateurs et équipes techniques | Transformer des discussions confuses en résultats vérifiables pouvant être examinés, partagés et rejoués |
+
+En pratique, cela signifie moins d'impasses du type « l'IA l'a dit ». Vous pouvez partir d'une seule question, laisser plusieurs agents remettre en cause les hypothèses, acheminer les conflits non résolus vers un processus de vérification, et repartir avec un résultat que vous pouvez présenter en toute confiance.
+
 ## Démarrage rapide
 
 ```bash
