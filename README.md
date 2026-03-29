@@ -29,6 +29,20 @@ The core differentiator is the "circuit breaker" workflow: when agents get stuck
 disagreement into a formal logic problem and push it through a sandboxed verification path instead of letting
 the conversation loop forever.
 
+## Who It Is For
+
+R.A.I.N. Lab is built for people who need answers they can defend, not just answers that sound good.
+
+| Role | What you can do with R.A.I.N. Lab |
+| --- | --- |
+| Founders and product leaders | Stress-test strategy decisions with structured debate before committing roadmap or budget |
+| Researchers and analysts | Compare competing hypotheses, preserve disagreement, and capture auditable reasoning trails |
+| Operators and technical teams | Turn messy discussions into verifiable outputs that can be reviewed, shared, and rerun |
+
+In practice, this means fewer "AI said so" dead ends. You can start from a single question, let multiple agents
+challenge assumptions, route unresolved conflicts through verification, and leave with a result you can present to
+other people with confidence.
+
 <p align="center">
   <a href="assets/hello.mp4" title="Play the R.A.I.N. Lab demo video">
     <img src="assets/hello-preview.gif" alt="R.A.I.N. Lab demo video preview" width="520" />
