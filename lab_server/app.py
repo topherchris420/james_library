@@ -78,7 +78,7 @@ async def debate(req: DebateRequest) -> DebateResponse:
 
     result = await run_rain_lab(query=query, mode="rlm")
 
-    if result.startswith("R.A.I.N. runtime error"):
+    if result.startswith(("R.A.I.N. runtime error", "R.A.I.N. runtime config error", "R.A.I.N. runtime canceled")):
         raise HTTPException(status_code=500, detail=result)
 
     return DebateResponse(topic=display_topic, preset=req.preset, result=result)
