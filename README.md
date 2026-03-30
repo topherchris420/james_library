@@ -21,12 +21,12 @@
 </p>
 
 
-The R.A.I.N. Lab gives you a team of AI experts to test ideas, compare viewpoints, and get deeper answers. 
-Everything runs directly on your own computer, so your ideas stay yours.
+The R.A.I.N. Lab gives you a team of agentic AI experts to test ideas, compare viewpoints, and get deeper answers. 
+Everything runs directly on your own computer, if you like, so your ideas stay yours.
 
 ## Who It Is For
 
-Host a private AI debate on your computer to test your ideas—complete with a built-in referee that fact-checks them when they get stuck.
+Host a private debate on your computer to test your ideas—complete with a built-in referee that fact-checks them when they get stuck.
 
 | Role | What you can do with R.A.I.N. Lab |
 | --- | --- |
@@ -48,7 +48,7 @@ other people with confidence.
 
 Choose one install route, then use `python rain_lab.py` as the everyday product entrypoint.
 
-### Windows One-Click
+### Windows
 
 ```powershell
 git clone https://github.com/topherchris420/james_library.git
@@ -58,7 +58,7 @@ cd james_library
 
 The installer uses `uv`, fetches the prebuilt runtime, prepares `.env` and `config.toml`, and hands off to James automatically.
 
-### macOS / Linux One-Click
+### macOS / Linux 
 
 ```bash
 git clone https://github.com/topherchris420/james_library.git
@@ -124,7 +124,7 @@ Before treating an extension as production-ready, read:
 ## What Makes It Different
 
 Most AI tools follow a simple pattern: prompt, answer, retry.
-R.A.I.N. Lab is built for cases where that is not enough.
+The R.A.I.N. Lab is built for cases where that is not enough.
 
 | Traditional AI workflow | R.A.I.N. Lab workflow |
 | --- | --- |
@@ -164,9 +164,9 @@ Use the focused docs below depending on what you need:
 - [Releases Page](https://github.com/topherchris420/james_library/releases) for prebuilt packages
 - [Troubleshooting](docs/troubleshooting.md) if something fails
 
-## Product Layers
+## The Layers
 
-R.A.I.N. Lab is one platform built from two main layers:
+The R.A.I.N. Lab is one platform built from two main layers:
 
 | Layer | Role | Language |
 | --- | --- | --- |
