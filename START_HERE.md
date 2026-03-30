@@ -15,7 +15,7 @@ python rain_lab.py
 ```
 
 For non-technical users, this is the **only daily entry point you need**. The script opens a guided wizard, pressing Enter starts the no-setup instant demo, and every beginner/demo run updates a local showcase page in `meeting_archives/RAIN_LAB_SHOWCASE.html`.
-Those runs also generate a screenshot-friendly HTML share card plus a matching poster SVG in `meeting_archives/`, and interactive runs can open them automatically. Use `--open-browser off` if you want to suppress that behavior.
+Those runs also generate a screenshot-friendly HTML share card plus a matching poster SVG in `meeting_archives/`.
 
 Windows users should start with `.\INSTALL_RAIN.cmd`. macOS/Linux users should start with `./install.sh`.
 
@@ -97,7 +97,6 @@ That's it. Just run that command, press Enter for the instant demo if you want t
 | **I'm not sure where to start** | `python rain_lab.py` (starts wizard) |
 | **Give it one idea and let it choose for me** | `python rain_lab.py --mode beginner --topic "your idea"` |
 | **Try a no-setup instant demo** | `python rain_lab.py --mode demo --preset startup-debate` |
-| **Keep everything local without opening pages** | `python rain_lab.py --open-browser off` |
 | Chat with AI about my research | `python rain_lab.py --mode chat --topic "your topic"` |
 | Check if my system is ready | `python rain_lab.py --mode validate` |
 | See what AI models are available | `python rain_lab.py --mode models` |

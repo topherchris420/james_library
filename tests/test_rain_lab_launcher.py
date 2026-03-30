@@ -27,7 +27,6 @@ def test_parse_defaults():
     assert args.mode == "chat"
     assert args.topic is None
     assert args.ui == "off"
-    assert args.open_browser == "auto"
     assert args.restart_sidecars is True
     assert args.max_sidecar_restarts == 2
     assert args.sidecar_restart_backoff == 0.5
@@ -487,7 +486,6 @@ def test_main_without_args_defaults_to_demo(monkeypatch, repo_root):
     recorded: dict[str, str] = {}
 
     monkeypatch.setattr(rain_launcher, "_print_banner", lambda: None)
-    monkeypatch.setattr(rain_launcher, "_maybe_open_local_page", lambda *_args, **_kwargs: False)
     monkeypatch.setattr(
         rain_launcher,
         "_write_beginner_showcase_page",

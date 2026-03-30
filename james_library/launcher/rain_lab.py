@@ -28,7 +28,6 @@ import shutil
 import subprocess
 import sys
 import time
-import webbrowser
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html import escape as html_escape
@@ -61,7 +60,6 @@ ASCII_ART_LINES = [
 ]
 
 VALID_UI_MODES = {"auto", "on", "off"}
-VALID_BROWSER_MODES = {"auto", "on", "off"}
 BEGINNER_DEBATE_HINTS = (
     "debate",
     "argue",
@@ -430,39 +428,6 @@ def _build_beginner_poster_svg(
 """
 
 
-def _should_open_local_page(args: argparse.Namespace) -> bool:
-    preference = getattr(args, "open_browser", "auto")
-    if preference == "off":
-        return False
-    if preference == "on":
-        return True
-    if os.environ.get("CI") or os.environ.get("PYTEST_CURRENT_TEST"):
-        return False
-    stdin_tty = bool(getattr(sys.stdin, "isatty", lambda: False)())
-    stdout_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
-    return stdin_tty and stdout_tty
-
-
-def _maybe_open_local_page(
-    args: argparse.Namespace,
-    page_path: Path,
-    *,
-    label: str,
-    log_path: Path | None = None,
-) -> bool:
-    if not _should_open_local_page(args):
-        return False
-
-    try:
-        opened = bool(webbrowser.open(page_path.resolve().as_uri()))
-    except Exception as exc:
-        _append_launcher_event(log_path, "local_page_open_failed", label=label, path=str(page_path), error=str(exc))
-        return False
-
-    if opened:
-        print(f"{ANSI_DIM}Opened {label} in your browser.{ANSI_RESET}")
-        _append_launcher_event(log_path, "local_page_opened", label=label, path=str(page_path))
-    return opened
 
 
 def _build_follow_up_moves(topic: str | None, current_preset: str | None) -> list[FollowUpMove]:
@@ -2108,7 +2073,6 @@ def _run_demo_session(
         print(f"{ANSI_GREEN}Share card ready: {share_card_path}{ANSI_RESET}")
         showcase_path = _write_beginner_showcase_page(args, repo_root, latest_share_card=share_card_path)
         print(f"{ANSI_GREEN}Local showcase ready: {showcase_path}{ANSI_RESET}")
-        _maybe_open_local_page(args, share_card_path, label="share card", log_path=log_path)
         _print_follow_up_moves(getattr(args, "display_topic", args.topic), getattr(args, "preset", None))
         _append_launcher_event(
             log_path,
@@ -2131,9 +2095,6 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     default_ui_mode = os.environ.get("RAIN_UI_MODE", "off").strip().lower()
     if default_ui_mode not in VALID_UI_MODES:
         default_ui_mode = "off"
-    default_browser_mode = os.environ.get("RAIN_OPEN_BROWSER", "auto").strip().lower()
-    if default_browser_mode not in VALID_BROWSER_MODES:
-        default_browser_mode = "auto"
     default_restart_sidecars = _env_bool("RAIN_RESTART_SIDECARS", True)
 
     parser = argparse.ArgumentParser(description="Unified launcher for rain_lab_meeting modes")
@@ -2229,15 +2190,6 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         help=(
             "Chat/Godot UI behavior: auto launches avatars when available,"
             " on requires UI stack, off (default) forces CLI-only."
-        ),
-    )
-    parser.add_argument(
-        "--open-browser",
-        choices=sorted(VALID_BROWSER_MODES),
-        default=default_browser_mode,
-        help=(
-            "Beginner/demo UX: auto opens the generated local page when interactive,"
-            " on always tries, off never opens the browser."
         ),
     )
     parser.add_argument(
@@ -2777,7 +2729,6 @@ def main(argv: list[str] | None = None) -> int:
             f"or pick a path below.{ANSI_RESET}"
         )
         print(f"{ANSI_DIM}Local showcase: {showcase_path}{ANSI_RESET}\n")
-        _maybe_open_local_page(args, showcase_path, label="showcase")
 
         print("What would you like to do first?")
         print(f"  {ANSI_GREEN}1{ANSI_RESET} - Instant demo (recommended first step)")
@@ -3021,7 +2972,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{ANSI_GREEN}Share card ready: {share_card_path}{ANSI_RESET}", flush=True)
             showcase_path = _write_beginner_showcase_page(args, repo_root, latest_share_card=share_card_path)
             print(f"{ANSI_GREEN}Local showcase ready: {showcase_path}{ANSI_RESET}", flush=True)
-            _maybe_open_local_page(args, share_card_path, label="share card", log_path=log_path)
             _print_follow_up_moves(getattr(args, "display_topic", args.topic), getattr(args, "preset", None))
             _append_launcher_event(
                 log_path,

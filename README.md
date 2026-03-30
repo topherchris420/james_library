@@ -80,7 +80,6 @@ Beginner and demo runs generate:
 - a matching poster SVG
 - a local showcase page with poster previews and follow-up commands
 
-Use `python rain_lab.py --open-browser off` if you want to keep everything local without auto-opening pages.
 On Windows, `INSTALL_RAIN.cmd` also creates desktop and Start Menu shortcuts.
 On macOS/Linux, `./install.sh` is the equivalent of a one-click repo installer.
 
