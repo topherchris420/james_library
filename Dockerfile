@@ -95,7 +95,7 @@ ENV R.A.I.N._WORKSPACE=/R.A.I.N.-data/workspace
 ENV HOME=/R.A.I.N.-data
 # Defaults for local dev (Ollama) - matches config.template.toml
 ENV PROVIDER="ollama"
-ENV R.A.I.N._MODEL="llama3.2"
+ENV R.A.I.N._MODEL="minimax-m2.7:cloud"
 ENV R.A.I.N._GATEWAY_PORT=42617
 
 # Note: API_KEY is intentionally NOT set here to avoid confusion.

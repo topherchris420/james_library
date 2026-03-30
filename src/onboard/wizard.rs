@@ -830,7 +830,7 @@ fn default_model_for_provider(provider: &str) -> String {
         "minimax" => "MiniMax-M2.7".into(),
         "qwen" => "qwen-plus".into(),
         "qwen-code" => "qwen3-coder-plus".into(),
-        "ollama" => "llama3.2".into(),
+        "ollama" => "minimax-m2.7:cloud".into(),
         "llamacpp" => "ggml-org/gpt-oss-20b-GGUF".into(),
         "sglang" | "vllm" | "osaurus" | "opencode-go" => "default".into(),
         "gemini" => "gemini-2.5-pro".into(),
@@ -1192,6 +1192,10 @@ fn curated_models_for_provider(provider_name: &str) -> Vec<(String, String)> {
             ),
         ],
         "ollama" => vec![
+            (
+                "minimax-m2.7:cloud".to_string(),
+                "MiniMax M2.7 Cloud (recommended)".to_string(),
+            ),
             (
                 "llama3.2".to_string(),
                 "Llama 3.2 (recommended local)".to_string(),

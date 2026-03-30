@@ -12,12 +12,12 @@ api_key = "YOUR_API_KEY_HERE"
 # Provider configuration
 # Options: "openrouter", "ollama", "anthropic", "openai"
 default_provider = "ollama"
-default_model = "llama3.2"
+default_model = "minimax-m2.7:cloud"
 default_temperature = 0.7
 
-# Local Ollama endpoint for the example model above.
-# Note: models ending in ':cloud' require a remote Ollama endpoint and API key instead.
-api_url = "http://localhost:11434"
+# Remote Ollama endpoint for cloud models (required for ':cloud' suffix).
+# For local models, use api_url = "http://localhost:11434" instead.
+api_url = "https://ollama.com"
 
 # =============================================================================
 # Environment Variables (optional overrides)
