@@ -1906,7 +1906,8 @@ class RainLabOrchestrator:
 
                     print("   1. Is your LLM provider running? (Ollama: 'ollama serve', LM Studio: start the server)")
 
-                    print(f"   2. Is model '{self.config.model_name}' available? (Ollama: 'ollama pull {self.config.model_name}')")
+                    model = self.config.model_name
+                    print(f"   2. Is model '{model}' available? (Ollama: 'ollama pull {model}')")
 
                     print(f"   3. Is the provider listening on {self.config.base_url}?")
 
