@@ -53,7 +53,7 @@ Choose one install route, then use `python rain_lab.py` as the everyday product 
 ```powershell
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
-rain_lab.py
+python rain_lab.py
 ```
 
 The installer uses `uv`, fetches the prebuilt runtime, prepares `.env` and `config.toml`, and hands off to James automatically.
