@@ -21,10 +21,10 @@
 </p>
 
 
-The R.A.I.N. Lab gives you a team of agentic AI experts to test ideas, compare viewpoints, and get deeper answers. 
+The R.A.I.N. Lab gives you a team of insightful experts to test ideas, compare viewpoints, and get deeper answers. 
 Everything runs directly on your own computer, if you like, so your ideas stay yours.
 
-## Who It Is For?
+## Who Is It For?
 
 Host a private debate on your computer to test your ideas—complete with a built-in referee that fact-checks them when they get stuck.
 
