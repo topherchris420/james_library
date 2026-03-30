@@ -11,6 +11,7 @@ R.A.I.N. LAB - RESEARCH
 """
 
 import warnings
+import asyncio
 
 import logging
 
@@ -29,6 +30,10 @@ import sys
 import threading
 
 import time
+
+import subprocess
+
+import tempfile
 
 import uuid
 
@@ -299,13 +304,43 @@ except Exception:
 
 pyttsx3 = _pyttsx3
 
+try:
+    import edge_tts as _edge_tts
+
+except Exception:
+    _edge_tts = None
+
+
+edge_tts = _edge_tts
+
+
+def _safe_console_print(message: str) -> None:
+    """Print a warning without crashing on non-UTF-8 Windows consoles."""
+
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        fallback = message.encode("ascii", errors="ignore").decode("ascii").lstrip()
+        print(fallback or "Console output contained unsupported characters.")
+
 
 class VoiceEngine:
-    """Simple pyttsx3 wrapper with graceful fallback to text-only mode."""
+    """Voice wrapper with pyttsx3 first, edge-tts fallback, then silent mode."""
+
+    EDGE_VOICE_BY_CHARACTER = {
+        "James": "en-US-GuyNeural",
+        "Luca": "en-US-GuyNeural",
+        "Jasmine": "en-US-AriaNeural",
+        "Elena": "en-US-AriaNeural",
+    }
 
     def __init__(self):
 
         self.enabled = False
+
+        self.export_enabled = False
+
+        self.backend = "silent"
 
         self.engine = None
 
@@ -313,22 +348,32 @@ class VoiceEngine:
 
         self.default_voice_id: Optional[str] = None
 
-        if pyttsx3 is None:
-            return
+        if pyttsx3 is not None:
+            try:
+                self.engine = pyttsx3.init()
 
-        try:
-            self.engine = pyttsx3.init()
+                self._initialize_character_voices()
 
-            self._initialize_character_voices()
+                self.enabled = True
 
+                self.export_enabled = True
+
+                self.backend = "pyttsx3"
+
+                return
+
+            except Exception as e:
+                print = _safe_console_print
+                print(f"⚠️  Voice engine unavailable: {e}")
+
+                self.engine = None
+
+                self.enabled = False
+
+        if edge_tts is not None:
             self.enabled = True
-
-        except Exception as e:
-            print(f"⚠️  Voice engine unavailable: {e}")
-
-            self.engine = None
-
-            self.enabled = False
+            self.export_enabled = True
+            self.backend = "edge-tts"
 
     def _initialize_character_voices(self):
         """Load Windows character voices and map them to known agents."""
@@ -371,10 +416,76 @@ class VoiceEngine:
 
         return self.voice_id_by_character.get(agent_name, self.default_voice_id)
 
+    def _edge_voice_for_agent(self, agent_name: Optional[str]) -> str:
+        return self.EDGE_VOICE_BY_CHARACTER.get(agent_name or "", "en-US-AriaNeural")
+
+    async def _save_edge_tts_audio(self, text: str, agent_name: Optional[str], output_path: Path) -> Path:
+        communicate = edge_tts.Communicate(text, self._edge_voice_for_agent(agent_name))
+        await communicate.save(str(output_path))
+        return output_path
+
+    def _export_edge_tts_audio(self, text: str, agent_name: Optional[str], output_path: Path) -> Optional[Path]:
+        if edge_tts is None:
+            return None
+
+        target_path = output_path.with_suffix(".mp3")
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            return asyncio.run(self._save_edge_tts_audio(text, agent_name, target_path))
+        except Exception as e:
+            self.enabled = False
+            self.export_enabled = False
+            _safe_console_print(f"Voice export failed: {e}")
+            return None
+
+    def _play_audio_file(self, audio_path: Path) -> None:
+        if os.name != "nt":
+            return
+
+        uri = audio_path.resolve().as_uri().replace("'", "''")
+        command = (
+            "Add-Type -AssemblyName PresentationCore; "
+            "$player = New-Object System.Windows.Media.MediaPlayer; "
+            f"$player.Open([Uri]'{uri}'); "
+            "Start-Sleep -Milliseconds 250; "
+            "$player.Play(); "
+            "while ($player.NaturalDuration.HasTimeSpan -eq $false -or "
+            "$player.Position -lt $player.NaturalDuration.TimeSpan) { "
+            "Start-Sleep -Milliseconds 200 "
+            "} "
+            "$player.Close()"
+        )
+
+        try:
+            subprocess.run(
+                ["powershell", "-NoProfile", "-Command", command],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except Exception as e:
+            self.enabled = False
+            _safe_console_print(f"Voice playback failed: {e}")
+
     def speak(self, text: str, agent_name: Optional[str] = None):
         """Speak text synchronously; no-op if voice is unavailable."""
 
-        if not self.enabled or not self.engine or not text:
+        if not text:
+            return
+
+        if self.backend == "edge-tts":
+            audio_path = self._export_edge_tts_audio(
+                text,
+                agent_name,
+                Path(tempfile.gettempdir()) / f"rain_lab_tts_{uuid.uuid4().hex}.mp3",
+            )
+            if audio_path is not None:
+                self._play_audio_file(audio_path)
+            return
+
+        if not self.enabled or not self.engine:
             return
 
         try:
@@ -390,6 +501,7 @@ class VoiceEngine:
             self.engine.runAndWait()
 
         except Exception as e:
+            print = _safe_console_print
             print(f"⚠️  Voice playback failed: {e}")
 
             self.enabled = False
@@ -403,13 +515,16 @@ class VoiceEngine:
         duration_ms = int((words / words_per_minute) * 60_000)
         return max(900, duration_ms)
 
-    def export_to_file(self, text: str, agent_name: Optional[str], output_path: Path) -> bool:
-        """Synthesize speech to a local WAV file for external visual clients."""
+    def export_to_file(self, text: str, agent_name: Optional[str], output_path: Path) -> Optional[Path]:
+        """Synthesize speech to a local audio file for external visual clients."""
 
-        if pyttsx3 is None:
-            return False
+        if not self.export_enabled:
+            return None
         if not text:
-            return False
+            return None
+
+        if self.backend == "edge-tts":
+            return self._export_edge_tts_audio(text, agent_name, output_path)
 
         try:
             output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -423,12 +538,16 @@ class VoiceEngine:
             export_engine.runAndWait()
             export_engine.stop()
 
-            return output_path.exists() and output_path.stat().st_size > 0
+            if output_path.exists() and output_path.stat().st_size > 0:
+                return output_path
+            return None
 
         except Exception as e:
+            self.export_enabled = False
+            print = _safe_console_print
             print(f"⚠️  Voice export failed: {e}")
 
-            return False
+            return None
 
 
 # --- CONFIGURATION (RTX 4090 + RNJ-1 8B OPTIMIZED) ---
@@ -530,6 +649,35 @@ class Config:
     rust_daemon_timeout: float = float(os.environ.get("RAIN_RUST_DAEMON_TIMEOUT", "120"))
 
 
+PRIMARY_RESPONSE_WORD_TARGET = "90-140 words"
+PRIMARY_RESPONSE_SENTENCE_TARGET = "3-5 complete sentences"
+REPAIR_RESPONSE_SENTENCE_TARGET = "3 or 4 complete sentences"
+WRAP_UP_RESPONSE_WORD_TARGET = "60-100 words"
+WRAP_UP_RESPONSE_SENTENCE_TARGET = "2-3 complete sentences"
+SELF_NAME_INTRO_GUIDANCE = (
+    "Do not start with your own name, a speaker label, or a self-intro like "
+    '"James:", "James here," or "I\'m James."'
+)
+
+
+def meeting_response_length_guidance() -> str:
+    return (
+        f"Aim for {PRIMARY_RESPONSE_WORD_TARGET} across {PRIMARY_RESPONSE_SENTENCE_TARGET} "
+        "so each turn lands as a complete thought."
+    )
+
+
+def no_self_name_intro_guidance() -> str:
+    return SELF_NAME_INTRO_GUIDANCE
+
+
+def wrap_up_response_length_guidance() -> str:
+    return (
+        f"Aim for {WRAP_UP_RESPONSE_WORD_TARGET} across {WRAP_UP_RESPONSE_SENTENCE_TARGET} "
+        "so the closing summary still sounds complete."
+    )
+
+
 # --- RESEARCH AGENT DEFINITIONS ---
 
 
@@ -581,7 +729,9 @@ class Agent:
 
 - Never echo or repeat what colleagues just said - use your OWN words
 
-- Be concise: 50-80 words max per response
+- {no_self_name_intro_guidance()}
+
+- {meeting_response_length_guidance()}
 
 - Cite sources: [from filename.md]
 
@@ -631,6 +781,8 @@ SCIENTIFIC FOCUS: {self.focus}
 
 - Never echo or repeat what colleagues just said - use your OWN words
 
+- {no_self_name_intro_guidance()}
+
 - Bring YOUR unique perspective based on your role and focus
 
 
@@ -651,7 +803,7 @@ SCIENTIFIC FOCUS: {self.focus}
 
 # CONVERSATION STYLE
 
-- Be concise: 50-80 words max
+- {meeting_response_length_guidance()}
 
 - Add NEW information each turn - don't rehash what was said
 
@@ -1846,11 +1998,11 @@ class RainLabOrchestrator:
 
         filename = f"{turn_id}_{agent_name.lower()}.wav"
         output_path = self.tts_audio_dir / filename
-        exported = self.voice_engine.export_to_file(spoken_text, agent_name, output_path)
-        if exported:
+        exported_path = self.voice_engine.export_to_file(spoken_text, agent_name, output_path)
+        if exported_path:
             return {
                 "mode": "file",
-                "path": output_path.resolve().as_posix(),
+                "path": exported_path.resolve().as_posix(),
                 "duration_ms": duration_ms,
             }
 
@@ -2563,7 +2715,7 @@ CRITICAL RULES:
 
 - CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
 
-- Keep response under 150 words
+- {meeting_response_length_guidance()}
 
 
 
@@ -2634,9 +2786,11 @@ RECENT DISCUSSION:
 
 4. Focus on YOUR specialty: {agent.focus}
 
-5. Keep response under 80 words - be concise
+5. {meeting_response_length_guidance()}
 
-6. CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
+6. {no_self_name_intro_guidance()}
+
+7. CRITICAL: If you need to verify a fact online, type: [SEARCH: your query]
 
 
 
@@ -2665,8 +2819,9 @@ Previous context: {recent_chat}
 
 3. End with a question to spark discussion
 
-4. Keep it under 80 words
+4. {meeting_response_length_guidance()}
 
+5. {no_self_name_intro_guidance()}
 
 
 Your specialty: {agent.focus}
@@ -2729,7 +2884,8 @@ Use these links to propose creative cross-paper insights if relevant.
                                         "Do NOT use intro phrases like 'Hey team' or restate the topic. "
                                         "React to the previous speaker by name in the first sentence, "
                                         "add one new concrete paper-grounded point, and end with a question. "
-                                        "Keep under 80 words."
+                                        f"{no_self_name_intro_guidance()} "
+                                        f"{meeting_response_length_guidance()}"
                                     ),
                                 },
                             ],
@@ -2757,7 +2913,7 @@ Use these links to propose creative cross-paper insights if relevant.
                                     "content": (
                                         "Review this draft and return a compact critique with exactly 3 bullets: "
                                         "(1) factual grounding to provided papers, (2) novelty vs prior turns, "
-                                        "(3) clarity under 80 words.\n\n"
+                                        f"(3) clarity and completeness within {PRIMARY_RESPONSE_WORD_TARGET}.\n\n"
                                         f"DRAFT:\n{content}\n\n"
                                         "If there are no issues, still return 3 bullets and say what is strong."
                                     ),
@@ -2780,8 +2936,9 @@ Use these links to propose creative cross-paper insights if relevant.
                                     "role": "user",
                                     "content": (
                                         f"Revise this response as {agent.name} using critique below. "
-                                        "Keep it under 80 words, add one concrete paper-grounded point, "
-                                        "avoid repetition, and respond in first person only.\n\n"
+                                        f"Keep it within {PRIMARY_RESPONSE_WORD_TARGET} across "
+                                        f"{PRIMARY_RESPONSE_SENTENCE_TARGET}, add one concrete paper-grounded point, "
+                                        "avoid repetition, respond in first person only, and do not start with your own name.\n\n"
                                         f"ORIGINAL:\n{content}\n\n"
                                         f"CRITIQUE:\n{critique_text}"
                                     ),
@@ -2827,11 +2984,7 @@ Use these links to propose creative cross-paper insights if relevant.
 
                 # Check if response was truncated (doesn't end with sentence-ending punctuation)
 
-                is_truncated = finish_reason == "length" or (
-                    content
-                    and not content.endswith((".", "!", "?", '"', "'", ")"))
-                    and len(content) > 50  # Only check longer responses
-                )
+                is_truncated = self._looks_truncated_response(content, finish_reason)
 
                 if is_truncated:
                     print("(completing...)", end=" ", flush=True)
@@ -2845,7 +2998,11 @@ Use these links to propose creative cross-paper insights if relevant.
                                 {"role": "system", "content": f"{agent.soul}"},
                                 {
                                     "role": "user",
-                                    "content": f"Complete this thought in ONE sentence. Keep it brief:\n\n{content}",
+                                    "content": (
+                                        "Complete this thought in ONE complete sentence so the turn ends cleanly. "
+                                        "Do not restart with your own name or a speaker label.\n\n"
+                                        f"{content}"
+                                    ),
                                 },
                             ],
                             temperature=self.config.temperature,
@@ -2896,9 +3053,33 @@ Use these links to propose creative cross-paper insights if relevant.
                         else:
                             content = content.rstrip(",;:") + "..."
 
+                content = self._repair_incomplete_response(
+                    agent=agent,
+                    topic=topic,
+                    context_block=context_block,
+                    content=content,
+                    finish_reason=None,
+                )
+
                 # CORRUPTION CHECK - validate response before accepting
 
                 is_corrupted, corruption_reason = self._is_corrupted_response(content)
+
+                if is_corrupted and corruption_reason in {"Response too short", "Incomplete sentence"}:
+                    repaired = self._repair_too_short_response(
+                        agent=agent,
+                        topic=topic,
+                        context_block=context_block,
+                        short_content=content,
+                    )
+                    if repaired:
+                        repaired_corrupted, repaired_reason = self._is_corrupted_response(repaired)
+                        if not repaired_corrupted:
+                            content = repaired
+                            is_corrupted = False
+                            corruption_reason = ""
+                        else:
+                            corruption_reason = repaired_reason
 
                 if is_corrupted:
                     print(f"\n⚠️  Corrupted response detected ({corruption_reason})")
@@ -2971,6 +3152,103 @@ Use these links to propose creative cross-paper insights if relevant.
 
         return None, None
 
+    def _repair_too_short_response(
+        self,
+        *,
+        agent: Agent,
+        topic: str,
+        context_block: str,
+        short_content: str,
+    ) -> str:
+        """Ask the model to expand a fragment into a complete answer before falling back."""
+
+        prompt_fragment = short_content.strip() or "[empty response]"
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.config.model_name,
+                messages=[
+                    {"role": "system", "content": f"{agent.soul}\n\n### RESEARCH DATABASE\n{context_block}"},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Your last reply was too short or incomplete: {prompt_fragment}\n\n"
+                            f"Rewrite it as {agent.name} answering this topic directly: {topic}\n"
+                            f"- Use {REPAIR_RESPONSE_SENTENCE_TARGET}\n"
+                            f"- Aim for {PRIMARY_RESPONSE_WORD_TARGET}\n"
+                            f"- {no_self_name_intro_guidance()}\n"
+                            "- No stage directions, role labels, placeholders, or code fences\n"
+                            "- If the short draft had a useful idea, keep it and expand it"
+                        ),
+                    },
+                ],
+                temperature=self.config.temperature,
+                max_tokens=min(self.config.max_tokens, 180),
+            )
+            repaired = response.choices[0].message.content.strip()
+        except Exception:
+            return ""
+
+        repaired = self._strip_agent_prefix(repaired, agent.name).strip()
+        other_agents = {"James", "Jasmine", "Luca", "Elena"} - {agent.name}
+        cleaned_lines = [
+            line
+            for line in repaired.split("\n")
+            if not any(line.strip().startswith(f"{other}:") for other in other_agents)
+        ]
+        return "\n".join(cleaned_lines).strip()
+
+    def _repair_incomplete_response(
+        self,
+        *,
+        agent: Agent,
+        topic: str,
+        context_block: str,
+        content: str,
+        finish_reason: Optional[str],
+    ) -> str:
+        """Repair dangling clauses that still look incomplete after continuation."""
+
+        if not self._looks_truncated_response(content, finish_reason):
+            return content
+
+        repaired = self._repair_too_short_response(
+            agent=agent,
+            topic=topic,
+            context_block=context_block,
+            short_content=content,
+        )
+        if not repaired:
+            return content
+
+        repaired_corrupted, _ = self._is_corrupted_response(repaired)
+        if repaired_corrupted or self._looks_truncated_response(repaired, None):
+            return content
+
+        return repaired
+
+    def _looks_truncated_response(self, text: str, finish_reason: Optional[str]) -> bool:
+        """Detect dangling clauses that should be completed before acceptance."""
+
+        if finish_reason == "length":
+            return True
+
+        normalized = (text or "").strip()
+        if not normalized:
+            return False
+
+        if RE_WEB_SEARCH_COMMAND.search(normalized):
+            return False
+
+        if normalized.endswith((".", "!", "?", '"', "'", ")", "]")):
+            return False
+
+        words = re.findall(r"[A-Za-z]+(?:['’-][A-Za-z]+)?", normalized)
+        if normalized.endswith((",", ";", ":")) and len(words) >= 5:
+            return True
+
+        return len(normalized) > 24 and len(words) >= 5
+
     def _is_corrupted_response(self, text: str) -> Tuple[bool, str]:
         """
 
@@ -2980,32 +3258,45 @@ Use these links to propose creative cross-paper insights if relevant.
 
         """
 
-        if not text or len(text.strip()) < 10:
+        normalized = (text or "").strip()
+
+        if not normalized:
             return True, "Response too short"
 
         # Heuristic 1: Too many consecutive uppercase letters (token corruption)
 
         # Pattern like "AIVERCREDREDRIECKERE" is a sign of corruption
 
-        if RE_CORRUPTION_CAPS.search(text):
+        if RE_CORRUPTION_CAPS.search(normalized):
             return True, "Excessive consecutive capitals detected"
 
         # Heuristic 2: High ratio of special characters (gibberish)
 
-        special_chars = sum(1 for c in text if c in ":;/\\|<>{}[]()@#$%^&*+=~`")
+        special_chars = sum(1 for c in normalized if c in ":;/\\|<>{}[]()@#$%^&*+=~`")
 
-        if len(text) > 20 and special_chars / len(text) > 0.15:
+        if len(normalized) > 20 and special_chars / len(normalized) > 0.15:
             return True, "Too many special characters"
 
         # Heuristic 3: Common corruption patterns
 
         for pattern in RE_CORRUPTION_PATTERNS:
-            if pattern.search(text):
+            if pattern.search(normalized):
                 return True, f"Corruption pattern detected: {pattern.pattern[:20]}"
+
+        if len(normalized) < 10:
+            # Compact answers like "It helps." or "Why?" are valid in beginner/chat mode.
+            sentence_candidate = normalized.rstrip("'\"”’)]}")
+            short_words = re.findall(r"[A-Za-z]+(?:['’-][A-Za-z]+)?", normalized)
+            if sentence_candidate.endswith((".", "!", "?")) and short_words:
+                return False, ""
+            return True, "Response too short"
+
+        if RainLabOrchestrator._looks_truncated_response(None, normalized, None):
+            return True, "Incomplete sentence"
 
         # Heuristic 4: Too many empty lines or lines with just punctuation
 
-        lines = text.split("\n")
+        lines = normalized.split("\n")
 
         empty_lines = sum(1 for line in lines if len(line.strip()) <= 2)
 
@@ -3014,7 +3305,7 @@ Use these links to propose creative cross-paper insights if relevant.
 
         # Heuristic 5: Average word length too high (concatenated garbage)
 
-        words = text.split()
+        words = normalized.split()
 
         if words:
             avg_word_len = sum(len(w) for w in words) / len(words)
@@ -3038,7 +3329,7 @@ Use these links to propose creative cross-paper insights if relevant.
 
 - End with something like 'Good discussion today' or 'Let's pick this up next time'
 
-Keep it under 80 words - this is a quick closing summary.""",
+{wrap_up_response_length_guidance()}""",
             "Jasmine": f"""WRAP-UP TIME: Give your closing thoughts on '{topic}':
 
 - State your MAIN CONCERN or practical challenge going forward
@@ -3047,7 +3338,7 @@ Keep it under 80 words - this is a quick closing summary.""",
 
 - Mention what you'd need to see before moving forward
 
-Keep it under 60 words - be direct and practical as always.""",
+{wrap_up_response_length_guidance()} Be direct and practical as always.""",
             "Luca": f"""WRAP-UP TIME: Give your closing synthesis on '{topic}':
 
 - Find the COMMON GROUND between what everyone said
@@ -3056,7 +3347,7 @@ Keep it under 60 words - be direct and practical as always.""",
 
 - Express optimism about where the research is heading
 
-Keep it under 60 words - stay diplomatic and unifying.""",
+{wrap_up_response_length_guidance()} Stay diplomatic and unifying.""",
             "Elena": f"""WRAP-UP TIME: Give your final assessment of '{topic}':
 
 - State the most important MATHEMATICAL or THEORETICAL point established
@@ -3065,10 +3356,13 @@ Keep it under 60 words - stay diplomatic and unifying.""",
 
 - Acknowledge good work from colleagues if warranted
 
-Keep it under 60 words - maintain your standards but be collegial.""",
+{wrap_up_response_length_guidance()} Maintain your standards but be collegial.""",
         }
 
-        return wrap_up_instructions.get(agent.name, f"Provide your closing thoughts on '{topic}' in under 60 words.")
+        return wrap_up_instructions.get(
+            agent.name,
+            f"Provide your closing thoughts on '{topic}'. {wrap_up_response_length_guidance()}",
+        )
 
     def _generate_final_stats(self) -> str:
         """Generate final statistics"""
@@ -3133,13 +3427,21 @@ Keep it under 60 words - maintain your standards but be collegial.""",
 
         """
 
-        # Pattern: agent name followed by optional parenthetical text, then colon
+        cleaned = (response or "").strip()
+        escaped_name = re.escape(agent_name)
+        patterns = [
+            rf"^{escaped_name}\s*(?:\([^)]*\))?\s*[:\-–—]\s*",
+            rf"^{escaped_name}\s+here\s*[,:\-–—]\s*",
+            rf"^(?:i am|i['’]?m|im|this is)\s+{escaped_name}(?:\s*[,:\-–—]\s*|\s+and\s+)",
+        ]
 
-        # Examples: "James:", "James (R.A.I.N. Lab Lead):", "James (anything):"
-
-        pattern = rf"^{re.escape(agent_name)}\s*(?:\([^)]*\))?\s*:\s*"
-
-        cleaned = re.sub(pattern, "", response, count=1)
+        while cleaned:
+            updated = cleaned
+            for pattern in patterns:
+                updated = re.sub(pattern, "", updated, count=1, flags=re.IGNORECASE).strip()
+            if updated == cleaned:
+                break
+            cleaned = updated
 
         return cleaned.strip()
 
