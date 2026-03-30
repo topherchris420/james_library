@@ -2938,7 +2938,8 @@ Use these links to propose creative cross-paper insights if relevant.
                                         f"Revise this response as {agent.name} using critique below. "
                                         f"Keep it within {PRIMARY_RESPONSE_WORD_TARGET} across "
                                         f"{PRIMARY_RESPONSE_SENTENCE_TARGET}, add one concrete paper-grounded point, "
-                                        "avoid repetition, respond in first person only, and do not start with your own name.\n\n"
+                                        "avoid repetition, respond in first person only, "
+                                        "and do not start with your own name.\n\n"
                                         f"ORIGINAL:\n{content}\n\n"
                                         f"CRITIQUE:\n{critique_text}"
                                     ),
