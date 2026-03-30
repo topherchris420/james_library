@@ -5,12 +5,12 @@ Design doc: `~/.gstack/projects/topherchris420-james_library/root-claude-add-gst
 
 ## Phase 1: Criterion benchmark crate
 
-- [ ] Register `crates/rain-bench` in root `Cargo.toml` workspace members
-- [ ] Create `crates/rain-bench/Cargo.toml` with `rain-labs = { path = "../../" }`, `criterion`, `tokio`, `tempfile`
-- [ ] Implement `benches/store_concurrent.rs` — 50 concurrent Tokio tasks, one `Arc<SqliteMemory>`, p50/p95/p99 throughput
-- [ ] Implement `benches/recall_integrity.rs` — stored count == recalled count per task (FTS5 consistency check)
+- [x] Register `crates/rain-bench` in root `Cargo.toml` workspace members
+- [x] Create `crates/rain-bench/Cargo.toml` with `rain-labs = { path = "../../" }`, `criterion`, `tokio`, `tempfile`
+- [x] Implement `benches/store_concurrent.rs` — 50 concurrent Tokio tasks, one `Arc<SqliteMemory>`, p50/p95/p99 throughput
+- [x] Implement `benches/recall_integrity.rs` — stored count == recalled count per task (FTS5 consistency check)
 - [ ] Commit criterion baselines to `crates/rain-bench/benches/baselines/main/`
-- [ ] Write 10 tests (see eng review report for full list)
+- [x] Write 10 tests — all 10 pass
 - [ ] Add CI job for `cargo bench --package rain-bench -- --baseline main` with >10% regression gate
 
 ## Phase 2 (deferred — separate design doc required)
