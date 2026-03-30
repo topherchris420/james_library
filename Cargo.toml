@@ -57,7 +57,7 @@ serde_yaml = "0.9"
 
 # Config
 directories = "6.0"
-toml = "1.0"
+toml = "1.1"
 shellexpand = "3.1"
 
 # JSON Schema generation for config export
@@ -90,7 +90,7 @@ indicatif = "0.18"
 tempfile = "3.26"
 
 # Zip extraction for ClawhHub / OpenClaw registry installers
-zip = { version = "8.3", default-features = false, features = ["deflate"] }
+zip = { version = "8.4", default-features = false, features = ["deflate"] }
 
 # Error handling
 anyhow = "1.0"
@@ -100,7 +100,7 @@ thiserror = "2.0"
 aardvark-sys = { path = "crates/aardvark-sys", version = "0.1.0" }
 
 # UUID generation
-uuid = { version = "1.22", default-features = false, features = ["v4", "std"] }
+uuid = { version = "1.23", default-features = false, features = ["v4", "std"] }
 
 # Authenticated encryption (AEAD) for secret store
 chacha20poly1305 = "0.10"
@@ -160,7 +160,7 @@ tokio-rustls = "0.26.4"
 webpki-roots = "1.0.6"
 
 # email
-lettre = { version = "0.11.19", default-features = false, features = ["builder", "smtp-transport", "rustls-tls"] }
+lettre = { version = "0.11.20", default-features = false, features = ["builder", "smtp-transport", "rustls-tls"] }
 mail-parser = "0.11.2"
 async-imap = { version = "0.11",features = ["runtime-tokio"], default-features = false }
 
@@ -197,7 +197,7 @@ probe-rs = { version = "0.31", optional = true }
 pdf-extract = { version = "0.10", optional = true }
 
 # WASM plugin runtime (extism)
-extism = { version = "1.20", optional = true }
+extism = { version = "1.21", optional = true }
 
 # Terminal QR rendering for WhatsApp Web pairing flow.
 qrcode = { version = "0.14", optional = true }
