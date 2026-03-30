@@ -1,0 +1,80 @@
+name: rain-bench Regression Gate
+
+on:
+    pull_request:
+        paths:
+            - "crates/rain-bench/**"
+            - "src/memory/**"
+    push:
+        branches:
+            - main
+        paths:
+            - "crates/rain-bench/**"
+            - "src/memory/**"
+    workflow_dispatch:
+
+concurrency:
+    group: rain-bench-${{ github.event.pull_request.number || github.sha }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    rain-bench-regression:
+        name: rain-bench Criterion Regression Gate
+        runs-on: blacksmith-2vcpu-ubuntu-2404
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+            - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
+              with:
+                  toolchain: 1.92.0
+
+            - uses: useblacksmith/rust-cache@f53e7f127245d2a269b3d90879ccf259876842d5 # v3
+
+            - name: Run rain-bench tests
+              run: cargo test --locked --package rain-bench
+
+            - name: Restore committed criterion baselines
+              run: |
+                  mkdir -p target/criterion
+                  cp -r crates/rain-bench/benches/baselines/main/* target/criterion/
+
+            - name: Run store_concurrent benchmark against baseline
+              id: bench_store
+              run: |
+                  output=$(cargo bench --locked --package rain-bench --bench store_concurrent -- --baseline main 2>&1)
+                  echo "$output"
+                  echo "bench_output<<EOF" >> "$GITHUB_OUTPUT"
+                  echo "$output" >> "$GITHUB_OUTPUT"
+                  echo "EOF" >> "$GITHUB_OUTPUT"
+                  if echo "$output" | grep -q "Performance has regressed"; then
+                    echo "REGRESSION DETECTED in store_concurrent"
+                    exit 1
+                  fi
+
+            - name: Run recall_integrity benchmark against baseline
+              id: bench_recall
+              run: |
+                  output=$(cargo bench --locked --package rain-bench --bench recall_integrity -- --baseline main 2>&1)
+                  echo "$output"
+                  echo "bench_output<<EOF" >> "$GITHUB_OUTPUT"
+                  echo "$output" >> "$GITHUB_OUTPUT"
+                  echo "EOF" >> "$GITHUB_OUTPUT"
+                  if echo "$output" | grep -q "Performance has regressed"; then
+                    echo "REGRESSION DETECTED in recall_integrity"
+                    exit 1
+                  fi
+
+            - name: Upload benchmark results
+              if: always()
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: rain-bench-results-${{ github.sha }}
+                  path: target/criterion/
+                  retention-days: 14
