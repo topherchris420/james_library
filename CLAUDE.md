@@ -500,6 +500,7 @@ git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git .clau
 - `/plan-design-review`
 - `/design-consultation`
 - `/design-shotgun`
+- `/design-html`
 - `/review`
 - `/ship`
 - `/land-and-deploy`
@@ -523,3 +524,4 @@ git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git .clau
 - `/guard`
 - `/unfreeze`
 - `/gstack-upgrade`
+- `/learn`
