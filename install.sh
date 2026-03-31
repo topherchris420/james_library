@@ -183,8 +183,10 @@ main() {
 
   run_uv "$uv_path" python install "$PYTHON_VERSION"
   run_uv "$uv_path" venv "$venv_dir" --python "$PYTHON_VERSION"
-  run_uv "$uv_path" pip compile "$REPO_ROOT/requirements-pinned.txt" -o "$REPO_ROOT/uv.lock"
-  run_uv "$uv_path" pip sync --python "$venv_python" "$REPO_ROOT/uv.lock"
+  local pip_lock_file="$REPO_ROOT/.uv-pip.lock"
+  rm -f "$pip_lock_file"
+  run_uv "$uv_path" pip compile "$REPO_ROOT/requirements-pinned.txt" -o "$pip_lock_file"
+  run_uv "$uv_path" pip sync --python "$venv_python" "$pip_lock_file"
   run_uv "$uv_path" run --python "$venv_python" "$REPO_ROOT/bootstrap_local.py" "${BOOTSTRAP_ARGS[@]}"
 
   if [[ "$SKIP_GREET" == false ]]; then

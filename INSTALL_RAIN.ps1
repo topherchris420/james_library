@@ -110,8 +110,12 @@ function Ensure-UvLock {
     )
 
     $runtimeRequirements = Join-Path $repoRoot "requirements-pinned.txt"
-    $lockPath = Join-Path $repoRoot "uv.lock"
+    $lockPath = Join-Path $repoRoot ".uv-pip.lock"
+    if (Test-Path $lockPath) {
+        Remove-Item $lockPath -Force
+    }
     Invoke-Uv -UvPath $UvPath -Args @("pip", "compile", $runtimeRequirements, "-o", $lockPath)
+    return $lockPath
 }
 
 function Ensure-RainEnvironment {
@@ -129,8 +133,8 @@ function Ensure-RainEnvironment {
 
     Invoke-Uv -UvPath $UvPath -Args @("python", "install", "3.12")
     Invoke-Uv -UvPath $UvPath -Args @("venv", $venvDir, "--python", "3.12")
-    Ensure-UvLock -UvPath $UvPath
-    Invoke-Uv -UvPath $UvPath -Args @("pip", "sync", "--python", $venvPython, (Join-Path $repoRoot "uv.lock"))
+    $pipLockPath = Ensure-UvLock -UvPath $UvPath
+    Invoke-Uv -UvPath $UvPath -Args @("pip", "sync", "--python", $venvPython, $pipLockPath)
 
     return $venvPython
 }
