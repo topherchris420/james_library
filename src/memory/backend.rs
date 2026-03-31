@@ -2,6 +2,7 @@
 pub enum MemoryBackendKind {
     Sqlite,
     Lucid,
+    Resonance,
     Postgres,
     Qdrant,
     Mem0,
@@ -37,6 +38,15 @@ const LUCID_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
     uses_sqlite_hygiene: true,
     sqlite_based: true,
     optional_dependency: true,
+};
+
+const RESONANCE_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
+    key: "resonance",
+    label: "Resonance — phase-coupling retrieval with dynamic scalar-field tuning",
+    auto_save_default: true,
+    uses_sqlite_hygiene: true,
+    sqlite_based: true,
+    optional_dependency: false,
 };
 
 const MARKDOWN_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
@@ -93,9 +103,10 @@ const CUSTOM_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
     optional_dependency: false,
 };
 
-const SELECTABLE_MEMORY_BACKENDS: [MemoryBackendProfile; 4] = [
+const SELECTABLE_MEMORY_BACKENDS: [MemoryBackendProfile; 5] = [
     SQLITE_PROFILE,
     LUCID_PROFILE,
+    RESONANCE_PROFILE,
     MARKDOWN_PROFILE,
     NONE_PROFILE,
 ];
@@ -112,6 +123,7 @@ pub fn classify_memory_backend(backend: &str) -> MemoryBackendKind {
     match backend {
         "sqlite" => MemoryBackendKind::Sqlite,
         "lucid" => MemoryBackendKind::Lucid,
+        "resonance" => MemoryBackendKind::Resonance,
         "postgres" => MemoryBackendKind::Postgres,
         "qdrant" => MemoryBackendKind::Qdrant,
         "mem0" | "openmemory" => MemoryBackendKind::Mem0,
@@ -125,6 +137,7 @@ pub fn memory_backend_profile(backend: &str) -> MemoryBackendProfile {
     match classify_memory_backend(backend) {
         MemoryBackendKind::Sqlite => SQLITE_PROFILE,
         MemoryBackendKind::Lucid => LUCID_PROFILE,
+        MemoryBackendKind::Resonance => RESONANCE_PROFILE,
         MemoryBackendKind::Postgres => POSTGRES_PROFILE,
         MemoryBackendKind::Qdrant => QDRANT_PROFILE,
         MemoryBackendKind::Mem0 => MEM0_PROFILE,
@@ -142,6 +155,10 @@ mod tests {
     fn classify_known_backends() {
         assert_eq!(classify_memory_backend("sqlite"), MemoryBackendKind::Sqlite);
         assert_eq!(classify_memory_backend("lucid"), MemoryBackendKind::Lucid);
+        assert_eq!(
+            classify_memory_backend("resonance"),
+            MemoryBackendKind::Resonance
+        );
         assert_eq!(
             classify_memory_backend("postgres"),
             MemoryBackendKind::Postgres
@@ -161,11 +178,12 @@ mod tests {
     #[test]
     fn selectable_backends_are_ordered_for_onboarding() {
         let backends = selectable_memory_backends();
-        assert_eq!(backends.len(), 4);
+        assert_eq!(backends.len(), 5);
         assert_eq!(backends[0].key, "sqlite");
         assert_eq!(backends[1].key, "lucid");
-        assert_eq!(backends[2].key, "markdown");
-        assert_eq!(backends[3].key, "none");
+        assert_eq!(backends[2].key, "resonance");
+        assert_eq!(backends[3].key, "markdown");
+        assert_eq!(backends[4].key, "none");
     }
 
     #[test]

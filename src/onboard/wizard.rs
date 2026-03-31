@@ -383,7 +383,7 @@ fn apply_provider_update(
 // ── Quick setup (zero prompts) ───────────────────────────────────
 
 /// Non-interactive setup: generates a sensible default config instantly.
-/// Use `R.A.I.N. onboard` or `R.A.I.N. onboard --api-key sk-... --provider openrouter --memory sqlite|lucid`.
+/// Use `R.A.I.N. onboard` or `R.A.I.N. onboard --api-key sk-... --provider openrouter --memory sqlite|lucid|resonance`.
 fn backend_key_from_choice(choice: usize) -> &'static str {
     selectable_memory_backends()
         .get(choice)
@@ -399,29 +399,12 @@ fn memory_config_defaults_for_backend(backend: &str) -> MemoryConfig {
         hygiene_enabled: profile.uses_sqlite_hygiene,
         archive_after_days: if profile.uses_sqlite_hygiene { 7 } else { 0 },
         purge_after_days: if profile.uses_sqlite_hygiene { 30 } else { 0 },
-        conversation_retention_days: 30,
-        embedding_provider: "none".to_string(),
-        embedding_model: "text-embedding-3-small".to_string(),
-        embedding_dimensions: 1536,
-        vector_weight: 0.7,
-        keyword_weight: 0.3,
-        min_relevance_score: 0.4,
         embedding_cache_size: if profile.uses_sqlite_hygiene {
             10000
         } else {
             0
         },
-        chunk_max_tokens: 512,
-        response_cache_enabled: false,
-        response_cache_ttl_minutes: 60,
-        response_cache_max_entries: 5_000,
-        response_cache_hot_entries: 256,
-        snapshot_enabled: false,
-        snapshot_on_hygiene: false,
-        auto_hydrate: true,
-        sqlite_open_timeout_secs: None,
-        qdrant: crate::config::QdrantConfig::default(),
-        mem0: crate::config::schema::Mem0Config::default(),
+        ..MemoryConfig::default()
     }
 }
 
@@ -7463,8 +7446,9 @@ mod tests {
     fn backend_key_from_choice_maps_supported_backends() {
         assert_eq!(backend_key_from_choice(0), "sqlite");
         assert_eq!(backend_key_from_choice(1), "lucid");
-        assert_eq!(backend_key_from_choice(2), "markdown");
-        assert_eq!(backend_key_from_choice(3), "none");
+        assert_eq!(backend_key_from_choice(2), "resonance");
+        assert_eq!(backend_key_from_choice(3), "markdown");
+        assert_eq!(backend_key_from_choice(4), "none");
         assert_eq!(backend_key_from_choice(999), "sqlite");
     }
 
@@ -7509,6 +7493,24 @@ mod tests {
         assert_eq!(config.archive_after_days, 0);
         assert_eq!(config.purge_after_days, 0);
         assert_eq!(config.embedding_cache_size, 0);
+    }
+
+    #[test]
+    fn memory_config_defaults_preserve_resonance_schema_defaults() {
+        let defaults = MemoryConfig::default();
+
+        for backend in ["lucid", "resonance", "none"] {
+            let config = memory_config_defaults_for_backend(backend);
+            assert_eq!(config.resonance_threshold, defaults.resonance_threshold);
+            assert_eq!(
+                config.resonance_field_energy,
+                defaults.resonance_field_energy
+            );
+            assert_eq!(
+                config.resonance_mass_tokens_per_unit,
+                defaults.resonance_mass_tokens_per_unit
+            );
+        }
     }
 
     #[test]

@@ -13,6 +13,7 @@ pub mod none;
 #[cfg(feature = "memory-postgres")]
 pub mod postgres;
 pub mod qdrant;
+pub mod resonance;
 pub mod response_cache;
 pub mod snapshot;
 pub mod sqlite;
@@ -32,6 +33,7 @@ pub use none::NoneMemory;
 #[cfg(feature = "memory-postgres")]
 pub use postgres::PostgresMemory;
 pub use qdrant::QdrantMemory;
+pub use resonance::ResonanceBackend;
 pub use response_cache::ResponseCache;
 pub use sqlite::SqliteMemory;
 pub use traits::Memory;
@@ -60,6 +62,10 @@ where
             let local = sqlite_builder()?;
             Ok(Box::new(LucidMemory::new(workspace_dir, local)))
         }
+        MemoryBackendKind::Resonance => Ok(Box::new(ResonanceBackend::with_embedder(
+            workspace_dir,
+            Arc::new(embeddings::NoopEmbedding),
+        )?)),
         MemoryBackendKind::Postgres => postgres_builder(),
         MemoryBackendKind::Qdrant | MemoryBackendKind::Mem0 | MemoryBackendKind::Markdown => {
             Ok(Box::new(MarkdownMemory::new(workspace_dir)))
@@ -403,6 +409,23 @@ pub fn create_memory_with_storage_and_routes(
         )));
     }
 
+    if matches!(backend_kind, MemoryBackendKind::Resonance) {
+        let embedder: Arc<dyn embeddings::EmbeddingProvider> =
+            Arc::from(embeddings::create_embedding_provider(
+                &resolved_embedding.provider,
+                resolved_embedding.api_key.as_deref(),
+                &resolved_embedding.model,
+                resolved_embedding.dimensions,
+            ));
+        return Ok(Box::new(ResonanceBackend::with_embedder_and_params(
+            workspace_dir,
+            embedder,
+            config.resonance_threshold,
+            config.resonance_field_energy,
+            config.resonance_mass_tokens_per_unit,
+        )?));
+    }
+
     create_memory_with_builders(
         &backend_name,
         workspace_dir,
@@ -529,6 +552,17 @@ mod tests {
         };
         let mem = create_memory(&cfg, tmp.path(), None).unwrap();
         assert_eq!(mem.name(), "lucid");
+    }
+
+    #[test]
+    fn factory_resonance() {
+        let tmp = TempDir::new().unwrap();
+        let cfg = MemoryConfig {
+            backend: "resonance".into(),
+            ..MemoryConfig::default()
+        };
+        let mem = create_memory(&cfg, tmp.path(), None).unwrap();
+        assert_eq!(mem.name(), "resonance");
     }
 
     #[test]

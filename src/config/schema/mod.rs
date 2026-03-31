@@ -1,4 +1,4 @@
-﻿use crate::providers::{is_glm_alias, is_zai_alias};
+use crate::providers::{is_glm_alias, is_zai_alias};
 use crate::security::{AutonomyLevel, DomainMatcher};
 use anyhow::{Context, Result};
 use directories::UserDirs;
@@ -2753,7 +2753,7 @@ impl Default for Mem0Config {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct MemoryConfig {
-    /// "sqlite" | "lucid" | "postgres" | "qdrant" | "markdown" | "none" (`none` = explicit no-op memory)
+    /// "sqlite" | "lucid" | "resonance" | "postgres" | "qdrant" | "markdown" | "none" (`none` = explicit no-op memory)
     ///
     /// `postgres` requires `[storage.provider.config]` with `db_url` (`dbURL` alias supported).
     /// `qdrant` uses `[memory.qdrant]` config or `QDRANT_URL` env var.
@@ -2798,6 +2798,18 @@ pub struct MemoryConfig {
     /// Max tokens per chunk for document splitting
     #[serde(default = "default_chunk_size")]
     pub chunk_max_tokens: usize,
+
+    // ── Resonance backend options ────────────────────────────────
+    /// Resonance threshold for materialization. Default: 0.85
+    #[serde(default = "default_resonance_threshold")]
+    pub resonance_threshold: f64,
+    /// Field energy term for phase coupling. Default: 1.0
+    #[serde(default = "default_resonance_field_energy")]
+    pub resonance_field_energy: f64,
+    /// Mass scaling denominator (approx_token_count / mass_tokens_per_unit, min 1.0).
+    /// Default: 128.0
+    #[serde(default = "default_resonance_mass_tokens_per_unit")]
+    pub resonance_mass_tokens_per_unit: f64,
 
     // Ã¢â€â‚¬Ã¢â€â‚¬ Response Cache (saves tokens on repeated prompts) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     /// Enable LLM response caching to avoid paying for duplicate prompts
@@ -2880,6 +2892,18 @@ fn default_cache_size() -> usize {
 fn default_chunk_size() -> usize {
     512
 }
+
+fn default_resonance_threshold() -> f64 {
+    0.85
+}
+
+fn default_resonance_field_energy() -> f64 {
+    1.0
+}
+
+fn default_resonance_mass_tokens_per_unit() -> f64 {
+    128.0
+}
 fn default_response_cache_ttl() -> u32 {
     60
 }
@@ -2908,6 +2932,9 @@ impl Default for MemoryConfig {
             min_relevance_score: default_min_relevance_score(),
             embedding_cache_size: default_cache_size(),
             chunk_max_tokens: default_chunk_size(),
+            resonance_threshold: default_resonance_threshold(),
+            resonance_field_energy: default_resonance_field_energy(),
+            resonance_mass_tokens_per_unit: default_resonance_mass_tokens_per_unit(),
             response_cache_enabled: false,
             response_cache_ttl_minutes: default_response_cache_ttl(),
             response_cache_max_entries: default_response_cache_max(),
