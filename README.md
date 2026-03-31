@@ -1,7 +1,7 @@
 # 🐙 R.A.I.N. Lab: James and Your Private AI Research Team
 
 <p align="center">
-  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="900" />
+  <img src="assets/rain_lab.png" alt="the R.A.I.N. Lab logo" width="900" />
 </p>
 
 <p align="center">
