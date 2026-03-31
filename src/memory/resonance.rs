@@ -62,16 +62,16 @@ struct RecallFilters {
     until: Option<String>,
 }
 
-pub struct ResonanceBackend {
+pub struct ResonanceMemory {
     conn: Arc<Mutex<Connection>>,
     _db_path: PathBuf,
     embedder: Arc<dyn EmbeddingProvider>,
-    scalar_field: Arc<Mutex<ScalarField>>,
+    field_energy: f64,
     resonance_threshold: f64,
     mass_tokens_per_unit: f64,
 }
 
-impl ResonanceBackend {
+impl ResonanceMemory {
     pub fn with_embedder(
         workspace_dir: &Path,
         embedder: Arc<dyn EmbeddingProvider>,
@@ -98,17 +98,15 @@ impl ResonanceBackend {
         }
         let conn = Connection::open(&db_path)?;
         Self::init_schema(&conn)?;
-        let mut scalar_field = ScalarField::default();
-        scalar_field.field_energy = if field_energy.is_finite() && field_energy > f64::EPSILON {
-            field_energy
-        } else {
-            DEFAULT_FIELD_ENERGY
-        };
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
             _db_path: db_path,
             embedder,
-            scalar_field: Arc::new(Mutex::new(scalar_field)),
+            field_energy: if field_energy.is_finite() && field_energy > f64::EPSILON {
+                field_energy
+            } else {
+                DEFAULT_FIELD_ENERGY
+            },
             resonance_threshold: if resonance_threshold.is_finite() {
                 resonance_threshold
             } else {
@@ -253,14 +251,16 @@ impl ResonanceBackend {
         &self,
         target_frequency: Vec<f32>,
         filters: RecallFilters,
+        limit: usize,
     ) -> anyhow::Result<Vec<MemoryEntry>> {
-        {
-            let mut field = self.scalar_field.lock();
-            field.current_frequency = target_frequency;
-            if !field.field_energy.is_finite() || field.field_energy <= f64::EPSILON {
-                field.field_energy = DEFAULT_FIELD_ENERGY;
-            }
-        }
+        let field = ScalarField {
+            current_frequency: target_frequency,
+            field_energy: if self.field_energy.is_finite() && self.field_energy > f64::EPSILON {
+                self.field_energy
+            } else {
+                DEFAULT_FIELD_ENERGY
+            },
+        };
 
         let conn = self.conn.clone();
         let objects =
@@ -270,7 +270,6 @@ impl ResonanceBackend {
             })
             .await??;
 
-        let field = self.scalar_field.lock().clone();
         let mut coupled: Vec<(MemoryEntry, f64)> = objects
             .into_iter()
             .filter_map(|object| {
@@ -284,12 +283,13 @@ impl ResonanceBackend {
             .collect();
 
         coupled.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        coupled.truncate(limit);
         Ok(coupled.into_iter().map(|(entry, _)| entry).collect())
     }
 }
 
 #[async_trait]
-impl Memory for ResonanceBackend {
+impl Memory for ResonanceMemory {
     fn name(&self) -> &str {
         "resonance"
     }
@@ -346,21 +346,23 @@ impl Memory for ResonanceBackend {
     async fn recall(
         &self,
         query: &str,
-        _limit: usize,
+        limit: usize,
         session_id: Option<&str>,
         since: Option<&str>,
         until: Option<&str>,
     ) -> anyhow::Result<Vec<MemoryEntry>> {
         if query.trim().is_empty() {
             return self.list(None, session_id).await.map(|entries| {
-                entries
+                let mut filtered: Vec<_> = entries
                     .into_iter()
                     .filter(|entry| {
                         let after_since = since.is_none_or(|s| entry.timestamp.as_str() >= s);
                         let before_until = until.is_none_or(|u| entry.timestamp.as_str() <= u);
                         after_since && before_until
                     })
-                    .collect()
+                    .collect();
+                filtered.truncate(limit);
+                filtered
             });
         }
 
@@ -375,6 +377,7 @@ impl Memory for ResonanceBackend {
                 since: since.map(ToString::to_string),
                 until: until.map(ToString::to_string),
             },
+            limit,
         )
         .await
     }
