@@ -1,4 +1,4 @@
-# 🐙 R.A.I.N. Lab
+# 🐙 James and the R.A.I.N. Lab
 
 **Think with AI teammates who challenge your ideas, stress-test your plans, and remember everything.**
 
