@@ -255,7 +255,10 @@ async fn spawn_dreamer() {
     };
 
     if !script_path.exists() {
-        tracing::warn!("KAIROS dreamer script not found at {}", script_path.display());
+        tracing::warn!(
+            "KAIROS dreamer script not found at {}",
+            script_path.display()
+        );
         return;
     }
 
@@ -280,7 +283,10 @@ async fn spawn_dreamer() {
     };
 
     let pid = child.id();
-    tracing::info!("KAIROS dreamer spawned (pid {pid:?}), script: {}", script_path.display());
+    tracing::info!(
+        "KAIROS dreamer spawned (pid {pid:?}), script: {}",
+        script_path.display()
+    );
 
     // Log stdout/stderr in background so we don't block
     let stdout = child.stdout.take();

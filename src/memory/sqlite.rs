@@ -1065,9 +1065,8 @@ impl SqliteMemory {
                 .map(|i| format!("?{i}"))
                 .collect::<Vec<_>>()
                 .join(", ");
-            let sql = format!(
-                "UPDATE memories SET consolidated = 1 WHERE rowid IN ({placeholders})"
-            );
+            let sql =
+                format!("UPDATE memories SET consolidated = 1 WHERE rowid IN ({placeholders})");
             let params: Vec<Box<dyn rusqlite::types::ToSql>> = ids_vec
                 .iter()
                 .map(|id| Box::new(*id) as Box<dyn rusqlite::types::ToSql>)
