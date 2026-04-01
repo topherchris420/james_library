@@ -215,7 +215,7 @@ pub async fn build_default_sink(
     }
 }
 
-#[allow(unused_variables)]
+#[allow(clippy::used_underscore_binding, unused_variables)]
 pub fn build_default_bridge(_config: &Config) -> anyhow::Result<Box<dyn IpcBridge>> {
     #[cfg(unix)]
     {
