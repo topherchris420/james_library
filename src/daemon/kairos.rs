@@ -215,6 +215,7 @@ pub async fn build_default_sink(
     }
 }
 
+#[allow(unused_variables)]
 pub fn build_default_bridge(_config: &Config) -> anyhow::Result<Box<dyn IpcBridge>> {
     #[cfg(unix)]
     {
@@ -233,7 +234,7 @@ pub fn build_default_bridge(_config: &Config) -> anyhow::Result<Box<dyn IpcBridg
 /// Spawn the Python dreamer service as a background task.
 /// On Windows connects to TCP 48765; on Unix uses a Unix domain socket.
 /// Returns immediately — the process continues independently.
-async fn spawn_dreamer() {
+fn spawn_dreamer() {
     // Derive the script path relative to the running binary.
     // binary:  .../james_library/target/debug/rain[.exe]
     // script:  .../james_library/src/service/kairos_dreamer.py
@@ -336,7 +337,7 @@ pub async fn run(config: Config) -> anyhow::Result<()> {
     let worker = KairosWorker::new(sqlite, bridge, sink);
 
     // Spawn the Python dreamer service as a background process
-    spawn_dreamer().await;
+    spawn_dreamer();
 
     tracing::info!("KAIROS daemon started");
 
