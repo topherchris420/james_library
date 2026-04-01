@@ -20,11 +20,11 @@
 
 Imagine a research meeting where multiple AI advisors each bring a different perspective. One plays devil's advocate. Another looks for gaps in your logic. A third checks if your claims hold up. They debate. They document. They remember.
 
-That's R.A.I.N. Lab.
+That's the R.A.I.N. Lab.
 
 You bring the question. James and his team explore it from multiple angles, challenge weak spots, verify facts, and hand you back something you can actually use — a clear analysis, a decision framework, or a list of what still needs testing.
 
-All on your own computer. Private. No cloud. No one watching.
+All on your own computer. Private. No cloud. No one is watching.
 
 ---
 
