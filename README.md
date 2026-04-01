@@ -53,6 +53,7 @@ python rain_lab.py
 Press Enter. That's it. James will walk you through the rest.
 
 On Windows, you can also double-click `INSTALL_RAIN.cmd` to create shortcuts.
+On macOS/Linux, run `./install.sh` for a one-click setup.
 
 ---
 
