@@ -3,7 +3,7 @@ import sys
 import json
 import asyncio
 from pydantic import BaseModel, Field
-from typing import List, Any
+from typing import List
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
