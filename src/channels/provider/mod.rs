@@ -13,11 +13,11 @@ use crate::channels::ChannelRouteSelection;
 use crate::channels::ModelCacheState;
 use crate::providers::{self, Provider};
 use anyhow::Context;
+use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::Path;
 use std::sync::Arc;
-use parking_lot::Mutex;
 
 // ============================================================================
 // Constants
@@ -125,9 +125,7 @@ impl ChannelProviderManager {
         }
 
         // Only return the default provider when there's no credential override
-        if api_key_override.is_none()
-            && provider_name == self.default_provider_name.as_str()
-        {
+        if api_key_override.is_none() && provider_name == self.default_provider_name.as_str() {
             return Ok(Arc::clone(&self.default_provider));
         }
 
@@ -160,7 +158,9 @@ impl ChannelProviderManager {
 
         // Cache the provider
         let mut cache = self.cache.lock();
-        let cached = cache.entry(cache_key).or_insert_with(|| Arc::clone(&provider));
+        let cached = cache
+            .entry(cache_key)
+            .or_insert_with(|| Arc::clone(&provider));
         Ok(Arc::clone(cached))
     }
 
