@@ -1,10 +1,12 @@
 # 🐙R.A.I.N. Lab
 
-**A private-by-default experts in your pocket for researchers, independent thinkers, and R&D teams.**
+**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
 
-Ask a research question. The R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
+Ask a raw research question. The R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
 
 Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+
+James is the assistant inside the R.A.I.N. Lab.
 
 <p align="center">
   <img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="800" />

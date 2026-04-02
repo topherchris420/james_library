@@ -205,14 +205,25 @@ def _prune_to_budget(
 
 
 def _summarize_messages(messages: list[dict[str, str]]) -> str:
-    lines = [SUMMARY_PREFIX]
-    for message in messages:
+    focus_messages = [
+        message
+        for message in messages
+        if str(message.get("role", "")).strip().lower() == "user"
+    ]
+    if not focus_messages:
+        focus_messages = [message for message in messages if _normalize_whitespace(str(message.get("content", "")))]
+
+    fragments: list[str] = []
+    for message in focus_messages[:2]:
         role = str(message.get("role", "")).strip().lower() or "message"
         content = _normalize_whitespace(str(message.get("content", "")))
         if not content:
             continue
-        lines.append(f"- {role}: {_truncate(content, 48)}")
-    return "\n".join(lines)
+        fragments.append(f"{role}:{_truncate(content, 18)}")
+
+    if not fragments:
+        return SUMMARY_PREFIX
+    return f"{SUMMARY_PREFIX} {'; '.join(fragments)}"
 
 
 def _must_preserve_exact(message: dict[str, str]) -> bool:
