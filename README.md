@@ -39,9 +39,9 @@ This is built for work that starts messy: early-stage research, technical due di
 
 ### Public Web Experience (Coming Soon)
 
-Start with the example hosted experience:
+Start with the hosted experience:
 
-- [Here](https://rainlabteam.vercel.app/)
+- https://lab.vers3dynamics.com
 
 If you want the fastest way to feel the product, start there first.
 
