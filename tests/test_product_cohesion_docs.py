@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -32,6 +33,48 @@ def _read(repo_root: Path, rel_path: str) -> str:
     return (repo_root / rel_path).read_text(encoding="utf-8")
 
 
+def _find_readme_chrome_index(text: str) -> int:
+    candidates = []
+
+    logo_index = text.find("assets/rain_lab.png")
+    if logo_index != -1:
+        candidates.append(logo_index)
+
+    translation_match = re.search(r"README\.[A-Za-z-]+\.md", text)
+    if translation_match:
+        candidates.append(translation_match.start())
+
+    assert candidates, "README.md is missing both the logo asset marker and translated README links"
+    return min(candidates)
+
+
+def test_readme_chrome_detection_ignores_incidental_markup() -> None:
+    text = """# R.A.I.N. Lab
+
+**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
+
+Ask a raw research question. R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
+
+Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+
+James is the assistant inside R.A.I.N. Lab.
+
+<p align="center">
+  <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
+</p>
+
+<p align="center">
+  <a href="README.vi.md">Tiếng Việt</a> •
+  <a href="README.fr.md">Français</a> •
+  <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+## What It Does
+"""
+
+    assert _find_readme_chrome_index(text) == text.index("assets/rain_lab.png")
+
+
 def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     text = _read(repo_root, "README.md")
 
@@ -42,8 +85,6 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     )
     expert_summary = "Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts."
     assistant_line = "James is the assistant inside R.A.I.N. Lab"
-    logo_marker = '<img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="800" />'
-    translation_marker = '<a href="README.zh-CN.md">简体中文</a>'
     hosted_url = "https://lab.vers3dynamics.com"
     local_runner = "python rain_lab.py"
     first_section = "## What It Does"
@@ -60,7 +101,7 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
         "## For Developers",
     )
 
-    for fragment in (heading, tagline, product_summary, expert_summary, assistant_line, logo_marker, translation_marker, hosted_url):
+    for fragment in (heading, tagline, product_summary, expert_summary, assistant_line, hosted_url):
         assert fragment in text, f"README.md is missing required positioning marker: {fragment!r}"
 
     heading_index = text.index(heading)
@@ -68,8 +109,7 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     product_summary_index = text.index(product_summary)
     expert_summary_index = text.index(expert_summary)
     assistant_line_index = text.index(assistant_line)
-    logo_marker_index = text.index(logo_marker)
-    translation_marker_index = text.index(translation_marker)
+    chrome_index = _find_readme_chrome_index(text)
     hosted_url_index = text.index(hosted_url)
     local_runner_index = text.index(local_runner)
     first_section_index = text.index(first_section)
@@ -79,11 +119,10 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     assert product_summary_index < first_section_index
     assert expert_summary_index < first_section_index
     assert assistant_line_index < first_section_index
-    assert product_summary_index < logo_marker_index
-    assert expert_summary_index < logo_marker_index
-    assert assistant_line_index < logo_marker_index
-    assert logo_marker_index < first_section_index
-    assert logo_marker_index < translation_marker_index
+    assert product_summary_index < chrome_index
+    assert expert_summary_index < chrome_index
+    assert assistant_line_index < chrome_index
+    assert chrome_index < first_section_index
     assert hosted_url_index < local_runner_index
 
     for section in expected_sections:
