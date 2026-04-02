@@ -9,7 +9,7 @@ Most tools help you find papers. R.A.I.N. Lab helps you think with a room full o
 James is the assistant inside the R.A.I.N. Lab.
 
 <p align="center">
-  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="800" />
+  <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
 </p>
 
 <p align="center">🌐
