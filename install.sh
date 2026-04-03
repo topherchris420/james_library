@@ -15,8 +15,8 @@ R.A.I.N. Lab local installer (macOS/Linux)
 Usage:
   ./install.sh [options]
 
-This installer mirrors the Windows INSTALL_RAIN.cmd flow:
-1. verify uv is installed (see https://docs.astral.sh/uv/getting-started/installation/)
+This installer performs the following steps:
+1. verify uv is pre-installed (see https://docs.astral.sh/uv/getting-started/installation/)
 2. create .venv with Python 3.12
 3. compile and sync pinned dependencies
 4. run bootstrap_local.py to fetch the prebuilt runtime and initialize config
