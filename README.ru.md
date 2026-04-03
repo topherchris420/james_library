@@ -42,3 +42,34 @@ python rain_lab.py
 ```
 
 Подробности по командам и конфигурации доступны в docs-хабе и справочных разделах.
+
+## Как это выглядит в действии
+
+Задайте сырой исследовательский вопрос. Наблюдайте, как четыре экспертных агента — James (ведущий учёный), Jasmine (постдок-скептик), Luca (геометр) и Elena (логик) — обсуждают его в реальном времени.
+
+```
+TOPIC: Could a "Phononic Morphogenetic Field" — precise acoustic interference patterns
+guiding matter assembly like DNA guides cell growth — actually work?
+
+**James:** ...phononic frequency combs could act like an acoustic blueprint for
+molecular organization. The missing link between quantum coherence and biological
+assembly?
+
+**Jasmine:** Hold on. Cymatic patterns are *static* — they don't adapt to errors
+or material changes the way DNA does. And the energy density needed exceeds
+current acoustic levitation by *orders of magnitude*. Where's the thermal
+dissipation analysis?
+
+**Luca:** The geometry is compelling though. Wavelength spacing in phononic
+combs (ωₙ₊₁ - ωₙ = 2πc/λ) parallels scalar field gradients in relic field
+tomography. But macroscopic assembly requires E > 10⁴⁵ J — far beyond reach.
+
+**Elena:** The math is elegant but the premise has a fatal flaw. The energy
+density violates the Landauer limit by multiple orders of magnitude. Current
+systems operate ~10³ times lower. Without experimental validation at that
+scale, this remains speculation.
+
+[Meeting continues — James responds, Jasmine pushes back, consensus forms...]
+```
+
+Присоединяйтесь к исследовательской встрече, изучайте разногласия и уходите с планом следующих шагов — а не просто со ссылками.

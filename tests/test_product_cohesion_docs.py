@@ -15,6 +15,27 @@ PRIMARY_DOC_EXPECTATIONS = {
 }
 
 PRIMARY_DOCS = tuple(PRIMARY_DOC_EXPECTATIONS)
+README_TAGLINE = (
+    "A private-by-default expert panel in a box for researchers, independent "
+    "thinkers, and R&D teams."
+)
+README_PRODUCT_SUMMARY_PATTERN = re.compile(
+    (
+        r"Ask a raw research question\.\s+"
+        r"(?:The\s+)?R\.A\.I\.N\. Lab\s+assembles multiple expert "
+        r"perspectives,\s+grounds strong claims in papers or explicit "
+        r"evidence,\s+and returns the strongest explanations,\s+"
+        r"disagreements,\s+and next moves\."
+    )
+)
+README_EXPERT_SUMMARY = (
+    "Most tools help you find papers. R.A.I.N. Lab helps you think with a room "
+    "full of experts."
+)
+README_ASSISTANT_LINE_PATTERN = re.compile(
+    r"James is the assistant inside (?:the )?R\.A\.I\.N\. Lab\."
+)
+README_HOSTED_URL = "https://rainlabteam.vercel.app"
 
 LEGACY_DOC_MARKERS = (
     "MultiplicityFoundation/R.A.I.N.",
@@ -48,42 +69,43 @@ def _find_readme_chrome_index(text: str) -> int:
     return min(candidates)
 
 
+def _normalize_whitespace(text: str) -> str:
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _find_required_index(text: str, marker: str | re.Pattern[str]) -> int:
+    if isinstance(marker, str):
+        return text.index(marker)
+
+    match = marker.search(text)
+    assert match is not None, f"README.md is missing required positioning marker: {marker.pattern!r}"
+    return match.start()
+
+
 def _lead_story_indexes(text: str) -> list[int]:
-    normalized_text = _normalize_lead_story_whitespace(text)
+    normalized_text = _normalize_whitespace(text)
     lead_story_fragments = [
         "# R.A.I.N. Lab",
-        "A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.",
-        (
-            "Ask a raw research question. R.A.I.N. Lab assembles multiple expert "
-            "perspectives, grounds strong claims in papers or explicit evidence, and "
-            "returns the strongest explanations, disagreements, and next moves."
-        ),
-        "Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.",
-        "James is the assistant inside R.A.I.N. Lab",
+        README_TAGLINE,
+        README_PRODUCT_SUMMARY_PATTERN,
+        README_EXPERT_SUMMARY,
+        README_ASSISTANT_LINE_PATTERN,
     ]
-    return [_find_lead_story_index(normalized_text, fragment) for fragment in lead_story_fragments]
-
-
-def _normalize_lead_story_whitespace(text: str) -> str:
-    """Normalize whitespace within line content but preserve line boundaries."""
-    lines = text.splitlines()
-    return "\n".join(" ".join(line.split()) for line in lines)
-
-
-def _find_lead_story_index(text: str, fragment: str) -> int:
-    return text.index(fragment)
+    return [_find_required_index(normalized_text, fragment) for fragment in lead_story_fragments]
 
 
 def test_readme_chrome_detection_ignores_incidental_markup() -> None:
-    text = """# R.A.I.N. Lab
+    text = f"""# R.A.I.N. Lab
 
-**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
+**{README_TAGLINE}**
 
-Ask a raw research question. R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
+Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
+perspectives, grounds strong claims in papers or explicit evidence, and returns
+the strongest explanations, disagreements, and next moves.
 
-Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+{README_EXPERT_SUMMARY}
 
-James is the assistant inside R.A.I.N. Lab.
+James is the assistant inside the R.A.I.N. Lab.
 
 <p align="center">
   <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
@@ -102,15 +124,17 @@ James is the assistant inside R.A.I.N. Lab.
 
 
 def test_readme_lead_story_order_detection() -> None:
-    text = """# R.A.I.N. Lab
+    text = f"""# R.A.I.N. Lab
 
-**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
+**{README_TAGLINE}**
 
-Ask a raw research question. R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
+Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
+perspectives, grounds strong claims in papers or explicit evidence, and returns
+the strongest explanations, disagreements, and next moves.
 
-Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+{README_EXPERT_SUMMARY}
 
-James is the assistant inside R.A.I.N. Lab.
+James is the assistant inside the R.A.I.N. Lab.
 
 <p align="center">
   <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
@@ -126,13 +150,11 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     text = _read(repo_root, "README.md")
 
     heading = "# R.A.I.N. Lab"
-    tagline = "A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams."
-    product_summary = (
-        "Ask a raw research question. R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves."
-    )
-    expert_summary = "Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts."
-    assistant_line = "James is the assistant inside R.A.I.N. Lab"
-    hosted_url = "https://lab.vers3dynamics.com"
+    tagline = README_TAGLINE
+    product_summary = README_PRODUCT_SUMMARY_PATTERN
+    expert_summary = README_EXPERT_SUMMARY
+    assistant_line = README_ASSISTANT_LINE_PATTERN
+    hosted_url = README_HOSTED_URL
     local_runner = "python rain_lab.py"
     first_section = "## What It Does"
     expected_sections = (
@@ -148,13 +170,14 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
         "## For Developers",
     )
 
-    for fragment in (heading, tagline, product_summary, expert_summary, assistant_line, hosted_url):
-        assert fragment in text, f"README.md is missing required positioning marker: {fragment!r}"
-
     lead_story_indexes = _lead_story_indexes(text)
-    heading_index, tagline_index, product_summary_index, expert_summary_index, assistant_line_index = lead_story_indexes
+    _find_required_index(_normalize_whitespace(text), heading)
+    _find_required_index(_normalize_whitespace(text), tagline)
+    _find_required_index(_normalize_whitespace(text), product_summary)
+    _find_required_index(_normalize_whitespace(text), expert_summary)
+    assistant_line_index = _find_required_index(text, assistant_line)
     chrome_index = _find_readme_chrome_index(text)
-    hosted_url_index = text.index(hosted_url)
+    hosted_url_index = _find_required_index(text, hosted_url)
     local_runner_index = text.index(local_runner)
     first_section_index = text.index(first_section)
 
@@ -162,6 +185,7 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     assert assistant_line_index < chrome_index
     assert chrome_index < first_section_index
     assert hosted_url_index < local_runner_index
+    assert "### Public Web Experience (Coming Soon)" not in text
 
     for section in expected_sections:
         assert section in text, f"README.md is missing expected section: {section!r}"

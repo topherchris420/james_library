@@ -145,6 +145,27 @@ button {
   max-width: 62ch;
 }
 
+.hero__proof {
+  margin: 18px 0 0;
+  color: var(--text);
+  line-height: 1.7;
+  max-width: 56ch;
+  font-size: 0.98rem;
+}
+
+.hero__proof a {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hero__proof a:hover,
+.hero__proof a:focus-visible {
+  color: var(--accent-warm);
+  text-decoration: underline;
+  outline: none;
+}
+
 .trustline {
   margin-top: 22px;
   display: inline-flex;

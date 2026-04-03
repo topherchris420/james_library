@@ -1,18 +1,18 @@
-# R.A.I.N. Lab
+# 🐙R.A.I.N. Lab
 
 **A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
 
-Ask a raw research question. R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
+Ask a raw research question. The R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves.
 
 Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
 
-James is the assistant inside R.A.I.N. Lab.
+James is the assistant inside the R.A.I.N. Lab.
 
 <p align="center">
-  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab logo" width="800" />
+  <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
 </p>
 
-<p align="center">
+<p align="center">🌐
   <a href="README.zh-CN.md">简体中文</a> •
   <a href="README.ja.md">日本語</a> •
   <a href="README.ru.md">Русский</a> •
@@ -24,7 +24,7 @@ James is the assistant inside R.A.I.N. Lab.
 
 ## What It Does
 
-R.A.I.N. Lab turns one question into a structured research conversation.
+The R.A.I.N. Lab turns one question into a structured research conversation.
 
 - It frames the problem from multiple expert angles.
 - It separates strong evidence from weak speculation.
@@ -39,9 +39,9 @@ This is built for work that starts messy: early-stage research, technical due di
 
 ### Public Web Experience
 
-Start with the hosted experience:
+Start with the example hosted experience:
 
-- https://lab.vers3dynamics.com
+- [Here](https://rainlabteam.vercel.app/)
 
 If you want the fastest way to feel the product, start there first.
 
@@ -119,6 +119,37 @@ The guided flow can connect to LM Studio or Ollama so your model traffic stays l
 
 ---
 
+## See It In Action
+
+Ask a research question. Watch four expert agents — James (lead scientist), Jasmine (post-doc), Luca (geometer), and Elena (logician) — debate it in real time.
+
+```
+TOPIC: Could a "Phononic Morphogenetic Field" — precise acoustic interference patterns
+guiding matter assembly like DNA guides cell growth — actually work?
+
+**James:** ...phononic frequency combs could act like an acoustic blueprint for
+molecular organization. The missing link between quantum coherence and biological
+assembly?
+
+**Jasmine:** Hold on. Cymatic patterns are *static* — they don't adapt to errors
+or material changes the way DNA does. And the energy density needed exceeds
+current acoustic levitation by *orders of magnitude*. Where's the thermal
+dissipation analysis?
+
+**Luca:** The geometry is compelling, though. Wavelength spacing in phononic
+combs (ωₙ₊₁ - ωₙ = 2πc/λ) parallels scalar field gradients in relic field
+tomography. But macroscopic assembly requires E > 10⁴⁵ J — far beyond reach.
+
+**Elena:** The math is elegant, but the premise has a fatal flaw. The energy
+density violates the Landauer limit by multiple orders of magnitude. Current
+systems operate ~10³ times lower. Without experimental validation at that
+scale, this remains speculation.
+
+[Meeting continues — James responds, Jasmine pushes back, consensus forms...]
+```
+
+Join a research meeting, explore disagreements, and leave with next steps — not just links.
+
 ## Features
 
 - Multi-perspective research synthesis
@@ -133,7 +164,7 @@ The guided flow can connect to LM Studio or Ollama so your model traffic stays l
 
 - **Python 3.10+**
 - **Optional:** LM Studio or Ollama for local AI models
-- **Optional:** Rust toolchain for the fast runtime layer
+- **Optional:** ZeroClaw/Rust toolchain for the fast runtime layer
 
 Python works without the optional pieces. Adding them expands the local/private path.
 
@@ -174,10 +205,10 @@ uv run --python .venv/bin/python rain_lab.py --mode first-run
 
 Recommended mental model:
 
-- R.A.I.N. Lab is the product experience.
-- James is the assistant users interact with inside that product.
+- R.A.I.N. Lab is the experience.
+- James is the assistant you interact with inside the lab.
 - Python handles launcher flows and orchestration.
-- Rust handles the fast runtime, tool surface, and lower-level infrastructure.
+- ZeroClaw/Rust handles the fast runtime, tool surface, and lower-level infrastructure.
 
 **Testing:**
 

@@ -31,7 +31,6 @@ import threading
 
 import time
 
-import subprocess
 
 import tempfile
 
@@ -119,7 +118,7 @@ class ResonanceDetector:
         # Track recent frequencies for stability calculation.
         self._recent_frequencies.append(target_freq)
         if len(self._recent_frequencies) > self._WINDOW_SIZE:
-            self._recent_frequencies = self._recent_frequencies[-self._WINDOW_SIZE:]
+            self._recent_frequencies = self._recent_frequencies[-self._WINDOW_SIZE :]
 
         # Amplitude: more keyword hits → stronger visual effect (capped at 1).
         amplitude = min(1.0, 0.25 + keyword_hits * 0.15)
@@ -144,7 +143,7 @@ class ResonanceDetector:
         if mean == 0.0:
             return 1.0
         variance = sum((f - mean) ** 2 for f in self._recent_frequencies) / n
-        cv = (variance ** 0.5) / mean  # coefficient of variation
+        cv = (variance**0.5) / mean  # coefficient of variation
         # Map CV → stability: cv=0 → 1.0, cv≥0.5 → 0.0
         return max(0.0, min(1.0, 1.0 - cv * 2.0))
 
@@ -443,28 +442,11 @@ class VoiceEngine:
         if os.name != "nt":
             return
 
-        uri = audio_path.resolve().as_uri().replace("'", "''")
-        command = (
-            "Add-Type -AssemblyName PresentationCore; "
-            "$player = New-Object System.Windows.Media.MediaPlayer; "
-            f"$player.Open([Uri]'{uri}'); "
-            "Start-Sleep -Milliseconds 250; "
-            "$player.Play(); "
-            "while ($player.NaturalDuration.HasTimeSpan -eq $false -or "
-            "$player.Position -lt $player.NaturalDuration.TimeSpan) { "
-            "Start-Sleep -Milliseconds 200 "
-            "} "
-            "$player.Close()"
-        )
-
+        # Use os.startfile — the most reliable Windows-native way to play audio.
+        # PowerShell/WMP approach breaks with Unicode paths and complex URIs.
         try:
-            subprocess.run(
-                ["powershell", "-NoProfile", "-Command", command],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-            )
+            resolved = audio_path.resolve()
+            os.startfile(str(resolved))
         except Exception as e:
             self.enabled = False
             _safe_console_print(f"Voice playback failed: {e}")
@@ -575,7 +557,7 @@ class Config:
 
     max_tokens: int = field(
         default_factory=lambda: int(os.environ.get("RAIN_CHAT_MAX_TOKENS", "320"))
-    )  # Enough tokens for agents to complete their thoughts
+    )  # Keep Config aligned with the CLI/env default contract
 
     timeout: float = float(os.environ.get("RAIN_LM_TIMEOUT", "300"))
 
@@ -655,8 +637,7 @@ REPAIR_RESPONSE_SENTENCE_TARGET = "3 or 4 complete sentences"
 WRAP_UP_RESPONSE_WORD_TARGET = "60-100 words"
 WRAP_UP_RESPONSE_SENTENCE_TARGET = "2-3 complete sentences"
 SELF_NAME_INTRO_GUIDANCE = (
-    "Do not start with your own name, a speaker label, or a self-intro like "
-    '"James:", "James here," or "I\'m James."'
+    'Do not start with your own name, a speaker label, or a self-intro like "James:", "James here," or "I\'m James."'
 )
 
 
@@ -1654,9 +1635,7 @@ class VisualEventServer:
         # Optional JSONL debug log
         self._log_path: Optional[Path] = None
         if getattr(config, "log_visual_events", False):
-            self._log_path = self._resolve_path(
-                config.library_path, config.visual_events_log
-            )
+            self._log_path = self._resolve_path(config.library_path, config.visual_events_log)
             try:
                 self._log_path.parent.mkdir(parents=True, exist_ok=True)
             except Exception as e:
@@ -1769,6 +1748,7 @@ class VisualEventServer:
         self._thread = threading.Thread(target=_run, daemon=True, name="visual-event-server")
         self._thread.start()
         ready.wait(timeout=5)
+
 
 class Diplomat:
     """Simple file-based mailbox for external messages."""
@@ -2566,15 +2546,11 @@ class RainLabOrchestrator:
             node = self.hypothesis_tree.get(self._current_hypothesis_id)
             if node.status != NodeStatus.ACTIVE:
                 return ""
-            return self.hypothesis_tree.get_current_hypothesis_prompt(
-                self._current_hypothesis_id
-            )
+            return self.hypothesis_tree.get_current_hypothesis_prompt(self._current_hypothesis_id)
         except KeyError:
             return ""
 
-    def _update_hypothesis_after_turn(
-        self, response: str, metadata: Optional[Dict]
-    ) -> None:
+    def _update_hypothesis_after_turn(self, response: str, metadata: Optional[Dict]) -> None:
         """Update the hypothesis tree based on citation analysis results."""
         if self._current_hypothesis_id is None:
             return
@@ -2598,7 +2574,7 @@ class RainLabOrchestrator:
                 for quote, source in verified[:2]:
                     self.hypothesis_tree.add_evidence(
                         self._current_hypothesis_id,
-                        f"Verified: \"{quote[:60]}\" [from {source}]",
+                        f'Verified: "{quote[:60]}" [from {source}]',
                     )
             # Disprove if zero verified citations but 3+ unverified in this turn.
             if len(unverified) >= 3 and len(verified) == 0:
@@ -2617,10 +2593,7 @@ class RainLabOrchestrator:
         try:
             self._current_hypothesis_id = self.hypothesis_tree.select()
             node = self.hypothesis_tree.get(self._current_hypothesis_id)
-            print(
-                f"\033[96m  [HYPOTHESIS SELECTED] #{node.node_id}: "
-                f"{node.hypothesis}\033[0m"
-            )
+            print(f"\033[96m  [HYPOTHESIS SELECTED] #{node.node_id}: {node.hypothesis}\033[0m")
         except ValueError:
             self._current_hypothesis_id = None
             print("\033[93m  [HYPOTHESIS TREE EXHAUSTED] All branches explored.\033[0m")
@@ -3066,7 +3039,7 @@ Use these links to propose creative cross-paper insights if relevant.
 
                 is_corrupted, corruption_reason = self._is_corrupted_response(content)
 
-                if is_corrupted and corruption_reason in {"Response too short", "Incomplete sentence"}:
+                if is_corrupted and corruption_reason == "Incomplete sentence":
                     repaired = self._repair_too_short_response(
                         agent=agent,
                         topic=topic,
@@ -3245,10 +3218,23 @@ Use these links to propose creative cross-paper insights if relevant.
             return False
 
         words = re.findall(r"[A-Za-z]+(?:['’-][A-Za-z]+)?", normalized)
-        if normalized.endswith((",", ";", ":")) and len(words) >= 5:
+        # Only flag as truncated if ending with comma/colon AND the response is suspiciously
+        # short (under 50 chars) — longer responses with these endings are often intentional.
+        if normalized.endswith((",", ";", ":")) and len(normalized) < 50:
             return True
 
-        return len(normalized) > 24 and len(words) >= 5
+        # For longer responses, only flag if there are obvious incomplete clause patterns
+        if normalized.endswith((",", ";")):
+            incomplete_clause_patterns = (
+                r"\b(which|because|although|however|therefore|while|when|if|that|where)\s*[,:;]?\s*$",
+                r"\b(the|a|an)\s+$",
+                r"\b(and|but|or)\s+$",
+            )
+            for pattern in incomplete_clause_patterns:
+                if re.search(pattern, normalized, re.IGNORECASE):
+                    return True
+
+        return False
 
     def _is_corrupted_response(self, text: str) -> Tuple[bool, str]:
         """
@@ -3284,13 +3270,17 @@ Use these links to propose creative cross-paper insights if relevant.
             if pattern.search(normalized):
                 return True, f"Corruption pattern detected: {pattern.pattern[:20]}"
 
-        if len(normalized) < 10:
-            # Compact answers like "It helps." or "Why?" are valid in beginner/chat mode.
+        if len(normalized) < 20:
+            # Compact answers like "I disagree." or "Why?" are valid in beginner/chat mode.
+            # Only flag genuinely empty or truly broken responses.
             sentence_candidate = normalized.rstrip("'\"”’)]}")
             short_words = re.findall(r"[A-Za-z]+(?:['’-][A-Za-z]+)?", normalized)
-            if sentence_candidate.endswith((".", "!", "?")) and short_words:
+            if short_words and (sentence_candidate.endswith((".", "!", "?")) or len(short_words) >= 2):
                 return False, ""
-            return True, "Response too short"
+            if not short_words:
+                return True, "Response too short"
+            # Brevity is not corruption — the model chose to be concise.
+            return False, ""
 
         if RainLabOrchestrator._looks_truncated_response(None, normalized, None):
             return True, "Incomplete sentence"

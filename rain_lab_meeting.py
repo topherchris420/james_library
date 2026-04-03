@@ -9,10 +9,57 @@ import io
 import time
 import uuid
 import concurrent.futures
+import tempfile
+import asyncio
 from pathlib import Path
 from typing import List
 from dataclasses import dataclass, field
 from datetime import datetime
+
+# --- VOICE ENGINE (edge-tts with silent fallback) ---
+try:
+    import edge_tts
+    _EDGE_TTS_AVAILABLE = True
+except ImportError:
+    _EDGE_TTS_AVAILABLE = False
+
+VOICE_BY_CHARACTER = {
+    "James": "en-US-GuyNeural",
+    "Luca": "en-US-GuyNeural",
+    "Jasmine": "en-US-AriaNeural",
+    "Elena": "en-US-AriaNeural",
+}
+
+
+class VoiceEngine:
+    """Speaks text via edge-tts (high-quality neural voices), falls back to silent."""
+
+    def __init__(self):
+        self.enabled = _EDGE_TTS_AVAILABLE
+        self.backend = "edge-tts" if _EDGE_TTS_AVAILABLE else "silent"
+
+    def speak(self, text: str, character: str | None = None):
+        """Speak text synchronously; no-op if voice unavailable."""
+        if not text or not self.enabled:
+            return
+        voice = VOICE_BY_CHARACTER.get(character or "", "en-US-AriaNeural")
+        try:
+            asyncio.run(self._speak_async(text, voice))
+        except Exception:
+            pass  # Silently ignore TTS failures
+
+    async def _speak_async(self, text: str, voice: str):
+        output_path = Path(tempfile.gettempdir()) / f"rain_tts_{uuid.uuid4().hex}.mp3"
+        try:
+            communicate = edge_tts.Communicate(text, voice)
+            await communicate.save(str(output_path))
+            if os.name == "nt":
+                os.startfile(str(output_path))
+        finally:
+            try:
+                output_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 # --- EVAL METRICS ---
 try:
@@ -850,6 +897,7 @@ class ResearchCouncil:
         self.shared_sources: list[str] = []
         self.require_web = os.environ.get("RLM_REQUIRE_WEB", "1") == "1"
         self.max_model_calls_per_turn = _env_int("RAIN_MAX_CALLS_PER_TURN", 2, 1, 3)
+        self.voice_engine = VoiceEngine()
 
         if self.require_web and not _host_has_web_search():
             print("CRITICAL: DuckDuckGo client not installed.")
@@ -1544,6 +1592,7 @@ Shared sources (use these for quotes during discussion turns):
 
                 print(f"\n{agent.color}{agent.name}: {response}\033[0m")
 
+                self.voice_engine.speak(response, character=agent.name)
                 self.log.log(agent.name, response)
                 history.append(f"{agent.name}: {response}")
 

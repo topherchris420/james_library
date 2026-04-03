@@ -10,6 +10,21 @@ from fastapi.testclient import TestClient
 import lab_server.app as lab_app
 import lab_server.research_panel as research_panel
 
+RUNTIME_CANCELED_DETAIL = (
+    "R.A.I.N. runtime canceled: the operation was canceled. "
+    "Retry and verify LM Studio is running with a loaded model."
+)
+EXAMPLE_PROMPT = (
+    "How should I interpret these conflicting findings, and what evidence "
+    "separates the leading explanations?"
+)
+ROOM_FULL_OF_EXPERTS_TITLE = (
+    "R.A.I.N. Lab | Ask a research question. Get a room full of experts."
+)
+PRIVATE_BY_DEFAULT_DESCRIPTION = (
+    "Private by default, grounded in papers and explicit evidence."
+)
+
 
 class _MetaParser(HTMLParser):
     def __init__(self) -> None:
@@ -94,7 +109,7 @@ def test_debate_endpoint_returns_structured_research_panel(monkeypatch) -> None:
         ),
         (
             "The operation was canceled.",
-            "R.A.I.N. runtime canceled: the operation was canceled. Retry and verify LM Studio is running with a loaded model.",
+            RUNTIME_CANCELED_DETAIL,
         ),
         (
             "budget exceeded",
@@ -102,7 +117,11 @@ def test_debate_endpoint_returns_structured_research_panel(monkeypatch) -> None:
         ),
     ],
 )
-def test_debate_endpoint_translates_research_panel_failures(monkeypatch, error_message: str, expected_detail: str) -> None:
+def test_debate_endpoint_translates_research_panel_failures(
+    monkeypatch,
+    error_message: str,
+    expected_detail: str,
+) -> None:
     async def fake_run_research_panel(question: str) -> dict[str, object]:
         raise RuntimeError(error_message)
 
@@ -143,9 +162,7 @@ def test_debate_endpoint_translates_cancelled_error(monkeypatch) -> None:
     response = client.post("/debate", json={"question": "What causes fast radio bursts?"})
 
     assert response.status_code == 500
-    assert response.json() == {
-        "detail": "R.A.I.N. runtime canceled: the operation was canceled. Retry and verify LM Studio is running with a loaded model."
-    }
+    assert response.json() == {"detail": RUNTIME_CANCELED_DETAIL}
 
 
 def test_normalize_panel_note_extracts_grounding_metadata() -> None:
@@ -153,7 +170,10 @@ def test_normalize_panel_note_extracts_grounding_metadata() -> None:
         {
             "agent_name": "Mechanism Hunter",
             "role": "Mechanistic modeler",
-            "notes": 'Quoted support "coherent oscillatory inputs reduce cost" [from Local Paper.md] [from web: Example Site].',
+            "notes": (
+                'Quoted support "coherent oscillatory inputs reduce cost" '
+                "[from Local Paper.md] [from web: Example Site]."
+            ),
         }
     )
 
@@ -174,7 +194,10 @@ def test_run_research_panel_normalizes_synthesis_provenance(monkeypatch) -> None
                     "notes": "Magnetars remain strongest [from web: Example Paper].",
                 }
             ],
-            "synthesized_response": '  Synthesis with "useful quoted support" [from Paper A.md] [from web: Example Paper].  ',
+            "synthesized_response": (
+                '  Synthesis with "useful quoted support" [from Paper A.md] '
+                "[from web: Example Paper].  "
+            ),
         }
 
     monkeypatch.setattr(research_panel, "run_blackboard_lab", fake_run_blackboard_lab)
@@ -238,11 +261,21 @@ def test_homepage_shows_research_panel_positioning_and_no_longer_shows_coding_ag
     assert "Private by default. Strong claims tied to papers or explicit evidence." in html
     assert "expert panel in a box" in html
     assert "Different perspectives, not one flat answer" in html
-    assert "Search tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts." in html
-    assert 'placeholder="For example: How should I interpret these conflicting findings, and what evidence separates the leading explanations?"' in html
-    assert 'data-question="How should I interpret these conflicting findings, and what evidence separates the leading explanations?"' in html
+    assert (
+        "Search tools help you find papers. R.A.I.N. Lab helps you think with a "
+        "room full of experts."
+    ) in html
+    assert "Read a paper written with R.A.I.N. Lab." in html
+    assert 'href="https://topherchris420.github.io/research/"' in html
+    assert f'placeholder="For example: {EXAMPLE_PROMPT}"' in html
+    assert f'data-question="{EXAMPLE_PROMPT}"' in html
     assert re.search(
-        r'<button type="button" class="example-prompts__item" data-question="How should I interpret these conflicting findings, and what evidence separates the leading explanations\?">\s*Conflicting findings\s*</button>',
+        (
+            r'<button type="button" class="example-prompts__item" '
+            r'data-question="How should I interpret these conflicting findings, '
+            r'and what evidence separates the leading explanations\?">\s*'
+            r"Conflicting findings\s*</button>"
+        ),
         html,
     )
     assert "The local-first autonomous coding agent for Rust, Python, and hardware teams" not in html
@@ -262,9 +295,9 @@ def test_public_metadata_surfaces_reflect_research_panel_positioning() -> None:
         "A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams. "
         "It turns one research question into evidence-grounded debate and synthesis."
     )
-    assert meta_values[("property", "og:title")] == "R.A.I.N. Lab | Ask a research question. Get a room full of experts."
-    assert meta_values[("property", "og:description")] == "Private by default, grounded in papers and explicit evidence."
-    assert meta_values[("name", "twitter:title")] == "R.A.I.N. Lab | Ask a research question. Get a room full of experts."
+    assert meta_values[("property", "og:title")] == ROOM_FULL_OF_EXPERTS_TITLE
+    assert meta_values[("property", "og:description")] == PRIVATE_BY_DEFAULT_DESCRIPTION
+    assert meta_values[("name", "twitter:title")] == ROOM_FULL_OF_EXPERTS_TITLE
     assert meta_values[("name", "twitter:description")] == (
         "A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams."
     )
@@ -276,7 +309,8 @@ def test_public_metadata_surfaces_reflect_research_panel_positioning() -> None:
     assert json_ld["applicationSubCategory"] == "Research Reasoning Software"
     assert json_ld["description"] == (
         "R.A.I.N. Lab is a private-by-default expert panel in a box for research reasoning. "
-        "It turns one question into evidence-grounded debate and synthesis, with claims tied to papers and explicit evidence."
+        "It turns one question into evidence-grounded debate and synthesis, "
+        "with claims tied to papers and explicit evidence."
     )
     assert json_ld["audience"] == {
         "@type": "Audience",

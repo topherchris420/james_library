@@ -30,13 +30,20 @@ def _research_panel_manifests() -> list[AgentManifest]:
             "mechanism-hunter",
             "Mechanism Hunter",
             "Mechanistic modeler",
-            "Find the strongest causal explanation. Cite every strong claim as [from filename.md] or [from web: source]. Mark weak leaps as [HYPOTHESIS].",
+            (
+                "Find the strongest causal explanation. Cite every strong claim "
+                "as [from filename.md] or [from web: source]. Mark weak leaps "
+                "as [HYPOTHESIS]."
+            ),
         ),
         (
             "evidence-auditor",
             "Evidence Auditor",
             "Evidence skeptic",
-            "Separate what is actually supported from what is merely plausible. Demand citations and label gaps clearly.",
+            (
+                "Separate what is actually supported from what is merely "
+                "plausible. Demand citations and label gaps clearly."
+            ),
         ),
         (
             "adjacent-scout",
@@ -48,7 +55,10 @@ def _research_panel_manifests() -> list[AgentManifest]:
             "experiment-designer",
             "Experiment Designer",
             "Experiment strategist",
-            "Turn the debate into concrete tests, measurements, or next readings. Cite evidence for why each next step matters.",
+            (
+                "Turn the debate into concrete tests, measurements, or next "
+                "readings. Cite evidence for why each next step matters."
+            ),
         ),
     ]
     manifests: list[AgentManifest] = []
