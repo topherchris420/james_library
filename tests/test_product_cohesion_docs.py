@@ -49,16 +49,29 @@ def _find_readme_chrome_index(text: str) -> int:
 
 
 def _lead_story_indexes(text: str) -> list[int]:
+    normalized_text = _normalize_lead_story_whitespace(text)
     lead_story_fragments = [
         "# R.A.I.N. Lab",
         "A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.",
         (
-            "Ask a raw research question. R.A.I.N. Lab assembles multiple expert perspectives, grounds strong claims in papers or explicit evidence, and returns the strongest explanations, disagreements, and next moves."
+            "Ask a raw research question. R.A.I.N. Lab assembles multiple expert "
+            "perspectives, grounds strong claims in papers or explicit evidence, and "
+            "returns the strongest explanations, disagreements, and next moves."
         ),
         "Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.",
         "James is the assistant inside R.A.I.N. Lab",
     ]
-    return [text.index(fragment) for fragment in lead_story_fragments]
+    return [_find_lead_story_index(normalized_text, fragment) for fragment in lead_story_fragments]
+
+
+def _normalize_lead_story_whitespace(text: str) -> str:
+    """Normalize whitespace within line content but preserve line boundaries."""
+    lines = text.splitlines()
+    return "\n".join(" ".join(line.split()) for line in lines)
+
+
+def _find_lead_story_index(text: str, fragment: str) -> int:
+    return text.index(fragment)
 
 
 def test_readme_chrome_detection_ignores_incidental_markup() -> None:
