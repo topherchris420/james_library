@@ -23,7 +23,7 @@ env:
 jobs:
     changes:
         name: Detect Change Scope
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         outputs:
             rust_changed: ${{ steps.scope.outputs.rust_changed }}
             docs_only: ${{ steps.scope.outputs.docs_only }}
@@ -44,7 +44,7 @@ jobs:
         name: Build (Fast)
         needs: [changes]
         if: needs.changes.outputs.rust_changed == 'true' || needs.changes.outputs.workflow_changed == 'true'
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 25
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -53,10 +53,13 @@ jobs:
               with:
                   toolchain: 1.92.0
 
-            - uses: useblacksmith/rust-cache@f53e7f127245d2a269b3d90879ccf259876842d5 # v3
+            - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
               with:
                   prefix-key: fast-build
                   cache-targets: true
+
+            - name: Ensure web/dist placeholder exists
+              run: mkdir -p web/dist && touch web/dist/.gitkeep
 
             - name: Build release binary
               run: cargo build --release --locked --verbose
