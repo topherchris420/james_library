@@ -133,9 +133,9 @@ impl TribeV2Tool {
         if !result.segments.is_empty() {
             out.push_str("\nSegment Summaries\n─────────────────\n");
             for seg in &result.segments {
-                let _ = write!(
+                let _ = writeln!(
                     out,
-                    "  Segment {:3}: mean={:.4}  max={:.4}  min={:.4}\n",
+                    "  Segment {:3}: mean={:.4}  max={:.4}  min={:.4}",
                     seg.index, seg.mean_activation, seg.max_activation, seg.min_activation,
                 );
             }
