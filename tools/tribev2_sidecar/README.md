@@ -24,9 +24,9 @@ pip install -r requirements.txt
 ## Running
 
 ```bash
-python server.py                          # default: 0.0.0.0:8100
+python server.py                          # default: 127.0.0.1:8100
 python server.py --port 9000              # custom port
-python server.py --host 127.0.0.1         # bind to localhost only
+python server.py --host 0.0.0.0           # bind to all interfaces
 python server.py --cache-dir ./my_cache   # custom model cache directory
 ```
 

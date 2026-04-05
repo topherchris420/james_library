@@ -164,9 +164,9 @@ pub use toolbox_manager::{
     ToolboxManager,
 };
 pub use traits::Tool;
-pub use tribev2::TribeV2Tool;
 #[allow(unused_imports)]
 pub use traits::{ToolResult, ToolSpec};
+pub use tribev2::TribeV2Tool;
 pub use verifiable_intent::VerifiableIntentTool;
 pub use weather_tool::WeatherTool;
 pub use web_fetch::WebFetchTool;

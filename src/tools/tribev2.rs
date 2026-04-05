@@ -10,6 +10,7 @@ use super::traits::{Tool, ToolResult};
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::fmt::Write;
 use std::time::Duration;
 
 const CONNECT_TIMEOUT_SECS: u64 = 10;
@@ -62,8 +63,7 @@ impl TribeV2Tool {
             .connect_timeout(Duration::from_secs(CONNECT_TIMEOUT_SECS))
             .user_agent("R.A.I.N.-tribev2/1.0");
 
-        let builder =
-            crate::config::apply_runtime_proxy_to_builder(builder, "tool.tribev2");
+        let builder = crate::config::apply_runtime_proxy_to_builder(builder, "tool.tribev2");
         Ok(builder.build()?)
     }
 
@@ -76,31 +76,25 @@ impl TribeV2Tool {
             "input_value": input_value,
         });
 
-        let response = client
-            .post(&url)
-            .json(&body)
-            .send()
-            .await
-            .map_err(|e| {
-                anyhow::anyhow!(
-                    "Failed to connect to TRIBE v2 sidecar at {}: {}. \
+        let response = client.post(&url).json(&body).send().await.map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to connect to TRIBE v2 sidecar at {}: {}. \
                      Ensure the sidecar is running (see tools/tribev2_sidecar/README.md).",
-                    self.endpoint,
-                    e
-                )
-            })?;
+                self.endpoint,
+                e
+            )
+        })?;
 
         let status = response.status();
         if !status.is_success() {
             let error_body = response.text().await.unwrap_or_default();
-            anyhow::bail!(
-                "TRIBE v2 sidecar returned HTTP {status}: {error_body}"
-            );
+            anyhow::bail!("TRIBE v2 sidecar returned HTTP {status}: {error_body}");
         }
 
-        let result: PredictResponse = response.json().await.map_err(|e| {
-            anyhow::anyhow!("Failed to parse TRIBE v2 response: {e}")
-        })?;
+        let result: PredictResponse = response
+            .json()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to parse TRIBE v2 response: {e}"))?;
 
         Ok(Self::format_output(&result, input_type, input_value))
     }
@@ -126,22 +120,24 @@ impl TribeV2Tool {
 
     fn format_output(result: &PredictResponse, input_type: &str, input_value: &str) -> String {
         let mut out = String::new();
-        out.push_str(&format!(
+        let _ = write!(
+            out,
             "TRIBE v2 Brain Prediction\n\
              ─────────────────────────\n\
              Input type : {input_type}\n\
              Input      : {input_value}\n\
              Prediction shape: {} ({} segments x fsaverage5 vertices)\n",
             result.shape, result.num_segments,
-        ));
+        );
 
         if !result.segments.is_empty() {
             out.push_str("\nSegment Summaries\n─────────────────\n");
             for seg in &result.segments {
-                out.push_str(&format!(
+                let _ = write!(
+                    out,
                     "  Segment {:3}: mean={:.4}  max={:.4}  min={:.4}\n",
                     seg.index, seg.mean_activation, seg.max_activation, seg.min_activation,
-                ));
+                );
             }
         }
 
@@ -233,20 +229,19 @@ impl Tool for TribeV2Tool {
                     }
                 };
 
-                let input_value =
-                    match args.get("input_value").and_then(|v| v.as_str()) {
-                        Some(v) if !v.trim().is_empty() => v.trim(),
-                        _ => {
-                            return Ok(ToolResult {
-                                success: false,
-                                output: String::new(),
-                                error: Some(
-                                    "Missing required parameter 'input_value' for predict action."
-                                        .into(),
-                                ),
-                            });
-                        }
-                    };
+                let input_value = match args.get("input_value").and_then(|v| v.as_str()) {
+                    Some(v) if !v.trim().is_empty() => v.trim(),
+                    _ => {
+                        return Ok(ToolResult {
+                            success: false,
+                            output: String::new(),
+                            error: Some(
+                                "Missing required parameter 'input_value' for predict action."
+                                    .into(),
+                            ),
+                        });
+                    }
+                };
 
                 match self.predict(input_type, input_value).await {
                     Ok(output) => Ok(ToolResult {

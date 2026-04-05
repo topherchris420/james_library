@@ -87,8 +87,10 @@ def predict(req: PredictRequest) -> PredictResponse:
     try:
         if req.input_type == "text":
             preds = _predict_text(req.input_value)
+        elif req.input_type == "audio":
+            preds = _predict_audio(req.input_value)
         else:
-            preds = _predict_media(req.input_value)
+            preds = _predict_video(req.input_value)
     except Exception as exc:
         logger.exception("Prediction failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -112,9 +114,16 @@ def predict(req: PredictRequest) -> PredictResponse:
     )
 
 
-def _predict_media(file_path: str) -> np.ndarray:
-    """Run prediction on a video or audio file."""
+def _predict_video(file_path: str) -> np.ndarray:
+    """Run prediction on a video file."""
     df = _model.get_events_dataframe(video_path=file_path)
+    preds, _segments = _model.predict(events=df)
+    return preds
+
+
+def _predict_audio(file_path: str) -> np.ndarray:
+    """Run prediction on an audio file."""
+    df = _model.get_events_dataframe(audio_path=file_path)
     preds, _segments = _model.predict(events=df)
     return preds
 
@@ -128,7 +137,7 @@ def _predict_text(text: str) -> np.ndarray:
         tmp_path = tmp.name
 
     try:
-        df = _model.get_events_dataframe(video_path=tmp_path)
+        df = _model.get_events_dataframe(text_path=tmp_path)
         preds, _segments = _model.predict(events=df)
         return preds
     finally:
@@ -139,7 +148,7 @@ def main() -> None:
     global _model  # noqa: PLW0603
 
     parser = argparse.ArgumentParser(description="TRIBE v2 sidecar service")
-    parser.add_argument("--host", default="0.0.0.0", help="Bind host (default: 0.0.0.0)")
+    parser.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8100, help="Bind port (default: 8100)")
     parser.add_argument(
         "--cache-dir",
