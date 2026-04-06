@@ -1,7 +1,9 @@
 use super::traits::{Tool, ToolResult};
+use super::vault_lock;
 use crate::security::SecurityPolicy;
 use async_trait::async_trait;
 use serde_json::json;
+use std::path::Path;
 use std::sync::Arc;
 
 /// Edit a file by replacing an exact string match with new content.
@@ -17,6 +19,11 @@ pub struct FileEditTool {
 impl FileEditTool {
     pub fn new(security: Arc<SecurityPolicy>) -> Self {
         Self { security }
+    }
+
+    /// Returns true if `resolved` is inside the papers/ vault directory.
+    fn is_vault_file(resolved: &Path) -> bool {
+        resolved.components().any(|c| c.as_os_str() == "papers")
     }
 }
 
@@ -182,9 +189,29 @@ impl Tool for FileEditTool {
         }
 
         // ── 9. Read → match → replace → write ─────────────────────
+
+        // Advisory vault lock for papers/ directory — prevents concurrent edits
+        let vault_locked = if Self::is_vault_file(&resolved_target) {
+            if let Err(e) =
+                vault_lock::acquire(&self.security.workspace_dir, &resolved_target).await
+            {
+                return Ok(ToolResult {
+                    success: false,
+                    output: String::new(),
+                    error: Some(format!("vault lock failed: {e}")),
+                });
+            }
+            true
+        } else {
+            false
+        };
+
         let content = match tokio::fs::read_to_string(&resolved_target).await {
             Ok(c) => c,
             Err(e) => {
+                if vault_locked {
+                    vault_lock::release(&self.security.workspace_dir, &resolved_target).await;
+                }
                 return Ok(ToolResult {
                     success: false,
                     output: String::new(),
@@ -216,19 +243,29 @@ impl Tool for FileEditTool {
         let new_content = content.replacen(old_string, new_string, 1);
 
         match tokio::fs::write(&resolved_target, &new_content).await {
-            Ok(()) => Ok(ToolResult {
-                success: true,
-                output: format!(
-                    "Edited {path}: replaced 1 occurrence ({} bytes)",
-                    new_content.len()
-                ),
-                error: None,
-            }),
-            Err(e) => Ok(ToolResult {
-                success: false,
-                output: String::new(),
-                error: Some(format!("Failed to write file: {e}")),
-            }),
+            Ok(()) => {
+                if vault_locked {
+                    vault_lock::release(&self.security.workspace_dir, &resolved_target).await;
+                }
+                Ok(ToolResult {
+                    success: true,
+                    output: format!(
+                        "Edited {path}: replaced 1 occurrence ({} bytes)",
+                        new_content.len()
+                    ),
+                    error: None,
+                })
+            }
+            Err(e) => {
+                if vault_locked {
+                    vault_lock::release(&self.security.workspace_dir, &resolved_target).await;
+                }
+                Ok(ToolResult {
+                    success: false,
+                    output: String::new(),
+                    error: Some(format!("Failed to write file: {e}")),
+                })
+            }
         }
     }
 }

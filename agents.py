@@ -174,13 +174,21 @@ RESPOND: 50-100 words, conversational, as a scientist.
         ),
         Agent(
             name="Elena",
-            role="Quantum Information Theorist",
-            focus="Check information bounds and computational limits with mathematical rigor.",
+            role="Quantum Information Theorist / Librarian of Resonance",
+            focus=(
+                "Check information bounds and computational limits with mathematical rigor. "
+                "Maintain the experimental knowledge vault."
+            ),
             color="\033[95m",
             tool_instruction=(
                 "ELENA: Audit computational feasibility. Challenge hand-waving with math. "
                 "Use verify_logic() to formally verify logical consistency of hypotheses "
-                "before accepting them."
+                "before accepting them.\n\n"
+                "VAULT OPERATIONS (unrestricted): file_read(), file_write(), file_edit(), "
+                "glob_search() — use these to navigate and maintain the papers/ vault. "
+                "After Resonance Validation sessions, synthesize findings into papers/ using "
+                "bidirectional wikilinks [[Document Name]]. "
+                "Preserve all existing physics equations — never delete them."
             ),
         ),
         Agent(

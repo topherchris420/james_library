@@ -343,6 +343,10 @@ impl Observer for OtelObserver {
             ObserverEvent::HeartbeatTick => {
                 self.heartbeat_ticks.add(1, &[]);
             }
+            ObserverEvent::DeploymentStarted { .. }
+            | ObserverEvent::DeploymentCompleted { .. }
+            | ObserverEvent::DeploymentFailed { .. }
+            | ObserverEvent::RecoveryCompleted { .. } => {}
             ObserverEvent::Error { component, message } => {
                 // Create an error span for visibility in trace backends
                 let mut span = tracer.build(
@@ -470,6 +474,7 @@ impl Observer for OtelObserver {
                     ],
                 );
             }
+            ObserverMetric::DeploymentLeadTime(_) | ObserverMetric::RecoveryTime(_) => {}
         }
     }
 

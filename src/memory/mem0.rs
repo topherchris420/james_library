@@ -7,7 +7,7 @@
 //! Deploy OpenMemory: `docker compose up` from the mem0 repo.
 //! Default endpoint: `http://localhost:8765`.
 
-use super::traits::{Memory, MemoryCategory, MemoryEntry, ProceduralMessage};
+use super::traits::{Memory, MemoryCategory, MemoryEntry, ProceduralMessage, default_namespace};
 use crate::config::schema::Mem0Config;
 use async_trait::async_trait;
 use reqwest::Client;
@@ -210,6 +210,9 @@ impl Mem0Memory {
             timestamp,
             session_id: meta.session_id,
             score: item.score,
+            namespace: default_namespace(),
+            importance: None,
+            superseded_by: None,
         }
     }
 
