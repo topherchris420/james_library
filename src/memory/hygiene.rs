@@ -1,7 +1,7 @@
 use crate::config::MemoryConfig;
 use anyhow::Result;
 use chrono::{DateTime, Duration, Local, NaiveDate, Utc};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};

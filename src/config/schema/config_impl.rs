@@ -653,9 +653,9 @@ impl Config {
             &self.security.otp.gated_domains,
             &self.security.otp.gated_domain_categories,
         )
-        .with_context(|| {
-            "Invalid security.otp.gated_domains or security.otp.gated_domain_categories"
-        })?;
+        .with_context(
+            || "Invalid security.otp.gated_domains or security.otp.gated_domain_categories",
+        )?;
         if self.security.estop.state_file.trim().is_empty() {
             anyhow::bail!("security.estop.state_file must not be empty");
         }
@@ -840,7 +840,9 @@ impl Config {
                     .as_deref()
                     .map_or(true, |s| s.trim().is_empty())
             {
-                anyhow::bail!("microsoft365.client_secret must not be empty when auth_flow is client_credentials");
+                anyhow::bail!(
+                    "microsoft365.client_secret must not be empty when auth_flow is client_credentials"
+                );
             }
         }
 
@@ -1259,7 +1261,7 @@ impl Config {
         // Skills script-file audit override: rain_SKILLS_ALLOW_SCRIPTS
         if let Ok(flag) = std::env::var("rain_SKILLS_ALLOW_SCRIPTS") {
             if !flag.trim().is_empty() {
-                match flag.trim().to_ascii_lowercase().as_str(){
+                match flag.trim().to_ascii_lowercase().as_str() {
                     "1" | "true" | "yes" | "on" => self.skills.allow_scripts = true,
                     "0" | "false" | "no" | "off" => self.skills.allow_scripts = false,
                     _ => tracing::warn!(

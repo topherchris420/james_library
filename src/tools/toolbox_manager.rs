@@ -1,7 +1,7 @@
 use super::{ArcToolRef, Tool, ToolSpec};
 use crate::agent::tool_call_parser::map_tool_name_alias;
 use crate::security::{IamPolicy, NevisIdentity, PolicyDecision};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use parking_lot::Mutex;
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};

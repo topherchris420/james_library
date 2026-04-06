@@ -1,6 +1,6 @@
 //! `R.A.I.N. update` — self-update pipeline with rollback.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::path::Path;
 use tracing::{info, warn};
 

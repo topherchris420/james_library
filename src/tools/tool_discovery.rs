@@ -193,9 +193,11 @@ mod tests {
             .unwrap();
 
         assert!(result.success);
-        assert!(toolbox
-            .active_tool_names()
-            .contains(&"web_fetch".to_string()));
+        assert!(
+            toolbox
+                .active_tool_names()
+                .contains(&"web_fetch".to_string())
+        );
     }
 
     #[tokio::test]

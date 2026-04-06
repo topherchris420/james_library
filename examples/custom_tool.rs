@@ -5,7 +5,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Mirrors src/tools/traits.rs
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

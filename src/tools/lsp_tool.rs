@@ -302,8 +302,8 @@ mod tests {
     use serde_json::json;
 
     use crate::security::SecurityPolicy;
-    use crate::tools::lsp_client::LspServerConfig;
     use crate::tools::Tool;
+    use crate::tools::lsp_client::LspServerConfig;
 
     use super::LspTool;
 

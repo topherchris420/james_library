@@ -1,5 +1,5 @@
 use crate::memory::{self, Memory};
-use crate::security::{sanitize_for_model_input, ModelInputSource};
+use crate::security::{ModelInputSource, sanitize_for_model_input};
 use async_trait::async_trait;
 use std::fmt::Write;
 
@@ -208,6 +208,9 @@ mod tests {
                 timestamp: "now".into(),
                 session_id: None,
                 score: None,
+                namespace: "default".into(),
+                importance: None,
+                superseded_by: None,
             }])
         }
 
@@ -318,6 +321,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.95),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
                 MemoryEntry {
                     id: "2".into(),
@@ -327,6 +333,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.9),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
             ]),
             last_session_id: Arc::new(std::sync::Mutex::new(None)),
@@ -355,6 +364,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.99),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
                 MemoryEntry {
                     id: "2".into(),
@@ -364,6 +376,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.98),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
             ]),
             last_session_id: Arc::new(std::sync::Mutex::new(None)),
@@ -391,6 +406,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.9),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
                 MemoryEntry {
                     id: "2".into(),
@@ -400,6 +418,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.9),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
             ]),
             last_session_id: Arc::new(std::sync::Mutex::new(None)),
@@ -437,6 +458,9 @@ mod tests {
                 timestamp: "now".into(),
                 session_id: Some("other".into()),
                 score: Some(0.9),
+                namespace: "default".into(),
+                importance: None,
+                superseded_by: None,
             }]),
             last_session_id: Arc::new(std::sync::Mutex::new(None)),
             last_limit: Arc::new(std::sync::Mutex::new(None)),

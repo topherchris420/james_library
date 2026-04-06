@@ -262,21 +262,30 @@ shell = "Execute a shell command"
         let saved = std::env::var("rain_LOCALE").ok();
         let saved_lang = std::env::var("LANG").ok();
 
-        std::env::set_var("rain_LOCALE", "ja-JP");
+        // SAFETY: single-threaded test/init context
+        unsafe {
+            std::env::set_var("rain_LOCALE", "ja-JP");
+        }
         assert_eq!(detect_locale(), "ja-JP");
 
-        std::env::remove_var("rain_LOCALE");
-        std::env::set_var("LANG", "zh_CN.UTF-8");
+        // SAFETY: single-threaded test/init context
+        unsafe {
+            std::env::remove_var("rain_LOCALE");
+        }
+        // SAFETY: single-threaded test/init context
+        unsafe {
+            std::env::set_var("LANG", "zh_CN.UTF-8");
+        }
         assert_eq!(detect_locale(), "zh-CN");
 
         // Restore.
         match saved {
-            Some(v) => std::env::set_var("rain_LOCALE", v),
-            None => std::env::remove_var("rain_LOCALE"),
+            Some(v) => unsafe { std::env::set_var("rain_LOCALE", v) },
+            None => unsafe { std::env::remove_var("rain_LOCALE") },
         }
         match saved_lang {
-            Some(v) => std::env::set_var("LANG", v),
-            None => std::env::remove_var("LANG"),
+            Some(v) => unsafe { std::env::set_var("LANG", v) },
+            None => unsafe { std::env::remove_var("LANG") },
         }
     }
 

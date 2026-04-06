@@ -268,6 +268,7 @@ impl LinqChannel {
             timestamp,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         });
 
         messages

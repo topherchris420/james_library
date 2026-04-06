@@ -1,5 +1,5 @@
 use crate::config::Config;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -137,6 +137,11 @@ pub fn handle_command(
         crate::ServiceCommands::Restart => restart(config, init_system),
         crate::ServiceCommands::Status => status(config, init_system),
         crate::ServiceCommands::Uninstall => uninstall(config, init_system),
+        crate::ServiceCommands::Logs { lines, follow } => {
+            tracing::info!("Viewing service logs (lines={lines}, follow={follow})");
+            // TODO: implement log viewing
+            Ok(())
+        }
     }
 }
 
@@ -638,7 +643,9 @@ fn check_rain_user() -> Result<()> {
                     bail!(
                         "User 'R.A.I.N.' exists but has unexpected UID {} (expected system UID < 1000).\n\
                          Recreate with: sudo {} && sudo {}",
-                        uid, del_cmd, add_cmd
+                        uid,
+                        del_cmd,
+                        add_cmd
                     );
                 }
 

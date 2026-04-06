@@ -1,6 +1,6 @@
 use crate::config::schema::ModelPricing;
-use crate::cost::types::{BudgetCheck, TokenUsage as CostTokenUsage};
 use crate::cost::CostTracker;
+use crate::cost::types::{BudgetCheck, TokenUsage as CostTokenUsage};
 use crate::util::truncate_with_ellipsis;
 use regex::Regex;
 use std::sync::{Arc, LazyLock, Mutex};

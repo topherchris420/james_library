@@ -1,22 +1,22 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, Ordering};
 
 use lsp_types::{
     Diagnostic, DocumentSymbolResponse, GotoDefinitionResponse, Location, LocationLink, Position,
     PublishDiagnosticsParams,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
-use tokio::sync::{oneshot, Mutex};
-use tokio::time::{timeout, Duration};
+use tokio::sync::{Mutex, oneshot};
+use tokio::time::{Duration, timeout};
 
 use crate::tools::lsp_client::error::LspError;
 use crate::tools::lsp_client::types::{
-    symbol_response_to_entries, DocumentSymbolEntry, LspServerConfig, SymbolLocation,
+    DocumentSymbolEntry, LspServerConfig, SymbolLocation, symbol_response_to_entries,
 };
 
 const REQUEST_TIMEOUT_MS: u64 = 10_000;

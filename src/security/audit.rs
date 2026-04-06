@@ -4,7 +4,7 @@
 //! This makes the trail tamper-evident — modifying any entry invalidates all subsequent hashes.
 
 use crate::config::AuditConfig;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use chrono::{DateTime, Utc};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};

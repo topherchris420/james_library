@@ -13,6 +13,20 @@ pub struct ProceduralMessage {
     pub name: Option<String>,
 }
 
+/// Filter criteria for memory export (GDPR Art. 20 data portability).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ExportFilter {
+    pub namespace: Option<String>,
+    pub session_id: Option<String>,
+    pub category: Option<MemoryCategory>,
+    pub since: Option<String>,
+    pub until: Option<String>,
+}
+
+fn default_namespace() -> String {
+    "default".to_string()
+}
+
 /// A single memory entry
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MemoryEntry {
@@ -23,6 +37,15 @@ pub struct MemoryEntry {
     pub timestamp: String,
     pub session_id: Option<String>,
     pub score: Option<f64>,
+    /// Namespace for multi-tenant or domain-scoped storage.
+    #[serde(default = "default_namespace")]
+    pub namespace: String,
+    /// Importance weight (0.0–1.0) for relevance ranking.
+    #[serde(default)]
+    pub importance: Option<f64>,
+    /// Key of the entry that supersedes this one (for deduplication chains).
+    #[serde(default)]
+    pub superseded_by: Option<String>,
 }
 
 impl std::fmt::Debug for MemoryEntry {
@@ -120,6 +143,16 @@ pub trait Memory: Send + Sync {
     /// Remove a memory by key
     async fn forget(&self, key: &str) -> anyhow::Result<bool>;
 
+    /// Purge all memories in a namespace.
+    async fn purge_namespace(&self, _namespace: &str) -> anyhow::Result<usize> {
+        anyhow::bail!("purge_namespace not supported by this backend")
+    }
+
+    /// Purge all memories in a session.
+    async fn purge_session(&self, _session_id: &str) -> anyhow::Result<usize> {
+        anyhow::bail!("purge_session not supported by this backend")
+    }
+
     /// Count total memories
     async fn count(&self) -> anyhow::Result<usize>;
 
@@ -137,6 +170,49 @@ pub trait Memory: Send + Sync {
         _session_id: Option<&str>,
     ) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    /// Recall memories within a specific namespace.
+    async fn recall_namespaced(
+        &self,
+        namespace: &str,
+        query: &str,
+        limit: usize,
+        session_id: Option<&str>,
+        since: Option<&str>,
+        until: Option<&str>,
+    ) -> anyhow::Result<Vec<MemoryEntry>> {
+        let mut entries = self.recall(query, limit, session_id, since, until).await?;
+        entries.retain(|e| e.namespace == namespace);
+        Ok(entries)
+    }
+
+    /// Export memories matching a filter (GDPR Art. 20 data portability).
+    async fn export(&self, filter: &ExportFilter) -> anyhow::Result<Vec<MemoryEntry>> {
+        let category_filter = filter.category.as_ref();
+        let session_filter = filter.session_id.as_deref();
+        let mut entries = self.list(category_filter, session_filter).await?;
+
+        if let Some(ns) = &filter.namespace {
+            entries.retain(|e| e.namespace == *ns);
+        }
+        // Time-range filtering is left to backend implementations that support it.
+        Ok(entries)
+    }
+
+    /// Store a memory entry with extended metadata (namespace, importance).
+    ///
+    /// Default implementation delegates to `store()`, ignoring the extra metadata.
+    async fn store_with_metadata(
+        &self,
+        key: &str,
+        content: &str,
+        category: MemoryCategory,
+        session_id: Option<&str>,
+        _namespace: Option<&str>,
+        _importance: Option<f64>,
+    ) -> anyhow::Result<()> {
+        self.store(key, content, category, session_id).await
     }
 }
 
@@ -185,6 +261,9 @@ mod tests {
             timestamp: "2026-02-16T00:00:00Z".into(),
             session_id: Some("session-abc".into()),
             score: Some(0.98),
+            namespace: "default".into(),
+            importance: None,
+            superseded_by: None,
         };
 
         let json = serde_json::to_string(&entry).unwrap();

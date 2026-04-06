@@ -1,12 +1,12 @@
 use super::traits::{Memory, MemoryCategory};
 use super::{
-    classify_memory_backend, create_memory_for_migration, effective_memory_backend_name,
-    MemoryBackendKind,
+    MemoryBackendKind, classify_memory_backend, create_memory_for_migration,
+    effective_memory_backend_name,
 };
 use crate::config::Config;
 #[cfg(feature = "memory-postgres")]
 use anyhow::Context;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use console::style;
 
 /// Handle `R.A.I.N. memory <subcommand>` CLI commands.
@@ -64,7 +64,9 @@ fn create_cli_memory(config: &Config) -> Result<Box<dyn Memory>> {
             }
             #[cfg(not(feature = "memory-postgres"))]
             {
-                bail!("Memory backend 'postgres' requires the 'memory-postgres' feature to be enabled at compile time.");
+                bail!(
+                    "Memory backend 'postgres' requires the 'memory-postgres' feature to be enabled at compile time."
+                );
             }
         }
         #[cfg(not(feature = "memory-postgres"))]

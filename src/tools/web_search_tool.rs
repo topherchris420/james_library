@@ -1,5 +1,5 @@
 use super::traits::{Tool, ToolResult};
-use super::web_search_provider_routing::{resolve_web_search_provider, WebSearchProviderRoute};
+use super::web_search_provider_routing::{WebSearchProviderRoute, resolve_web_search_provider};
 use async_trait::async_trait;
 use regex::Regex;
 use serde_json::json;

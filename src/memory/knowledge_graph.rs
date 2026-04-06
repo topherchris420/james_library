@@ -8,7 +8,7 @@
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use parking_lot::Mutex;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;

@@ -72,7 +72,7 @@ pub use leak_detector::{LeakDetector, LeakResult};
 pub use prompt_guard::{GuardAction, GuardResult, PromptGuard};
 #[allow(unused_imports)]
 pub use sanitizer::{
-    sanitize_for_model_input, sanitize_for_user_output, ModelInputSource, SanitizedText,
+    ModelInputSource, SanitizedText, sanitize_for_model_input, sanitize_for_user_output,
 };
 
 /// Redact sensitive values for safe logging. Shows first 4 characters + "***" suffix.

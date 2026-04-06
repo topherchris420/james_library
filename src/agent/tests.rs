@@ -1097,10 +1097,12 @@ async fn xml_dispatcher_converts_history_to_provider_messages() {
     let mut agent = build_agent_with(provider, vec![Box::new(EchoTool)], ToolDispatchMode::Xml);
     let _ = agent.turn("test xml").await.unwrap();
     assert!(history_contains_tool_result(agent.history(), "xml-test"));
-    assert!(agent
-        .history()
-        .iter()
-        .any(|msg| msg.role == "user" && msg.content.starts_with("[Tool results]\n")));
+    assert!(
+        agent
+            .history()
+            .iter()
+            .any(|msg| msg.role == "user" && msg.content.starts_with("[Tool results]\n"))
+    );
 }
 
 #[tokio::test]

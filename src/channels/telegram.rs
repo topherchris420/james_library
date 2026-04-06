@@ -1208,6 +1208,7 @@ Allowlist Telegram username (without '@') or numeric user ID.",
                 .as_secs(),
             thread_ts: thread_id,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         })
     }
 
@@ -1331,6 +1332,7 @@ Allowlist Telegram username (without '@') or numeric user ID.",
                 .as_secs(),
             thread_ts: thread_id,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         })
     }
 
@@ -1493,6 +1495,7 @@ Allowlist Telegram username (without '@') or numeric user ID.",
                 .as_secs(),
             thread_ts: thread_id,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         })
     }
 
@@ -4865,8 +4868,8 @@ mod tests {
     /// guard in `agent/loop_.rs` will reject photo messages.
     #[test]
     fn groq_provider_rejects_photo_with_vision_error() {
-        use crate::providers::compatible::{AuthStyle, OpenAiCompatibleProvider};
         use crate::providers::Provider;
+        use crate::providers::compatible::{AuthStyle, OpenAiCompatibleProvider};
 
         let groq = OpenAiCompatibleProvider::new(
             "Groq",

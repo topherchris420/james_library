@@ -125,6 +125,7 @@ impl Channel for MatrixTestChannel {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         })
         .await
         .map_err(|e| anyhow::anyhow!(e.to_string()))
@@ -566,6 +567,7 @@ fn channel_message_thread_ts_preserved_on_clone() {
         timestamp: 1700000000,
         thread_ts: Some("1700000000.000001".into()),
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
 
     let cloned = msg.clone();
@@ -583,6 +585,7 @@ fn channel_message_none_thread_ts_preserved() {
         timestamp: 1700000000,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
 
     assert!(msg.clone().thread_ts.is_none());
@@ -637,6 +640,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "discord" => ChannelMessage {
             id: "dc_1".into(),
@@ -647,6 +651,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "slack" => ChannelMessage {
             id: "sl_1".into(),
@@ -657,6 +662,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: Some("1700000000.000001".into()),
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "imessage" => ChannelMessage {
             id: "im_1".into(),
@@ -667,6 +673,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "irc" => ChannelMessage {
             id: "irc_1".into(),
@@ -677,6 +684,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "email" => ChannelMessage {
             id: "email_1".into(),
@@ -687,6 +695,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "signal" => ChannelMessage {
             id: "sig_1".into(),
@@ -697,6 +706,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "mattermost" => ChannelMessage {
             id: "mm_1".into(),
@@ -707,6 +717,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: Some("root_msg_id".into()),
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "whatsapp" => ChannelMessage {
             id: "wa_1".into(),
@@ -717,6 +728,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "nextcloud_talk" => ChannelMessage {
             id: "nc_1".into(),
@@ -727,6 +739,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "wecom" => ChannelMessage {
             id: "wc_1".into(),
@@ -737,6 +750,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "dingtalk" => ChannelMessage {
             id: "dt_1".into(),
@@ -747,6 +761,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "qq" => ChannelMessage {
             id: "qq_1".into(),
@@ -757,6 +772,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "linq" => ChannelMessage {
             id: "lq_1".into(),
@@ -767,6 +783,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "wati" => ChannelMessage {
             id: "wt_1".into(),
@@ -777,6 +794,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         "cli" => ChannelMessage {
             id: "cli_1".into(),
@@ -787,6 +805,7 @@ fn make_platform_message(platform: &str) -> ChannelMessage {
             timestamp: 1700000000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         },
         _ => panic!("Unknown platform: {platform}"),
     }
@@ -1031,10 +1050,11 @@ async fn send_empty_content() {
 async fn send_very_long_content() {
     let ch = MatrixTestChannel::new("test");
     let long_content = "a".repeat(100_000);
-    assert!(ch
-        .send(&SendMessage::new(&long_content, "user_1"))
-        .await
-        .is_ok());
+    assert!(
+        ch.send(&SendMessage::new(&long_content, "user_1"))
+            .await
+            .is_ok()
+    );
 
     let events = ch.events();
     match &events[0] {
@@ -1088,6 +1108,7 @@ fn channel_message_zero_timestamp() {
         timestamp: 0,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
     assert_eq!(msg.timestamp, 0);
 }
@@ -1103,6 +1124,7 @@ fn channel_message_max_timestamp() {
         timestamp: u64::MAX,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
     assert_eq!(msg.timestamp, u64::MAX);
 }
@@ -1253,11 +1275,12 @@ async fn minimal_channel_all_defaults_succeed() {
     assert!(ch.start_typing("user").await.is_ok());
     assert!(ch.stop_typing("user").await.is_ok());
     assert!(!ch.supports_draft_updates());
-    assert!(ch
-        .send_draft(&SendMessage::new("d", "u"))
-        .await
-        .unwrap()
-        .is_none());
+    assert!(
+        ch.send_draft(&SendMessage::new("d", "u"))
+            .await
+            .unwrap()
+            .is_none()
+    );
     assert!(ch.update_draft("u", "m", "t").await.is_ok());
     assert!(ch.finalize_draft("u", "m", "t").await.is_ok());
     assert!(ch.cancel_draft("u", "m").await.is_ok());

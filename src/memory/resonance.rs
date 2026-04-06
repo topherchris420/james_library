@@ -4,7 +4,7 @@ use super::vector;
 use async_trait::async_trait;
 use chrono::Local;
 use parking_lot::Mutex;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -47,11 +47,7 @@ impl ScalarField {
             return 0.0;
         }
         let coupling = overlap / denom;
-        if coupling.is_finite() {
-            coupling
-        } else {
-            0.0
-        }
+        if coupling.is_finite() { coupling } else { 0.0 }
     }
 }
 
@@ -237,6 +233,9 @@ impl ResonanceMemory {
                     timestamp,
                     session_id,
                     score: None,
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
                 intrinsic_frequency: vector::bytes_to_vec(&embedding_blob),
                 mass_equivalent,
@@ -403,6 +402,9 @@ impl Memory for ResonanceMemory {
                     timestamp: row.get(4)?,
                     session_id: row.get(5)?,
                     score: None,
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 })
             })?;
             match rows.next() {
@@ -451,6 +453,9 @@ impl Memory for ResonanceMemory {
                     timestamp: row.get(4)?,
                     session_id: row.get(5)?,
                     score: None,
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 })
             })?;
 

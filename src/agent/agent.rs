@@ -1,6 +1,6 @@
 use crate::agent::history::trim_history as trim_chat_history;
 use crate::agent::loop_::{
-    build_tool_instructions_from_specs, run_tool_call_loop_with_policy, ModelSwitchState,
+    ModelSwitchState, build_tool_instructions_from_specs, run_tool_call_loop_with_policy,
 };
 use crate::agent::manifest::AgentManifest;
 use crate::agent::manifest_loader;
@@ -355,7 +355,7 @@ impl AgentBuilder {
                 tools.retain(|t| allow_list.iter().any(|name| name == t.name()));
             }
 
-            let toolbox_manager = tools::ToolboxManager::from_boxed_tools(
+            tools::ToolboxManager::from_boxed_tools(
                 tools,
                 tools::ToolboxAccessConfig {
                     core_tools: self
@@ -370,8 +370,7 @@ impl AgentBuilder {
                         .unwrap_or_default(),
                     ..tools::ToolboxAccessConfig::default()
                 },
-            );
-            toolbox_manager
+            )
         };
         let discovery_tool: Arc<dyn Tool> =
             Arc::new(tools::ToolDiscoveryTool::new(toolbox_manager.clone()));
@@ -840,7 +839,7 @@ impl Agent {
             None
         };
 
-        if let (Some(ref cache), Some(ref key)) = (&self.response_cache, &cache_key) {
+        if let (Some(cache), Some(key)) = (&self.response_cache, &cache_key) {
             if let Ok(Some(cached)) = cache.get(key) {
                 self.observer.record_event(&ObserverEvent::CacheHit {
                     cache_type: "response".into(),
@@ -929,7 +928,7 @@ impl Agent {
         });
 
         if !used_tools {
-            if let (Some(ref cache), Some(ref key)) = (&self.response_cache, &cache_key) {
+            if let (Some(cache), Some(key)) = (&self.response_cache, &cache_key) {
                 let _ = cache.put(key, &effective_model, &response, 0);
             }
         }
@@ -1409,7 +1408,7 @@ mod tests {
 
     #[tokio::test]
     async fn from_config_passes_extra_headers_to_custom_provider() {
-        use axum::{http::HeaderMap, routing::post, Json, Router};
+        use axum::{Json, Router, http::HeaderMap, routing::post};
         use tempfile::TempDir;
         use tokio::net::TcpListener;
 

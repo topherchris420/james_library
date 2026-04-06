@@ -160,7 +160,9 @@ pub(super) fn collect_configured_channels(
                         ),
                     });
                 } else {
-                    tracing::warn!("WhatsApp Cloud API configured but missing required fields (phone_number_id, access_token, verify_token)");
+                    tracing::warn!(
+                        "WhatsApp Cloud API configured but missing required fields (phone_number_id, access_token, verify_token)"
+                    );
                 }
             }
             "web" => {
@@ -189,13 +191,19 @@ pub(super) fn collect_configured_channels(
                 }
                 #[cfg(not(feature = "whatsapp-web"))]
                 {
-                    tracing::warn!("WhatsApp Web backend requires 'whatsapp-web' feature. Enable with: cargo build --features whatsapp-web");
-                    eprintln!("  ⚠ WhatsApp Web is configured but the 'whatsapp-web' feature is not compiled in.");
+                    tracing::warn!(
+                        "WhatsApp Web backend requires 'whatsapp-web' feature. Enable with: cargo build --features whatsapp-web"
+                    );
+                    eprintln!(
+                        "  ⚠ WhatsApp Web is configured but the 'whatsapp-web' feature is not compiled in."
+                    );
                     eprintln!("    Rebuild with: cargo build --features whatsapp-web");
                 }
             }
             _ => {
-                tracing::warn!("WhatsApp config invalid: neither phone_number_id (Cloud API) nor session_path (Web) is set");
+                tracing::warn!(
+                    "WhatsApp config invalid: neither phone_number_id (Cloud API) nor session_path (Web) is set"
+                );
             }
         }
     }

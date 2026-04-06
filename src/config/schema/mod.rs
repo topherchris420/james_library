@@ -35,7 +35,7 @@ pub(crate) use proxy::{
 };
 pub use root_config::{
     Config, DelegateAgentConfig, DelegateToolConfig, ModelProviderConfig, SwarmConfig,
-    SwarmStrategy, WorkspaceConfig, TEMPERATURE_RANGE,
+    SwarmStrategy, TEMPERATURE_RANGE, WorkspaceConfig,
 };
 pub use security::*;
 

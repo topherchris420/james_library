@@ -5,13 +5,13 @@ use anyhow::Context;
 use async_trait::async_trait;
 use chrono::Local;
 use parking_lot::Mutex;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
 use std::sync::Arc;
+use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 use uuid::Uuid;
@@ -840,6 +840,9 @@ impl SqliteMemory {
                 timestamp: row.get(4)?,
                 session_id: row.get(5)?,
                 score: Some(1.0),
+                namespace: "default".into(),
+                importance: None,
+                superseded_by: None,
             })
         })?;
 
@@ -983,6 +986,9 @@ impl SqliteMemory {
                     timestamp: row.get(4)?,
                     session_id: row.get(5)?,
                     score: None,
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 })
             })?;
 
@@ -1252,6 +1258,9 @@ impl Memory for SqliteMemory {
                             timestamp: row.created_at.clone(),
                             session_id: row.session_id.clone(),
                             score: Some(f64::from(scored.final_score)),
+                            namespace: "default".into(),
+                            importance: None,
+                            superseded_by: None,
                         };
                         results.push(entry);
                     }
@@ -1289,6 +1298,9 @@ impl Memory for SqliteMemory {
                     timestamp: row.get(4)?,
                     session_id: row.get(5)?,
                     score: None,
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 })
             })?;
 
@@ -1325,6 +1337,9 @@ impl Memory for SqliteMemory {
                     timestamp: row.get(4)?,
                     session_id: row.get(5)?,
                     score: None,
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 })
             };
 
@@ -1546,9 +1561,11 @@ mod tests {
 
         let results = mem.recall("Rust", 10, None, None, None).await.unwrap();
         assert_eq!(results.len(), 2);
-        assert!(results
-            .iter()
-            .all(|r| r.content.to_lowercase().contains("rust")));
+        assert!(
+            results
+                .iter()
+                .all(|r| r.content.to_lowercase().contains("rust"))
+        );
     }
 
     #[tokio::test]
@@ -2738,7 +2755,7 @@ mod tests {
         mem.reindex().await.unwrap();
         let count = mem.reindex().await.unwrap();
         assert_eq!(count, 0); // Noop embedder → nothing to re-embed
-                              // Data should still be intact
+        // Data should still be intact
         let results = mem.recall("reindex", 10, None, None, None).await.unwrap();
         assert_eq!(results.len(), 1);
     }
@@ -2916,9 +2933,11 @@ mod tests {
         // List with session-a filter
         let results = mem.list(None, Some("sess-a")).await.unwrap();
         assert_eq!(results.len(), 2);
-        assert!(results
-            .iter()
-            .all(|e| e.session_id.as_deref() == Some("sess-a")));
+        assert!(
+            results
+                .iter()
+                .all(|e| e.session_id.as_deref() == Some("sess-a"))
+        );
 
         // List with session-a + category filter
         let results = mem

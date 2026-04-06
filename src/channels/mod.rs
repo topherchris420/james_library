@@ -32,6 +32,7 @@ pub mod linq;
 #[cfg(feature = "channel-matrix")]
 pub mod matrix;
 pub mod mattermost;
+pub mod media_pipeline;
 pub mod mochat;
 pub mod nextcloud_talk;
 #[cfg(feature = "channel-nostr")]
@@ -100,9 +101,9 @@ pub use whatsapp::WhatsAppChannel;
 pub use whatsapp_web::WhatsAppWebChannel;
 
 use crate::agent::loop_::{
-    build_runtime_toolbox_template, build_tool_instructions, is_model_switch_requested,
-    load_runtime_agent_manifest, render_runtime_system_prompt, scrub_credentials, ModelSwitchState,
-    RuntimeSystemPromptContext,
+    ModelSwitchState, RuntimeSystemPromptContext, build_runtime_toolbox_template,
+    build_tool_instructions, is_model_switch_requested, load_runtime_agent_manifest,
+    render_runtime_system_prompt, scrub_credentials,
 };
 use crate::approval::ApprovalManager;
 use crate::config::Config;
@@ -110,7 +111,7 @@ use crate::i18n::ToolDescriptions;
 use crate::identity;
 use crate::memory::{self, Memory};
 use crate::observability::traits::{ObserverEvent, ObserverMetric};
-use crate::observability::{self, runtime_trace, Observer};
+use crate::observability::{self, Observer, runtime_trace};
 use crate::providers::{self, ChatMessage, Provider};
 use crate::runtime;
 use crate::security::{AutonomyLevel, SecurityPolicy};
@@ -132,17 +133,17 @@ use self::dispatch::run_message_dispatch_loop;
 #[cfg(test)]
 use self::factory::build_channel_by_id;
 use self::factory::send_channel_message;
-use self::health::{classify_health_result, ChannelHealthState};
+use self::health::{ChannelHealthState, classify_health_result};
 use self::history::{
     append_sender_turn, compact_sender_history, proactive_trim_turns, rollback_orphan_user_turn,
 };
 use self::runtime_state::{
-    clear_sender_history, config_file_stamp, conversation_history_key, conversation_memory_key,
-    followup_thread_id, get_route_selection, interruption_scope_key, mark_sender_for_new_session,
-    maybe_apply_runtime_config_update, parse_runtime_command, resolve_provider_alias,
-    resolved_default_model, resolved_default_provider, runtime_config_store,
-    runtime_defaults_from_config, runtime_defaults_snapshot, set_route_selection,
-    take_pending_new_session, RuntimeConfigState,
+    RuntimeConfigState, clear_sender_history, config_file_stamp, conversation_history_key,
+    conversation_memory_key, followup_thread_id, get_route_selection, interruption_scope_key,
+    mark_sender_for_new_session, maybe_apply_runtime_config_update, parse_runtime_command,
+    resolve_provider_alias, resolved_default_model, resolved_default_provider,
+    runtime_config_store, runtime_defaults_from_config, runtime_defaults_snapshot,
+    set_route_selection, take_pending_new_session,
 };
 use self::sanitize::{sanitize_channel_response, strip_tool_call_tags};
 
@@ -891,15 +892,15 @@ async fn handle_runtime_command_if_needed(
                             }
 
                             format!(
-                            "Provider switched to `{provider_name}` for this sender session. Current model is `{}`.\nUse `/model <model-id>` to set a provider-compatible model.",
-                            current.model
-                        )
+                                "Provider switched to `{provider_name}` for this sender session. Current model is `{}`.\nUse `/model <model-id>` to set a provider-compatible model.",
+                                current.model
+                            )
                         }
                         Err(err) => {
                             let safe_err = providers::sanitize_api_error(&err.to_string());
                             format!(
-                            "Failed to initialize provider `{provider_name}`. Route unchanged.\nDetails: {safe_err}"
-                        )
+                                "Failed to initialize provider `{provider_name}`. Route unchanged.\nDetails: {safe_err}"
+                            )
                         }
                     }
                 }
@@ -1204,7 +1205,7 @@ fn spawn_scoped_typing_task(
 ) -> tokio::task::JoinHandle<()> {
     let stop_signal = cancellation_token;
     let refresh_interval = Duration::from_secs(CHANNEL_TYPING_REFRESH_INTERVAL_SECS);
-    let handle = tokio::spawn(async move {
+    tokio::spawn(async move {
         let mut interval = tokio::time::interval(refresh_interval);
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
@@ -1222,9 +1223,7 @@ fn spawn_scoped_typing_task(
         if let Err(e) = channel.stop_typing(&recipient).await {
             tracing::debug!("Failed to stop typing on {}: {e}", channel.name());
         }
-    });
-
-    handle
+    })
 }
 
 async fn process_channel_message(
@@ -2869,7 +2868,9 @@ fn collect_configured_channels(
                         ),
                     });
                 } else {
-                    tracing::warn!("WhatsApp Cloud API configured but missing required fields (phone_number_id, access_token, verify_token)");
+                    tracing::warn!(
+                        "WhatsApp Cloud API configured but missing required fields (phone_number_id, access_token, verify_token)"
+                    );
                 }
             }
             "web" => {
@@ -2898,13 +2899,19 @@ fn collect_configured_channels(
                 }
                 #[cfg(not(feature = "whatsapp-web"))]
                 {
-                    tracing::warn!("WhatsApp Web backend requires 'whatsapp-web' feature. Enable with: cargo build --features whatsapp-web");
-                    eprintln!("  ⚠ WhatsApp Web is configured but the 'whatsapp-web' feature is not compiled in.");
+                    tracing::warn!(
+                        "WhatsApp Web backend requires 'whatsapp-web' feature. Enable with: cargo build --features whatsapp-web"
+                    );
+                    eprintln!(
+                        "  ⚠ WhatsApp Web is configured but the 'whatsapp-web' feature is not compiled in."
+                    );
                     eprintln!("    Rebuild with: cargo build --features whatsapp-web");
                 }
             }
             _ => {
-                tracing::warn!("WhatsApp config invalid: neither phone_number_id (Cloud API) nor session_path (Web) is set");
+                tracing::warn!(
+                    "WhatsApp config invalid: neither phone_number_id (Cloud API) nor session_path (Web) is set"
+                );
             }
         }
     }
@@ -3752,8 +3759,8 @@ mod tests {
     use crate::providers::{ChatMessage, Provider};
     use crate::tools::{Tool, ToolResult};
     use std::collections::{HashMap, HashSet};
-    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use tempfile::TempDir;
 
     fn make_workspace() -> TempDir {
@@ -4903,6 +4910,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -4987,6 +4995,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5085,6 +5094,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 3,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5168,6 +5178,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5261,6 +5272,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5375,6 +5387,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5470,6 +5483,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 3,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5580,6 +5594,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 4,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5675,6 +5690,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5760,6 +5776,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -5860,6 +5877,9 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: "2026-02-20T00:00:00Z".to_string(),
                 session_id: None,
                 score: Some(0.9),
+                namespace: "default".into(),
+                importance: None,
+                superseded_by: None,
             }])
         }
 
@@ -5959,6 +5979,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 1,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         })
         .await
         .unwrap();
@@ -5971,6 +5992,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 2,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         })
         .await
         .unwrap();
@@ -6065,6 +6087,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -6078,6 +6101,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -6098,12 +6122,16 @@ BTC is currently around $65,000 based on latest tool output."#
             .unwrap_or_else(|e| e.into_inner());
         assert_eq!(calls.len(), 2);
         let second_call = &calls[1];
-        assert!(second_call
-            .iter()
-            .any(|(role, content)| { role == "user" && content.contains("forwarded content") }));
-        assert!(second_call
-            .iter()
-            .any(|(role, content)| { role == "user" && content.contains("summarize this") }));
+        assert!(
+            second_call
+                .iter()
+                .any(|(role, content)| { role == "user" && content.contains("forwarded content") })
+        );
+        assert!(
+            second_call
+                .iter()
+                .any(|(role, content)| { role == "user" && content.contains("summarize this") })
+        );
         assert!(
             !second_call.iter().any(|(role, _)| role == "assistant"),
             "cancelled turn should not persist an assistant response"
@@ -6185,6 +6213,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: Some("1741234567.100001".to_string()),
                 interruption_scope_id: Some("1741234567.100001".to_string()),
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -6198,6 +6227,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: Some("1741234567.100001".to_string()),
                 interruption_scope_id: Some("1741234567.100001".to_string()),
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -6218,12 +6248,16 @@ BTC is currently around $65,000 based on latest tool output."#
             .unwrap_or_else(|e| e.into_inner());
         assert_eq!(calls.len(), 2);
         let second_call = &calls[1];
-        assert!(second_call
-            .iter()
-            .any(|(role, content)| { role == "user" && content.contains("first question") }));
-        assert!(second_call
-            .iter()
-            .any(|(role, content)| { role == "user" && content.contains("second question") }));
+        assert!(
+            second_call
+                .iter()
+                .any(|(role, content)| { role == "user" && content.contains("first question") })
+        );
+        assert!(
+            second_call
+                .iter()
+                .any(|(role, content)| { role == "user" && content.contains("second question") })
+        );
         assert!(
             !second_call.iter().any(|(role, _)| role == "assistant"),
             "cancelled turn should not persist an assistant response"
@@ -6302,6 +6336,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -6315,6 +6350,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -6401,6 +6437,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -6484,6 +6521,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -6691,8 +6729,11 @@ BTC is currently around $65,000 based on latest tool output."#
         assert!(prompt.contains("<description>Review code for bugs</description>"));
         assert!(prompt.contains("SKILL.md</location>"));
         assert!(prompt.contains("<instructions>"));
-        assert!(prompt
-            .contains("<instruction>Always run cargo test before final response.</instruction>"));
+        assert!(
+            prompt.contains(
+                "<instruction>Always run cargo test before final response.</instruction>"
+            )
+        );
         assert!(prompt.contains("<tools>"));
         assert!(prompt.contains("<name>lint</name>"));
         assert!(prompt.contains("<kind>shell</kind>"));
@@ -6736,8 +6777,11 @@ BTC is currently around $65,000 based on latest tool output."#
         assert!(prompt.contains("<location>skills/code-review/SKILL.md</location>"));
         assert!(prompt.contains("loaded on demand"));
         assert!(!prompt.contains("<instructions>"));
-        assert!(!prompt
-            .contains("<instruction>Always run cargo test before final response.</instruction>"));
+        assert!(
+            !prompt.contains(
+                "<instruction>Always run cargo test before final response.</instruction>"
+            )
+        );
         // Compact mode should still include tools so the LLM knows about them
         assert!(prompt.contains("<tools>"));
         assert!(prompt.contains("<name>lint</name>"));
@@ -7009,6 +7053,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 1,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         assert_eq!(conversation_memory_key(&msg), "slack_U123_msg_abc123");
@@ -7025,6 +7070,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 1,
             thread_ts: Some("1741234567.123456".into()),
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         assert_eq!(
@@ -7044,6 +7090,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 1,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         assert_eq!(followup_thread_id(&msg).as_deref(), Some("msg_abc123"));
@@ -7060,6 +7107,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 1,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
         let msg2 = traits::ChannelMessage {
             id: "msg_2".into(),
@@ -7070,6 +7118,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 2,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         assert_ne!(
@@ -7092,6 +7141,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 1,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
         let msg2 = traits::ChannelMessage {
             id: "msg_2".into(),
@@ -7102,6 +7152,7 @@ BTC is currently around $65,000 based on latest tool output."#
             timestamp: 2,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         mem.store(
@@ -7253,6 +7304,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7269,6 +7321,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7387,6 +7440,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7419,6 +7473,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7457,6 +7512,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 3,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7485,9 +7541,11 @@ BTC is currently around $65,000 based on latest tool output."#
         }
 
         let sent_messages = channel_impl.sent_messages.lock().await;
-        assert!(sent_messages
-            .iter()
-            .any(|message| { message.contains("Conversation history cleared. Starting fresh.") }));
+        assert!(
+            sent_messages.iter().any(|message| {
+                message.contains("Conversation history cleared. Starting fresh.")
+            })
+        );
     }
 
     #[tokio::test]
@@ -7561,6 +7619,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7672,6 +7731,7 @@ BTC is currently around $65,000 based on latest tool output."#
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -7945,12 +8005,16 @@ Mon Feb 20
 
         let channels = collect_configured_channels(&config, "test");
 
-        assert!(channels
-            .iter()
-            .any(|entry| entry.display_name == "Mattermost"));
-        assert!(channels
-            .iter()
-            .any(|entry| entry.channel.name() == "mattermost"));
+        assert!(
+            channels
+                .iter()
+                .any(|entry| entry.display_name == "Mattermost")
+        );
+        assert!(
+            channels
+                .iter()
+                .any(|entry| entry.channel.name() == "mattermost")
+        );
     }
 
     struct AlwaysFailChannel {
@@ -8022,10 +8086,12 @@ Mon Feb 20
         let component = &snapshot["components"]["channel:test-supervised-fail"];
         assert_eq!(component["status"], "error");
         assert!(component["restart_count"].as_u64().unwrap_or(0) >= 1);
-        assert!(component["last_error"]
-            .as_str()
-            .unwrap_or("")
-            .contains("listen boom"));
+        assert!(
+            component["last_error"]
+                .as_str()
+                .unwrap_or("")
+                .contains("listen boom")
+        );
         assert!(calls.load(Ordering::SeqCst) >= 1);
     }
 
@@ -8049,19 +8115,19 @@ Mon Feb 20
         );
 
         tokio::time::sleep(Duration::from_millis(35)).await;
-        let first_last_ok = crate::health::snapshot_json()["components"][&component_name]
-            ["last_ok"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let first_last_ok =
+            crate::health::snapshot_json()["components"][&component_name]["last_ok"]
+                .as_str()
+                .unwrap_or("")
+                .to_string();
         assert!(!first_last_ok.is_empty());
 
         tokio::time::sleep(Duration::from_millis(70)).await;
-        let second_last_ok = crate::health::snapshot_json()["components"][&component_name]
-            ["last_ok"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let second_last_ok =
+            crate::health::snapshot_json()["components"][&component_name]["last_ok"]
+                .as_str()
+                .unwrap_or("")
+                .to_string();
         let first = chrono::DateTime::parse_from_rfc3339(&first_last_ok)
             .expect("last_ok should be valid RFC3339");
         let second = chrono::DateTime::parse_from_rfc3339(&second_last_ok)
@@ -8212,6 +8278,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8301,6 +8368,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8317,6 +8385,7 @@ Mon Feb 20
                 timestamp: 2,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8466,6 +8535,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8580,6 +8650,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8686,6 +8757,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8812,6 +8884,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: None,
                 interruption_scope_id: None,
+                attachments: Vec::new(),
             },
             CancellationToken::new(),
         )
@@ -8969,6 +9042,7 @@ Mon Feb 20
             timestamp: 0,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
         assert_eq!(interruption_scope_key(&msg), "matrix_room_alice");
     }
@@ -8984,6 +9058,7 @@ Mon Feb 20
             timestamp: 0,
             thread_ts: Some("$thread1".into()),
             interruption_scope_id: Some("$thread1".into()),
+            attachments: Vec::new(),
         };
         assert_eq!(interruption_scope_key(&msg), "matrix_room_alice_$thread1");
     }
@@ -9000,6 +9075,7 @@ Mon Feb 20
             timestamp: 0,
             thread_ts: Some("1234567890.000100".into()), // Slack top-level fallback
             interruption_scope_id: None,                 // but NOT a thread reply
+            attachments: Vec::new(),
         };
         assert_eq!(interruption_scope_key(&msg), "slack_C123_alice");
     }
@@ -9078,6 +9154,7 @@ Mon Feb 20
                 timestamp: 1,
                 thread_ts: Some("1741234567.100001".to_string()),
                 interruption_scope_id: Some("1741234567.100001".to_string()),
+                attachments: Vec::new(),
             })
             .await
             .unwrap();
@@ -9091,6 +9168,7 @@ Mon Feb 20
                 timestamp: 2,
                 thread_ts: Some("1741234567.200002".to_string()),
                 interruption_scope_id: Some("1741234567.200002".to_string()),
+                attachments: Vec::new(),
             })
             .await
             .unwrap();

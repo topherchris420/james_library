@@ -1,10 +1,10 @@
 use super::{
-    is_glm_cn_alias, is_glm_global_alias, is_minimax_cn_alias, is_minimax_intl_alias,
-    is_moonshot_cn_alias, is_moonshot_intl_alias, is_qwen_cn_alias, is_qwen_intl_alias,
-    is_qwen_oauth_alias, is_qwen_us_alias, is_zai_cn_alias, is_zai_global_alias, GLM_CN_BASE_URL,
-    GLM_GLOBAL_BASE_URL, MINIMAX_CN_BASE_URL, MINIMAX_INTL_BASE_URL, MOONSHOT_CN_BASE_URL,
-    MOONSHOT_INTL_BASE_URL, QWEN_CN_BASE_URL, QWEN_INTL_BASE_URL, QWEN_US_BASE_URL,
-    ZAI_CN_BASE_URL, ZAI_GLOBAL_BASE_URL,
+    GLM_CN_BASE_URL, GLM_GLOBAL_BASE_URL, MINIMAX_CN_BASE_URL, MINIMAX_INTL_BASE_URL,
+    MOONSHOT_CN_BASE_URL, MOONSHOT_INTL_BASE_URL, QWEN_CN_BASE_URL, QWEN_INTL_BASE_URL,
+    QWEN_US_BASE_URL, ZAI_CN_BASE_URL, ZAI_GLOBAL_BASE_URL, is_glm_cn_alias, is_glm_global_alias,
+    is_minimax_cn_alias, is_minimax_intl_alias, is_moonshot_cn_alias, is_moonshot_intl_alias,
+    is_qwen_cn_alias, is_qwen_intl_alias, is_qwen_oauth_alias, is_qwen_us_alias, is_zai_cn_alias,
+    is_zai_global_alias,
 };
 
 pub(super) fn minimax_base_url(name: &str) -> Option<&'static str> {

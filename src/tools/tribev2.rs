@@ -7,11 +7,11 @@
 //! **License**: TRIBE v2 is CC-BY-NC 4.0 (non-commercial use only).
 
 use super::traits::{Tool, ToolResult};
-use crate::security::policy::ToolOperation;
 use crate::security::SecurityPolicy;
+use crate::security::policy::ToolOperation;
 use async_trait::async_trait;
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fmt::Write;
 use std::sync::Arc;
 use std::time::Duration;

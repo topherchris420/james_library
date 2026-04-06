@@ -1,28 +1,28 @@
 use crate::agent::agent::ToolDispatchMode;
 use crate::agent::history::{
-    auto_compact_history, autosave_memory_key, build_context, build_hardware_context,
-    load_interactive_session_history, memory_session_id_from_state_file,
-    save_interactive_session_history, trim_history, DEFAULT_MAX_HISTORY_MESSAGES,
+    DEFAULT_MAX_HISTORY_MESSAGES, auto_compact_history, autosave_memory_key, build_context,
+    build_hardware_context, load_interactive_session_history, memory_session_id_from_state_file,
+    save_interactive_session_history, trim_history,
 };
 use crate::agent::runtime_support::record_tool_loop_cost_usage;
 pub(crate) use crate::agent::runtime_support::{
-    check_tool_loop_budget, is_model_switch_requested, scrub_credentials,
-    truncate_tool_args_for_progress, ModelSwitchCallback, ModelSwitchRequested,
-    ToolLoopCostTrackingContext, DRAFT_CLEAR_SENTINEL, TOOL_CHOICE_OVERRIDE,
-    TOOL_LOOP_COST_TRACKING_CONTEXT,
+    DRAFT_CLEAR_SENTINEL, ModelSwitchCallback, ModelSwitchRequested, TOOL_CHOICE_OVERRIDE,
+    TOOL_LOOP_COST_TRACKING_CONTEXT, ToolLoopCostTrackingContext, check_tool_loop_budget,
+    is_model_switch_requested, scrub_credentials, truncate_tool_args_for_progress,
 };
 use crate::agent::tool_call_parser::{
-    build_native_assistant_history, build_native_assistant_history_from_parsed_calls,
-    detect_tool_call_parse_issue, parse_structured_tool_calls, parse_tool_calls,
-    resolve_display_text, strip_tool_result_blocks, tool_call_signature, ParsedToolCall,
+    ParsedToolCall, build_native_assistant_history,
+    build_native_assistant_history_from_parsed_calls, detect_tool_call_parse_issue,
+    parse_structured_tool_calls, parse_tool_calls, resolve_display_text, strip_tool_result_blocks,
+    tool_call_signature,
 };
 use crate::agent::tool_filter::{compute_excluded_mcp_tools, filter_by_allowed_tools};
 
 // Imports used only in `#[cfg(test)]` modules — kept behind cfg to avoid warnings.
 #[cfg(test)]
 use crate::agent::history::{
-    apply_compaction_summary, build_compaction_transcript, estimate_history_tokens,
-    InteractiveSessionState,
+    InteractiveSessionState, apply_compaction_summary, build_compaction_transcript,
+    estimate_history_tokens,
 };
 #[cfg(test)]
 use crate::agent::tool_call_parser::{
@@ -40,14 +40,14 @@ use crate::cost::types::BudgetCheck;
 use crate::i18n::ToolDescriptions;
 use crate::memory::{self, Memory, MemoryCategory};
 use crate::multimodal;
-use crate::observability::{self, runtime_trace, Observer, ObserverEvent};
+use crate::observability::{self, Observer, ObserverEvent, runtime_trace};
 #[cfg(test)]
 use crate::providers::ToolCall;
 use crate::providers::{self, ChatMessage, ChatRequest, Provider, ProviderCapabilityError};
 use crate::runtime;
 use crate::security::{
-    sanitize_for_model_input, sanitize_for_user_output, AutonomyLevel, ModelInputSource,
-    SecurityPolicy,
+    AutonomyLevel, ModelInputSource, SecurityPolicy, sanitize_for_model_input,
+    sanitize_for_user_output,
 };
 use crate::tools::{self, Tool};
 use crate::util::truncate_with_ellipsis;
@@ -154,8 +154,8 @@ impl ModelSwitchState {
 
 // Tool execution functions extracted to `tool_execution` module.
 use crate::agent::tool_execution::{
-    execute_tools_parallel, execute_tools_sequential, maybe_inject_channel_delivery_defaults,
-    should_execute_tools_in_parallel, ToolExecutionOutcome,
+    ToolExecutionOutcome, execute_tools_parallel, execute_tools_sequential,
+    maybe_inject_channel_delivery_defaults, should_execute_tools_in_parallel,
 };
 
 #[derive(Debug)]
@@ -517,7 +517,9 @@ pub(crate) async fn run_tool_call_loop_with_policy(
         {
             return Err(anyhow::anyhow!(
                 "Budget exceeded: ${:.4} of ${:.2} {:?} limit. Cannot make further API calls until the budget resets.",
-                current_usd, limit_usd, period
+                current_usd,
+                limit_usd,
+                period
             ));
         }
 
@@ -2668,8 +2670,8 @@ fn tools_to_openai_format(tools: &[Box<dyn Tool>]) -> Vec<serde_json::Value> {
 #[cfg(test)]
 mod tests {
     use super::{
-        apply_compaction_summary, build_compaction_transcript, load_interactive_session_history,
-        save_interactive_session_history, InteractiveSessionState,
+        InteractiveSessionState, apply_compaction_summary, build_compaction_transcript,
+        load_interactive_session_history, save_interactive_session_history,
     };
     use crate::providers::ChatMessage;
     use tempfile::tempdir;
@@ -2713,7 +2715,7 @@ mod tests {
 
     use super::*;
     use async_trait::async_trait;
-    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
     use std::collections::VecDeque;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
@@ -2741,8 +2743,8 @@ mod tests {
 
     use crate::memory::{Memory, MemoryCategory, SqliteMemory};
     use crate::observability::NoopObserver;
-    use crate::providers::traits::ProviderCapabilities;
     use crate::providers::ChatResponse;
+    use crate::providers::traits::ProviderCapabilities;
     use tempfile::TempDir;
 
     struct NonVisionProvider {
@@ -3104,9 +3106,10 @@ mod tests {
         .await
         .expect_err("oversized payload must fail");
 
-        assert!(err
-            .to_string()
-            .contains("multimodal image size limit exceeded"));
+        assert!(
+            err.to_string()
+                .contains("multimodal image size limit exceeded")
+        );
         assert_eq!(calls.load(Ordering::SeqCst), 0);
     }
 
@@ -3639,13 +3642,17 @@ mod tests {
             .expect("prompt-mode tool result payload should be present");
 
         assert!(!tool_results.content.contains("<tool_call>"));
-        assert!(!tool_results
-            .content
-            .contains("Ignore previous instructions"));
+        assert!(
+            !tool_results
+                .content
+                .contains("Ignore previous instructions")
+        );
         assert!(tool_results.content.contains("[sanitized-control-text]"));
-        assert!(!tool_results
-            .content
-            .contains("sk_test_1234567890abcdefghijklmnop"));
+        assert!(
+            !tool_results
+                .content
+                .contains("sk_test_1234567890abcdefghijklmnop")
+        );
     }
 
     #[tokio::test]
@@ -3774,9 +3781,11 @@ mod tests {
         assert!(result.contains("[REDACTED_"));
         assert!(!result.contains("sk_test_1234567890abcdefghijklmnop"));
         assert_eq!(final_assistant.content, result);
-        assert!(!final_assistant
-            .content
-            .contains("sk_test_1234567890abcdefghijklmnop"));
+        assert!(
+            !final_assistant
+                .content
+                .contains("sk_test_1234567890abcdefghijklmnop")
+        );
     }
 
     #[test]
@@ -4467,7 +4476,7 @@ Tail"#;
         assert_eq!(history[0].content, "system prompt");
         // Trimmed to limit
         assert_eq!(history.len(), DEFAULT_MAX_HISTORY_MESSAGES + 1); // +1 for system
-                                                                     // Most recent messages preserved
+        // Most recent messages preserved
         let last = &history[history.len() - 1];
         assert_eq!(
             last.content,
@@ -4985,10 +4994,12 @@ Final answer."#;
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].0, "shell");
         assert!(calls[0].1["command"].as_str().unwrap().contains("curl"));
-        assert!(calls[0].1["command"]
-            .as_str()
-            .unwrap()
-            .contains("example.com"));
+        assert!(
+            calls[0].1["command"]
+                .as_str()
+                .unwrap()
+                .contains("example.com")
+        );
     }
 
     #[test]
@@ -5834,7 +5845,7 @@ Let me check the result."#;
     #[tokio::test]
     async fn cost_tracking_records_usage_when_scoped() {
         use super::{
-            run_tool_call_loop, ToolLoopCostTrackingContext, TOOL_LOOP_COST_TRACKING_CONTEXT,
+            TOOL_LOOP_COST_TRACKING_CONTEXT, ToolLoopCostTrackingContext, run_tool_call_loop,
         };
         use crate::config::schema::ModelPricing;
         use crate::cost::CostTracker;
@@ -5914,7 +5925,7 @@ Let me check the result."#;
     #[tokio::test]
     async fn cost_tracking_enforces_budget() {
         use super::{
-            run_tool_call_loop, ToolLoopCostTrackingContext, TOOL_LOOP_COST_TRACKING_CONTEXT,
+            TOOL_LOOP_COST_TRACKING_CONTEXT, ToolLoopCostTrackingContext, run_tool_call_loop,
         };
         use crate::config::schema::ModelPricing;
         use crate::cost::CostTracker;

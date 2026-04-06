@@ -28,7 +28,7 @@
 
 use super::traits::{Channel, ChannelMessage, SendMessage};
 use super::whatsapp_storage::RusqliteStore;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use parking_lot::Mutex;
 use std::sync::Arc;
@@ -824,6 +824,7 @@ impl Channel for WhatsAppWebChannel {
                                         timestamp: chrono::Utc::now().timestamp() as u64,
                                         thread_ts: None,
                                         interruption_scope_id: None,
+                                        attachments: Vec::new(),
                                     })
                                     .await
                                 {

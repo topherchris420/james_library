@@ -7,8 +7,8 @@ use crate::providers::ChatMessage;
 use crate::util::truncate_with_ellipsis;
 
 use super::{
-    normalize_cached_channel_turns, ChannelRuntimeContext, CHANNEL_HISTORY_COMPACT_CONTENT_CHARS,
-    CHANNEL_HISTORY_COMPACT_KEEP_MESSAGES, MAX_CHANNEL_HISTORY,
+    CHANNEL_HISTORY_COMPACT_CONTENT_CHARS, CHANNEL_HISTORY_COMPACT_KEEP_MESSAGES,
+    ChannelRuntimeContext, MAX_CHANNEL_HISTORY, normalize_cached_channel_turns,
 };
 
 pub(super) fn compact_sender_history(ctx: &ChannelRuntimeContext, sender_key: &str) -> bool {

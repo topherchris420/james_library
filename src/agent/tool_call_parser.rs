@@ -259,11 +259,7 @@ fn parse_xml_tool_calls(xml_content: &str) -> Option<Vec<ParsedToolCall>> {
         });
     }
 
-    if calls.is_empty() {
-        None
-    } else {
-        Some(calls)
-    }
+    if calls.is_empty() { None } else { Some(calls) }
 }
 
 /// Parse MiniMax-style XML tool calls with attributed invoke/parameter tags.

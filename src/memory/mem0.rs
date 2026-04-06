@@ -530,6 +530,9 @@ mod tests {
                 session_id: None,
             }),
             score: Some(0.95),
+            namespace: "default".into(),
+            importance: None,
+            superseded_by: None,
         };
         let entry = mem.to_entry(item);
         assert_eq!(entry.id, "id-1");

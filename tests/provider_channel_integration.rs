@@ -62,6 +62,7 @@ fn provider_response_to_channel_message_format() {
         timestamp: 1_700_000_000,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
 
     // Verify the message can be used by channel
@@ -85,6 +86,7 @@ fn provider_channel_message_round_trip() {
         timestamp: 1_700_000_000,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
 
     // Verify round-trip preserves key information
@@ -107,6 +109,7 @@ fn multi_provider_channel_routing() {
             timestamp: 1_700_000_000,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         // Each provider should be able to generate valid channel messages
@@ -129,6 +132,7 @@ fn channel_message_timestamp_propagation() {
         timestamp: test_timestamp,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
 
     // Timestamp should be preserved exactly
@@ -149,6 +153,7 @@ fn provider_error_to_channel_error_message() {
         timestamp: 1_700_000_000,
         thread_ts: None,
         interruption_scope_id: None,
+        attachments: Vec::new(),
     };
 
     // Error messages should be properly formatted for channel delivery

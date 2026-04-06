@@ -1,6 +1,6 @@
 use crate::agent::manifest::AgentManifest;
 use crate::agent::tool_call_parser::map_tool_name_alias;
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::collections::HashSet;
 use std::path::Path;
 

@@ -1,7 +1,7 @@
 use super::traits::{Tool, ToolResult};
 use crate::config::ClaudeCodeConfig;
-use crate::security::policy::ToolOperation;
 use crate::security::SecurityPolicy;
+use crate::security::policy::ToolOperation;
 use async_trait::async_trait;
 use serde_json::json;
 use std::sync::Arc;
@@ -355,10 +355,12 @@ mod tests {
         let tool = ClaudeCodeTool::new(test_security(AutonomyLevel::Supervised), test_config());
         let schema = tool.parameters_schema();
         assert!(schema["properties"]["prompt"].is_object());
-        assert!(schema["required"]
-            .as_array()
-            .expect("schema required should be an array")
-            .contains(&json!("prompt")));
+        assert!(
+            schema["required"]
+                .as_array()
+                .expect("schema required should be an array")
+                .contains(&json!("prompt"))
+        );
         // Optional params exist in properties
         assert!(schema["properties"]["allowed_tools"].is_object());
         assert!(schema["properties"]["system_prompt"].is_object());
@@ -392,11 +394,13 @@ mod tests {
             .await
             .expect("readonly should return a result");
         assert!(!result.success);
-        assert!(result
-            .error
-            .as_deref()
-            .unwrap_or("")
-            .contains("read-only mode"));
+        assert!(
+            result
+                .error
+                .as_deref()
+                .unwrap_or("")
+                .contains("read-only mode")
+        );
     }
 
     #[tokio::test]
@@ -428,11 +432,13 @@ mod tests {
             .await
             .expect("should return a result for path validation");
         assert!(!result.success);
-        assert!(result
-            .error
-            .as_deref()
-            .unwrap_or("")
-            .contains("outside the workspace"));
+        assert!(
+            result
+                .error
+                .as_deref()
+                .unwrap_or("")
+                .contains("outside the workspace")
+        );
     }
 
     #[test]

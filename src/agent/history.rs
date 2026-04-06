@@ -1,6 +1,6 @@
 use crate::memory::{self, Memory};
 use crate::providers::{ChatMessage, Provider};
-use crate::security::{sanitize_for_model_input, ModelInputSource};
+use crate::security::{ModelInputSource, sanitize_for_model_input};
 use crate::util::truncate_with_ellipsis;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -354,6 +354,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.99),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
                 MemoryEntry {
                     id: "2".into(),
@@ -364,6 +367,9 @@ mod tests {
                     timestamp: "now".into(),
                     session_id: None,
                     score: Some(0.98),
+                    namespace: "default".into(),
+                    importance: None,
+                    superseded_by: None,
                 },
             ],
         };

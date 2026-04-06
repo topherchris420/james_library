@@ -202,9 +202,11 @@ mod tests {
         );
 
         assert!(sanitized.text.contains("[REDACTED_API_KEY]"));
-        assert!(!sanitized
-            .text
-            .contains("sk_test_1234567890abcdefghijklmnop"));
+        assert!(
+            !sanitized
+                .text
+                .contains("sk_test_1234567890abcdefghijklmnop")
+        );
     }
 
     #[test]

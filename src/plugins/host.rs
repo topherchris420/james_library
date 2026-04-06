@@ -2,8 +2,8 @@
 
 use super::error::PluginError;
 use super::{
-    AgentPackInfo, PluginCapability, PluginInfo, PluginManifest, PluginPermission,
-    AGENT_MANIFEST_SCHEMA_VERSION,
+    AGENT_MANIFEST_SCHEMA_VERSION, AgentPackInfo, PluginCapability, PluginInfo, PluginManifest,
+    PluginPermission,
 };
 use reqwest::Url;
 use std::collections::HashMap;

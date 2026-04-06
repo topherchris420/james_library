@@ -450,24 +450,35 @@ fn validate_proxy_url(field: &str, url: &str) -> Result<()> {
 fn set_proxy_env_pair(key: &str, value: Option<&str>) {
     let lowercase_key = key.to_ascii_lowercase();
     if let Some(value) = value.and_then(|candidate| normalize_proxy_url_option(Some(candidate))) {
-        std::env::set_var(key, &value);
-        std::env::set_var(lowercase_key, value);
+        // SAFETY: single-threaded init context
+        unsafe {
+            std::env::set_var(key, &value);
+            std::env::set_var(lowercase_key, value);
+        }
     } else {
-        std::env::remove_var(key);
-        std::env::remove_var(lowercase_key);
+        // SAFETY: single-threaded init context
+        unsafe {
+            std::env::remove_var(key);
+            std::env::remove_var(lowercase_key);
+        }
     }
 }
 
 fn clear_proxy_env_pair(key: &str) {
-    std::env::remove_var(key);
-    std::env::remove_var(key.to_ascii_lowercase());
+    // SAFETY: single-threaded init context
+    unsafe {
+        std::env::remove_var(key);
+        std::env::remove_var(key.to_ascii_lowercase());
+    }
 }
 
 fn set_runtime_proxy_meta_env(key: &str, value: Option<&str>) {
     if let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) {
-        std::env::set_var(key, value);
+        // SAFETY: single-threaded init context
+        unsafe { std::env::set_var(key, value) };
     } else {
-        std::env::remove_var(key);
+        // SAFETY: single-threaded init context
+        unsafe { std::env::remove_var(key) };
     }
 }
 

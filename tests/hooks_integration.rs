@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use rain_labs::hooks::{HookHandler, HookResult, HookRunner};

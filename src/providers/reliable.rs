@@ -1,9 +1,9 @@
+use super::Provider;
 use super::traits::{
     ChatMessage, ChatRequest, ChatResponse, StreamChunk, StreamOptions, StreamResult,
 };
-use super::Provider;
 use async_trait::async_trait;
-use futures_util::{stream, StreamExt};
+use futures_util::{StreamExt, stream};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
@@ -2181,7 +2181,7 @@ mod tests {
         assert_eq!(messages[0].role, "system");
         // Remaining messages should be the newer ones
         assert_eq!(messages.len(), 4); // system + 3 remaining non-system
-                                       // The last message should still be the most recent user message
+        // The last message should still be the most recent user message
         assert_eq!(messages.last().unwrap().content, "msg3");
     }
 

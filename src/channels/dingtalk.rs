@@ -285,6 +285,7 @@ impl Channel for DingTalkChannel {
                             .as_secs(),
                         thread_ts: None,
                         interruption_scope_id: None,
+                        attachments: Vec::new(),
                     };
 
                     if tx.send(channel_msg).await.is_err() {

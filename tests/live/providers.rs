@@ -3,8 +3,8 @@
 //! All tests in this module require real external API credentials and are
 //! marked with `#[ignore]`. Run with: `cargo test --test live -- --ignored`
 
-use rain_labs::providers::traits::{ChatMessage, Provider};
 use rain_labs::providers::ProviderRuntimeOptions;
+use rain_labs::providers::traits::{ChatMessage, Provider};
 
 /// Sends a real multi-turn conversation to OpenAI Codex and verifies
 /// the model retains context from earlier messages.

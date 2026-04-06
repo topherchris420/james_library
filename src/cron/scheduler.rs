@@ -6,15 +6,15 @@ use crate::channels::{
 };
 use crate::config::Config;
 use crate::cron::{
-    all_overdue_jobs, due_jobs, next_run_for_schedule, record_last_run, record_run, remove_job,
-    reschedule_after_run, update_job, CronJob, CronJobPatch, DeliveryConfig, JobType, Schedule,
-    SessionTarget,
+    CronJob, CronJobPatch, DeliveryConfig, JobType, Schedule, SessionTarget, all_overdue_jobs,
+    due_jobs, next_run_for_schedule, record_last_run, record_run, remove_job, reschedule_after_run,
+    update_job,
 };
 use crate::runtime::RuntimeAdapter;
 use crate::security::SecurityPolicy;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use futures_util::{stream, StreamExt};
+use futures_util::{StreamExt, stream};
 use std::process::Stdio;
 use std::sync::Arc;
 use tokio::process::Command;
@@ -1276,9 +1276,10 @@ mod tests {
         let err = deliver_if_configured(&config, &job, "hello")
             .await
             .unwrap_err();
-        assert!(err
-            .to_string()
-            .contains("matrix delivery channel requires `channel-matrix` feature"));
+        assert!(
+            err.to_string()
+                .contains("matrix delivery channel requires `channel-matrix` feature")
+        );
     }
 
     #[test]

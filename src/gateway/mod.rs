@@ -18,27 +18,27 @@ pub mod ws;
 
 use crate::agent::loop_::ModelSwitchState;
 use crate::channels::{
-    session_backend::SessionBackend, session_sqlite::SqliteSessionBackend, Channel, LinqChannel,
-    NextcloudTalkChannel, SendMessage, WatiChannel, WhatsAppChannel,
+    Channel, LinqChannel, NextcloudTalkChannel, SendMessage, WatiChannel, WhatsAppChannel,
+    session_backend::SessionBackend, session_sqlite::SqliteSessionBackend,
 };
 use crate::config::Config;
 use crate::cost::CostTracker;
 use crate::memory::{self, Memory, MemoryCategory};
 use crate::providers::{self, ChatMessage, Provider};
 use crate::runtime;
-use crate::security::pairing::{constant_time_eq, is_public_bind, PairingGuard};
 use crate::security::SecurityPolicy;
+use crate::security::pairing::{PairingGuard, constant_time_eq, is_public_bind};
 use crate::tools;
 use crate::tools::traits::ToolSpec;
 use crate::util::truncate_with_ellipsis;
 use anyhow::{Context, Result};
 use axum::{
+    Router,
     body::Bytes,
     extract::{ConnectInfo, Query, State},
-    http::{header, HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, header},
     response::{IntoResponse, Json},
     routing::{delete, get, post, put},
-    Router,
 };
 use parking_lot::Mutex;
 use std::collections::HashMap;
@@ -955,7 +955,9 @@ async fn handle_health(State(state): State<AppState>) -> impl IntoResponse {
 const PROMETHEUS_CONTENT_TYPE: &str = "text/plain; version=0.0.4; charset=utf-8";
 
 fn prometheus_disabled_hint() -> String {
-    String::from("# Prometheus backend not enabled. Set [observability] backend = \"prometheus\" in config.\n")
+    String::from(
+        "# Prometheus backend not enabled. Set [observability] backend = \"prometheus\" in config.\n",
+    )
 }
 
 /// GET /metrics — Prometheus text exposition format
@@ -1953,7 +1955,10 @@ mod tests {
     #[test]
     fn gateway_timeout_falls_back_to_default() {
         // When env var is not set, should return the default constant
-        std::env::remove_var("rain_GATEWAY_TIMEOUT_SECS");
+        // SAFETY: single-threaded test/init context
+        unsafe {
+            std::env::remove_var("rain_GATEWAY_TIMEOUT_SECS");
+        }
         assert_eq!(gateway_request_timeout_secs(), 30);
     }
 
@@ -2279,6 +2284,7 @@ mod tests {
             timestamp: 1,
             thread_ts: None,
             interruption_scope_id: None,
+            attachments: Vec::new(),
         };
 
         let key = whatsapp_memory_key(&msg);

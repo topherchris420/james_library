@@ -1,4 +1,4 @@
-use super::{traits, ChannelRouteSelection, ChannelRuntimeCommand, ChannelRuntimeContext};
+use super::{ChannelRouteSelection, ChannelRuntimeCommand, ChannelRuntimeContext, traits};
 use crate::config::Config;
 use crate::providers::{self, Provider};
 use anyhow::{Context, Result};

@@ -33,7 +33,7 @@
     clippy::large_futures,
     dead_code
 )]
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use dialoguer::Password;
 use serde::{Deserialize, Serialize};
@@ -41,7 +41,7 @@ use std::io::{IsTerminal, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tracing::{info, warn};
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt};
 
 use crate::tools::Tool;
 
@@ -106,12 +106,15 @@ mod peripherals;
 #[cfg(feature = "plugins-wasm")]
 mod plugins;
 mod providers;
+mod routines;
 mod runtime;
 mod security;
 mod service;
 mod skillforge;
 mod skills;
 mod tools;
+mod trust;
+mod tui;
 mod tunnel;
 mod util;
 mod verifiable_intent;
@@ -121,7 +124,7 @@ use config::Config;
 // Re-export so binary modules can use crate::<CommandEnum> while keeping a single source of truth.
 pub use rain_labs::{
     ChannelCommands, CronCommands, GatewayCommands, HardwareCommands, IntegrationCommands,
-    MigrateCommands, PeripheralCommands, ServiceCommands, SkillCommands,
+    MigrateCommands, PeripheralCommands, ServiceCommands, SkillCommands, SopCommands,
 };
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
@@ -802,7 +805,10 @@ async fn main() -> Result<()> {
         if config_dir.trim().is_empty() {
             bail!("--config-dir cannot be empty");
         }
-        std::env::set_var("rain_CONFIG_DIR", config_dir);
+        // SAFETY: single-threaded test/init context
+        unsafe {
+            std::env::set_var("rain_CONFIG_DIR", config_dir);
+        }
     }
 
     // Completions must remain stdout-only and should not load config or initialize logging.

@@ -8,8 +8,8 @@ use tokio::sync::Mutex;
 use crate::tools::lsp_client::client::LspClient;
 use crate::tools::lsp_client::error::LspError;
 use crate::tools::lsp_client::types::{
-    normalize_extension, DocumentSymbolEntry, FileDiagnostics, LspContextEnrichment,
-    LspServerConfig, SymbolLocation, WorkspaceDiagnostics,
+    DocumentSymbolEntry, FileDiagnostics, LspContextEnrichment, LspServerConfig, SymbolLocation,
+    WorkspaceDiagnostics, normalize_extension,
 };
 
 pub struct LspManager {

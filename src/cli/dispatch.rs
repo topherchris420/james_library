@@ -8,7 +8,9 @@ fn confirm_update(force: bool) -> Result<bool> {
     }
 
     if !io::stdin().is_terminal() {
-        bail!("refusing to run update without confirmation in non-interactive mode; pass --force to continue");
+        bail!(
+            "refusing to run update without confirmation in non-interactive mode; pass --force to continue"
+        );
     }
 
     print!("Proceed with update? [y/N]: ");
@@ -108,8 +110,12 @@ pub(crate) async fn dispatch_command(command: Commands, config: Config) -> Resul
                         }
                         Ok(None) => {
                             if config.gateway.require_pairing {
-                                println!("🔐 Gateway pairing is enabled, but no active pairing code available.");
-                                println!("   The gateway may already be paired, or the code has been used.");
+                                println!(
+                                    "🔐 Gateway pairing is enabled, but no active pairing code available."
+                                );
+                                println!(
+                                    "   The gateway may already be paired, or the code has been used."
+                                );
                                 println!("   Restart the gateway to generate a new pairing code.");
                             } else {
                                 println!("⚠️  Gateway pairing is disabled in config.");

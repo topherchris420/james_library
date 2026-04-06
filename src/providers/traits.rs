@@ -1,6 +1,6 @@
 use crate::tools::ToolSpec;
 use async_trait::async_trait;
-use futures_util::{stream, StreamExt};
+use futures_util::{StreamExt, stream};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 
@@ -124,6 +124,8 @@ pub enum ConversationMessage {
 pub struct StreamChunk {
     /// Text delta for this chunk.
     pub delta: String,
+    /// Reasoning/thinking content delta (e.g. DeepSeek-R1, Kimi K2.5).
+    pub reasoning: Option<String>,
     /// Whether this is the final chunk.
     pub is_final: bool,
     /// Approximate token count for this chunk (estimated).
@@ -135,6 +137,17 @@ impl StreamChunk {
     pub fn delta(text: impl Into<String>) -> Self {
         Self {
             delta: text.into(),
+            reasoning: None,
+            is_final: false,
+            token_count: 0,
+        }
+    }
+
+    /// Create a reasoning/thinking chunk.
+    pub fn reasoning(text: impl Into<String>) -> Self {
+        Self {
+            delta: String::new(),
+            reasoning: Some(text.into()),
             is_final: false,
             token_count: 0,
         }
@@ -144,6 +157,7 @@ impl StreamChunk {
     pub fn final_chunk() -> Self {
         Self {
             delta: String::new(),
+            reasoning: None,
             is_final: true,
             token_count: 0,
         }
@@ -153,6 +167,7 @@ impl StreamChunk {
     pub fn error(message: impl Into<String>) -> Self {
         Self {
             delta: message.into(),
+            reasoning: None,
             is_final: true,
             token_count: 0,
         }
@@ -160,8 +175,38 @@ impl StreamChunk {
 
     /// Estimate tokens (rough approximation: ~4 chars per token).
     pub fn with_token_estimate(mut self) -> Self {
-        self.token_count = self.delta.len().div_ceil(4);
+        let text_len = self.delta.len() + self.reasoning.as_ref().map_or(0, |r| r.len());
+        self.token_count = text_len.div_ceil(4);
         self
+    }
+}
+
+/// Structured events from a streaming provider response.
+///
+/// Extends raw `StreamChunk` with tool-call and pre-execution events,
+/// enabling real-time streaming of both text and tool interactions.
+#[derive(Debug, Clone)]
+pub enum StreamEvent {
+    /// A text (or reasoning) delta from the model.
+    TextDelta(StreamChunk),
+    /// A tool call emitted by the model during streaming.
+    ToolCall(ToolCall),
+    /// A tool call that was pre-executed by the provider (e.g. Codex).
+    PreExecutedToolCall { name: String, args: String },
+    /// The result of a pre-executed tool call.
+    PreExecutedToolResult { name: String, output: String },
+    /// End of stream.
+    Final,
+}
+
+impl StreamEvent {
+    /// Convert a `StreamChunk` into a `StreamEvent`.
+    pub(crate) fn from_chunk(chunk: StreamChunk) -> Self {
+        if chunk.is_final && chunk.delta.is_empty() && chunk.reasoning.is_none() {
+            Self::Final
+        } else {
+            Self::TextDelta(chunk)
+        }
     }
 }
 
@@ -425,6 +470,12 @@ pub trait Provider: Send + Sync {
         false
     }
 
+    /// Whether provider supports streaming tool-call events (e.g. Codex pre-execution).
+    /// Default implementation returns false.
+    fn supports_streaming_tool_events(&self) -> bool {
+        false
+    }
+
     /// Streaming chat with optional system prompt.
     /// Returns an async stream of text chunks.
     /// Default implementation falls back to non-streaming chat.
@@ -456,6 +507,23 @@ pub trait Provider: Send + Sync {
         // Create a single empty chunk to indicate not supported
         let chunk = StreamChunk::error(format!("{} does not support streaming", provider_name));
         stream::once(async move { Ok(chunk) }).boxed()
+    }
+
+    /// Structured streaming chat that returns `StreamEvent` items.
+    ///
+    /// Wraps `stream_chat_with_history` by default, mapping chunks to events.
+    /// Providers that support streaming tool calls should override this to emit
+    /// `StreamEvent::ToolCall` and pre-execution events.
+    fn stream_chat(
+        &self,
+        request: ChatRequest<'_>,
+        model: &str,
+        temperature: f64,
+        options: StreamOptions,
+    ) -> stream::BoxStream<'static, StreamResult<StreamEvent>> {
+        self.stream_chat_with_history(request.messages, model, temperature, options)
+            .map(|result| result.map(StreamEvent::from_chunk))
+            .boxed()
     }
 }
 
@@ -958,5 +1026,25 @@ mod tests {
         let message = err.to_string();
 
         assert!(message.contains("non-prompt-guided"));
+    }
+
+    #[test]
+    fn stream_event_from_chunk_preserves_final_payload() {
+        let event = StreamEvent::from_chunk(StreamChunk::error("streaming unsupported"));
+
+        match event {
+            StreamEvent::TextDelta(chunk) => {
+                assert!(chunk.is_final);
+                assert_eq!(chunk.delta, "streaming unsupported");
+            }
+            StreamEvent::Final => panic!("final payload was dropped"),
+            _ => panic!("unexpected event variant"),
+        }
+    }
+
+    #[test]
+    fn stream_event_from_chunk_maps_empty_final_chunk_to_final_event() {
+        let event = StreamEvent::from_chunk(StreamChunk::final_chunk());
+        assert!(matches!(event, StreamEvent::Final));
     }
 }

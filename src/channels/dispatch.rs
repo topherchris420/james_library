@@ -1,7 +1,7 @@
 use super::{
-    interruption_scope_key, is_stop_command, log_worker_join_result, process_channel_message,
-    traits, Arc, AtomicU64, CancellationToken, ChannelRuntimeContext, HashMap,
-    InFlightSenderTaskState, InFlightTaskCompletion, Ordering, SendMessage,
+    Arc, AtomicU64, CancellationToken, ChannelRuntimeContext, HashMap, InFlightSenderTaskState,
+    InFlightTaskCompletion, Ordering, SendMessage, interruption_scope_key, is_stop_command,
+    log_worker_join_result, process_channel_message, traits,
 };
 
 pub(super) async fn run_message_dispatch_loop(
