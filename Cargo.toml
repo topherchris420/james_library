@@ -39,7 +39,7 @@ clap = { version = "4.5", features = ["derive"] }
 clap_complete = "4.5"
 
 # Async runtime - feature-optimized for size
-tokio = { version = "1.50", default-features = false, features = ["rt-multi-thread", "macros", "time", "net", "io-util", "sync", "process", "io-std", "fs", "signal"] }
+tokio = { version = "1.51", default-features = false, features = ["rt-multi-thread", "macros", "time", "net", "io-util", "sync", "process", "io-std", "fs", "signal"] }
 tokio-util = { version = "0.7", default-features = false }
 tokio-stream = { version = "0.1.18", default-features = false, features = ["fs", "sync"] }
 
@@ -92,7 +92,7 @@ indicatif = "0.18"
 tempfile = "3.26"
 
 # Zip extraction for ClawhHub / OpenClaw registry installers
-zip = { version = "8.3", default-features = false, features = ["deflate"] }
+zip = { version = "8.5", default-features = false, features = ["deflate"] }
 
 # Error handling
 anyhow = "1.0"
@@ -102,7 +102,7 @@ thiserror = "2.0"
 aardvark-sys = { path = "crates/aardvark-sys", version = "0.1.0" }
 
 # UUID generation
-uuid = { version = "1.22", default-features = false, features = ["v4", "std"] }
+uuid = { version = "1.23", default-features = false, features = ["v4", "std"] }
 
 # Authenticated encryption (AEAD) for secret store
 chacha20poly1305 = "0.10"
@@ -162,7 +162,7 @@ tokio-rustls = "0.26.4"
 webpki-roots = "1.0.6"
 
 # email
-lettre = { version = "0.11.19", default-features = false, features = ["builder", "smtp-transport", "rustls-tls"] }
+lettre = { version = "0.11.21", default-features = false, features = ["builder", "smtp-transport", "rustls-tls"] }
 mail-parser = "0.11.2"
 async-imap = { version = "0.11",features = ["runtime-tokio"], default-features = false }
 
@@ -199,7 +199,7 @@ probe-rs = { version = "0.31", optional = true }
 pdf-extract = { version = "0.10", optional = true }
 
 # WASM plugin runtime (extism)
-extism = { version = "1.20", optional = true }
+extism = { version = "1.21", optional = true }
 
 # Terminal QR rendering for WhatsApp Web pairing flow.
 qrcode = { version = "0.14", optional = true }
