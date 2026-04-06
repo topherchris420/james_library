@@ -7,6 +7,7 @@
 use crate::config::PeripheralBoardConfig;
 use crate::peripherals::Peripheral;
 use crate::tools::traits::{Tool, ToolResult};
+use crate::verifiable_intent::approval_registry::ensure_high_stakes_approved;
 use async_trait::async_trait;
 use portable_atomic::{AtomicU64, Ordering};
 use serde_json::{json, Value};
@@ -253,6 +254,10 @@ impl Tool for GpioWriteTool {
                 "value": {
                     "type": "integer",
                     "description": "0 for low, 1 for high"
+                },
+                "approval_request_id": {
+                    "type": "string",
+                    "description": "Required operator-approved request ID for physical broadcast actions."
                 }
             },
             "required": ["pin", "value"]
@@ -260,6 +265,14 @@ impl Tool for GpioWriteTool {
     }
 
     async fn execute(&self, args: Value) -> anyhow::Result<ToolResult> {
+        if let Err(error) = ensure_high_stakes_approved(&args, "gpio_write", "gpio_write") {
+            return Ok(ToolResult {
+                success: false,
+                output: String::new(),
+                error: Some(error.to_string()),
+            });
+        }
+
         let pin = args
             .get("pin")
             .and_then(|v| v.as_u64())

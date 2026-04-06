@@ -28,6 +28,7 @@
 //! surface is handled by the tool layer (see `src/tools/`). Config schema
 //! entries live in `src/config/schema.rs`.
 
+pub mod approval_registry;
 pub mod crypto;
 pub mod error;
 pub mod issuance;

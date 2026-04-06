@@ -5,6 +5,7 @@
 //! manual IDE or file editing.
 
 use crate::tools::traits::{Tool, ToolResult};
+use crate::verifiable_intent::approval_registry::ensure_high_stakes_approved;
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use std::process::Command;
@@ -38,6 +39,10 @@ impl Tool for ArduinoUploadTool {
                 "code": {
                     "type": "string",
                     "description": "Full Arduino sketch code (complete .ino file content)"
+                },
+                "approval_request_id": {
+                    "type": "string",
+                    "description": "Required operator-approved request ID for physical broadcast actions."
                 }
             },
             "required": ["code"]
@@ -45,6 +50,14 @@ impl Tool for ArduinoUploadTool {
     }
 
     async fn execute(&self, args: Value) -> anyhow::Result<ToolResult> {
+        if let Err(error) = ensure_high_stakes_approved(&args, "arduino_upload", "upload") {
+            return Ok(ToolResult {
+                success: false,
+                output: String::new(),
+                error: Some(error.to_string()),
+            });
+        }
+
         let code = args
             .get("code")
             .and_then(|v| v.as_str())

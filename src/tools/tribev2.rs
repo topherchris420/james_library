@@ -9,6 +9,7 @@
 use super::traits::{Tool, ToolResult};
 use crate::security::policy::ToolOperation;
 use crate::security::SecurityPolicy;
+use crate::verifiable_intent::approval_registry::ensure_high_stakes_approved;
 use async_trait::async_trait;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -191,6 +192,11 @@ impl Tool for TribeV2Tool {
                     "description": "For 'video'/'audio': absolute file path accessible to the \
                                     sidecar. For 'text': the raw text string. Required for \
                                     'predict' action."
+                },
+                "approval_request_id": {
+                    "type": "string",
+                    "description": "Required for high-stakes predict calls. Must reference an \
+                                    operator-approved request in the approval registry."
                 }
             },
             "required": []
@@ -232,6 +238,15 @@ impl Tool for TribeV2Tool {
                 }),
             },
             "predict" => {
+                if let Err(error) = ensure_high_stakes_approved(&args, "tribev2_predict", "predict")
+                {
+                    return Ok(ToolResult {
+                        success: false,
+                        output: String::new(),
+                        error: Some(error.to_string()),
+                    });
+                }
+
                 let input_type = match args.get("input_type").and_then(|v| v.as_str()) {
                     Some(t) if matches!(t, "video" | "audio" | "text") => t,
                     Some(t) => {
@@ -298,6 +313,13 @@ impl Tool for TribeV2Tool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::verifiable_intent::approval_registry::{
+        global_approval_registry, ApprovalRequest, OperatorApprovalPayload, RiskClass,
+    };
+    use crate::verifiable_intent::crypto::b64u_encode;
+    use ring::rand::SystemRandom;
+    use ring::signature::{EcdsaKeyPair, KeyPair, ECDSA_P256_SHA256_FIXED_SIGNING};
+    use uuid::Uuid;
 
     fn make_tool() -> TribeV2Tool {
         TribeV2Tool::new(
@@ -305,6 +327,42 @@ mod tests {
             120,
             Arc::new(SecurityPolicy::default()),
         )
+    }
+
+    fn approved_request_id(action: &str) -> String {
+        let rng = SystemRandom::new();
+        let pkcs8 = EcdsaKeyPair::generate_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, &rng).unwrap();
+        let key_pair =
+            EcdsaKeyPair::from_pkcs8(&ECDSA_P256_SHA256_FIXED_SIGNING, pkcs8.as_ref(), &rng)
+                .unwrap();
+
+        let request = ApprovalRequest::new(
+            format!("req-{}", Uuid::new_v4()),
+            "agent-test",
+            action,
+            RiskClass::HighCostInference,
+            300,
+            format!("nonce-{}", Uuid::new_v4()),
+        )
+        .unwrap();
+
+        let signature = key_pair
+            .sign(&rng, request.request_hash.as_bytes())
+            .unwrap();
+        let payload = OperatorApprovalPayload {
+            request_id: request.request_id.clone(),
+            operator_id: "operator-test".into(),
+            request_hash: request.request_hash.clone(),
+            signed_at_unix: request.timestamp_unix,
+            signature_b64u: b64u_encode(signature.as_ref()),
+        };
+
+        let mut registry = global_approval_registry().lock().unwrap();
+        registry.submit(request).unwrap();
+        registry
+            .verify_and_approve(&payload, key_pair.public_key().as_ref())
+            .unwrap();
+        payload.request_id
     }
 
     #[test]
@@ -419,8 +477,9 @@ mod tests {
 
     #[tokio::test]
     async fn execute_missing_input_type_returns_error() {
+        let approval_request_id = approved_request_id("tribev2_predict:missing_input_type");
         let result = make_tool()
-            .execute(json!({"action": "predict", "input_value": "hello"}))
+            .execute(json!({"action": "predict", "input_value": "hello", "approval_request_id": approval_request_id}))
             .await
             .unwrap();
         assert!(!result.success);
@@ -429,8 +488,9 @@ mod tests {
 
     #[tokio::test]
     async fn execute_missing_input_value_returns_error() {
+        let approval_request_id = approved_request_id("tribev2_predict:missing_input_value");
         let result = make_tool()
-            .execute(json!({"action": "predict", "input_type": "text"}))
+            .execute(json!({"action": "predict", "input_type": "text", "approval_request_id": approval_request_id}))
             .await
             .unwrap();
         assert!(!result.success);
@@ -439,8 +499,9 @@ mod tests {
 
     #[tokio::test]
     async fn execute_invalid_input_type_returns_error() {
+        let approval_request_id = approved_request_id("tribev2_predict:invalid_input_type");
         let result = make_tool()
-            .execute(json!({"action": "predict", "input_type": "image", "input_value": "test"}))
+            .execute(json!({"action": "predict", "input_type": "image", "input_value": "test", "approval_request_id": approval_request_id}))
             .await
             .unwrap();
         assert!(!result.success);
@@ -449,8 +510,9 @@ mod tests {
 
     #[tokio::test]
     async fn execute_empty_input_value_returns_error() {
+        let approval_request_id = approved_request_id("tribev2_predict:empty_input_value");
         let result = make_tool()
-            .execute(json!({"action": "predict", "input_type": "text", "input_value": "   "}))
+            .execute(json!({"action": "predict", "input_type": "text", "input_value": "   ", "approval_request_id": approval_request_id}))
             .await
             .unwrap();
         assert!(!result.success);
