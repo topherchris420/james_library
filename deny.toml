@@ -19,6 +19,10 @@ ignore = [
     { id = "RUSTSEC-2026-0006", reason = "wasmtime segfault via extism; awaiting extism upgrade" },
     { id = "RUSTSEC-2026-0020", reason = "WASI resource exhaustion via extism; awaiting extism upgrade" },
     { id = "RUSTSEC-2026-0021", reason = "WASI http fields panic via extism; awaiting extism upgrade" },
+    # rustls-webpki CRL matching bug — transitive via rumqttc; no upstream fix yet
+    { id = "RUSTSEC-2026-0049", reason = "rustls-webpki CRL bug via rumqttc; awaiting rumqttc upgrade" },
+    # rustls-pemfile unmaintained — latest version 2.2.0, no replacement available
+    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile unmaintained; latest version, no alternative" },
 ]
 
 [licenses]
