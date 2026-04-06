@@ -139,7 +139,7 @@ python rain_lab.py
 Double-click INSTALL_RAIN.cmd
 ```
 
-**From source (all platforms):**
+**From source (macOS / Linux):**
 ```bash
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
@@ -147,6 +147,16 @@ uv python install 3.12
 uv venv .venv --python 3.12
 uv pip sync --python .venv/bin/python requirements-dev-pinned.txt
 uv run --python .venv/bin/python rain_lab.py --mode first-run
+```
+
+**From source (Windows):**
+```powershell
+git clone https://github.com/topherchris420/james_library.git
+cd james_library
+uv python install 3.12
+uv venv .venv --python 3.12
+uv pip sync --python .venv\Scripts\python.exe requirements-dev-pinned.txt
+uv run --python .venv\Scripts\python.exe rain_lab.py --mode first-run
 ```
 
 Press Enter for demo mode, or connect to LM Studio / Ollama for full local operation.

@@ -25,7 +25,7 @@
 
 ## James 的完整能力
 
-James 不仅仅是多代理聊天 — 它是一个完整的研究操作系统：10+ 模型提供商、25+ 消息平台、60+ 内置工具、硬件外设控制（Arduino、STM32、树莓派）、神经科学脑编码模型（TRIBE v2）、知识图谱、语义记忆等。完整列表请参阅英文主页 [`README.md` - What James Can Actually Do](README.md#what-james-can-actually-do)。
+James 不仅仅是多代理聊天 — 它是一个完整的研究操作系统：10+ 模型提供商、25+ 消息平台、60+ 内置工具、硬件外设控制（Arduino、STM32、树莓派）、神经科学脑编码模型（TRIBE v2）、知识图谱、语义记忆等。完整列表请参阅英文主页 [`README.md` - What You Can Do](README.md#what-you-can-do)。
 
 ## 适用人群
 

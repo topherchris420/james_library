@@ -25,7 +25,7 @@
 
 ## James の全機能
 
-James は単なるマルチエージェントチャットではなく、完全な研究オペレーティングシステムです：10以上のモデルプロバイダ、25以上のメッセージングプラットフォーム、60以上の組み込みツール、ハードウェア制御（Arduino、STM32、Raspberry Pi）、神経科学の脳エンコーディングモデル（TRIBE v2）、ナレッジグラフ、セマンティックメモリなど。詳細は英語版 [`README.md` - What James Can Actually Do](README.md#what-james-can-actually-do) をご覧ください。
+James は単なるマルチエージェントチャットではなく、完全な研究オペレーティングシステムです：10以上のモデルプロバイダ、25以上のメッセージングプラットフォーム、60以上の組み込みツール、ハードウェア制御（Arduino、STM32、Raspberry Pi）、神経科学の脳エンコーディングモデル（TRIBE v2）、ナレッジグラフ、セマンティックメモリなど。詳細は英語版 [`README.md` - What You Can Do](README.md#what-you-can-do) をご覧ください。
 
 ## 対象ユーザー
 
