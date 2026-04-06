@@ -187,14 +187,23 @@ impl ApprovalRegistry {
         Ok(())
     }
 
-    pub fn can_execute(&mut self, request_id: &str) -> anyhow::Result<()> {
+    pub fn can_execute(
+        &mut self,
+        request_id: &str,
+        expected_requested_action_prefix: &str,
+        expected_risk_class: RiskClass,
+    ) -> anyhow::Result<()> {
         let now = unix_timestamp_now()?;
         let record = self
             .requests
             .get_mut(request_id)
             .ok_or_else(|| anyhow!("missing approval request: {request_id}"))?;
 
-        if record.state == ApprovalState::Pending && record.request.is_expired(now) {
+        if matches!(
+            record.state,
+            ApprovalState::Pending | ApprovalState::Approved
+        ) && record.request.is_expired(now)
+        {
             record.state = ApprovalState::Expired;
         }
 
@@ -202,6 +211,27 @@ impl ApprovalRegistry {
             bail!(
                 "execution blocked: request_id {request_id} is {:?}",
                 record.state
+            );
+        }
+
+        if record.request.risk_class != expected_risk_class {
+            bail!(
+                "execution blocked: request_id {request_id} risk class mismatch (expected {:?}, got {:?})",
+                expected_risk_class,
+                record.request.risk_class
+            );
+        }
+
+        let expected_with_separator = format!("{expected_requested_action_prefix}:");
+        if !(record.request.requested_action == expected_requested_action_prefix
+            || record
+                .request
+                .requested_action
+                .starts_with(&expected_with_separator))
+        {
+            bail!(
+                "execution blocked: request_id {request_id} action mismatch (expected prefix '{expected_requested_action_prefix}', got '{}')",
+                record.request.requested_action
             );
         }
 
@@ -230,24 +260,38 @@ pub fn classify_high_stakes(tool_name: &str, action: &str) -> Option<HighStakesC
     }
 }
 
+fn risk_class_for_high_stakes(class: HighStakesClass) -> RiskClass {
+    match class {
+        HighStakesClass::PhysicalBroadcast => RiskClass::PhysicalBroadcast,
+        HighStakesClass::HighCostTribeV2Inference => RiskClass::HighCostInference,
+    }
+}
+
 pub fn ensure_high_stakes_approved(
     args: &serde_json::Value,
     tool_name: &str,
     action: &str,
 ) -> anyhow::Result<()> {
-    if classify_high_stakes(tool_name, action).is_none() {
-        return Ok(());
-    }
+    let class = match classify_high_stakes(tool_name, action) {
+        Some(class) => class,
+        None => return Ok(()),
+    };
 
     let request_id = args
         .get("approval_request_id")
         .and_then(serde_json::Value::as_str)
         .ok_or_else(|| anyhow!("missing required 'approval_request_id' for high-stakes action"))?;
+    let expected_requested_action_prefix = format!("{tool_name}:{action}");
+    let expected_risk_class = risk_class_for_high_stakes(class);
 
     let mut registry = global_approval_registry()
         .lock()
         .map_err(|_| anyhow!("approval registry lock poisoned"))?;
-    registry.can_execute(request_id)
+    registry.can_execute(
+        request_id,
+        expected_requested_action_prefix.as_str(),
+        expected_risk_class,
+    )
 }
 
 pub fn global_approval_registry() -> &'static Mutex<ApprovalRegistry> {
@@ -413,6 +457,100 @@ mod tests {
             .verify_and_approve(&payload, key_pair.public_key().as_ref())
             .unwrap();
         assert_eq!(registry.state("req-ok"), Some(ApprovalState::Approved));
-        registry.can_execute("req-ok").unwrap();
+        registry
+            .can_execute("req-ok", "gpio_write:pin13=1", RiskClass::PhysicalBroadcast)
+            .unwrap();
+    }
+
+    #[test]
+    fn approved_request_expires_at_execution_time() {
+        let key_pair = generate_keypair();
+        let mut request = ApprovalRequest::new(
+            "req-exp-approved",
+            "agent-a",
+            "tribev2_predict:predict",
+            RiskClass::HighCostInference,
+            120,
+            "nonce-exp-approved",
+        )
+        .unwrap();
+        request.expires_at_unix = request.timestamp_unix - 1;
+        request.request_hash = request.compute_request_hash();
+
+        let payload = OperatorApprovalPayload {
+            request_id: request.request_id.clone(),
+            operator_id: "op-1".into(),
+            request_hash: request.request_hash.clone(),
+            signed_at_unix: request.timestamp_unix - 2,
+            signature_b64u: sign_payload(&request.request_hash, &key_pair),
+        };
+
+        let mut registry = ApprovalRegistry::default();
+        registry.submit(request).unwrap();
+        // Force-approved to validate execution-time expiry behavior.
+        if let Some(record) = registry.requests.get_mut("req-exp-approved") {
+            record.state = ApprovalState::Approved;
+            record.operator_id = Some("op-1".into());
+            record.approved_at_unix = Some(payload.signed_at_unix);
+        }
+
+        let err = registry
+            .can_execute(
+                "req-exp-approved",
+                "tribev2_predict:predict",
+                RiskClass::HighCostInference,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("is Expired"));
+        assert_eq!(
+            registry.state("req-exp-approved"),
+            Some(ApprovalState::Expired)
+        );
+    }
+
+    #[test]
+    fn execution_rejects_mismatched_action_binding() {
+        let key_pair = generate_keypair();
+        let request = ApprovalRequest::new(
+            "req-action-mismatch",
+            "agent-a",
+            "tribev2_predict:predict",
+            RiskClass::HighCostInference,
+            120,
+            "nonce-action-mismatch",
+        )
+        .unwrap();
+
+        let payload = OperatorApprovalPayload {
+            request_id: request.request_id.clone(),
+            operator_id: "op-1".into(),
+            request_hash: request.request_hash.clone(),
+            signed_at_unix: request.timestamp_unix,
+            signature_b64u: sign_payload(&request.request_hash, &key_pair),
+        };
+
+        let mut registry = ApprovalRegistry::default();
+        registry.submit(request).unwrap();
+        registry
+            .verify_and_approve(&payload, key_pair.public_key().as_ref())
+            .unwrap();
+
+        let risk_err = registry
+            .can_execute(
+                "req-action-mismatch",
+                "gpio_write:gpio_write",
+                RiskClass::PhysicalBroadcast,
+            )
+            .unwrap_err();
+        assert!(risk_err.to_string().contains("risk class mismatch"));
+
+        let action_err = registry
+            .can_execute(
+                "req-action-mismatch",
+                "tribev2_predict:health",
+                RiskClass::HighCostInference,
+            )
+            .unwrap_err();
+        assert!(action_err.to_string().contains("action mismatch"));
     }
 }
