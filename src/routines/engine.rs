@@ -8,8 +8,9 @@ use std::time::Instant;
 /// Engine that evaluates incoming events against configured routines.
 pub struct RoutinesEngine {
     routines: Vec<Routine>,
-    /// Pre-compiled regex patterns keyed by routine name.
-    compiled_regexes: HashMap<String, regex::Regex>,
+    /// Pre-compiled regex patterns, parallel to `routines`.
+    /// `Some(re)` for routines with `MatchStrategy::Regex`, `None` otherwise.
+    compiled_regexes: Vec<Option<regex::Regex>>,
     /// Last-fired timestamps for cooldown enforcement.
     cooldowns: Mutex<HashMap<String, Instant>>,
 }
@@ -20,20 +21,26 @@ impl RoutinesEngine {
     /// Regex patterns are compiled eagerly so invalid patterns surface at
     /// configuration time and matching does not pay compilation cost per event.
     pub fn new(routines: Vec<Routine>) -> Self {
-        let mut compiled_regexes = HashMap::new();
-        for routine in &routines {
-            if matches!(routine.event.strategy, MatchStrategy::Regex) {
-                if let Ok(re) = regex::Regex::new(&routine.event.pattern) {
-                    compiled_regexes.insert(routine.name.clone(), re);
+        let compiled_regexes = routines
+            .iter()
+            .map(|routine| {
+                if matches!(routine.event.strategy, MatchStrategy::Regex) {
+                    match regex::Regex::new(&routine.event.pattern) {
+                        Ok(re) => Some(re),
+                        Err(_) => {
+                            tracing::warn!(
+                                "routine '{}': invalid regex pattern '{}', will never match",
+                                routine.name,
+                                routine.event.pattern,
+                            );
+                            None
+                        }
+                    }
                 } else {
-                    tracing::warn!(
-                        "routine '{}': invalid regex pattern '{}', will never match",
-                        routine.name,
-                        routine.event.pattern,
-                    );
+                    None
                 }
-            }
-        }
+            })
+            .collect();
         Self {
             routines,
             compiled_regexes,
@@ -45,7 +52,7 @@ impl RoutinesEngine {
     pub fn evaluate(&self, event: &RoutineEvent) -> Vec<RoutineDispatchResult> {
         let mut results = Vec::new();
 
-        for routine in &self.routines {
+        for (idx, routine) in self.routines.iter().enumerate() {
             if !routine.enabled {
                 continue;
             }
@@ -55,7 +62,7 @@ impl RoutinesEngine {
             }
 
             if !self.matches(
-                &routine.name,
+                idx,
                 &routine.event.strategy,
                 &routine.event.pattern,
                 &event.payload,
@@ -86,7 +93,7 @@ impl RoutinesEngine {
 
     fn matches(
         &self,
-        routine_name: &str,
+        routine_idx: usize,
         strategy: &MatchStrategy,
         pattern: &str,
         payload: &str,
@@ -96,7 +103,8 @@ impl RoutinesEngine {
             MatchStrategy::Glob => glob_match(pattern, payload),
             MatchStrategy::Regex => self
                 .compiled_regexes
-                .get(routine_name)
+                .get(routine_idx)
+                .and_then(|opt| opt.as_ref())
                 .map(|re| re.is_match(payload))
                 .unwrap_or(false),
         }
