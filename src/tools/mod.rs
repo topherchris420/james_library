@@ -86,6 +86,7 @@ pub mod tool_search;
 pub mod toolbox_manager;
 pub mod traits;
 pub mod tribev2;
+pub mod vault_lock;
 pub mod verifiable_intent;
 pub mod weather_tool;
 pub mod web_fetch;
