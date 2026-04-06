@@ -173,6 +173,10 @@ pub trait Memory: Send + Sync {
     }
 
     /// Recall memories within a specific namespace.
+    ///
+    /// The default implementation over-fetches from `recall()` and filters
+    /// client-side. Backends that support native namespace filtering should
+    /// override this for efficiency.
     async fn recall_namespaced(
         &self,
         namespace: &str,
@@ -182,12 +186,23 @@ pub trait Memory: Send + Sync {
         since: Option<&str>,
         until: Option<&str>,
     ) -> anyhow::Result<Vec<MemoryEntry>> {
-        let mut entries = self.recall(query, limit, session_id, since, until).await?;
+        // Over-fetch to compensate for entries discarded by the namespace
+        // filter. A multiplier of 4 is a reasonable heuristic; backends
+        // that support native namespace queries should override this method.
+        let fetch_limit = limit.saturating_mul(4).max(limit);
+        let mut entries = self
+            .recall(query, fetch_limit, session_id, since, until)
+            .await?;
         entries.retain(|e| e.namespace == namespace);
+        entries.truncate(limit);
         Ok(entries)
     }
 
     /// Export memories matching a filter (GDPR Art. 20 data portability).
+    ///
+    /// The default implementation applies namespace and time-range filters
+    /// client-side using RFC 3339 string comparison. Backends with native
+    /// time-range support should override for efficiency.
     async fn export(&self, filter: &ExportFilter) -> anyhow::Result<Vec<MemoryEntry>> {
         let category_filter = filter.category.as_ref();
         let session_filter = filter.session_id.as_deref();
@@ -196,7 +211,12 @@ pub trait Memory: Send + Sync {
         if let Some(ns) = &filter.namespace {
             entries.retain(|e| e.namespace == *ns);
         }
-        // Time-range filtering is left to backend implementations that support it.
+        if let Some(since) = &filter.since {
+            entries.retain(|e| e.timestamp.as_str() >= since.as_str());
+        }
+        if let Some(until) = &filter.until {
+            entries.retain(|e| e.timestamp.as_str() <= until.as_str());
+        }
         Ok(entries)
     }
 

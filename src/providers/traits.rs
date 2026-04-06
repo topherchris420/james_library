@@ -195,15 +195,20 @@ pub enum StreamEvent {
     PreExecutedToolCall { name: String, args: String },
     /// The result of a pre-executed tool call.
     PreExecutedToolResult { name: String, output: String },
-    /// End of stream.
-    Final,
+    /// End of stream, optionally carrying a final payload (e.g. error message).
+    Final(Option<StreamChunk>),
 }
 
 impl StreamEvent {
     /// Convert a `StreamChunk` into a `StreamEvent`.
     pub(crate) fn from_chunk(chunk: StreamChunk) -> Self {
-        if chunk.is_final && chunk.delta.is_empty() && chunk.reasoning.is_none() {
-            Self::Final
+        if chunk.is_final {
+            let payload = if chunk.delta.is_empty() && chunk.reasoning.is_none() {
+                None
+            } else {
+                Some(chunk)
+            };
+            Self::Final(payload)
         } else {
             Self::TextDelta(chunk)
         }
@@ -1033,11 +1038,11 @@ mod tests {
         let event = StreamEvent::from_chunk(StreamChunk::error("streaming unsupported"));
 
         match event {
-            StreamEvent::TextDelta(chunk) => {
+            StreamEvent::Final(Some(chunk)) => {
                 assert!(chunk.is_final);
                 assert_eq!(chunk.delta, "streaming unsupported");
             }
-            StreamEvent::Final => panic!("final payload was dropped"),
+            StreamEvent::Final(None) => panic!("final payload was dropped"),
             _ => panic!("unexpected event variant"),
         }
     }
@@ -1045,6 +1050,6 @@ mod tests {
     #[test]
     fn stream_event_from_chunk_maps_empty_final_chunk_to_final_event() {
         let event = StreamEvent::from_chunk(StreamChunk::final_chunk());
-        assert!(matches!(event, StreamEvent::Final));
+        assert!(matches!(event, StreamEvent::Final(None)));
     }
 }

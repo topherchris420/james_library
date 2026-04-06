@@ -8,15 +8,35 @@ use std::time::Instant;
 /// Engine that evaluates incoming events against configured routines.
 pub struct RoutinesEngine {
     routines: Vec<Routine>,
+    /// Pre-compiled regex patterns keyed by routine name.
+    compiled_regexes: HashMap<String, regex::Regex>,
     /// Last-fired timestamps for cooldown enforcement.
     cooldowns: Mutex<HashMap<String, Instant>>,
 }
 
 impl RoutinesEngine {
     /// Create a new engine with the given routines.
+    ///
+    /// Regex patterns are compiled eagerly so invalid patterns surface at
+    /// configuration time and matching does not pay compilation cost per event.
     pub fn new(routines: Vec<Routine>) -> Self {
+        let mut compiled_regexes = HashMap::new();
+        for routine in &routines {
+            if matches!(routine.event.strategy, MatchStrategy::Regex) {
+                if let Ok(re) = regex::Regex::new(&routine.event.pattern) {
+                    compiled_regexes.insert(routine.name.clone(), re);
+                } else {
+                    tracing::warn!(
+                        "routine '{}': invalid regex pattern '{}', will never match",
+                        routine.name,
+                        routine.event.pattern,
+                    );
+                }
+            }
+        }
         Self {
             routines,
+            compiled_regexes,
             cooldowns: Mutex::new(HashMap::new()),
         }
     }
@@ -35,6 +55,7 @@ impl RoutinesEngine {
             }
 
             if !self.matches(
+                &routine.name,
                 &routine.event.strategy,
                 &routine.event.pattern,
                 &event.payload,
@@ -63,11 +84,19 @@ impl RoutinesEngine {
         results
     }
 
-    fn matches(&self, strategy: &MatchStrategy, pattern: &str, payload: &str) -> bool {
+    fn matches(
+        &self,
+        routine_name: &str,
+        strategy: &MatchStrategy,
+        pattern: &str,
+        payload: &str,
+    ) -> bool {
         match strategy {
             MatchStrategy::Exact => payload == pattern,
             MatchStrategy::Glob => glob_match(pattern, payload),
-            MatchStrategy::Regex => regex::Regex::new(pattern)
+            MatchStrategy::Regex => self
+                .compiled_regexes
+                .get(routine_name)
                 .map(|re| re.is_match(payload))
                 .unwrap_or(false),
         }
