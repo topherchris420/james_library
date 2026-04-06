@@ -23,7 +23,7 @@ pub struct ExportFilter {
     pub until: Option<String>,
 }
 
-fn default_namespace() -> String {
+pub(crate) fn default_namespace() -> String {
     "default".to_string()
 }
 
