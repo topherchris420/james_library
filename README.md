@@ -6,6 +6,8 @@ R.A.I.N. Lab assembles James (lead scientist), Jasmine (hardware architect), Luc
 
 <p align="center">
   <img src="assets/rain_lab.png" alt="R.A.I.N. Lab" width="600">
+  <br><br>
+  <img src="assets/hello-preview.gif" alt="R.A.I.N. Lab in action" width="300">
 </p>
 
 ---
