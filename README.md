@@ -4,7 +4,9 @@
 
 R.A.I.N. Lab assembles James (lead scientist), Jasmine (hardware architect), Luca (geometer), and Elena (logician) around your research question. They don't all agree. That's the point.
 
-![R.A.I.N. Lab — four agents debating your research question](docs/assets/rain-lab-banner.png)
+<p align="center">
+  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab" width="600">
+</p>
 
 ---
 
