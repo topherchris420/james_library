@@ -520,7 +520,7 @@ pub async fn start_channels(config: Config) -> Result<()> {
         api_path: config.api_path.clone(),
     };
     let provider: Arc<dyn Provider> = Arc::from(
-        create_resilient_provider_nonblocking(
+        crate::channels::provider::create_resilient_provider_nonblocking(
             &provider_name,
             config.api_key.clone(),
             config.api_url.clone(),
@@ -917,7 +917,7 @@ pub async fn start_channels(config: Config) -> Result<()> {
         min_relevance_score: config.memory.min_relevance_score,
         conversation_histories: Arc::new(Mutex::new(HashMap::new())),
         pending_new_sessions: Arc::new(Mutex::new(HashSet::new())),
-        provider_cache: Arc::new(Mutex::new(provider_cache_seed)),
+        provider_cache: Arc::new(parking_lot::Mutex::new(provider_cache_seed)),
         route_overrides: Arc::new(Mutex::new(HashMap::new())),
         api_key: config.api_key.clone(),
         api_url: config.api_url.clone(),

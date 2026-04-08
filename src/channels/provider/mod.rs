@@ -287,7 +287,7 @@ pub fn build_providers_help_response(current: &ChannelRouteSelection) -> String 
 // ============================================================================
 
 /// Create a resilient provider in a blocking task to avoid blocking async runtime.
-async fn create_resilient_provider_nonblocking(
+pub(crate) async fn create_resilient_provider_nonblocking(
     provider_name: &str,
     api_key: Option<String>,
     api_url: Option<String>,

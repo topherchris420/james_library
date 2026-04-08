@@ -3625,8 +3625,8 @@ mod tests {
         let msg1 = make_msg("100.000");
         let msg2 = make_msg("200.000");
 
-        let key1 = super::super::conversation_history_key(&msg1);
-        let key2 = super::super::conversation_history_key(&msg2);
+        let key1 = crate::channels::runtime_state::conversation_history_key(&msg1);
+        let key2 = crate::channels::runtime_state::conversation_history_key(&msg2);
         assert_eq!(key1, key2, "session key should be stable across messages");
     }
 
@@ -3651,8 +3651,8 @@ mod tests {
         let msg1 = make_msg("100.000");
         let msg2 = make_msg("200.000");
 
-        let key1 = super::super::conversation_history_key(&msg1);
-        let key2 = super::super::conversation_history_key(&msg2);
+        let key1 = crate::channels::runtime_state::conversation_history_key(&msg1);
+        let key2 = crate::channels::runtime_state::conversation_history_key(&msg2);
         assert_ne!(key1, key2, "session key should differ per thread");
     }
 

@@ -296,7 +296,7 @@ pub(crate) async fn maybe_apply_runtime_config_update(ctx: &ChannelRuntimeContex
     }
 
     {
-        let mut cache = ctx.provider_cache.lock().unwrap_or_else(|e| e.into_inner());
+        let mut cache = ctx.provider_cache.lock();
         cache.clear();
         cache.insert(
             next_defaults.default_provider.clone(),
