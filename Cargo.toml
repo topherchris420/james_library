@@ -339,7 +339,7 @@ tempfile = "3.26"
 criterion = { version = "0.8", features = ["async_tokio"] }
 wiremock = "0.6"
 scopeguard = "1.2"
-rcgen = "0.13"
+rcgen = "0.14"
 
 [[test]]
 name = "component"
