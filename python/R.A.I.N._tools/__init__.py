@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import shlex
+import subprocess
+from pathlib import Path
 from typing import Any, Callable, TypeVar
 
 T = TypeVar("T", bound=Callable[..., Any])
-
 
 def tool(name: str | None = None, description: str | None = None) -> Callable[[T], T]:
     """Decorator to mark a function as a R.A.I.N. tool."""
@@ -20,7 +23,6 @@ def tool(name: str | None = None, description: str | None = None) -> Callable[[T
 
     return decorator
 
-
 class ShellTool:
     """Shell execution tool."""
 
@@ -33,12 +35,35 @@ class ShellTool:
                 "ShellTool.ainvoke cannot be called from an active event loop. "
                 "Use agent.ainvoke() instead."
             )
-        import subprocess
+        if os.getenv("RAIN_TOOLS_ENABLE_SHELL") != "1":
+            return "Error: shell tool is disabled by default. Set RAIN_TOOLS_ENABLE_SHELL=1 to enable."
 
         command = input.get("command", "")
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        if not isinstance(command, str) or not command.strip():
+            return "Error: command must be a non-empty string"
+
+        try:
+            argv = shlex.split(command)
+        except ValueError as exc:
+            return f"Error: invalid command: {exc}"
+
+        result = subprocess.run(argv, shell=False, capture_output=True, text=True)
         return result.stdout or result.stderr
 
+def _workspace_root() -> Path:
+    return Path(os.getenv("RAIN_TOOLS_WORKSPACE", os.getcwd())).resolve()
+
+def _resolve_workspace_path(raw_path: Any) -> Path:
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise ValueError("path must be a non-empty string")
+
+    base = _workspace_root()
+    candidate = Path(raw_path)
+    candidate = candidate if candidate.is_absolute() else (base / candidate)
+    resolved = candidate.resolve()
+
+    resolved.relative_to(base)
+    return resolved
 
 class FileReadTool:
     """File read tool."""
@@ -47,16 +72,16 @@ class FileReadTool:
     description = "Read the contents of a file."
 
     async def ainvoke(self, input: dict[str, Any]) -> str:
-        from pathlib import Path
-
-        path = Path(input.get("path", ""))
+        try:
+            path = _resolve_workspace_path(input.get("path", ""))
+        except ValueError as exc:
+            return f"Error: {exc}"
         if not path.exists():
             return f"Error: file not found: {path}"
         try:
             return path.read_text(encoding="utf-8", errors="ignore")
         except Exception as e:
             return f"Error reading file: {e}"
-
 
 class FileWriteTool:
     """File write tool."""
@@ -65,9 +90,10 @@ class FileWriteTool:
     description = "Write content to a file."
 
     async def ainvoke(self, input: dict[str, Any]) -> str:
-        from pathlib import Path
-
-        path = Path(input.get("path", ""))
+        try:
+            path = _resolve_workspace_path(input.get("path", ""))
+        except ValueError as exc:
+            return f"Error: {exc}"
         content = input.get("content", "")
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,7 +101,6 @@ class FileWriteTool:
             return f"Successfully wrote to {path}"
         except Exception as e:
             return f"Error writing file: {e}"
-
 
 class Agent:
     """Simple agent wrapper."""
@@ -94,17 +119,14 @@ class Agent:
         # Stub implementation — real LangGraph agent in full package
         return f"Agent(model={self.model}, tools={len(self.tools)})"
 
-
 def create_agent(tools: list[Any], model: str, api_key: str) -> Agent:
     """Create a R.A.I.N. agent with the given tools."""
     return Agent(tools=tools, model=model, api_key=api_key)
-
 
 # Tool singletons
 shell = ShellTool()
 file_read = FileReadTool()
 file_write = FileWriteTool()
-
 
 __all__ = [
     "tool",
