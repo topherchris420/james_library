@@ -2,6 +2,10 @@
 
 **A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
 
+<p align="center">
+  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab" width="600">
+</p>
+
 Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
 perspectives, grounds strong claims in papers or explicit evidence, and returns
 the strongest explanations, disagreements, and next moves.
@@ -10,90 +14,30 @@ Most tools help you find papers. R.A.I.N. Lab helps you think with a room full o
 
 James is the assistant inside the R.A.I.N. Lab.
 
-<p align="center">
-  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab" width="600">
-</p>
-
-<p align="center">
-  <img src="assets/rain_lab_screenshot.jpg" alt="R.A.I.N. Lab in action — James kicks off a research meeting on Phononic Morphogenetic Fields" width="800">
-</p>
-
 ---
 
 ## What It Does
 
-Most tools find papers. R.A.I.N. Lab finds disagreements.
-
-- It frames your question from four expert angles
-- It surfaces where the evidence is weak and says so
-- It shows you the strongest counter-argument to your best idea
-- It ends with next moves, not just links
-
----
-
-## Try It Now
-
-**Live demo:** [rainlabteam.vercel.app](https://rainlabteam.vercel.app/) — no setup required
-
-**On your machine:**
-
-```bash
-python rain_lab.py
-```
-
-Press Enter for demo mode, or connect to LM Studio / Ollama for full local operation.
-
-On Windows: double-click `INSTALL_RAIN.cmd` to create shortcuts.
-On macOS/Linux: run `./install.sh`.
-
----
-
-## Who It Is For
-
-R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, not just answers that sound good.
-
-| Role | What you can do with R.A.I.N. Lab |
-|------|-----------------------------------|
-| Researchers and analysts | Compare competing hypotheses, preserve disagreement, and keep auditable reasoning trails |
-| Founders and product leads | Stress-test strategic decisions through structured debate before committing roadmap or budget |
-| Operators and technical teams | Turn messy discussions into verifiable outputs that can be reviewed, shared, and replayed |
-
----
-
-## What You Can Do
-
-| You want to... | R.A.I.N. Lab does this |
-|----------------|------------------------|
-| Pressure-test a claim | Four experts poke holes from different angles |
-| Understand a new field | Get the landscape — agreements, open questions, what nobody agrees on |
-| Decide what to read next | Leaves with specific paper recommendations and why they matter |
-| Stress-test a research direction | Surfaces the strongest counter-argument before you invest months |
-| Validate a stimulus against brain science | Run TRIBE v2 fMRI predictions on video, audio, or text |
-| Keep your research private | Runs locally on your own models |
+- Turns one research question into a four-agent meeting with distinct constraints
+- Grounds strong claims in papers or explicit evidence instead of smooth talk
+- Forces the strongest counter-argument onto the page before you commit to an idea
+- Ends with concrete next moves, not just a stack of links
 
 ---
 
 ## Why It Is Different
 
-| Typical research tool | R.A.I.N. Lab |
-|-----------------------|---------------|
-| Returns a list of papers | Returns a debate |
-| Treats the first plausible answer as correct | Preserves disagreement until evidence resolves it |
-| One perspective, one model | Four voices with different expertise and constraints |
-| Cloud-first | Runs entirely local if you want |
-| Says "here's what I found" | Says "here's what might be wrong with it" |
+| You need to... | Typical research tool | R.A.I.N. Lab |
+|----------------|-----------------------|---------------|
+| Pressure-test a claim | Surfaces papers that seem relevant and stops there | Has four agents attack the claim from evidence, hardware, geometry, and formal logic |
+| Understand a new field | Gives you a search result page | Maps agreements, open questions, and where the literature still fights itself |
+| Decide what to read next | Hands you a pile of citations | Ends with the paper, experiment, or measurement most likely to validate or kill the current idea |
+| Validate a stimulus against brain science | Sends you into a separate neuroscience workflow | Runs TRIBE v2 on video, audio, or text inside the same research meeting |
+| Keep the work private | Assumes a hosted stack | Runs locally with [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/), no cloud calls, no telemetry, no data sharing |
 
 ---
 
-## Local and Private Workflow
-
-R.A.I.N. Lab runs entirely on your hardware when you want it to. Connect a local model via [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/) and nothing leaves your machine — no cloud calls, no telemetry, no data sharing.
-
----
-
-## Features
-
-### Meet the Agents
+## Meet the Agents
 
 Each agent has a distinct voice, expertise, and set of constraints they bring to every question.
 
@@ -113,19 +57,30 @@ Each agent's full personality, reasoning principles, and conversation style are 
 
 The SOUL files are part of the product. They're what make the agents feel like colleagues, not search results.
 
-### TRIBE v2 Brain Encoding
+---
 
-R.A.I.N. Lab includes a **TRIBE v2 integration** that predicts fMRI brain activation patterns from video, audio, or text. Feed a stimulus to the model and James returns predicted cortical response maps — run basic neuroscience experiments from inside a research meeting.
+## TRIBE v2 Brain Encoding
 
-- **Input:** video file, audio file, or raw text
-- **Output:** predicted fMRI activation patterns across 20,484 cortical vertices
-- **Use case:** validate whether a stimulus (image, sound, phrase) actually engages the brain regions your hypothesis claims
+R.A.I.N. Lab includes a **TRIBE v2 integration** that predicts fMRI brain activation patterns from video, audio, or text. Feed a stimulus to the model and James returns predicted cortical response maps, run basic neuroscience experiments from inside a research meeting.
 
-This is a real sidecar service (`tools/tribev2_sidecar/`) wrapping Facebook Research's TRIBE v2 model. Setup guide and API reference are in the sidecar README.
+| Capability | Detail |
+|------------|--------|
+| Input | video file, audio file, or raw text |
+| Output | predicted fMRI activation patterns across 20,484 cortical vertices |
+| Use case | validate whether a stimulus (image, sound, phrase) actually engages the brain regions your hypothesis claims |
+| Runtime | sidecar service in [`tools/tribev2_sidecar/`](tools/tribev2_sidecar/) wrapping Facebook Research's TRIBE v2 model |
+
+Want to wire it into your own workflow? Read the [TRIBE v2 sidecar README](tools/tribev2_sidecar/README.md).
 
 > **License: CC-BY-NC 4.0** — non-commercial use only.
 
-### See It In Action
+---
+
+## See It In Action
+
+<p align="center">
+  <img src="assets/rain_lab_screenshot.jpg" alt="R.A.I.N. Lab in action — James kicks off a research meeting on Phononic Morphogenetic Fields" width="800">
+</p>
 
 > **TOPIC: Could acoustic interference patterns guide molecular assembly the way DNA guides cell growth?**
 
@@ -168,12 +123,22 @@ This is a real sidecar service (`tools/tribev2_sidecar/`) wrapping Facebook Rese
 
 ---
 
-## Requirements
+## Try It Now
 
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
-- Rust toolchain (optional, for the ZeroClaw runtime layer)
-- A local model via [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/) (optional — demo mode works without one)
+**Live demo:** [rainlabteam.vercel.app](https://rainlabteam.vercel.app/) — no setup required
+
+**Requires:** Python 3.12+, [uv](https://docs.astral.sh/uv/) (recommended) or pip, and optionally a local model via [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/). Rust is optional and only needed for the ZeroClaw runtime layer.
+
+**On your machine:**
+
+```bash
+python rain_lab.py
+```
+
+Press Enter for demo mode, or connect to LM Studio / Ollama for full local operation.
+
+On Windows: double-click `INSTALL_RAIN.cmd` to create shortcuts.
+On macOS/Linux: run `./install.sh`.
 
 **From source (macOS / Linux):**
 ```bash
@@ -194,6 +159,18 @@ uv venv .venv --python 3.12
 uv pip sync --python .venv\Scripts\python.exe requirements-dev-pinned.txt
 uv run --python .venv\Scripts\python.exe rain_lab.py --mode first-run
 ```
+
+---
+
+## Who It Is For
+
+R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, not just answers that sound good.
+
+| Role | What you can do with R.A.I.N. Lab |
+|------|-----------------------------------|
+| Researchers and analysts | Compare competing hypotheses, preserve disagreement, and keep auditable reasoning trails |
+| Founders and product leads | Stress-test strategic decisions through structured debate before committing roadmap or budget |
+| Operators and technical teams | Turn messy discussions into verifiable outputs that can be reviewed, shared, and replayed |
 
 ---
 
@@ -230,6 +207,7 @@ Extend by implementing traits and registering in factory modules:
 - `src/tools/traits.rs` — Add a new tool
 - `src/memory/traits.rs` — Add a memory backend
 - `src/peripherals/traits.rs` — Add hardware board support
+- `tools/tribev2_sidecar/server.py` — Extend TRIBE v2 sidecar serving and stimulus adapters
 
 ### Quality Checks
 
@@ -254,5 +232,7 @@ The codebase follows KISS, YAGNI, DRY (rule of three), SRP/ISP, fail-fast, secur
 Special thanks to the **ZeroClaw** team for the Rust runtime engine that powers R.A.I.N. Lab under the hood. The performance, stability, and extensibility of the agent runtime wouldn't be possible without their foundational work. See the `crates/` directory for ZeroClaw runtime components.
 
 ---
+
+## License
 
 **License:** MIT -- [Vers3Dynamics](https://vers3dynamics.com/)

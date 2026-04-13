@@ -2108,6 +2108,10 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
             "godot",
             "hello-os",
             "compile",
+            "eval",
+            "replay",
+            "memory-review",
+            "memory-remediate",
             "preflight",
             "backup",
             "first-run",
@@ -2125,7 +2129,10 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
             " validate (check system), models (list AI models), status (show status),"
             " onboard (first-time"
             " setup), rlm (tool-exec), godot (chat + visual), hello-os"
-            " (executable), compile (build knowledge), preflight (env checks),"
+            " (executable), compile (build knowledge), eval (score session artifacts),"
+            " replay (run gold cases + score artifacts), memory-review (build governed"
+            " memory queue), memory-remediate (create evidence-gathering tasks),"
+            " preflight (env checks),"
             " backup (snapshot), first-run (onboarding)"
         ),
     )
@@ -2299,6 +2306,32 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
         cmd = [sys.executable, str(target)]
         lib_path = args.library or str(repo_root)
         cmd.extend(["--library", lib_path])
+        cmd.extend(passthrough)
+        return cmd
+
+    if args.mode == "eval":
+        target = repo_root / "session_eval.py"
+        cmd = [sys.executable, str(target)]
+        cmd.extend(passthrough)
+        return cmd
+
+    if args.mode == "replay":
+        target = repo_root / "session_replay.py"
+        cmd = [sys.executable, str(target)]
+        if args.library:
+            cmd.extend(["--library", args.library])
+        cmd.extend(passthrough)
+        return cmd
+
+    if args.mode == "memory-review":
+        target = repo_root / "memory_governance.py"
+        cmd = [sys.executable, str(target)]
+        cmd.extend(passthrough)
+        return cmd
+
+    if args.mode == "memory-remediate":
+        target = repo_root / "memory_remediation.py"
+        cmd = [sys.executable, str(target)]
         cmd.extend(passthrough)
         return cmd
 

@@ -23,6 +23,11 @@ _UTILITY_MODULES = [
     "rain_metrics",
     "rain_unique",
     "rich_ui",
+    "session_eval",
+    "session_artifact",
+    "session_replay",
+    "memory_governance",
+    "memory_remediation",
     "tools",
     "truth_layer",
 ]

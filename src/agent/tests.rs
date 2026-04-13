@@ -26,9 +26,13 @@
 
 use crate::agent::agent::{Agent, ToolDispatchMode};
 use crate::agent::loop_::build_tool_instructions_from_specs;
+use crate::agent::session_artifact::{
+    write_single_message_artifact, write_single_message_artifact_with_memory,
+};
 use crate::agent::tool_call_parser::{parse_tool_call_value, parse_tool_calls};
 use crate::config::{AgentConfig, MemoryConfig};
 use crate::memory::{self, Memory};
+use crate::memory::{MemoryCategory, MemoryEntry};
 use crate::observability::{NoopObserver, Observer};
 use crate::providers::{ChatMessage, ChatRequest, ChatResponse, Provider, ToolCall};
 use crate::tools::{Tool, ToolResult};
@@ -1191,5 +1195,77 @@ async fn run_single_delegates_to_turn() {
     assert!(
         !response.is_empty(),
         "Expected non-empty response from run_single"
+    );
+}
+
+#[test]
+fn single_message_artifact_uses_python_compatible_schema() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = write_single_message_artifact(
+        temp.path(),
+        Some("sess-rust"),
+        "test topic",
+        "test-model",
+        "user asks a question",
+        "assistant answers without evidence",
+        "completed",
+    )
+    .unwrap();
+
+    let payload: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+
+    assert_eq!(payload["schema_version"], "rain-session-artifact/v1");
+    assert_eq!(payload["session_id"], "sess-rust");
+    assert_eq!(payload["topic"], "test topic");
+    assert_eq!(payload["model"], "test-model");
+    assert_eq!(payload["status"], "completed");
+    assert_eq!(payload["loaded_papers_count"], 0);
+    assert_eq!(payload["turns"].as_array().unwrap().len(), 2);
+    assert_eq!(payload["turns"][0]["agent"], "USER");
+    assert_eq!(payload["turns"][1]["agent"], "R.A.I.N.");
+    assert_eq!(
+        payload["turns"][1]["grounded_response"]["red_badge"],
+        serde_json::Value::Bool(true)
+    );
+}
+
+#[test]
+fn single_message_artifact_includes_memory_evidence_when_available() {
+    let temp = tempfile::tempdir().unwrap();
+    let entries = vec![MemoryEntry {
+        id: "mem-1".into(),
+        key: "paper_note".into(),
+        content: "Standing wave anchoring remains plausible at low energy.".into(),
+        category: MemoryCategory::Core,
+        timestamp: "2026-04-13T00:00:00Z".into(),
+        session_id: None,
+        score: Some(0.91),
+        namespace: "default".into(),
+        importance: Some(0.8),
+        superseded_by: None,
+    }];
+    let path = write_single_message_artifact_with_memory(
+        temp.path(),
+        Some("sess-rust"),
+        "test topic",
+        "test-model",
+        "user asks a question",
+        "assistant answers with evidence",
+        "completed",
+        &entries,
+    )
+    .unwrap();
+
+    let payload: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let grounded = &payload["turns"][1]["grounded_response"];
+
+    assert_eq!(grounded["grounded"], serde_json::Value::Bool(true));
+    assert_eq!(grounded["red_badge"], serde_json::Value::Bool(false));
+    assert_eq!(grounded["provenance"][0], "paper_note");
+    assert_eq!(
+        grounded["evidence"][0]["quote"],
+        "Standing wave anchoring remains plausible at low energy."
     );
 }

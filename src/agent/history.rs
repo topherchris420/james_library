@@ -1,3 +1,4 @@
+use crate::memory::MemoryEntry;
 use crate::memory::{self, Memory};
 use crate::providers::{ChatMessage, Provider};
 use crate::security::{ModelInputSource, sanitize_for_model_input};
@@ -209,24 +210,12 @@ pub(crate) async fn build_context(
 ) -> String {
     let mut context = String::new();
 
-    if let Ok(entries) = mem.recall(user_msg, 5, session_id, None, None).await {
-        let relevant: Vec<_> = entries
-            .iter()
-            .filter(|e| match e.score {
-                Some(score) => score >= min_relevance_score,
-                None => true,
-            })
-            .collect();
-
+    if let Ok(relevant) =
+        recall_relevant_entries(mem, user_msg, min_relevance_score, session_id).await
+    {
         if !relevant.is_empty() {
             context.push_str("[Memory context]\n");
             for entry in &relevant {
-                if memory::is_assistant_autosave_key(&entry.key) {
-                    continue;
-                }
-                if memory::should_skip_autosave_content(&entry.content) {
-                    continue;
-                }
                 append_memory_context_line(&mut context, &entry.key, &entry.content);
             }
             if context == "[Memory context]\n" {
@@ -238,6 +227,24 @@ pub(crate) async fn build_context(
     }
 
     context
+}
+
+pub(crate) async fn recall_relevant_entries(
+    mem: &dyn Memory,
+    query: &str,
+    min_relevance_score: f64,
+    session_id: Option<&str>,
+) -> anyhow::Result<Vec<MemoryEntry>> {
+    let entries = mem.recall(query, 5, session_id, None, None).await?;
+    Ok(entries
+        .into_iter()
+        .filter(|entry| match entry.score {
+            Some(score) => score >= min_relevance_score,
+            None => true,
+        })
+        .filter(|entry| !memory::is_assistant_autosave_key(&entry.key))
+        .filter(|entry| !memory::should_skip_autosave_content(&entry.content))
+        .collect())
 }
 
 /// Build hardware datasheet context from RAG when peripherals are enabled.

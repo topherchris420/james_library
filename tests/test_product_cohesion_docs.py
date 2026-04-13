@@ -159,22 +159,24 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     first_section = "## What It Does"
     expected_sections = (
         "## What It Does",
+        "## Why It Is Different",
+        "## Meet the Agents",
+        "## TRIBE v2 Brain Encoding",
+        "## See It In Action",
         "## Try It Now",
         "## Who It Is For",
-        "## What You Can Do",
-        "## Why It Is Different",
-        "## Local and Private Workflow",
-        "## Features",
-        "## Requirements",
         "## Documentation",
         "## For Developers",
+        "## Acknowledgments",
+        "## License",
     )
 
     lead_story_indexes = _lead_story_indexes(text)
-    _find_required_index(_normalize_whitespace(text), heading)
-    _find_required_index(_normalize_whitespace(text), tagline)
-    _find_required_index(_normalize_whitespace(text), product_summary)
-    _find_required_index(_normalize_whitespace(text), expert_summary)
+    normalized = _normalize_whitespace(text)
+    heading_index = _find_required_index(normalized, heading)
+    tagline_index = _find_required_index(normalized, tagline)
+    product_summary_index = _find_required_index(normalized, product_summary)
+    expert_summary_index = _find_required_index(normalized, expert_summary)
     assistant_line_index = _find_required_index(text, assistant_line)
     chrome_index = _find_readme_chrome_index(text)
     hosted_url_index = _find_required_index(text, hosted_url)
@@ -182,11 +184,16 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     first_section_index = text.index(first_section)
 
     assert lead_story_indexes == sorted(lead_story_indexes)
-    assert assistant_line_index < chrome_index
+    assert heading_index < tagline_index
+    assert chrome_index < product_summary_index
+    assert product_summary_index < expert_summary_index
+    assert chrome_index < first_section_index
     assert chrome_index < first_section_index
     assert hosted_url_index < local_runner_index
     assert "### Public Web Experience (Coming Soon)" not in text
 
+    section_indexes = [text.index(section) for section in expected_sections]
+    assert section_indexes == sorted(section_indexes)
     for section in expected_sections:
         assert section in text, f"README.md is missing expected section: {section!r}"
 

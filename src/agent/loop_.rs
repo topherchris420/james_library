@@ -2,7 +2,7 @@ use crate::agent::agent::ToolDispatchMode;
 use crate::agent::history::{
     DEFAULT_MAX_HISTORY_MESSAGES, auto_compact_history, autosave_memory_key, build_context,
     build_hardware_context, load_interactive_session_history, memory_session_id_from_state_file,
-    save_interactive_session_history, trim_history,
+    recall_relevant_entries, save_interactive_session_history, trim_history,
 };
 use crate::agent::runtime_support::record_tool_loop_cost_usage;
 pub(crate) use crate::agent::runtime_support::{
@@ -1829,6 +1829,14 @@ pub async fn run(
             memory_session_id.as_deref(),
         )
         .await;
+        let artifact_evidence = recall_relevant_entries(
+            mem.as_ref(),
+            &msg,
+            config.memory.min_relevance_score,
+            memory_session_id.as_deref(),
+        )
+        .await
+        .unwrap_or_default();
         let rag_limit = if config.agent.compact_context { 2 } else { 5 };
         let hw_context = hardware_rag
             .as_ref()
@@ -1964,6 +1972,18 @@ pub async fn run(
             }
         }
         final_output = response.clone();
+        if let Err(err) = crate::agent::session_artifact::write_single_message_artifact_with_memory(
+            &config.workspace_dir,
+            memory_session_id.as_deref(),
+            &msg,
+            &model_name,
+            &msg,
+            &response,
+            "completed",
+            &artifact_evidence,
+        ) {
+            tracing::warn!("Failed to write session artifact for one-shot run: {err}");
+        }
         println!("{response}");
         observer.record_event(&ObserverEvent::TurnComplete);
     } else {
@@ -2548,6 +2568,14 @@ pub async fn process_message(
         session_id,
     )
     .await;
+    let artifact_evidence = recall_relevant_entries(
+        mem.as_ref(),
+        message,
+        config.memory.min_relevance_score,
+        session_id,
+    )
+    .await
+    .unwrap_or_default();
     let rag_limit = if config.agent.compact_context { 2 } else { 5 };
     let hw_context = hardware_rag
         .as_ref()
@@ -2571,7 +2599,7 @@ pub async fn process_message(
         excluded_tools.extend(config.autonomy.non_cli_excluded_tools.iter().cloned());
     }
 
-    agent_turn(AgentTurnContext {
+    let result = agent_turn(AgentTurnContext {
         provider: provider.as_ref(),
         history: &mut history,
         tools_registry: &tools_registry,
@@ -2590,7 +2618,31 @@ pub async fn process_message(
         activated_tools: activated_handle_pm.as_ref(),
         model_switch_callback: None,
     })
-    .await
+    .await;
+
+    let status = if result.is_ok() {
+        "completed"
+    } else {
+        "failed"
+    };
+    let artifact_response = match &result {
+        Ok(response) => response.clone(),
+        Err(err) => err.to_string(),
+    };
+    if let Err(err) = crate::agent::session_artifact::write_single_message_artifact_with_memory(
+        &config.workspace_dir,
+        session_id,
+        message,
+        &model_name,
+        message,
+        &artifact_response,
+        status,
+        &artifact_evidence,
+    ) {
+        tracing::warn!("Failed to write session artifact for process_message: {err}");
+    }
+
+    result
 }
 
 /// Convert tool definitions to OpenAI function-calling format.

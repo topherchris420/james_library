@@ -216,6 +216,7 @@ from datetime import datetime
 import argparse
 
 from james_library.utilities.graph_bridge import HypergraphManager
+from james_library.utilities.session_artifact import SessionArtifactWriter
 from stagnation_monitor import StagnationMonitor
 from james_library.utilities.hypothesis_tree import HypothesisTree, NodeStatus
 
@@ -1896,6 +1897,8 @@ class RainLabOrchestrator:
         self.hypergraph_manager.build()
 
         self.rust_daemon_client: Optional[RustDaemonClient] = None
+        self.metrics_tracker = None
+        self.session_artifact_writer: Optional[SessionArtifactWriter] = None
 
         # LLM client with extended timeout for large context processing
 
@@ -2135,17 +2138,28 @@ class RainLabOrchestrator:
 
         # Initialize eval metrics tracker
 
-        self.metrics_tracker = None
+        session_id = str(uuid.uuid4())[:8]
 
         if MetricsTracker is not None:
             self.metrics_tracker = MetricsTracker(
-                session_id=str(uuid.uuid4())[:8],
+                session_id=session_id,
                 topic=topic,
                 model=self.config.model_name,
                 recursive_depth=self.config.recursive_depth,
             )
 
             self.metrics_tracker.set_corpus(self.context_manager.loaded_papers)
+
+        self.session_artifact_writer = SessionArtifactWriter(
+            artifact_root=Path(self.config.library_path) / "meeting_archives" / "session_artifacts",
+            session_id=session_id,
+            topic=topic,
+            model=self.config.model_name,
+            recursive_depth=self.config.recursive_depth,
+            library_path=self.config.library_path,
+            log_path=str(self.log_manager.log_path),
+            loaded_papers=list(paper_list),
+        )
 
         # Load agent souls from external files
 
@@ -2313,10 +2327,11 @@ class RainLabOrchestrator:
                         elif user_input.lower() in ["quit", "exit", "stop"]:
                             print("\n👋 Meeting ended by FOUNDER.")
 
+                            stats = self._generate_final_stats()
+                            self._finalize_session_artifact("interrupted", stats)
                             if self.metrics_tracker is not None:
                                 self.metrics_tracker.finalize()
-
-                            self.log_manager.finalize_log(self._generate_final_stats())
+                            self.log_manager.finalize_log(stats)
                             self._end_visual_conversation()
 
                             return
@@ -2325,6 +2340,8 @@ class RainLabOrchestrator:
                             print(f"\n\033[97m💬 [FOUNDER]: {user_input}\033[0m\n")
 
                             self.log_manager.log_statement("FOUNDER", user_input)
+                            if self.session_artifact_writer is not None:
+                                self.session_artifact_writer.record_turn(agent_name="FOUNDER", content=user_input)
 
                             history_log.append(f"FOUNDER: {user_input}")
 
@@ -2447,6 +2464,11 @@ class RainLabOrchestrator:
             if verdict.intervention_prompt:
                 history_log.append(f"SYSTEM: {verdict.intervention_prompt}")
                 self.log_manager.log_statement("SYSTEM", verdict.intervention_prompt)
+                if self.session_artifact_writer is not None:
+                    self.session_artifact_writer.record_turn(
+                        agent_name="SYSTEM",
+                        content=verdict.intervention_prompt,
+                    )
                 print(f"\n\033[91m{'=' * 70}")
                 print(f"  {verdict.intervention_prompt}")
                 print(f"{'=' * 70}\033[0m\n")
@@ -2455,6 +2477,12 @@ class RainLabOrchestrator:
 
             if self.metrics_tracker is not None:
                 self.metrics_tracker.record_turn(current_agent.name, response, metadata)
+            if self.session_artifact_writer is not None:
+                self.session_artifact_writer.record_turn(
+                    agent_name=current_agent.name,
+                    content=response,
+                    metadata=metadata if isinstance(metadata, dict) else None,
+                )
 
             turn_count += 1
 
@@ -2469,9 +2497,15 @@ class RainLabOrchestrator:
         print("\n\033[92mJames: Alright team, great discussion today! Let's reconvene soon.\033[0m")
 
         self.log_manager.log_statement("James", "Meeting adjourned. Great discussion everyone!")
+        if self.session_artifact_writer is not None:
+            self.session_artifact_writer.record_turn(
+                agent_name="James",
+                content="Meeting adjourned. Great discussion everyone!",
+            )
 
         # Finalize
 
+        self._finalize_session_artifact("completed")
         if self.metrics_tracker is not None:
             self.metrics_tracker.finalize()
 
@@ -2487,6 +2521,8 @@ class RainLabOrchestrator:
         print("=" * 70)
 
         print(f"\n✅ Session saved to: {self.log_manager.log_path}\n")
+        if self.session_artifact_writer is not None:
+            print(f"Session artifact: {self.session_artifact_writer.path}\n")
 
     def _poll_daemon_events(self):
         if not self.rust_daemon_client:
@@ -3400,6 +3436,18 @@ Use these links to propose creative cross-paper insights if relevant.
                 stats_lines.append(f"    [X] #{node.node_id}: {node.hypothesis}")
 
         return "\n".join(stats_lines)
+
+    def _finalize_session_artifact(self, status: str, stats: Optional[str] = None) -> None:
+        if self.session_artifact_writer is None:
+            return
+
+        metrics_summary = self.metrics_tracker.summary() if self.metrics_tracker is not None else None
+        summary = stats if stats is not None else self._generate_final_stats()
+        self.session_artifact_writer.finalize(
+            status=status,
+            metrics=metrics_summary,
+            summary=summary,
+        )
 
     def _strip_agent_prefix(self, response: str, agent_name: str) -> str:
         """Strip duplicate agent name prefixes from the response.

@@ -220,9 +220,6 @@ probe-rs = { version = "0.31", optional = true }
 # PDF extraction for datasheet RAG (optional, enable with --features rag-pdf)
 pdf-extract = { version = "0.10", optional = true }
 
-# WASM plugin runtime (extism)
-extism = { version = "1.21", optional = true }
-
 # Cross-platform audio capture for voice wake word detection (optional, enable with --features voice-wake)
 cpal = { version = "0.15", optional = true }
 
@@ -284,8 +281,11 @@ skill-creation = []
 whatsapp-web = ["dep:wa-rs", "dep:wa-rs-core", "dep:wa-rs-binary", "dep:wa-rs-proto", "dep:wa-rs-ureq-http", "dep:wa-rs-tokio-transport", "dep:serde-big-array", "dep:prost", "dep:qrcode"]
 # voice-wake = Voice wake word detection via microphone (cpal)
 voice-wake = ["dep:cpal"]
-# WASM plugin system (extism-based)
-plugins-wasm = ["dep:extism"]
+# WASM plugin system surface.
+# The manifest/discovery host remains available behind this flag, but the
+# Extism execution bridge is intentionally not linked until a safe runtime
+# dependency is restored.
+plugins-wasm = []
 # WebAuthn / FIDO2 hardware key authentication
 webauthn = []
 # Meta-feature for CI: all features except those requiring system C libraries

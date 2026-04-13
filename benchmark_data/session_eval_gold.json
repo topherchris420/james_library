@@ -1,0 +1,23 @@
+[
+  {
+    "id": "phononic-assembly",
+    "topic": "Could acoustic interference patterns guide molecular assembly the way DNA guides cell growth?",
+    "min_grounded_turn_ratio": 0.5,
+    "require_disagreement": true,
+    "min_actionability_score": 0.5
+  },
+  {
+    "id": "startup-debate",
+    "topic": "an AI tutor for overwhelmed college students",
+    "min_grounded_turn_ratio": 0.25,
+    "require_disagreement": true,
+    "min_actionability_score": 0.5
+  },
+  {
+    "id": "resonance-explainer",
+    "topic": "resonance in simple everyday language",
+    "min_grounded_turn_ratio": 0.25,
+    "require_disagreement": false,
+    "min_actionability_score": 0.25
+  }
+]

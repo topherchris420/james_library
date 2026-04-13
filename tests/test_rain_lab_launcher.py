@@ -290,6 +290,30 @@ def test_build_command_compile(repo_root):
     assert "--library" in cmd
 
 
+def test_build_command_eval(repo_root):
+    args, pt = parse_args(["--mode", "eval"])
+    cmd = build_command(args, pt, repo_root)
+    assert "session_eval.py" in cmd[1]
+
+
+def test_build_command_replay(repo_root):
+    args, pt = parse_args(["--mode", "replay"])
+    cmd = build_command(args, pt, repo_root)
+    assert "session_replay.py" in cmd[1]
+
+
+def test_build_command_memory_review(repo_root):
+    args, pt = parse_args(["--mode", "memory-review"])
+    cmd = build_command(args, pt, repo_root)
+    assert "memory_governance.py" in cmd[1]
+
+
+def test_build_command_memory_remediate(repo_root):
+    args, pt = parse_args(["--mode", "memory-remediate"])
+    cmd = build_command(args, pt, repo_root)
+    assert "memory_remediation.py" in cmd[1]
+
+
 def test_build_command_preflight(repo_root):
     args, pt = parse_args(["--mode", "preflight"])
     cmd = build_command(args, pt, repo_root)
