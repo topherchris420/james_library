@@ -193,7 +193,8 @@ pub fn write_single_message_artifact_with_memory(
         ],
     };
 
-    let path = dir.join(format!("session_{session_id}.json"));
+    let safe_session_id = session_id.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+    let path = dir.join(format!("session_{safe_session_id}.json"));
     fs::write(&path, serde_json::to_vec_pretty(&artifact)?)?;
     Ok(path)
 }
