@@ -19,6 +19,7 @@ on:
             - "deny.toml"
     schedule:
         - cron: "0 6 * * 1" # Weekly on Monday 6am UTC
+    workflow_dispatch:
 
 concurrency:
     group: security-${{ github.event.pull_request.number || github.ref }}
@@ -36,7 +37,7 @@ env:
 jobs:
     audit:
         name: Security Audit
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -47,11 +48,11 @@ jobs:
 
     deny:
         name: License & Supply Chain
-        runs-on: blacksmith-2vcpu-ubuntu-2404
+        runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
             - uses: EmbarkStudios/cargo-deny-action@3fd3802e88374d3fe9159b834c7714ec57d6c979 # v2
               with:
-                  command: check advisories licenses sources
+                  command: check licenses sources

@@ -2,6 +2,8 @@
 # https://embarkstudios.github.io/cargo-deny/
 
 [advisories]
+# CI runs advisories via cargo-audit / rustsec-audit-check. cargo-deny stays
+# focused on license and source-policy enforcement.
 # In v2, vulnerability advisories always emit errors (not configurable).
 # unmaintained: scope of unmaintained-crate checks (all | workspace | transitive | none)
 unmaintained = "all"
