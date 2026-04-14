@@ -43,9 +43,9 @@ jobs:
                   fi
 
                   if [[ -n "$base" ]]; then
-                    files="$(git diff --name-only "$base" HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
+                    files="$(git diff --diff-filter=d --name-only "$base" HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
                   else
-                    files="$(git diff-tree --no-commit-id --name-only -r HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
+                    files="$(git diff-tree --diff-filter=d --no-commit-id --name-only -r HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
                   fi
 
                   {
@@ -109,9 +109,9 @@ jobs:
                   fi
 
                   if [[ -n "$base" ]]; then
-                    files="$(git diff --name-only "$base" HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
+                    files="$(git diff --diff-filter=d --name-only "$base" HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
                   else
-                    files="$(git diff-tree --no-commit-id --name-only -r HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
+                    files="$(git diff-tree --diff-filter=d --no-commit-id --name-only -r HEAD -- '.github/workflows/*.yml' '.github/workflows/*.yaml' '.github/*.yml' '.github/*.yaml' || true)"
                   fi
 
                   {
