@@ -8,7 +8,7 @@ MODEL="minimax-m2.7:cloud"
 OLLAMA_HOST="http://127.0.0.1:11434"
 
 PAPER_TITLE="Reality Built on a Finite Set of Geometric Instructions"
-AUTHOR="Christopher Woodyard"
+AUTHOR="R.A.I.N._user"
 
 echo ""
 echo "=============================================================="
@@ -18,10 +18,16 @@ echo "=============================================================="
 echo ""
 
 echo "Checking Ollama connection..."
-curl -s -o /dev/null -w "Status: %{http_code}\n" "$OLLAMA_HOST/api/tags" || {
-    echo "ERROR: Ollama not running at $OLLAMA_HOST"
+HTTP_STATUS=$(curl -sS -o /dev/null -w "%{http_code}" "$OLLAMA_HOST/api/tags") || {
+    echo "ERROR: Ollama not reachable at $OLLAMA_HOST"
     exit 1
 }
+echo "Status: $HTTP_STATUS"
+
+if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+    echo "ERROR: Ollama health check failed with HTTP $HTTP_STATUS at $OLLAMA_HOST/api/tags"
+    exit 1
+fi
 
 echo "Model: $MODEL"
 echo ""
