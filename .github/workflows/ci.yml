@@ -51,10 +51,14 @@ jobs:
         run: ruff check . --output-format=full
       - name: Ruff maintainability allowlist (I/UP)
         if: ${{ matrix.python-version == '3.11' }}
-        run: ruff check $RUFF_STAGE_1_ALLOWLIST --select I,UP --output-format=full
+        run: |
+          read -r -a allowlist <<< "$RUFF_STAGE_1_ALLOWLIST"
+          ruff check "${allowlist[@]}" --select I,UP --output-format=full
       - name: Static typing allowlist
         if: ${{ matrix.python-version == '3.11' }}
-        run: mypy $MYPY_STAGE_1_ALLOWLIST
+        run: |
+          read -r -a allowlist <<< "$MYPY_STAGE_1_ALLOWLIST"
+          mypy "${allowlist[@]}"
       - run: pytest tests/ -v -ra --tb=long
 
   governance-contracts:
