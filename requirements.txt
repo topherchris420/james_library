@@ -17,3 +17,5 @@ fastmcp>=3.2.0,<4.0.0
 # Root test runs import lab_server.app, so CI needs the web server deps too.
 fastapi>=0.111.0,<1.0.0
 uvicorn[standard]>=0.29.0,<1.0.0
+# james_library.utilities.graph_bridge imports these for ML features
+scipy>=1.10.0,<2.0.0

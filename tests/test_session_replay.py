@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -95,8 +96,9 @@ def test_run_replay_executes_cases_collects_artifacts_and_writes_report(tmp_path
         encoding="utf-8",
     )
 
+    python_exe = Path(sys.executable).as_posix()
     command_template = (
-        f'python "{emitter_path}" --artifact-dir "{{artifact_dir}}" '
+        f'"{python_exe}" "{emitter_path}" --artifact-dir "{{artifact_dir}}" '
         f'--case-id "{{case_id}}" --topic "{{topic}}"'
     )
     result = run_replay(
