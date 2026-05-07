@@ -24,7 +24,7 @@ jobs:
               uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
             - name: Initialize CodeQL
-              uses: github/codeql-action/init@38697555549f1db7851b81482ff19f1fa5c4fedc # v4
+              uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7 # v4
               with:
                   languages: rust
                   config-file: ./.github/codeql/codeql-config.yml
@@ -36,4 +36,4 @@ jobs:
               run: cargo build --workspace --all-targets
 
             - name: Perform CodeQL Analysis
-              uses: github/codeql-action/analyze@38697555549f1db7851b81482ff19f1fa5c4fedc # v4
+              uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7 # v4
