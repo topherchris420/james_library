@@ -43,6 +43,7 @@ ignore_missing_imports = true
 ruff_stage_0_rules = ["E", "F", "W"]
 ruff_stage_1_rules = ["I", "UP"]
 ruff_stage_1_allowlist = [
+    "archive_pipeline.py",
     "rain_lab.py",
     "rain_preflight_check.py",
     "tools.py",

@@ -22,6 +22,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     env:
       RUFF_STAGE_1_ALLOWLIST: >-
+        archive_pipeline.py
         rain_lab.py
         rain_preflight_check.py
         tools.py

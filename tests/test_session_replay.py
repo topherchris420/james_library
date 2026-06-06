@@ -96,7 +96,7 @@ def test_run_replay_executes_cases_collects_artifacts_and_writes_report(tmp_path
     )
 
     command_template = (
-        f'python "{emitter_path}" --artifact-dir "{{artifact_dir}}" '
+        f'{{python}} "{emitter_path}" --artifact-dir "{{artifact_dir}}" '
         f'--case-id "{{case_id}}" --topic "{{topic}}"'
     )
     result = run_replay(

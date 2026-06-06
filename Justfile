@@ -21,6 +21,14 @@ lint:
 test:
     cargo test --locked
 
+# Run the default no-setup demo path
+demo:
+    python rain_lab.py --mode demo --preset startup-debate
+
+# Validate the local R.A.I.N. Lab environment
+validate:
+    python rain_lab.py --mode validate
+
 # Run only unit tests (faster)
 test-lib:
     cargo test --lib

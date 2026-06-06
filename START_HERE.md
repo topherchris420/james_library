@@ -32,6 +32,10 @@ Integrations such as Matrix, Lark, Nostr, WhatsApp Web, hardware, and
 experimental workflow automation are opt-in extensions. Treat them as add-ons,
 not the baseline product.
 
+If you are deciding whether a file, script, or integration belongs in the
+default path, use the product boundary:
+[`docs/project/product-boundary.md`](docs/project/product-boundary.md).
+
 If you need the full support boundary, see
 [`docs/project/stability-tiers.md`](docs/project/stability-tiers.md).
 
