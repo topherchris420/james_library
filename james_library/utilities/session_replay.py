@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shlex
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -13,7 +16,7 @@ from james_library.utilities.session_eval import evaluate_artifacts_against_gold
 
 
 DEFAULT_COMMAND_TEMPLATE = (
-    'python rain_lab.py --mode chat --topic "{topic}" --turns 4 --ui off --library "{library_path}"'
+    '{python} rain_lab.py --mode chat --topic "{topic}" --turns 4 --ui off --library "{library_path}"'
 )
 
 
@@ -29,8 +32,16 @@ def _default_report_dir(library_path: Path) -> Path:
     return library_path / "benchmark_data" / "session_eval_reports"
 
 
+def _quote_shell_arg(value: str | Path) -> str:
+    text = str(value)
+    if os.name == "nt":
+        return subprocess.list2cmdline([text])
+    return shlex.quote(text)
+
+
 def _format_command(command_template: str, *, artifact_dir: Path, case_id: str, topic: str, library_path: Path) -> str:
     return command_template.format(
+        python=_quote_shell_arg(sys.executable),
         artifact_dir=str(artifact_dir),
         case_id=case_id,
         topic=topic.replace('"', "'"),

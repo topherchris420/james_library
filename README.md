@@ -16,6 +16,25 @@ James is the assistant inside the R.A.I.N. Lab.
 
 ---
 
+## Default Path
+
+No setup: [rainlabteam.vercel.app](https://rainlabteam.vercel.app/)
+
+Local start:
+
+```bash
+python rain_lab.py
+```
+
+That launcher is the stable product path. Hardware, messaging channels, web
+deployment, TRIBE v2 sidecars, archive tooling, and provider-specific adapters
+are opt-in extensions, not prerequisites for a first successful run.
+
+For the maintainer boundary between core, extension, and experimental work, see
+[`docs/project/product-boundary.md`](docs/project/product-boundary.md).
+
+---
+
 ## What It Does
 
 - Turns one research question into a four-agent meeting with distinct constraints
