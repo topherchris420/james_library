@@ -110,15 +110,11 @@ impl std::error::Error for LockError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
-
-    fn test_workspace() -> PathBuf {
-        env::temp_dir().join("vault_lock_test")
-    }
 
     #[tokio::test]
     async fn acquire_and_release_lock() {
-        let ws = test_workspace();
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_path_buf();
         let target = ws.join("papers").join("Test.md");
         fs::create_dir_all(ws.join("papers")).await.unwrap();
 
@@ -132,13 +128,12 @@ mod tests {
         release(&ws, &target).await;
         // Lock file should be gone
         assert!(!lock_path(&ws, &target).exists());
-
-        let _ = fs::remove_dir_all(&ws).await;
     }
 
     #[tokio::test]
     async fn lock_prevents_concurrent_acquire() {
-        let ws = test_workspace();
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_path_buf();
         let target = ws.join("papers").join("Concurrent.md");
         fs::create_dir_all(ws.join("papers")).await.unwrap();
 
@@ -155,6 +150,5 @@ mod tests {
         );
 
         release(&ws, &target).await;
-        let _ = fs::remove_dir_all(&ws).await;
     }
 }
