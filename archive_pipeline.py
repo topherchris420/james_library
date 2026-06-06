@@ -28,10 +28,9 @@ import shutil
 import subprocess
 import sys
 import tarfile
-from functools import lru_cache
+from collections.abc import Iterable, Sequence
+from functools import cache, lru_cache
 from pathlib import Path
-from typing import Iterable, Sequence
-
 
 ARCHIVE_NAME = "james_library_archive.tar.gz"
 CHECKSUM_NAME = "checksum.txt"
@@ -357,8 +356,7 @@ def run_command(
         result = subprocess.run(
             [str(part) for part in command],
             cwd=str(cwd) if cwd else None,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
@@ -802,7 +800,7 @@ def poly_multiply(left: Sequence[int], right: Sequence[int]) -> list[int]:
     return result
 
 
-@lru_cache(maxsize=None)
+@cache
 def rs_generator(degree: int) -> tuple[int, ...]:
     exp, _log = gf_tables()
     coefficients = [1]
