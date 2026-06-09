@@ -4,8 +4,8 @@ pub mod workspace;
 
 #[allow(unused_imports)]
 pub use schema::{
-    AgentConfig, AssemblyAiSttConfig, AuditConfig, AutonomyConfig, BackupConfig,
-    BrowserComputerUseConfig, BrowserConfig, BuiltinHooksConfig, ChannelsConfig,
+    AgentConfig, AssemblyAiSttConfig, AuditConfig, AutonomousRuntimeConfig, AutonomyConfig,
+    BackupConfig, BrowserComputerUseConfig, BrowserConfig, BuiltinHooksConfig, ChannelsConfig,
     ClassificationRule, ClaudeCodeConfig, CloudOpsConfig, ComposioConfig, Config,
     ConversationalAiConfig, CostConfig, CronConfig, DEFAULT_GWS_SERVICES, DataRetentionConfig,
     DeepgramSttConfig, DelegateAgentConfig, DelegateToolConfig, DiscordConfig, DockerRuntimeConfig,
@@ -26,11 +26,11 @@ pub use schema::{
     StorageConfig, StorageProviderConfig, StorageProviderSection, StreamMode, SwarmConfig,
     SwarmStrategy, TelegramConfig, TextBrowserConfig, ToolFilterGroup, ToolFilterGroupMode,
     TranscriptionConfig, TribeV2Config, TtsConfig, TunnelConfig, VerifiableIntentConfig,
-    WebFetchConfig, WebSearchConfig, WebhookConfig, WhatsAppChatPolicy, WhatsAppWebMode,
-    WorkspaceConfig, apply_channel_proxy_to_builder, apply_runtime_proxy_to_builder,
-    build_channel_proxy_client, build_channel_proxy_client_with_timeouts,
-    build_runtime_proxy_client, build_runtime_proxy_client_with_timeouts, runtime_proxy_config,
-    set_runtime_proxy_config,
+    VitalsConfig, WebFetchConfig, WebSearchConfig, WebhookConfig, WhatsAppChatPolicy,
+    WhatsAppWebMode, WorkspaceConfig, apply_channel_proxy_to_builder,
+    apply_runtime_proxy_to_builder, build_channel_proxy_client,
+    build_channel_proxy_client_with_timeouts, build_runtime_proxy_client,
+    build_runtime_proxy_client_with_timeouts, runtime_proxy_config, set_runtime_proxy_config,
 };
 
 pub fn name_and_presence<T: traits::ChannelConfig>(channel: Option<&T>) -> (&'static str, bool) {

@@ -110,7 +110,20 @@ pub async fn run(config: Config, host: String, port: u16) -> Result<()> {
         }
     }
 
-    if config.heartbeat.enabled {
+    if config.autonomous_runtime.enabled {
+        // Pulse driver subsumes the heartbeat worker: the heartbeat runs as the
+        // "heartbeat_md" pulse with identical user-visible behavior.
+        let autonomy_cfg = config.clone();
+        handles.push(spawn_component_supervisor(
+            "autonomy",
+            initial_backoff,
+            max_backoff,
+            move || {
+                let cfg = autonomy_cfg.clone();
+                async move { Box::pin(crate::autonomy::run(cfg)).await }
+            },
+        ));
+    } else if config.heartbeat.enabled {
         let heartbeat_cfg = config.clone();
         handles.push(spawn_component_supervisor(
             "heartbeat",
@@ -230,9 +243,7 @@ where
 }
 
 async fn run_heartbeat_worker(config: Config) -> Result<()> {
-    use crate::heartbeat::engine::{
-        HeartbeatEngine, HeartbeatTask, TaskPriority, TaskStatus, compute_adaptive_interval,
-    };
+    use crate::heartbeat::engine::{HeartbeatEngine, compute_adaptive_interval};
     use std::sync::Arc;
 
     let observer: std::sync::Arc<dyn crate::observability::Observer> =
@@ -244,50 +255,10 @@ async fn run_heartbeat_worker(config: Config) -> Result<()> {
     );
     let metrics = engine.metrics();
     let delivery = resolve_heartbeat_delivery(&config)?;
-    let two_phase = config.heartbeat.two_phase;
     let adaptive = config.heartbeat.adaptive;
     let start_time = std::time::Instant::now();
 
-    // ── Deadman watcher ──────────────────────────────────────────
-    let deadman_timeout = config.heartbeat.deadman_timeout_minutes;
-    if deadman_timeout > 0 {
-        let dm_metrics = Arc::clone(&metrics);
-        let dm_config = config.clone();
-        let dm_delivery = delivery.clone();
-        tokio::spawn(async move {
-            let check_interval = Duration::from_secs(60);
-            let timeout = chrono::Duration::minutes(i64::from(deadman_timeout));
-            loop {
-                tokio::time::sleep(check_interval).await;
-                let last_tick = dm_metrics.lock().last_tick_at;
-                if let Some(last) = last_tick {
-                    if chrono::Utc::now() - last > timeout {
-                        let alert = format!(
-                            "⚠️ Heartbeat dead-man's switch: no tick in {deadman_timeout} minutes"
-                        );
-                        let (channel, target) =
-                            if let Some(ch) = &dm_config.heartbeat.deadman_channel {
-                                let to = dm_config
-                                    .heartbeat
-                                    .deadman_to
-                                    .as_deref()
-                                    .or(dm_config.heartbeat.to.as_deref())
-                                    .unwrap_or_default();
-                                (ch.clone(), to.to_string())
-                            } else if let Some((ch, to)) = &dm_delivery {
-                                (ch.clone(), to.clone())
-                            } else {
-                                continue;
-                            };
-                        let _ = crate::cron::scheduler::deliver_announcement(
-                            &dm_config, &channel, &target, &alert,
-                        )
-                        .await;
-                    }
-                }
-            }
-        });
-    }
+    let _deadman = spawn_deadman_watcher(&config, Arc::clone(&metrics), delivery.clone());
 
     let base_interval = config.heartbeat.interval_minutes.max(5);
     let mut sleep_mins = base_interval;
@@ -301,171 +272,7 @@ async fn run_heartbeat_worker(config: Config) -> Result<()> {
             m.uptime_secs = start_time.elapsed().as_secs();
         }
 
-        let tick_start = std::time::Instant::now();
-
-        // Collect runnable tasks (active only, sorted by priority)
-        let mut tasks = engine.collect_runnable_tasks().await?;
-        let has_high_priority = tasks.iter().any(|t| t.priority == TaskPriority::High);
-
-        if tasks.is_empty() {
-            if let Some(fallback) = config
-                .heartbeat
-                .message
-                .as_deref()
-                .map(str::trim)
-                .filter(|m| !m.is_empty())
-            {
-                tasks.push(HeartbeatTask {
-                    text: fallback.to_string(),
-                    priority: TaskPriority::Medium,
-                    status: TaskStatus::Active,
-                });
-            } else {
-                #[allow(clippy::cast_precision_loss)]
-                let elapsed = tick_start.elapsed().as_millis() as f64;
-                metrics.lock().record_success(elapsed);
-                continue;
-            }
-        }
-
-        // ── Phase 1: LLM decision (two-phase mode) ──────────────
-        let tasks_to_run = if two_phase {
-            let decision_prompt = format!(
-                "[Heartbeat Task | decision] {}",
-                HeartbeatEngine::build_decision_prompt(&tasks),
-            );
-            match Box::pin(crate::agent::run(
-                config.clone(),
-                Some(decision_prompt),
-                None,
-                None,
-                0.0,
-                vec![],
-                false,
-                None,
-                None,
-            ))
-            .await
-            {
-                Ok(response) => {
-                    let indices = HeartbeatEngine::parse_decision_response(&response, tasks.len());
-                    if indices.is_empty() {
-                        tracing::info!("💓 Heartbeat Phase 1: skip (nothing to do)");
-                        crate::health::mark_component_ok("heartbeat");
-                        #[allow(clippy::cast_precision_loss)]
-                        let elapsed = tick_start.elapsed().as_millis() as f64;
-                        metrics.lock().record_success(elapsed);
-                        continue;
-                    }
-                    tracing::info!(
-                        "💓 Heartbeat Phase 1: run {} of {} tasks",
-                        indices.len(),
-                        tasks.len()
-                    );
-                    indices
-                        .into_iter()
-                        .filter_map(|i| tasks.get(i).cloned())
-                        .collect()
-                }
-                Err(e) => {
-                    tracing::warn!("💓 Heartbeat Phase 1 failed, running all tasks: {e}");
-                    tasks
-                }
-            }
-        } else {
-            tasks
-        };
-
-        // ── Phase 2: Execute selected tasks ─────────────────────
-        let mut tick_had_error = false;
-        for task in &tasks_to_run {
-            let task_start = std::time::Instant::now();
-            let prompt = format!("[Heartbeat Task | {}] {}", task.priority, task.text);
-            let temp = config.default_temperature;
-            match Box::pin(crate::agent::run(
-                config.clone(),
-                Some(prompt),
-                None,
-                None,
-                temp,
-                vec![],
-                false,
-                None,
-                None,
-            ))
-            .await
-            {
-                Ok(output) => {
-                    crate::health::mark_component_ok("heartbeat");
-                    #[allow(clippy::cast_possible_truncation)]
-                    let duration_ms = task_start.elapsed().as_millis() as i64;
-                    let now = chrono::Utc::now();
-                    let _ = crate::heartbeat::store::record_run(
-                        &config.workspace_dir,
-                        &task.text,
-                        &task.priority.to_string(),
-                        now - chrono::Duration::milliseconds(duration_ms),
-                        now,
-                        "ok",
-                        Some(output.as_str()),
-                        duration_ms,
-                        config.heartbeat.max_run_history,
-                    );
-                    let announcement = if output.trim().is_empty() {
-                        format!("💓 heartbeat task completed: {}", task.text)
-                    } else {
-                        output
-                    };
-                    if let Some((channel, target)) = &delivery {
-                        if let Err(e) = crate::cron::scheduler::deliver_announcement(
-                            &config,
-                            channel,
-                            target,
-                            &announcement,
-                        )
-                        .await
-                        {
-                            crate::health::mark_component_error(
-                                "heartbeat",
-                                format!("delivery failed: {e}"),
-                            );
-                            tracing::warn!("Heartbeat delivery failed: {e}");
-                        }
-                    }
-                }
-                Err(e) => {
-                    tick_had_error = true;
-                    #[allow(clippy::cast_possible_truncation)]
-                    let duration_ms = task_start.elapsed().as_millis() as i64;
-                    let now = chrono::Utc::now();
-                    let _ = crate::heartbeat::store::record_run(
-                        &config.workspace_dir,
-                        &task.text,
-                        &task.priority.to_string(),
-                        now - chrono::Duration::milliseconds(duration_ms),
-                        now,
-                        "error",
-                        Some(&e.to_string()),
-                        duration_ms,
-                        config.heartbeat.max_run_history,
-                    );
-                    crate::health::mark_component_error("heartbeat", e.to_string());
-                    tracing::warn!("Heartbeat task failed: {e}");
-                }
-            }
-        }
-
-        // Update metrics
-        #[allow(clippy::cast_precision_loss)]
-        let tick_elapsed = tick_start.elapsed().as_millis() as f64;
-        {
-            let mut m = metrics.lock();
-            if tick_had_error {
-                m.record_failure(tick_elapsed);
-            } else {
-                m.record_success(tick_elapsed);
-            }
-        }
+        let report = heartbeat_tick(&config, &engine, &metrics, delivery.as_ref()).await?;
 
         // Compute next sleep interval
         if adaptive {
@@ -475,7 +282,7 @@ async fn run_heartbeat_worker(config: Config) -> Result<()> {
                 config.heartbeat.min_interval_minutes,
                 config.heartbeat.max_interval_minutes,
                 failures,
-                has_high_priority,
+                report.has_high_priority,
             );
         } else {
             sleep_mins = base_interval;
@@ -483,8 +290,251 @@ async fn run_heartbeat_worker(config: Config) -> Result<()> {
     }
 }
 
+/// Outcome of one heartbeat tick, used by both the legacy worker loop and the
+/// `heartbeat_md` pulse to drive adaptive interval computation.
+pub(crate) struct HeartbeatTickReport {
+    pub has_high_priority: bool,
+    pub tasks_run: usize,
+}
+
+/// Spawn the dead-man's switch watcher if configured. Returns the watcher
+/// handle so callers can abort it on shutdown; `None` when disabled.
+pub(crate) fn spawn_deadman_watcher(
+    config: &Config,
+    metrics: std::sync::Arc<parking_lot::Mutex<crate::heartbeat::engine::HeartbeatMetrics>>,
+    delivery: Option<(String, String)>,
+) -> Option<JoinHandle<()>> {
+    let deadman_timeout = config.heartbeat.deadman_timeout_minutes;
+    if deadman_timeout == 0 {
+        return None;
+    }
+    let dm_config = config.clone();
+    Some(tokio::spawn(async move {
+        let check_interval = Duration::from_secs(60);
+        let timeout = chrono::Duration::minutes(i64::from(deadman_timeout));
+        loop {
+            tokio::time::sleep(check_interval).await;
+            let last_tick = metrics.lock().last_tick_at;
+            if let Some(last) = last_tick {
+                if chrono::Utc::now() - last > timeout {
+                    let alert = format!(
+                        "⚠️ Heartbeat dead-man's switch: no tick in {deadman_timeout} minutes"
+                    );
+                    let (channel, target) = if let Some(ch) = &dm_config.heartbeat.deadman_channel {
+                        let to = dm_config
+                            .heartbeat
+                            .deadman_to
+                            .as_deref()
+                            .or(dm_config.heartbeat.to.as_deref())
+                            .unwrap_or_default();
+                        (ch.clone(), to.to_string())
+                    } else if let Some((ch, to)) = &delivery {
+                        (ch.clone(), to.clone())
+                    } else {
+                        continue;
+                    };
+                    let _ = crate::cron::scheduler::deliver_announcement(
+                        &dm_config, &channel, &target, &alert,
+                    )
+                    .await;
+                }
+            }
+        }
+    }))
+}
+
+/// Execute one heartbeat tick: collect runnable tasks, optionally run the
+/// Phase 1 LLM decision, execute selected tasks, deliver output, and record
+/// metrics. Shared by the legacy worker loop and the `heartbeat_md` pulse.
+pub(crate) async fn heartbeat_tick(
+    config: &Config,
+    engine: &crate::heartbeat::engine::HeartbeatEngine,
+    metrics: &parking_lot::Mutex<crate::heartbeat::engine::HeartbeatMetrics>,
+    delivery: Option<&(String, String)>,
+) -> Result<HeartbeatTickReport> {
+    use crate::heartbeat::engine::{HeartbeatEngine, HeartbeatTask, TaskPriority, TaskStatus};
+
+    let two_phase = config.heartbeat.two_phase;
+    let tick_start = std::time::Instant::now();
+
+    // Collect runnable tasks (active only, sorted by priority)
+    let mut tasks = engine.collect_runnable_tasks().await?;
+    let has_high_priority = tasks.iter().any(|t| t.priority == TaskPriority::High);
+
+    if tasks.is_empty() {
+        if let Some(fallback) = config
+            .heartbeat
+            .message
+            .as_deref()
+            .map(str::trim)
+            .filter(|m| !m.is_empty())
+        {
+            tasks.push(HeartbeatTask {
+                text: fallback.to_string(),
+                priority: TaskPriority::Medium,
+                status: TaskStatus::Active,
+            });
+        } else {
+            #[allow(clippy::cast_precision_loss)]
+            let elapsed = tick_start.elapsed().as_millis() as f64;
+            metrics.lock().record_success(elapsed);
+            return Ok(HeartbeatTickReport {
+                has_high_priority,
+                tasks_run: 0,
+            });
+        }
+    }
+
+    // ── Phase 1: LLM decision (two-phase mode) ──────────────
+    let tasks_to_run = if two_phase {
+        let decision_prompt = format!(
+            "[Heartbeat Task | decision] {}",
+            HeartbeatEngine::build_decision_prompt(&tasks),
+        );
+        match Box::pin(crate::agent::run(
+            config.clone(),
+            Some(decision_prompt),
+            None,
+            None,
+            0.0,
+            vec![],
+            false,
+            None,
+            None,
+        ))
+        .await
+        {
+            Ok(response) => {
+                let indices = HeartbeatEngine::parse_decision_response(&response, tasks.len());
+                if indices.is_empty() {
+                    tracing::info!("💓 Heartbeat Phase 1: skip (nothing to do)");
+                    crate::health::mark_component_ok("heartbeat");
+                    #[allow(clippy::cast_precision_loss)]
+                    let elapsed = tick_start.elapsed().as_millis() as f64;
+                    metrics.lock().record_success(elapsed);
+                    return Ok(HeartbeatTickReport {
+                        has_high_priority,
+                        tasks_run: 0,
+                    });
+                }
+                tracing::info!(
+                    "💓 Heartbeat Phase 1: run {} of {} tasks",
+                    indices.len(),
+                    tasks.len()
+                );
+                indices
+                    .into_iter()
+                    .filter_map(|i| tasks.get(i).cloned())
+                    .collect()
+            }
+            Err(e) => {
+                tracing::warn!("💓 Heartbeat Phase 1 failed, running all tasks: {e}");
+                tasks
+            }
+        }
+    } else {
+        tasks
+    };
+
+    // ── Phase 2: Execute selected tasks ─────────────────────
+    let mut tick_had_error = false;
+    for task in &tasks_to_run {
+        let task_start = std::time::Instant::now();
+        let prompt = format!("[Heartbeat Task | {}] {}", task.priority, task.text);
+        let temp = config.default_temperature;
+        match Box::pin(crate::agent::run(
+            config.clone(),
+            Some(prompt),
+            None,
+            None,
+            temp,
+            vec![],
+            false,
+            None,
+            None,
+        ))
+        .await
+        {
+            Ok(output) => {
+                crate::health::mark_component_ok("heartbeat");
+                #[allow(clippy::cast_possible_truncation)]
+                let duration_ms = task_start.elapsed().as_millis() as i64;
+                let now = chrono::Utc::now();
+                let _ = crate::heartbeat::store::record_run(
+                    &config.workspace_dir,
+                    &task.text,
+                    &task.priority.to_string(),
+                    now - chrono::Duration::milliseconds(duration_ms),
+                    now,
+                    "ok",
+                    Some(output.as_str()),
+                    duration_ms,
+                    config.heartbeat.max_run_history,
+                );
+                let announcement = if output.trim().is_empty() {
+                    format!("💓 heartbeat task completed: {}", task.text)
+                } else {
+                    output
+                };
+                if let Some((channel, target)) = delivery {
+                    if let Err(e) = crate::cron::scheduler::deliver_announcement(
+                        config,
+                        channel,
+                        target,
+                        &announcement,
+                    )
+                    .await
+                    {
+                        crate::health::mark_component_error(
+                            "heartbeat",
+                            format!("delivery failed: {e}"),
+                        );
+                        tracing::warn!("Heartbeat delivery failed: {e}");
+                    }
+                }
+            }
+            Err(e) => {
+                tick_had_error = true;
+                #[allow(clippy::cast_possible_truncation)]
+                let duration_ms = task_start.elapsed().as_millis() as i64;
+                let now = chrono::Utc::now();
+                let _ = crate::heartbeat::store::record_run(
+                    &config.workspace_dir,
+                    &task.text,
+                    &task.priority.to_string(),
+                    now - chrono::Duration::milliseconds(duration_ms),
+                    now,
+                    "error",
+                    Some(&e.to_string()),
+                    duration_ms,
+                    config.heartbeat.max_run_history,
+                );
+                crate::health::mark_component_error("heartbeat", e.to_string());
+                tracing::warn!("Heartbeat task failed: {e}");
+            }
+        }
+    }
+
+    // Update metrics
+    #[allow(clippy::cast_precision_loss)]
+    let tick_elapsed = tick_start.elapsed().as_millis() as f64;
+    {
+        let mut m = metrics.lock();
+        if tick_had_error {
+            m.record_failure(tick_elapsed);
+        } else {
+            m.record_success(tick_elapsed);
+        }
+    }
+
+    Ok(HeartbeatTickReport {
+        has_high_priority,
+        tasks_run: tasks_to_run.len(),
+    })
+}
+
 /// Resolve delivery target: explicit config > auto-detect first configured channel.
-fn resolve_heartbeat_delivery(config: &Config) -> Result<Option<(String, String)>> {
+pub(crate) fn resolve_heartbeat_delivery(config: &Config) -> Result<Option<(String, String)>> {
     let channel = config
         .heartbeat
         .target

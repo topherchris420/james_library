@@ -340,6 +340,8 @@ panic = "abort"
 
 [dev-dependencies]
 tempfile = "3.26"
+# test-util enables tokio paused-time clocks for deterministic timer tests.
+tokio = { version = "1.50", default-features = false, features = ["test-util"] }
 criterion = { version = "0.8", features = ["async_tokio"] }
 wiremock = "0.6"
 scopeguard = "1.2"

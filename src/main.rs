@@ -77,6 +77,7 @@ fn pause_after_no_command_help() {
 mod agent;
 mod approval;
 mod auth;
+mod autonomy;
 mod channels;
 mod cli;
 mod cli_input;

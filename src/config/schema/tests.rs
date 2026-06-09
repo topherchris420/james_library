@@ -256,6 +256,41 @@ recipient = "42"
 }
 
 #[test]
+async fn autonomous_runtime_config_default_is_disabled() {
+    let a = AutonomousRuntimeConfig::default();
+    assert!(!a.enabled);
+    assert_eq!(a.max_concurrent_pulses, 2);
+    assert_eq!(a.vitals.dead_end_window, 3);
+    assert!((a.vitals.dead_end_similarity - 0.95).abs() < f64::EPSILON);
+    assert_eq!(a.vitals.stagnation_window, 5);
+}
+
+#[test]
+async fn autonomous_runtime_config_parses_with_overrides() {
+    let raw = r#"
+enabled = true
+max_concurrent_pulses = 4
+
+[vitals]
+dead_end_window = 5
+stagnation_novelty_mean = 0.2
+"#;
+    let parsed: AutonomousRuntimeConfig = toml::from_str(raw).unwrap();
+    assert!(parsed.enabled);
+    assert_eq!(parsed.max_concurrent_pulses, 4);
+    assert_eq!(parsed.vitals.dead_end_window, 5);
+    assert!((parsed.vitals.stagnation_novelty_mean - 0.2).abs() < f64::EPSILON);
+    // Unspecified vitals keys keep defaults.
+    assert!((parsed.vitals.dead_end_similarity - 0.95).abs() < f64::EPSILON);
+}
+
+#[test]
+async fn config_without_autonomous_runtime_section_stays_disabled() {
+    let parsed: Config = toml::from_str("").unwrap();
+    assert!(!parsed.autonomous_runtime.enabled);
+}
+
+#[test]
 async fn cron_config_default() {
     let c = CronConfig::default();
     assert!(c.enabled);
@@ -403,6 +438,7 @@ async fn config_toml_roundtrip() {
             to: Some("123456".into()),
             ..HeartbeatConfig::default()
         },
+        autonomous_runtime: AutonomousRuntimeConfig::default(),
         cron: CronConfig::default(),
         channels_config: ChannelsConfig {
             cli: true,
@@ -825,6 +861,7 @@ async fn config_save_and_load_tmpdir() {
         embedding_routes: Vec::new(),
         query_classification: QueryClassificationConfig::default(),
         heartbeat: HeartbeatConfig::default(),
+        autonomous_runtime: AutonomousRuntimeConfig::default(),
         cron: CronConfig::default(),
         channels_config: ChannelsConfig::default(),
         memory: MemoryConfig::default(),

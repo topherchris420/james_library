@@ -40,6 +40,7 @@ use serde::{Deserialize, Serialize};
 pub mod agent;
 pub(crate) mod approval;
 pub(crate) mod auth;
+pub(crate) mod autonomy;
 pub mod channels;
 pub(crate) mod cli_input;
 pub mod commands;

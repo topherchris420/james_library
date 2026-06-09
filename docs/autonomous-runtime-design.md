@@ -976,14 +976,16 @@ Follows the existing serde pattern (`#[serde(default)]`, defaults as functions,
 backward compatible — absent sections mean "feature off"):
 
 ```toml
-[autonomy]
+# NOTE: named `autonomous_runtime` because `[autonomy]` is already the
+# security-policy section (AutonomyConfig / AutonomyLevel).
+[autonomous_runtime]
 enabled = false                     # master switch; false = exactly today's behavior
 max_concurrent_pulses = 2
 state_persistence = true
 max_remediation_attempts = 3
 cooldown_secs = 120
 
-[autonomy.vitals]
+[autonomous_runtime.vitals]
 dead_end_window = 3
 dead_end_similarity = 0.95
 stagnation_window = 5
@@ -1007,7 +1009,7 @@ salience_floor = 0.05
 decay_factor = 0.97                 # per week
 ```
 
-`[heartbeat]` keeps its exact current meaning; when `[autonomy].enabled = true` the
+`[heartbeat]` keeps its exact current meaning; when `[autonomous_runtime].enabled = true` the
 engine runs as the `heartbeat_md` pulse with identical user-visible behavior
 (HEARTBEAT.md format, two-phase decision, adaptive interval, dead-man's switch).
 Documented migration: none required.
@@ -1018,13 +1020,13 @@ Documented migration: none required.
 |---|---|
 | `src/autonomy/{mod,traits,driver,context,vitals,state,episodic}.rs` | **New** — driver, pulse registry/factory, vitals, state machine, episode types |
 | `src/senses/{mod,traits,event,bus,ambient,factory}.rs` | **New** — envelope, Sense trait, lanes, ambient buffer, adapters |
-| `src/heartbeat/engine.rs` | Engine logic kept; `run()` loop body extracted into `HeartbeatMdPulse: PulseTask` (legacy standalone loop retained behind `autonomy.enabled = false`) |
+| `src/heartbeat/engine.rs` | Engine logic kept; `run()` loop body extracted into `HeartbeatMdPulse: PulseTask` (legacy standalone loop retained behind `autonomous_runtime.enabled = false`) |
 | `src/channels/dispatch.rs` | Head of loop reads from `SensoryBus::next()` when senses enabled; `/stop` path unchanged |
 | `src/agent/loop_.rs` | `VitalsMonitor::observe_iteration` call beside existing loop-detection block; `StatePolicy` pacing/iteration factors applied at loop entry |
 | `src/agent/tool_filter.rs` | Intersect `ToolGate` with existing filters |
 | `src/agent/prompt.rs` | Ambient section + tone directive + top-k episodic recall in `SystemPromptBuilder` |
 | `src/observability/traits.rs` | New events (§8) |
-| `src/config/schema/mod.rs` | `[autonomy]`, `[senses]`, `[episodic]` sections |
+| `src/config/schema/mod.rs` | `[autonomous_runtime]`, `[senses]`, `[episodic]` sections |
 | `python/rain_contracts/episodic.py`, `autonomy_supervisor.py` | **New** — contracts + supervisor |
 | `episodic_memory_ingestor.py` | Adopt `EpisodicEventV2.from_jsonl` (accepts v1 lines unchanged); add segmentation per §3.3 |
 
@@ -1061,7 +1063,7 @@ Prometheus mappings: `rain_pulse_ticks_total{task,outcome}`,
 ## 10. Rollout Plan (phased, each independently revertable)
 
 1. **PR-1 (Medium risk):** `src/autonomy/` driver + traits + vitals; `HeartbeatEngine`
-   wrapped as `heartbeat_md` pulse behind `autonomy.enabled = false` default.
+   wrapped as `heartbeat_md` pulse behind `autonomous_runtime.enabled = false` default.
    Rollback: flip flag / revert — legacy loop untouched.
 2. **PR-2 (Medium):** `src/senses/` bus + ambient buffer; channels adapter behind
    `senses.enabled`. Dispatch loop falls back to direct mpsc when disabled.

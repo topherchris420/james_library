@@ -3627,6 +3627,68 @@ impl Default for HeartbeatConfig {
     }
 }
 
+/// Autonomous pulse runtime configuration (`[autonomous_runtime]` section).
+///
+/// When enabled, the daemon runs periodic background work (starting with the
+/// heartbeat) through the generalized pulse driver in `src/autonomy/` instead
+/// of the legacy standalone heartbeat worker. Disabled by default; existing
+/// configs keep today's behavior unchanged.
+///
+/// Rollback: remove the section or set `enabled = false` to restore the
+/// legacy heartbeat worker path.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct AutonomousRuntimeConfig {
+    /// Route background work through the pulse driver. Default: `false`.
+    pub enabled: bool,
+    /// Maximum pulse ticks running concurrently. Default: `2`.
+    pub max_concurrent_pulses: usize,
+    /// Stagnation/dead-end detection thresholds for the vitals monitor.
+    pub vitals: VitalsConfig,
+}
+
+impl Default for AutonomousRuntimeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            max_concurrent_pulses: 2,
+            vitals: VitalsConfig::default(),
+        }
+    }
+}
+
+/// Vitals monitor thresholds (`[autonomous_runtime.vitals]`).
+///
+/// Mirrors the detector semantics of the Python `stagnation_monitor.py`:
+/// dead-end = consecutive near-duplicate outputs; stagnation = a sliding
+/// window of low-novelty outputs with low variance.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct VitalsConfig {
+    /// Consecutive near-duplicate outputs that flag a dead end. Default: `3`.
+    pub dead_end_window: usize,
+    /// Similarity threshold (0.0–1.0) for near-duplicate detection. Default: `0.95`.
+    pub dead_end_similarity: f64,
+    /// Number of recent outputs in the stagnation novelty window. Default: `5`.
+    pub stagnation_window: usize,
+    /// Mean novelty below this flags stagnation. Default: `0.15`.
+    pub stagnation_novelty_mean: f64,
+    /// Novelty variance below this (with low mean) flags stagnation. Default: `0.01`.
+    pub stagnation_novelty_variance: f64,
+}
+
+impl Default for VitalsConfig {
+    fn default() -> Self {
+        Self {
+            dead_end_window: 3,
+            dead_end_similarity: 0.95,
+            stagnation_window: 5,
+            stagnation_novelty_mean: 0.15,
+            stagnation_novelty_variance: 0.01,
+        }
+    }
+}
+
 // Ã¢â€â‚¬Ã¢â€â‚¬ Cron Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 /// Cron job configuration (`[cron]` section).
