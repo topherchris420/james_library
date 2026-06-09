@@ -3689,6 +3689,63 @@ impl Default for VitalsConfig {
     }
 }
 
+/// Sensory bus configuration (`[senses]` section).
+///
+/// When enabled, channel listener traffic is routed through a prioritized,
+/// bounded event bus (interrupts > direct messages > environmental >
+/// ambient) before reaching the dispatch loop. Disabled by default; the
+/// direct listener-to-dispatch mpsc path is unchanged when off.
+///
+/// Rollback: remove the section or set `enabled = false`.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct SensesConfig {
+    /// Route channel intake through the sensory bus. Default: `false`.
+    pub enabled: bool,
+    /// Per-lane queue capacities `[interrupt, direct, environmental,
+    /// ambient]`. Default: `[8, 64, 256, 256]`.
+    pub lane_capacity: Vec<usize>,
+    /// After this many consecutive serves that bypass a non-empty lower
+    /// lane, that lane is served once (anti-starvation). Default: `16`.
+    pub starvation_credit: u32,
+    /// Maximum facts retained in the ambient context buffer. Default: `32`.
+    pub ambient_facts: usize,
+    /// Approximate token budget for the rendered ambient prompt section.
+    /// Default: `1000`.
+    pub ambient_token_budget: usize,
+    /// Debounce window for coalescing same-key environmental/ambient events,
+    /// in milliseconds. `0` disables coalescing. Default: `2000`.
+    pub coalesce_window_ms: u64,
+}
+
+const DEFAULT_LANE_CAPACITY: [usize; 4] = [8, 64, 256, 256];
+
+impl SensesConfig {
+    /// Capacity for the given lane index, falling back to the default when
+    /// the configured list is short, and clamped to at least 1.
+    pub fn capacity_for_lane(&self, lane: usize) -> usize {
+        self.lane_capacity
+            .get(lane)
+            .copied()
+            .or_else(|| DEFAULT_LANE_CAPACITY.get(lane).copied())
+            .unwrap_or(1)
+            .max(1)
+    }
+}
+
+impl Default for SensesConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            lane_capacity: DEFAULT_LANE_CAPACITY.to_vec(),
+            starvation_credit: 16,
+            ambient_facts: 32,
+            ambient_token_budget: 1000,
+            coalesce_window_ms: 2000,
+        }
+    }
+}
+
 // Ã¢â€â‚¬Ã¢â€â‚¬ Cron Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 /// Cron job configuration (`[cron]` section).

@@ -135,6 +135,10 @@ pub struct Config {
     #[serde(default)]
     pub autonomous_runtime: AutonomousRuntimeConfig,
 
+    /// Sensory bus configuration (`[senses]`).
+    #[serde(default)]
+    pub senses: SensesConfig,
+
     /// Cron job configuration (`[cron]`).
     #[serde(default)]
     pub cron: CronConfig,
@@ -571,6 +575,7 @@ impl Default for Config {
             embedding_routes: Vec::new(),
             heartbeat: HeartbeatConfig::default(),
             autonomous_runtime: AutonomousRuntimeConfig::default(),
+            senses: SensesConfig::default(),
             cron: CronConfig::default(),
             channels_config: ChannelsConfig::default(),
             memory: MemoryConfig::default(),

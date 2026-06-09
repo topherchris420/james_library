@@ -160,6 +160,7 @@ pub async fn run_wizard(force: bool) -> Result<Config> {
         embedding_routes: Vec::new(),
         heartbeat: HeartbeatConfig::default(),
         autonomous_runtime: crate::config::AutonomousRuntimeConfig::default(),
+        senses: crate::config::SensesConfig::default(),
         cron: crate::config::CronConfig::default(),
         channels_config,
         memory: memory_config, // User-selected memory backend
@@ -575,6 +576,7 @@ async fn run_quick_setup_with_home(
         embedding_routes: Vec::new(),
         heartbeat: HeartbeatConfig::default(),
         autonomous_runtime: crate::config::AutonomousRuntimeConfig::default(),
+        senses: crate::config::SensesConfig::default(),
         cron: crate::config::CronConfig::default(),
         channels_config: ChannelsConfig::default(),
         memory: memory_config,
