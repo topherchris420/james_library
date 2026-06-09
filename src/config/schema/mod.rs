@@ -3030,6 +3030,11 @@ impl Default for HooksConfig {
 pub struct BuiltinHooksConfig {
     /// Enable the command-logger hook (logs tool calls for auditing).
     pub command_logger: bool,
+    /// Enable the episodic-events hook: appends one JSONL line per tool
+    /// call to `episodic_memory/episodic_events.jsonl` (tool name, outcome,
+    /// duration — never arguments or outputs). Default: `false`.
+    #[serde(default)]
+    pub episodic_events: bool,
     /// Configuration for the webhook-audit hook.
     ///
     /// When enabled, POSTs a JSON payload to `url` for every tool invocation

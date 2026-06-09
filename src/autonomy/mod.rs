@@ -7,7 +7,9 @@
 //! behavior. Design: `docs/autonomous-runtime-design.md`.
 
 pub mod driver;
+pub mod episodic;
 pub mod heartbeat_pulse;
+pub mod state;
 pub mod traits;
 pub mod vitals;
 

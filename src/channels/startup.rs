@@ -938,6 +938,11 @@ pub async fn start_channels(config: Config) -> Result<()> {
             if config.hooks.builtin.command_logger {
                 runner.register(Box::new(crate::hooks::builtin::CommandLoggerHook::new()));
             }
+            if config.hooks.builtin.episodic_events {
+                runner.register(Box::new(crate::hooks::builtin::EpisodicEventsHook::new(
+                    config.workspace_dir.clone(),
+                )));
+            }
             if config.hooks.builtin.webhook_audit.enabled {
                 match crate::hooks::builtin::WebhookAuditHook::new(
                     config.hooks.builtin.webhook_audit.clone(),
