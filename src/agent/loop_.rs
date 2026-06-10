@@ -308,6 +308,7 @@ pub(crate) async fn run_tool_call_loop_with_options(
         model_switch_callback,
         system_prompt_renderer,
         pacing,
+        None,
         true,
         ToolDispatchMode::Auto,
     )
@@ -339,6 +340,7 @@ pub(crate) async fn run_tool_call_loop_with_policy(
     model_switch_callback: Option<ModelSwitchCallback>,
     system_prompt_renderer: Option<&(dyn Fn() -> String + Send + Sync)>,
     pacing: &crate::config::PacingConfig,
+    vitals: Option<&crate::config::VitalsConfig>,
     allow_parallel_tools: bool,
     tool_dispatch_mode: ToolDispatchMode,
 ) -> Result<String> {
@@ -357,6 +359,12 @@ pub(crate) async fn run_tool_call_loop_with_policy(
         .collect();
     let mut consecutive_identical_outputs: usize = 0;
     let mut last_tool_output_hash: Option<u64> = None;
+    // Vitals monitor (autonomous runtime): graded near-duplicate/stagnation
+    // guard with a redirect -> yield -> abort ladder. `None` (the default)
+    // preserves existing behavior exactly.
+    let mut vitals_monitor =
+        vitals.map(|cfg| crate::autonomy::vitals::VitalsMonitor::new(cfg.clone()));
+    let mut vitals_escalations: u32 = 0;
 
     for iteration in 0..max_iterations {
         let mut seen_tool_signatures: HashSet<(String, String)> = HashSet::new();
@@ -1092,6 +1100,39 @@ pub(crate) async fn run_tool_call_loop_with_policy(
             }
         }
 
+        // ── Vitals monitor (autonomous runtime) ────────────────
+        // Near-duplicate and stagnation detection over tool outputs with a
+        // graded intervention ladder. Unlike the hash check above (exact
+        // duplicates, hard abort), this catches paraphrased repetition and
+        // tries a course-correction before giving up.
+        let mut vitals_action: Option<crate::autonomy::vitals::Intervention> = None;
+        if let Some(monitor) = vitals_monitor.as_mut() {
+            if !detection_relevant_output.is_empty() {
+                let verdict = monitor.observe(&detection_relevant_output);
+                if let Some(intervention) = crate::autonomy::vitals::VitalsMonitor::intervention_for(
+                    &verdict,
+                    vitals_escalations,
+                ) {
+                    vitals_escalations += 1;
+                    runtime_trace::record_event(
+                        "vitals_intervention",
+                        Some(channel_name),
+                        Some(provider_name),
+                        Some(model),
+                        Some(&turn_id),
+                        Some(false),
+                        Some("vitals monitor intervention"),
+                        serde_json::json!({
+                            "iteration": iteration + 1,
+                            "verdict": format!("{verdict:?}"),
+                            "escalation": vitals_escalations,
+                        }),
+                    );
+                    vitals_action = Some(intervention);
+                }
+            }
+        }
+
         // Add assistant message with tool calls + tool results to history.
         // Native mode: use JSON-structured messages so convert_messages() can
         // reconstruct proper OpenAI-format tool_calls and tool result messages.
@@ -1124,6 +1165,33 @@ pub(crate) async fn run_tool_call_loop_with_policy(
                 });
                 history.push(ChatMessage::tool(tool_msg.to_string()));
             }
+        }
+
+        // Apply the vitals intervention after tool results are recorded so
+        // history stays consistent for follow-up turns.
+        match vitals_action {
+            Some(crate::autonomy::vitals::Intervention::Redirect { prompt }) => {
+                history.push(ChatMessage::user(format!("[Vitals monitor] {prompt}")));
+            }
+            Some(crate::autonomy::vitals::Intervention::YieldAndConsolidate) => {
+                // Explicit partial-yield instead of silently looping on:
+                // progress so far is preserved in history.
+                return Ok(
+                    "⚠️ Turn yielded by the vitals monitor: repeated low-novelty \
+                     iterations (stagnation guard). Partial progress is preserved in the \
+                     conversation; ask again to continue with a different approach."
+                        .to_string(),
+                );
+            }
+            // Defensive: unreachable with the current ladder (yield returns
+            // at escalation 1), kept fail-fast in case the ladder changes.
+            Some(crate::autonomy::vitals::Intervention::AlertOutOfBand) => {
+                anyhow::bail!(
+                    "Agent loop aborted by vitals monitor: stagnation persisted after \
+                     {vitals_escalations} interventions"
+                );
+            }
+            None => {}
         }
     }
 
@@ -1905,6 +1973,10 @@ pub async fn run(
                 Some(model_switch_callback.clone()),
                 Some(&prompt_renderer),
                 &config.pacing,
+                config
+                    .autonomous_runtime
+                    .enabled
+                    .then_some(&config.autonomous_runtime.vitals),
                 config.agent.parallel_tools,
                 tool_dispatch_mode,
             )
@@ -2208,6 +2280,10 @@ pub async fn run(
                     Some(model_switch_callback.clone()),
                     Some(&prompt_renderer),
                     &config.pacing,
+                    config
+                        .autonomous_runtime
+                        .enabled
+                        .then_some(&config.autonomous_runtime.vitals),
                     config.agent.parallel_tools,
                     tool_dispatch_mode,
                 )
@@ -3351,6 +3427,99 @@ mod tests {
         assert!(
             !tool_results.content.contains("Skipped duplicate tool call"),
             "exempt tool calls should not be suppressed"
+        );
+    }
+
+    /// Drive the loop with N identical tool-call responses followed by a
+    /// final text answer, with the vitals monitor enabled or disabled.
+    async fn run_repetitive_loop(
+        repeats: usize,
+        vitals: Option<&crate::config::VitalsConfig>,
+        history: &mut Vec<ChatMessage>,
+    ) -> Result<String> {
+        let tool_call = r#"<tool_call>
+{"name":"count_tool","arguments":{"value":"the same long deterministic output payload"}}
+</tool_call>"#;
+        let mut responses = vec![tool_call; repeats];
+        responses.push("done");
+        let provider = ScriptedProvider::from_text_responses(responses);
+
+        let invocations = Arc::new(AtomicUsize::new(0));
+        let tools_registry: Vec<Box<dyn Tool>> = vec![Box::new(CountingTool::new(
+            "count_tool",
+            Arc::clone(&invocations),
+        ))];
+        let observer = NoopObserver;
+        let exempt = vec!["count_tool".to_string()];
+
+        run_tool_call_loop_with_policy(
+            &provider,
+            history,
+            &tools_registry,
+            None,
+            &observer,
+            "mock-provider",
+            "mock-model",
+            0.0,
+            true,
+            None,
+            "cli",
+            None,
+            &crate::config::MultimodalConfig::default(),
+            12,
+            None,
+            None,
+            None,
+            &[],
+            &exempt,
+            None,
+            None,
+            None,
+            &crate::config::PacingConfig::default(),
+            vitals,
+            true,
+            ToolDispatchMode::Auto,
+        )
+        .await
+    }
+
+    #[tokio::test]
+    async fn vitals_monitor_redirects_then_yields_on_dead_end() {
+        let mut history = vec![ChatMessage::system("test"), ChatMessage::user("go")];
+        let vitals = crate::config::VitalsConfig::default();
+
+        let result = run_repetitive_loop(8, Some(&vitals), &mut history)
+            .await
+            .expect("vitals yield is a graceful return, not an error");
+
+        // Escalation 1: yield with an explicit partial marker.
+        assert!(
+            result.contains("yielded by the vitals monitor"),
+            "expected yield marker, got: {result}"
+        );
+        // Escalation 0 happened first: a redirect message was injected.
+        assert!(
+            history
+                .iter()
+                .any(|m| m.role == "user" && m.content.starts_with("[Vitals monitor]")),
+            "redirect course-correction should be recorded in history"
+        );
+    }
+
+    #[tokio::test]
+    async fn vitals_disabled_preserves_legacy_loop_behavior() {
+        let mut history = vec![ChatMessage::system("test"), ChatMessage::user("go")];
+
+        let result = run_repetitive_loop(8, None, &mut history)
+            .await
+            .expect("loop should run to the scripted final answer");
+
+        assert_eq!(result, "done", "no intervention without vitals config");
+        assert!(
+            !history
+                .iter()
+                .any(|m| m.content.starts_with("[Vitals monitor]")),
+            "no vitals messages when disabled"
         );
     }
 

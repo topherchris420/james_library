@@ -63,6 +63,9 @@ pub struct Agent {
     config: crate::config::AgentConfig,
     multimodal_config: crate::config::MultimodalConfig,
     pacing: crate::config::PacingConfig,
+    /// Vitals thresholds when the autonomous runtime is enabled; `None`
+    /// keeps the loop's legacy behavior.
+    vitals: Option<crate::config::VitalsConfig>,
     model_name: String,
     temperature: f64,
     workspace_dir: std::path::PathBuf,
@@ -122,6 +125,7 @@ pub struct AgentBuilder {
     config: Option<crate::config::AgentConfig>,
     multimodal_config: Option<crate::config::MultimodalConfig>,
     pacing: Option<crate::config::PacingConfig>,
+    vitals: Option<crate::config::VitalsConfig>,
     model_name: Option<String>,
     temperature: Option<f64>,
     workspace_dir: Option<std::path::PathBuf>,
@@ -156,6 +160,7 @@ impl AgentBuilder {
             config: None,
             multimodal_config: None,
             pacing: None,
+            vitals: None,
             model_name: None,
             temperature: None,
             workspace_dir: None,
@@ -233,6 +238,11 @@ impl AgentBuilder {
 
     pub fn pacing(mut self, pacing: crate::config::PacingConfig) -> Self {
         self.pacing = Some(pacing);
+        self
+    }
+
+    pub fn vitals(mut self, vitals: Option<crate::config::VitalsConfig>) -> Self {
+        self.vitals = vitals;
         self
     }
 
@@ -411,6 +421,7 @@ impl AgentBuilder {
             config: self.config.unwrap_or_default(),
             multimodal_config: self.multimodal_config.unwrap_or_default(),
             pacing: self.pacing.unwrap_or_default(),
+            vitals: self.vitals,
             model_name: self
                 .model_name
                 .unwrap_or_else(|| "anthropic/claude-sonnet-4-20250514".into()),
@@ -648,6 +659,12 @@ impl Agent {
             .config(config.agent.clone())
             .multimodal_config(config.multimodal.clone())
             .pacing(config.pacing.clone())
+            .vitals(
+                config
+                    .autonomous_runtime
+                    .enabled
+                    .then(|| config.autonomous_runtime.vitals.clone()),
+            )
             .model_name(model_name)
             .temperature(config.default_temperature)
             .workspace_dir(config.workspace_dir.clone())
@@ -917,6 +934,7 @@ impl Agent {
             None,
             Some(&prompt_renderer),
             &self.pacing,
+            self.vitals.as_ref(),
             self.config.parallel_tools,
             self.tool_dispatch_mode,
         )
