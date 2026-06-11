@@ -32,22 +32,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
+from rain_contracts.episodic import EpisodicEventV2
+
 if TYPE_CHECKING:
     from graph_bridge import HypergraphManager
 
 logger = logging.getLogger("episodic_memory")
 
-
-@dataclass
-class EpisodicEvent:
-    """Mirrors the Rust ``EpisodicEvent`` struct."""
-
-    timestamp: str
-    agent_name: str
-    tool: str
-    args: dict
-    sentence: str
-    duration_ms: int
+# Shared cross-language contract (v2 is wire-compatible with the original
+# v1 lines; unknown keys from future writers are ignored).
+EpisodicEvent = EpisodicEventV2
 
 
 @dataclass
@@ -137,18 +131,8 @@ class EpisodicMemoryIngestor:
                     if not line:
                         continue
                     try:
-                        data = json.loads(line)
-                        events.append(
-                            EpisodicEvent(
-                                timestamp=data.get("timestamp", ""),
-                                agent_name=data.get("agent_name", "unknown"),
-                                tool=data.get("tool", "unknown"),
-                                args=data.get("args", {}),
-                                sentence=data.get("sentence", ""),
-                                duration_ms=data.get("duration_ms", 0),
-                            )
-                        )
-                    except (json.JSONDecodeError, KeyError) as exc:
+                        events.append(EpisodicEvent.from_jsonl(line))
+                    except (json.JSONDecodeError, KeyError, ValueError) as exc:
                         logger.warning("Skipping malformed JSONL line: %s", exc)
                 self._file_offset = f.tell()
         except OSError as exc:

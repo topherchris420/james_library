@@ -256,6 +256,79 @@ recipient = "42"
 }
 
 #[test]
+async fn autonomous_runtime_config_default_is_disabled() {
+    let a = AutonomousRuntimeConfig::default();
+    assert!(!a.enabled);
+    assert_eq!(a.max_concurrent_pulses, 2);
+    assert_eq!(a.vitals.dead_end_window, 3);
+    assert!((a.vitals.dead_end_similarity - 0.95).abs() < f64::EPSILON);
+    assert_eq!(a.vitals.stagnation_window, 5);
+}
+
+#[test]
+async fn autonomous_runtime_config_parses_with_overrides() {
+    let raw = r#"
+enabled = true
+max_concurrent_pulses = 4
+
+[vitals]
+dead_end_window = 5
+stagnation_novelty_mean = 0.2
+"#;
+    let parsed: AutonomousRuntimeConfig = toml::from_str(raw).unwrap();
+    assert!(parsed.enabled);
+    assert_eq!(parsed.max_concurrent_pulses, 4);
+    assert_eq!(parsed.vitals.dead_end_window, 5);
+    assert!((parsed.vitals.stagnation_novelty_mean - 0.2).abs() < f64::EPSILON);
+    // Unspecified vitals keys keep defaults.
+    assert!((parsed.vitals.dead_end_similarity - 0.95).abs() < f64::EPSILON);
+}
+
+#[test]
+async fn config_without_autonomous_runtime_section_stays_disabled() {
+    let parsed: Config = toml::from_str("").unwrap();
+    assert!(!parsed.autonomous_runtime.enabled);
+    assert!(!parsed.senses.enabled);
+}
+
+#[test]
+async fn senses_config_default_is_disabled() {
+    let s = SensesConfig::default();
+    assert!(!s.enabled);
+    assert_eq!(s.lane_capacity, vec![8, 64, 256, 256]);
+    assert_eq!(s.starvation_credit, 16);
+    assert_eq!(s.ambient_facts, 32);
+    assert_eq!(s.coalesce_window_ms, 2000);
+}
+
+#[test]
+async fn senses_config_lane_capacity_falls_back_and_clamps() {
+    let mut s = SensesConfig::default();
+    s.lane_capacity = vec![0, 10];
+    assert_eq!(s.capacity_for_lane(0), 1); // clamped to at least 1
+    assert_eq!(s.capacity_for_lane(1), 10);
+    assert_eq!(s.capacity_for_lane(2), 256); // default fallback
+    assert_eq!(s.capacity_for_lane(3), 256);
+}
+
+#[test]
+async fn senses_config_parses_with_overrides() {
+    let raw = r#"
+enabled = true
+lane_capacity = [4, 32, 128, 128]
+starvation_credit = 8
+coalesce_window_ms = 500
+"#;
+    let parsed: SensesConfig = toml::from_str(raw).unwrap();
+    assert!(parsed.enabled);
+    assert_eq!(parsed.capacity_for_lane(0), 4);
+    assert_eq!(parsed.starvation_credit, 8);
+    assert_eq!(parsed.coalesce_window_ms, 500);
+    // Unspecified keys keep defaults.
+    assert_eq!(parsed.ambient_token_budget, 1000);
+}
+
+#[test]
 async fn cron_config_default() {
     let c = CronConfig::default();
     assert!(c.enabled);
@@ -403,6 +476,8 @@ async fn config_toml_roundtrip() {
             to: Some("123456".into()),
             ..HeartbeatConfig::default()
         },
+        autonomous_runtime: AutonomousRuntimeConfig::default(),
+        senses: SensesConfig::default(),
         cron: CronConfig::default(),
         channels_config: ChannelsConfig {
             cli: true,
@@ -825,6 +900,8 @@ async fn config_save_and_load_tmpdir() {
         embedding_routes: Vec::new(),
         query_classification: QueryClassificationConfig::default(),
         heartbeat: HeartbeatConfig::default(),
+        autonomous_runtime: AutonomousRuntimeConfig::default(),
+        senses: SensesConfig::default(),
         cron: CronConfig::default(),
         channels_config: ChannelsConfig::default(),
         memory: MemoryConfig::default(),

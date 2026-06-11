@@ -25,6 +25,9 @@ ignore = [
     { id = "RUSTSEC-2026-0049", reason = "rustls-webpki CRL bug via rumqttc; awaiting rumqttc upgrade" },
     # rustls-pemfile unmaintained — latest version 2.2.0, no replacement available
     { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile unmaintained; latest version, no alternative" },
+    # proc-macro-error2 unmaintained — transitive via matrix-sdk (aquamarine,
+    # matrix-pickle-derive); advisory states no safe upgrade is available
+    { id = "RUSTSEC-2026-0173", reason = "proc-macro-error2 via matrix-sdk; awaiting matrix-sdk upgrade" },
 ]
 
 [licenses]

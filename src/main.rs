@@ -77,6 +77,7 @@ fn pause_after_no_command_help() {
 mod agent;
 mod approval;
 mod auth;
+mod autonomy;
 mod channels;
 mod cli;
 mod cli_input;
@@ -109,6 +110,7 @@ mod providers;
 mod routines;
 mod runtime;
 mod security;
+mod senses;
 mod service;
 mod skillforge;
 mod skills;

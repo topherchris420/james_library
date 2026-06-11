@@ -1660,6 +1660,23 @@ pub async fn start_channels(config: Config) -> Result<()> {
     }
     drop(tx); // Drop our copy so rx closes when all channels stop
 
+    // Optionally interpose the prioritized sensory bus: stop commands ride
+    // the interrupt lane and overtake queued messages. Dispatch semantics
+    // (including the /stop handling below) are unchanged.
+    let rx = if config.senses.enabled {
+        println!("  👁 Sensory bus enabled (prioritized channel intake)");
+        let (rx, _ambient) = crate::senses::interpose_channel_bus(rx, &config.senses, |msg| {
+            if msg.channel != "cli" && is_stop_command(&msg.content) {
+                crate::senses::SensePriority::Interrupt
+            } else {
+                crate::senses::SensePriority::Direct
+            }
+        });
+        rx
+    } else {
+        rx
+    };
+
     let channels_by_name = Arc::new(
         channels
             .iter()
@@ -1743,6 +1760,11 @@ pub async fn start_channels(config: Config) -> Result<()> {
             let mut runner = crate::hooks::HookRunner::new();
             if config.hooks.builtin.command_logger {
                 runner.register(Box::new(crate::hooks::builtin::CommandLoggerHook::new()));
+            }
+            if config.hooks.builtin.episodic_events {
+                runner.register(Box::new(crate::hooks::builtin::EpisodicEventsHook::new(
+                    config.workspace_dir.clone(),
+                )));
             }
             if config.hooks.builtin.webhook_audit.enabled {
                 match crate::hooks::builtin::WebhookAuditHook::new(

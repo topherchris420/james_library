@@ -3030,6 +3030,11 @@ impl Default for HooksConfig {
 pub struct BuiltinHooksConfig {
     /// Enable the command-logger hook (logs tool calls for auditing).
     pub command_logger: bool,
+    /// Enable the episodic-events hook: appends one JSONL line per tool
+    /// call to `episodic_memory/episodic_events.jsonl` (tool name, outcome,
+    /// duration — never arguments or outputs). Default: `false`.
+    #[serde(default)]
+    pub episodic_events: bool,
     /// Configuration for the webhook-audit hook.
     ///
     /// When enabled, POSTs a JSON payload to `url` for every tool invocation
@@ -3623,6 +3628,125 @@ impl Default for HeartbeatConfig {
             deadman_channel: None,
             deadman_to: None,
             max_run_history: default_heartbeat_max_run_history(),
+        }
+    }
+}
+
+/// Autonomous pulse runtime configuration (`[autonomous_runtime]` section).
+///
+/// When enabled, the daemon runs periodic background work (starting with the
+/// heartbeat) through the generalized pulse driver in `src/autonomy/` instead
+/// of the legacy standalone heartbeat worker. Disabled by default; existing
+/// configs keep today's behavior unchanged.
+///
+/// Rollback: remove the section or set `enabled = false` to restore the
+/// legacy heartbeat worker path.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct AutonomousRuntimeConfig {
+    /// Route background work through the pulse driver. Default: `false`.
+    pub enabled: bool,
+    /// Maximum pulse ticks running concurrently. Default: `2`.
+    pub max_concurrent_pulses: usize,
+    /// Stagnation/dead-end detection thresholds for the vitals monitor.
+    pub vitals: VitalsConfig,
+}
+
+impl Default for AutonomousRuntimeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            max_concurrent_pulses: 2,
+            vitals: VitalsConfig::default(),
+        }
+    }
+}
+
+/// Vitals monitor thresholds (`[autonomous_runtime.vitals]`).
+///
+/// Mirrors the detector semantics of the Python `stagnation_monitor.py`:
+/// dead-end = consecutive near-duplicate outputs; stagnation = a sliding
+/// window of low-novelty outputs with low variance.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct VitalsConfig {
+    /// Consecutive near-duplicate outputs that flag a dead end. Default: `3`.
+    pub dead_end_window: usize,
+    /// Similarity threshold (0.0–1.0) for near-duplicate detection. Default: `0.95`.
+    pub dead_end_similarity: f64,
+    /// Number of recent outputs in the stagnation novelty window. Default: `5`.
+    pub stagnation_window: usize,
+    /// Mean novelty below this flags stagnation. Default: `0.15`.
+    pub stagnation_novelty_mean: f64,
+    /// Novelty variance below this (with low mean) flags stagnation. Default: `0.01`.
+    pub stagnation_novelty_variance: f64,
+}
+
+impl Default for VitalsConfig {
+    fn default() -> Self {
+        Self {
+            dead_end_window: 3,
+            dead_end_similarity: 0.95,
+            stagnation_window: 5,
+            stagnation_novelty_mean: 0.15,
+            stagnation_novelty_variance: 0.01,
+        }
+    }
+}
+
+/// Sensory bus configuration (`[senses]` section).
+///
+/// When enabled, channel listener traffic is routed through a prioritized,
+/// bounded event bus (interrupts > direct messages > environmental >
+/// ambient) before reaching the dispatch loop. Disabled by default; the
+/// direct listener-to-dispatch mpsc path is unchanged when off.
+///
+/// Rollback: remove the section or set `enabled = false`.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(default)]
+pub struct SensesConfig {
+    /// Route channel intake through the sensory bus. Default: `false`.
+    pub enabled: bool,
+    /// Per-lane queue capacities `[interrupt, direct, environmental,
+    /// ambient]`. Default: `[8, 64, 256, 256]`.
+    pub lane_capacity: Vec<usize>,
+    /// After this many consecutive serves that bypass a non-empty lower
+    /// lane, that lane is served once (anti-starvation). Default: `16`.
+    pub starvation_credit: u32,
+    /// Maximum facts retained in the ambient context buffer. Default: `32`.
+    pub ambient_facts: usize,
+    /// Approximate token budget for the rendered ambient prompt section.
+    /// Default: `1000`.
+    pub ambient_token_budget: usize,
+    /// Debounce window for coalescing same-key environmental/ambient events,
+    /// in milliseconds. `0` disables coalescing. Default: `2000`.
+    pub coalesce_window_ms: u64,
+}
+
+const DEFAULT_LANE_CAPACITY: [usize; 4] = [8, 64, 256, 256];
+
+impl SensesConfig {
+    /// Capacity for the given lane index, falling back to the default when
+    /// the configured list is short, and clamped to at least 1.
+    pub fn capacity_for_lane(&self, lane: usize) -> usize {
+        self.lane_capacity
+            .get(lane)
+            .copied()
+            .or_else(|| DEFAULT_LANE_CAPACITY.get(lane).copied())
+            .unwrap_or(1)
+            .max(1)
+    }
+}
+
+impl Default for SensesConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            lane_capacity: DEFAULT_LANE_CAPACITY.to_vec(),
+            starvation_credit: 16,
+            ambient_facts: 32,
+            ambient_token_budget: 1000,
+            coalesce_window_ms: 2000,
         }
     }
 }
