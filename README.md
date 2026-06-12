@@ -3,6 +3,14 @@
 **A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
 
 <p align="center">
+  <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>
+  <a href="https://github.com/topherchris420/james_library/actions/workflows/deploy-docs.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/deploy-docs.yml/badge.svg?branch=main" alt="Docs" /></a>
+  <a href="https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml/badge.svg?branch=main" alt="Security Audit" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+</p>
+
+<p align="center">
   <img src="assets/rain_lab.png" alt="R.A.I.N. Lab" width="600">
 </p>
 
@@ -80,7 +88,7 @@ The SOUL files are part of the product. They're what make the agents feel like c
 
 ## TRIBE v2 Brain Encoding
 
-R.A.I.N. Lab includes a **TRIBE v2 integration** that predicts fMRI brain activation patterns from video, audio, or text. Feed a stimulus to the model and James returns predicted cortical response maps, run basic neuroscience experiments from inside a research meeting.
+R.A.I.N. Lab includes a **TRIBE v2 integration** that predicts fMRI brain activation patterns from video, audio, or text. Feed a stimulus to the model and James returns predicted cortical response maps — letting you run basic neuroscience experiments from inside a research meeting.
 
 | Capability | Detail |
 |------------|--------|
@@ -241,6 +249,10 @@ cargo test
 ### Design Principles
 
 The codebase follows KISS, YAGNI, DRY (rule of three), SRP/ISP, fail-fast, secure-by-default, and reversible changes. See [ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](CLAUDE.md) for the full contract.
+
+### Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR workflow and [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
 
 </details>
 

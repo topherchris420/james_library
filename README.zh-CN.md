@@ -25,7 +25,7 @@
 
 ## 功能概要
 
-James 不仅仅是多代理聊天 — 它是一个完整的研究操作系统：10+ 模型提供商、25+ 消息平台、60+ 内置工具、硬件外设控制（Arduino、STM32、树莓派）、神经科学脑编码模型（TRIBE v2）、知识图谱、语义记忆等。完整列表请参阅英文主页 [`README.md` - What You Can Do](README.md#what-you-can-do)。
+James 不仅仅是多代理聊天 — 它是一个完整的研究操作系统：10+ 模型提供商、25+ 消息平台、60+ 内置工具、硬件外设控制（Arduino、STM32、树莓派）、神经科学脑编码模型（TRIBE v2）、知识图谱、语义记忆等。完整列表请参阅英文主页 [`README.md` - What It Does](README.md#what-it-does)。
 
 ## 适用人群
 
