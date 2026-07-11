@@ -207,7 +207,7 @@ R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, n
 |---|---|
 | **Docs** | [Start Here](START_HERE.md) -- [Beginner Guide](docs/getting-started/README.md) -- [One-Click Install](docs/one-click-bootstrap.md) -- [Troubleshooting](docs/troubleshooting.md) |
 | **Papers** | [Research Archive](https://topherchris420.github.io/research/) |
-| **Handout** | [R.A.I.N. Lab Trifold](assets/marketing/rain_lab_trifold.html) — printable one-pager overview |
+| **Handout** | [<img src="assets/marketing/rain_lab_trifold_preview.png" alt="R.A.I.N. Lab Trifold preview" width="360">](assets/marketing/rain_lab_trifold.html) — [R.A.I.N. Lab Trifold](assets/marketing/rain_lab_trifold.html), printable one-pager overview |
 | **Language** | [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
 
 ---
