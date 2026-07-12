@@ -72,7 +72,7 @@ Each agent has a distinct voice, expertise, and set of constraints they bring to
 |-------|------|----------------|
 | **James** | Lead Scientist | Draws from your research papers directly. Cites metrics. Says when data is missing. |
 | **Jasmine** | Hardware Architect | Reality-checks everything against real material constraints. If it can't be built, she knows why. |
-| **Luca** | Field Tomographer | Sees geometric patterns others miss. Makes intuitive leaps, then looks for the math to ground them. |
+| **Luca** | Field Topographer | Sees geometric patterns others miss. Makes intuitive leaps, then looks for the math to ground them. |
 | **Elena** | Quantum Information Theorist | Demands formal rigor. Runs logical verification. Catches errors everyone else misses. |
 
 Each agent's full personality, reasoning principles, and conversation style are defined in their **SOUL** file:
