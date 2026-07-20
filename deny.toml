@@ -28,6 +28,9 @@ ignore = [
     # proc-macro-error2 unmaintained — transitive via matrix-sdk (aquamarine,
     # matrix-pickle-derive); advisory states no safe upgrade is available
     { id = "RUSTSEC-2026-0173", reason = "proc-macro-error2 via matrix-sdk; awaiting matrix-sdk upgrade" },
+    # ttf-parser unmaintained — transitive via pdf-extract → lopdf; advisory
+    # states no safe upgrade is available (lopdf has not migrated to skrifa)
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser via pdf-extract → lopdf; awaiting lopdf migration off ttf-parser" },
 ]
 
 [licenses]
