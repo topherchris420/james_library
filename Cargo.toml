@@ -218,7 +218,7 @@ nusb = { version = "0.2", default-features = false, optional = true }
 probe-rs = { version = "0.31", optional = true }
 
 # PDF extraction for datasheet RAG (optional, enable with --features rag-pdf)
-pdf-extract = { version = "0.10", optional = true }
+pdf-extract = { version = "0.12", optional = true }
 
 # Cross-platform audio capture for voice wake word detection (optional, enable with --features voice-wake)
 cpal = { version = "0.15", optional = true }
