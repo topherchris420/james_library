@@ -10,7 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Anchored to repo root: web/src/lib/ is real source, not a build artifact
+/lib/
 lib64/
 parts/
 sdist/

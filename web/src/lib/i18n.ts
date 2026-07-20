@@ -20,6 +20,10 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.cost': '成本追踪',
     'nav.logs': '日志',
     'nav.doctor': '诊断',
+    'nav.main_navigation': '主导航',
+    'nav.open_menu': '打开导航菜单',
+    'nav.close_menu': '关闭导航菜单',
+    'header.switch_language': '切换语言',
 
     // Dashboard
     'dashboard.title': '仪表盘',
@@ -350,6 +354,10 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.cost': 'Cost Tracker',
     'nav.logs': 'Logs',
     'nav.doctor': 'Doctor',
+    'nav.main_navigation': 'Main navigation',
+    'nav.open_menu': 'Open navigation menu',
+    'nav.close_menu': 'Close navigation menu',
+    'header.switch_language': 'Switch language',
 
     // Dashboard
     'dashboard.title': 'Dashboard',
@@ -680,6 +688,10 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.cost': 'Maliyet Takibi',
     'nav.logs': 'Kayıtlar',
     'nav.doctor': 'Doktor',
+    'nav.main_navigation': 'Ana gezinme',
+    'nav.open_menu': 'Gezinme menüsünü aç',
+    'nav.close_menu': 'Gezinme menüsünü kapat',
+    'header.switch_language': 'Dili değiştir',
 
     // Dashboard
     'dashboard.title': 'Kontrol Paneli',

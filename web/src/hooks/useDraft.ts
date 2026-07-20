@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useRef } from 'react';
+import { createContext, useContext, useCallback, useEffect, useRef } from 'react';
 
 /**
  * In-memory draft store that survives component unmounts but not page reloads.
@@ -19,6 +19,14 @@ export const DraftContext = createContext<DraftContextType>({
 
 export function useDraftStore(): DraftContextType {
   const store = useRef<Map<string, string>>(new Map());
+
+  // Logout is a privacy boundary: unsent drafts belong to the session that
+  // typed them and must not leak into the next pairing.
+  useEffect(() => {
+    const handler = () => store.current.clear();
+    window.addEventListener('R.A.I.N.-logout', handler);
+    return () => window.removeEventListener('R.A.I.N.-logout', handler);
+  }, []);
 
   const getDraft = useCallback((key: string): string => {
     return store.current.get(key) ?? '';
