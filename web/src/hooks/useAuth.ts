@@ -97,6 +97,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     removeToken();
     setTokenState(null);
     setAuthenticated(false);
+    // Logout is a privacy boundary: let session-scoped in-memory stores
+    // (e.g. cached chat history) drop their data before a new pairing.
+    window.dispatchEvent(new Event('R.A.I.N.-logout'));
   }, []);
 
   const value: AuthState = {

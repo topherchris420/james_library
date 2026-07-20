@@ -19,6 +19,17 @@ const DRAFT_KEY = 'agent-chat';
 // intentionally not persisted across page reloads).
 let cachedMessages: ChatMessage[] = [];
 
+// Set on logout so an unmount that races the logout event does not re-commit
+// partially streamed content into the (just cleared) cache. Reset on mount.
+let sessionEnded = false;
+
+// Logout is a privacy boundary: a later pairing in the same tab must not see
+// the previous session's conversation.
+window.addEventListener('R.A.I.N.-logout', () => {
+  sessionEnded = true;
+  cachedMessages = [];
+});
+
 export default function AgentChat() {
   const { draft, saveDraft, clearDraft } = useDraft(DRAFT_KEY);
   const [messages, setMessages] = useState<ChatMessage[]>(() => cachedMessages);
@@ -49,6 +60,7 @@ export default function AgentChat() {
   }, [messages]);
 
   useEffect(() => {
+    sessionEnded = false;
     const ws = new WebSocketClient();
 
     ws.onOpen = () => {
@@ -140,8 +152,9 @@ export default function AgentChat() {
       ws.disconnect();
       // Unmounting closes the socket, so a mid-stream reply will never get its
       // 'done' frame. Commit the partial text to the cached history instead of
-      // silently dropping it.
-      if (pendingContentRef.current) {
+      // silently dropping it — unless the session just ended, in which case the
+      // cache was cleared and must stay empty.
+      if (pendingContentRef.current && !sessionEnded) {
         cachedMessages = [
           ...cachedMessages,
           {
