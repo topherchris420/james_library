@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Menu, Settings, X } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { useLocaleContext } from '@/App';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +19,14 @@ const routeTitles: Record<string, string> = {
   '/doctor': 'nav.doctor',
 };
 
-export default function Header() {
+interface HeaderProps {
+  /** Toggles the mobile navigation drawer. */
+  onMenuClick?: () => void;
+  /** Whether the mobile navigation drawer is currently open. */
+  menuOpen?: boolean;
+}
+
+export default function Header({ onMenuClick, menuOpen = false }: HeaderProps) {
   const location = useLocation();
   const { logout } = useAuth();
   const { locale, setAppLocale } = useLocaleContext();
@@ -27,6 +34,11 @@ export default function Header() {
 
   const titleKey = routeTitles[location.pathname] ?? 'nav.dashboard';
   const pageTitle = t(titleKey);
+
+  // Keep the browser tab title in sync with the current page
+  useEffect(() => {
+    document.title = `${pageTitle} · R.A.I.N.`;
+  }, [pageTitle]);
 
   const toggleLanguage = () => {
     // Cycle through: en -> zh -> tr -> en
@@ -36,9 +48,24 @@ export default function Header() {
 
   return (
     <>
-      <header className="h-14 flex items-center justify-between px-6 border-b animate-fade-in" style={{ background: 'var(--pc-bg-surface)', borderColor: 'var(--pc-border)', backdropFilter: 'blur(12px)', }}>
-        {/* Page title */}
-        <h1 className="h-9 leading-9 text-lg font-semibold tracking-tight" style={{ color: 'var(--pc-text-primary)' }}>{pageTitle}</h1>
+      <header className="h-14 flex items-center justify-between px-4 sm:px-6 border-b animate-fade-in" style={{ background: 'var(--pc-bg-surface)', borderColor: 'var(--pc-border)', backdropFilter: 'blur(12px)', }}>
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Mobile navigation toggle */}
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="lg:hidden h-9 w-9 flex items-center justify-center rounded-xl transition-all shrink-0"
+            style={{ color: 'var(--pc-text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            aria-label={menuOpen ? t('nav.close_menu') : t('nav.open_menu')}
+            aria-expanded={menuOpen}
+            aria-controls="app-sidebar"
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          {/* Page title */}
+          <h1 className="h-9 leading-9 text-lg font-semibold tracking-tight truncate" style={{ color: 'var(--pc-text-primary)' }}>{pageTitle}</h1>
+        </div>
 
         {/* Right-side controls */}
         <div className="flex items-center gap-2 h-9">
@@ -73,6 +100,8 @@ export default function Header() {
               e.currentTarget.style.borderColor = 'var(--pc-border)';
               e.currentTarget.style.color = 'var(--pc-text-secondary)';
             }}
+            aria-label={t('header.switch_language')}
+            title={t('header.switch_language')}
           >
             {locale === 'en' ? 'EN' : locale === 'zh' ? 'ZH' : 'TR'}
           </button>

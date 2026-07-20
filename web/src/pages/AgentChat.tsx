@@ -15,24 +15,38 @@ interface ChatMessage {
 
 const DRAFT_KEY = 'agent-chat';
 
+// In-memory chat history that survives route changes (like drafts, it is
+// intentionally not persisted across page reloads).
+let cachedMessages: ChatMessage[] = [];
+
 export default function AgentChat() {
   const { draft, saveDraft, clearDraft } = useDraft(DRAFT_KEY);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => cachedMessages);
   const [input, setInput] = useState(draft);
   const [typing, setTyping] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocketClient | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pendingContentRef = useRef('');
+  // Autoscroll only while the user is at (or near) the bottom, so scrolling
+  // up to read history is never interrupted by incoming messages.
+  const stickToBottomRef = useRef(true);
 
   // Persist draft to in-memory store so it survives route changes
   useEffect(() => {
     saveDraft(input);
   }, [input, saveDraft]);
+
+  // Keep the module-level history cache in sync
+  useEffect(() => {
+    cachedMessages = messages;
+  }, [messages]);
 
   useEffect(() => {
     const ws = new WebSocketClient();
@@ -55,6 +69,7 @@ export default function AgentChat() {
         case 'chunk':
           setTyping(true);
           pendingContentRef.current += msg.content ?? '';
+          setStreamingText(pendingContentRef.current);
           break;
 
         case 'message':
@@ -72,6 +87,7 @@ export default function AgentChat() {
             ]);
           }
           pendingContentRef.current = '';
+          setStreamingText('');
           setTyping(false);
           break;
         }
@@ -112,6 +128,7 @@ export default function AgentChat() {
           ]);
           setTyping(false);
           pendingContentRef.current = '';
+          setStreamingText('');
           break;
       }
     };
@@ -121,16 +138,42 @@ export default function AgentChat() {
 
     return () => {
       ws.disconnect();
+      // Unmounting closes the socket, so a mid-stream reply will never get its
+      // 'done' frame. Commit the partial text to the cached history instead of
+      // silently dropping it.
+      if (pendingContentRef.current) {
+        cachedMessages = [
+          ...cachedMessages,
+          {
+            id: generateUUID(),
+            role: 'agent',
+            content: pendingContentRef.current,
+            timestamp: new Date(),
+          },
+        ];
+        pendingContentRef.current = '';
+      }
     };
   }, []);
 
+  const handleScroll = () => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typing]);
+    if (!stickToBottomRef.current) return;
+    // Instant scroll while streaming (chunks arrive fast), smooth otherwise
+    messagesEndRef.current?.scrollIntoView({ behavior: streamingText ? 'auto' : 'smooth' });
+  }, [messages, typing, streamingText]);
 
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || !wsRef.current?.connected) return;
+
+    // Sending a message always snaps the view back to the latest content
+    stickToBottomRef.current = true;
 
     setMessages((prev) => [
       ...prev,
@@ -223,7 +266,7 @@ export default function AgentChat() {
       )}
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in" style={{ color: 'var(--pc-text-muted)' }}>
             <div className="h-16 w-16 rounded-3xl flex items-center justify-center mb-4 animate-float" style={{ background: 'var(--pc-accent-glow)' }}>
@@ -288,7 +331,22 @@ export default function AgentChat() {
           </div>
         ))}
 
-        {typing && (
+        {/* Live streaming response — rendered as it arrives */}
+        {streamingText && (
+          <div className="flex items-start gap-3 animate-fade-in">
+            <div className="flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center border" style={{ background: 'var(--pc-bg-elevated)', borderColor: 'var(--pc-border)' }}>
+              <Bot className="h-4 w-4" style={{ color: 'var(--pc-accent)' }} />
+            </div>
+            <div className="max-w-[75%] rounded-2xl px-4 py-3 border" style={{ background: 'var(--pc-bg-elevated)', borderColor: 'var(--pc-border)', color: 'var(--pc-text-primary)' }}>
+              <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                {streamingText}
+                <span className="inline-block w-0.5 h-4 ml-0.5 align-text-bottom animate-pulse" style={{ background: 'var(--pc-accent)' }} />
+              </p>
+            </div>
+          </div>
+        )}
+
+        {typing && !streamingText && (
           <div className="flex items-start gap-3 animate-fade-in">
             <div className="flex-shrink-0 w-9 h-9 rounded-2xl flex items-center justify-center border" style={{ background: 'var(--pc-bg-elevated)', borderColor: 'var(--pc-border)' }}>
               <Bot className="h-4 w-4" style={{ color: 'var(--pc-accent)' }} />

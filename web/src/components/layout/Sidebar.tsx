@@ -27,9 +27,25 @@ const navItems = [
   { to: '/doctor', icon: Stethoscope, labelKey: 'nav.doctor' },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Whether the mobile drawer is open. Ignored on desktop (always visible). */
+  open?: boolean;
+}
+
+export default function Sidebar({ open = false }: SidebarProps) {
   return (
-    <aside className="fixed top-0 left-0 h-screen w-60 flex flex-col border-r" style={{ background: 'var(--pc-bg-base)', borderColor: 'var(--pc-border)' }}>
+    <aside
+      id="app-sidebar"
+      aria-label={t('nav.main_navigation')}
+      className={[
+        // Above the SecurityBanner (z-[100]) so the mobile drawer is never obscured
+        'fixed top-0 left-0 h-screen w-60 flex flex-col border-r z-[120]',
+        'transition-transform duration-200 ease-out',
+        'lg:translate-x-0',
+        open ? 'translate-x-0' : '-translate-x-full',
+      ].join(' ')}
+      style={{ background: 'var(--pc-bg-base)', borderColor: 'var(--pc-border)' }}
+    >
       {/* Logo / Title */}
       <div className="flex items-center gap-3 px-4 py-4 border-b h-14" style={{ borderColor: 'var(--pc-border)' }}>
         <div className="relative shrink-0">
