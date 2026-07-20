@@ -165,6 +165,11 @@ pub async fn append_event(workspace_dir: &Path, event: &EpisodicEventV2) -> Resu
     file.write_all(line.as_bytes())
         .await
         .context("append episodic event")?;
+    // tokio::fs::File buffers writes onto a background blocking task; write_all
+    // can return before the bytes reach the OS, and dropping the handle does
+    // not wait for them. Flush explicitly so a following read (or a fast
+    // shutdown) always observes the appended line.
+    file.flush().await.context("flush episodic event")?;
     Ok(())
 }
 
