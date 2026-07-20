@@ -86,14 +86,14 @@ const STATUS_CARDS = [
     icon: Globe,
     accent: "#a78bfa",
     labelKey: "dashboard.gateway_port",
-    getValue: (s: StatusResponse) => `:${s.gateway_port}`,
+    getValue: (s: StatusResponse) => (s.gateway_port ? `:${s.gateway_port}` : "—"),
     getSub: () => "",
   },
   {
     icon: Database,
     accent: "#fbbf24",
     labelKey: "dashboard.memory_backend",
-    getValue: (s: StatusResponse) => s.memory_backend,
+    getValue: (s: StatusResponse) => s.memory_backend || "—",
     getSub: (s: StatusResponse) =>
       `${t("dashboard.paired")}: ${s.paired ? t("dashboard.paired_yes") : t("dashboard.paired_no")}`,
   },

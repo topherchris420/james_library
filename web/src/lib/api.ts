@@ -8,7 +8,9 @@ import type {
   MemoryEntry,
   CostSummary,
   CliTool,
+  ComponentHealth,
   HealthSnapshot,
+  ModelStats,
 } from '../types/api';
 import { clearToken, getToken, setToken } from './auth';
 import { basePath } from './basePath';
@@ -75,6 +77,97 @@ function unwrapField<T>(value: T | Record<string, T>, key: string): T {
 }
 
 // ---------------------------------------------------------------------------
+// Response normalization
+//
+// The gateway and the web bundle can run different versions, and error shims
+// or proxies may return partial JSON. Responses rendered directly by pages are
+// coerced to their declared shape here, at the boundary, so missing or
+// malformed fields degrade to safe defaults instead of crashing render.
+// ---------------------------------------------------------------------------
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+function asStringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+export function normalizeStatus(data: unknown): StatusResponse {
+  const raw = asRecord(data);
+  const rawHealth = asRecord(raw.health);
+
+  const components: Record<string, ComponentHealth> = {};
+  for (const [name, value] of Object.entries(asRecord(rawHealth.components))) {
+    const comp = asRecord(value);
+    components[name] = {
+      status: asString(comp.status, 'unknown'),
+      updated_at: asString(comp.updated_at),
+      last_ok: asStringOrNull(comp.last_ok),
+      last_error: asStringOrNull(comp.last_error),
+      restart_count: asNumber(comp.restart_count),
+    };
+  }
+
+  const channels: Record<string, boolean> = {};
+  for (const [name, active] of Object.entries(asRecord(raw.channels))) {
+    channels[name] = active === true;
+  }
+
+  return {
+    provider: asStringOrNull(raw.provider),
+    model: asString(raw.model),
+    temperature: asNumber(raw.temperature),
+    uptime_seconds: asNumber(raw.uptime_seconds),
+    gateway_port: asNumber(raw.gateway_port),
+    locale: asString(raw.locale),
+    memory_backend: asString(raw.memory_backend),
+    paired: raw.paired === true,
+    channels,
+    health: {
+      pid: asNumber(rawHealth.pid),
+      updated_at: asString(rawHealth.updated_at),
+      uptime_seconds: asNumber(rawHealth.uptime_seconds),
+      components,
+    },
+  };
+}
+
+export function normalizeCost(data: unknown): CostSummary {
+  const raw = asRecord(data);
+
+  const by_model: Record<string, ModelStats> = {};
+  for (const [name, value] of Object.entries(asRecord(raw.by_model))) {
+    const stats = asRecord(value);
+    by_model[name] = {
+      model: asString(stats.model, name),
+      cost_usd: asNumber(stats.cost_usd),
+      total_tokens: asNumber(stats.total_tokens),
+      request_count: asNumber(stats.request_count),
+    };
+  }
+
+  return {
+    session_cost_usd: asNumber(raw.session_cost_usd),
+    daily_cost_usd: asNumber(raw.daily_cost_usd),
+    monthly_cost_usd: asNumber(raw.monthly_cost_usd),
+    total_tokens: asNumber(raw.total_tokens),
+    request_count: asNumber(raw.request_count),
+    by_model,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Pairing
 // ---------------------------------------------------------------------------
 
@@ -119,7 +212,7 @@ export async function getPublicHealth(): Promise<{ require_pairing: boolean; pai
 // ---------------------------------------------------------------------------
 
 export function getStatus(): Promise<StatusResponse> {
-  return apiFetch<StatusResponse>('/api/status');
+  return apiFetch<unknown>('/api/status').then(normalizeStatus);
 }
 
 export function getHealth(): Promise<HealthSnapshot> {
@@ -287,7 +380,7 @@ export function deleteMemory(key: string): Promise<void> {
 
 export function getCost(): Promise<CostSummary> {
   return apiFetch<CostSummary | { cost: CostSummary }>('/api/cost').then((data) =>
-    unwrapField(data, 'cost'),
+    normalizeCost(unwrapField(data, 'cost')),
   );
 }
 
