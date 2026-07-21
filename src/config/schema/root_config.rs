@@ -223,6 +223,10 @@ pub struct Config {
     #[serde(default)]
     pub web_search: WebSearchConfig,
 
+    /// Anna agent search tool configuration (`[anna_search]`).
+    #[serde(default)]
+    pub anna_search: AnnaSearchConfig,
+
     /// Project delivery intelligence configuration (`[project_intel]`).
     #[serde(default)]
     pub project_intel: ProjectIntelConfig,
@@ -592,6 +596,7 @@ impl Default for Config {
             web_fetch: WebFetchConfig::default(),
             text_browser: TextBrowserConfig::default(),
             web_search: WebSearchConfig::default(),
+            anna_search: AnnaSearchConfig::default(),
             project_intel: ProjectIntelConfig::default(),
             google_workspace: GoogleWorkspaceConfig::default(),
             proxy: ProxyConfig::default(),

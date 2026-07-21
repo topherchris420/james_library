@@ -4,6 +4,7 @@
 # Values are the human-readable descriptions shown in system prompts.
 
 [tools]
+anna_search = "Search the Anna engineering knowledge index (papers, standards, code, datasheets) with hybrid keyword + semantic retrieval. Returns citation-ready snippets with source URLs and 0-1 relevance scores. Use domain_filter to narrow to a source ('arxiv'), a kind ('paper'), or a category ('category:cs.RO')."
 backup = "Create, list, verify, and restore workspace backups"
 browser = "Web/browser automation with pluggable backends (agent-browser, rust-native, computer_use). Supports DOM actions plus optional OS-level actions (mouse_move, mouse_click, mouse_drag, key_type, key_press, screen_capture) through a computer-use sidecar. Use 'snapshot' to map interactive elements to refs (@e1, @e2). Enforces browser.allowed_domains for open actions."
 browser_delegate = "Delegate browser-based tasks to a browser-capable CLI for interacting with web applications like Teams, Outlook, Jira, Confluence"

@@ -5,6 +5,7 @@
 # 缺少的键将回退到英文 (en.toml) 描述。
 
 [tools]
+anna_search = "使用关键词 + 语义混合检索搜索 Anna 工程知识索引（论文、标准、代码、数据手册）。返回带来源 URL 和 0-1 相关性分数的可引用摘录。可用 domain_filter 缩小到来源（'arxiv'）、文档类型（'paper'）或分类（'category:cs.RO'）。"
 backup = "创建、列出、验证和恢复工作区备份"
 browser = "基于可插拔后端（agent-browser、rust-native、computer_use）的网页/浏览器自动化。支持 DOM 操作以及通过 computer-use 辅助工具进行的可选系统级操作（mouse_move、mouse_click、mouse_drag、key_type、key_press、screen_capture）。使用 'snapshot' 将交互元素映射到引用（@e1、@e2）。对 open 操作强制执行 browser.allowed_domains。"
 browser_delegate = "将基于浏览器的任务委派给具有浏览器功能的 CLI，用于与 Teams、Outlook、Jira、Confluence 等 Web 应用交互"

@@ -1769,6 +1769,58 @@ impl Default for WebSearchConfig {
     }
 }
 
+// ── Anna agent search ────────────────────────────────────────────────────────
+
+/// Anna agent search tool configuration (`[anna_search]` section).
+///
+/// Connects the `anna_search` tool to an Anna engineering-knowledge deployment
+/// (<https://github.com/topherchris420/anna>) via its LLM-agent endpoint
+/// `POST /api/v1/agent/search`. The wire contract is pinned by the OpenAPI
+/// spec the server ships (`docs/openapi-agent-search.json`, also served at
+/// `GET /api/v1/agent/openapi.json`).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct AnnaSearchConfig {
+    /// Enable the `anna_search` tool. Default: false.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Base URL of the Anna deployment (e.g. "http://localhost:8000").
+    #[serde(default = "default_anna_search_base_url")]
+    pub base_url: String,
+    /// Default number of results per search (server clamps to 1-25).
+    #[serde(default = "default_anna_search_limit")]
+    pub default_limit: usize,
+    /// Default relevance threshold (0.0-1.0) applied when the model omits one.
+    #[serde(default)]
+    pub min_score: f64,
+    /// Request timeout in seconds. Default: 15.
+    #[serde(default = "default_anna_search_timeout_secs")]
+    pub timeout_secs: u64,
+}
+
+fn default_anna_search_base_url() -> String {
+    "http://localhost:8000".into()
+}
+
+fn default_anna_search_limit() -> usize {
+    5
+}
+
+fn default_anna_search_timeout_secs() -> u64 {
+    15
+}
+
+impl Default for AnnaSearchConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            base_url: default_anna_search_base_url(),
+            default_limit: default_anna_search_limit(),
+            min_score: 0.0,
+            timeout_secs: default_anna_search_timeout_secs(),
+        }
+    }
+}
+
 // Ã¢â€â‚¬Ã¢â€â‚¬ Project Intelligence Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 /// Project delivery intelligence configuration (`[project_intel]` section).
