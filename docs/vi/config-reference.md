@@ -325,7 +325,7 @@ Lưu ý:
 
 | Khóa | Mặc định | Mục đích |
 |---|---|---|
-| `backend` | `sqlite` | `sqlite`, `lucid`, `markdown`, `none` |
+| `backend` | `sqlite` | `sqlite`, `lucid`, `resonance`, `hmem`, `postgres`, `qdrant`, `mem0`, `markdown`, `none` |
 | `auto_save` | `true` | Chỉ lưu đầu vào người dùng (đầu ra assistant bị loại) |
 | `embedding_provider` | `none` | `none`, `openai` hoặc endpoint tùy chỉnh |
 | `embedding_model` | `text-embedding-3-small` | ID model embedding, hoặc tuyến `hint:<name>` |
@@ -336,6 +336,10 @@ Lưu ý:
 Lưu ý:
 
 - Chèn ngữ cảnh memory bỏ qua khóa auto-save `assistant_resp*` kiểu cũ để tránh tóm tắt do model tạo bị coi là sự thật.
+
+### Backend `hmem` (Meterless H-MEM)
+
+Triển khai cục bộ ngữ nghĩa truy xuất H-MEM của [Meterless](https://github.com/Meterless/Meterless), xếp chồng trên kho sqlite (`backend = "hmem"`, bí danh `meterless`; không có khóa cấu hình thêm). Recall xếp hạng lại ứng viên bằng công thức 8 tín hiệu H-MEM (ngữ nghĩa, từ khóa, thẻ, miền, thực thể, tầng, độ mới, bị thay thế, nhân theo độ tin cậy; ngưỡng điểm 0.35), ánh xạ danh mục sang các tầng bộ nhớ (`core` → long_term, `daily`/tùy chỉnh → working, `conversation` → short_term), và ghi nối mọi thay đổi vào sổ cái tin cậy chỉ ghi thêm tại `memory/hmem_trust_ledger.jsonl` (nguồn gốc suy ra + SHA-256 digest của nội dung — không bao giờ lưu nội dung thô).
 
 ### `[memory.mem0]`
 

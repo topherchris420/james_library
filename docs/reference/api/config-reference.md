@@ -516,7 +516,7 @@ allowed_roots = ["~/Desktop/projects", "/opt/shared-repo"]
 
 | Key | Default | Purpose |
 |---|---|---|
-| `backend` | `sqlite` | `sqlite`, `lucid`, `markdown`, `none` |
+| `backend` | `sqlite` | `sqlite`, `lucid`, `resonance`, `hmem`, `postgres`, `qdrant`, `mem0`, `markdown`, `none` |
 | `auto_save` | `true` | persist user-stated inputs only (assistant outputs are excluded) |
 | `embedding_provider` | `none` | `none`, `openai`, or custom endpoint |
 | `embedding_model` | `text-embedding-3-small` | embedding model ID, or `hint:<name>` route |
@@ -527,6 +527,10 @@ allowed_roots = ["~/Desktop/projects", "/opt/shared-repo"]
 Notes:
 
 - Memory context injection ignores legacy `assistant_resp*` auto-save keys to prevent old model-authored summaries from being treated as facts.
+
+### `hmem` backend (Meterless H-MEM)
+
+Local implementation of the [Meterless](https://github.com/Meterless/Meterless) H-MEM retrieval semantics, layered over the sqlite store (`backend = "hmem"`, alias `meterless`; no extra config keys). Recall re-ranks candidates with the 8-signal H-MEM formula (semantic, keyword, tag, domain, entity, layer, recency, superseded, scaled by confidence; score threshold 0.35), maps categories onto memory tiers (`core` → long_term, `daily`/custom → working, `conversation` → short_term), and appends every mutation to an append-only trust ledger at `memory/hmem_trust_ledger.jsonl` (derived provenance plus SHA-256 content digest — never raw content).
 
 ### `[memory.mem0]`
 

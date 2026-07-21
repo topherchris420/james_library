@@ -419,7 +419,7 @@ allowed_roots = [\"~/Desktop/projects\", \"/opt/shared-repo\"]
 
 | 键 | 默认值 | 用途 |
 |---|---|---|
-| `backend` | `sqlite` | `sqlite`、`lucid`、`markdown`、`none` |
+| `backend` | `sqlite` | `sqlite`、`lucid`、`resonance`、`hmem`、`postgres`、`qdrant`、`mem0`、`markdown`、`none` |
 | `auto_save` | `true` | 仅持久化用户声明的输入（排除助手输出） |
 | `embedding_provider` | `none` | `none`、`openai` 或自定义端点 |
 | `embedding_model` | `text-embedding-3-small` | 嵌入模型 ID，或 `hint:<name>` 路由 |
@@ -430,6 +430,10 @@ allowed_roots = [\"~/Desktop/projects\", \"/opt/shared-repo\"]
 注意事项：
 
 - 内存上下文注入忽略旧的 `assistant_resp*` 自动保存键，以防止旧模型生成的摘要被视为事实。
+
+### `hmem` 后端（Meterless H-MEM）
+
+遵循 [Meterless](https://github.com/Meterless/Meterless) H-MEM 检索语义的本地实现，叠加在 sqlite 存储之上（`backend = "hmem"`，别名 `meterless`；无额外配置键）。召回时使用 H-MEM 八信号公式对候选重排（语义、关键词、标签、领域、实体、层级、时近性、被取代，并按置信度缩放；分数阈值 0.35），将类别映射到记忆层级（`core` → long_term，`daily`/自定义 → working，`conversation` → short_term），并将每次变更追加到只增不改的信任账本 `memory/hmem_trust_ledger.jsonl`（派生来源 + SHA-256 内容摘要 — 绝不记录原始内容）。
 
 ### `[memory.mem0]`
 

@@ -3,6 +3,7 @@ pub mod chunker;
 pub mod cli;
 pub mod consolidation;
 pub mod embeddings;
+pub mod hmem;
 pub mod hygiene;
 pub mod knowledge_graph;
 pub mod lucid;
@@ -25,6 +26,7 @@ pub use backend::{
     MemoryBackendKind, MemoryBackendProfile, classify_memory_backend, default_memory_backend_key,
     memory_backend_profile, selectable_memory_backends,
 };
+pub use hmem::HmemMemory;
 pub use lucid::LucidMemory;
 pub use markdown::MarkdownMemory;
 #[cfg(feature = "memory-mem0")]
@@ -61,6 +63,10 @@ where
         MemoryBackendKind::Lucid => {
             let local = sqlite_builder()?;
             Ok(Box::new(LucidMemory::new(workspace_dir, local)))
+        }
+        MemoryBackendKind::Hmem => {
+            let local = sqlite_builder()?;
+            Ok(Box::new(HmemMemory::new(workspace_dir, local)))
         }
         MemoryBackendKind::Resonance => Ok(Box::new(ResonanceBackend::with_embedder(
             workspace_dir,
@@ -258,7 +264,7 @@ pub fn create_memory_with_storage_and_routes(
         && config.snapshot_on_hygiene
         && matches!(
             backend_kind,
-            MemoryBackendKind::Sqlite | MemoryBackendKind::Lucid
+            MemoryBackendKind::Sqlite | MemoryBackendKind::Lucid | MemoryBackendKind::Hmem
         )
     {
         if let Err(e) = snapshot::export_snapshot(workspace_dir) {
@@ -271,7 +277,7 @@ pub fn create_memory_with_storage_and_routes(
     if config.auto_hydrate
         && matches!(
             backend_kind,
-            MemoryBackendKind::Sqlite | MemoryBackendKind::Lucid
+            MemoryBackendKind::Sqlite | MemoryBackendKind::Lucid | MemoryBackendKind::Hmem
         )
         && snapshot::should_hydrate(workspace_dir)
     {
@@ -552,6 +558,35 @@ mod tests {
         };
         let mem = create_memory(&cfg, tmp.path(), None).unwrap();
         assert_eq!(mem.name(), "lucid");
+    }
+
+    #[test]
+    fn factory_hmem() {
+        let tmp = TempDir::new().unwrap();
+        let cfg = MemoryConfig {
+            backend: "hmem".into(),
+            ..MemoryConfig::default()
+        };
+        let mem = create_memory(&cfg, tmp.path(), None).unwrap();
+        assert_eq!(mem.name(), "hmem");
+    }
+
+    #[test]
+    fn factory_meterless_alias_maps_to_hmem() {
+        let tmp = TempDir::new().unwrap();
+        let cfg = MemoryConfig {
+            backend: "meterless".into(),
+            ..MemoryConfig::default()
+        };
+        let mem = create_memory(&cfg, tmp.path(), None).unwrap();
+        assert_eq!(mem.name(), "hmem");
+    }
+
+    #[test]
+    fn migration_factory_hmem() {
+        let tmp = TempDir::new().unwrap();
+        let mem = create_memory_for_migration("hmem", tmp.path()).unwrap();
+        assert_eq!(mem.name(), "hmem");
     }
 
     #[test]
