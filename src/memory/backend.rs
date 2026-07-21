@@ -3,6 +3,7 @@ pub enum MemoryBackendKind {
     Sqlite,
     Lucid,
     Resonance,
+    Hmem,
     Postgres,
     Qdrant,
     Mem0,
@@ -43,6 +44,15 @@ const LUCID_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
 const RESONANCE_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
     key: "resonance",
     label: "Resonance — phase-coupling retrieval with dynamic scalar-field tuning",
+    auto_save_default: true,
+    uses_sqlite_hygiene: true,
+    sqlite_based: true,
+    optional_dependency: false,
+};
+
+const HMEM_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
+    key: "hmem",
+    label: "H-MEM (Meterless) — tiered 8-signal ranking with append-only trust ledger over SQLite",
     auto_save_default: true,
     uses_sqlite_hygiene: true,
     sqlite_based: true,
@@ -103,10 +113,11 @@ const CUSTOM_PROFILE: MemoryBackendProfile = MemoryBackendProfile {
     optional_dependency: false,
 };
 
-const SELECTABLE_MEMORY_BACKENDS: [MemoryBackendProfile; 5] = [
+const SELECTABLE_MEMORY_BACKENDS: [MemoryBackendProfile; 6] = [
     SQLITE_PROFILE,
     LUCID_PROFILE,
     RESONANCE_PROFILE,
+    HMEM_PROFILE,
     MARKDOWN_PROFILE,
     NONE_PROFILE,
 ];
@@ -124,6 +135,7 @@ pub fn classify_memory_backend(backend: &str) -> MemoryBackendKind {
         "sqlite" => MemoryBackendKind::Sqlite,
         "lucid" => MemoryBackendKind::Lucid,
         "resonance" => MemoryBackendKind::Resonance,
+        "hmem" | "meterless" => MemoryBackendKind::Hmem,
         "postgres" => MemoryBackendKind::Postgres,
         "qdrant" => MemoryBackendKind::Qdrant,
         "mem0" | "openmemory" => MemoryBackendKind::Mem0,
@@ -138,6 +150,7 @@ pub fn memory_backend_profile(backend: &str) -> MemoryBackendProfile {
         MemoryBackendKind::Sqlite => SQLITE_PROFILE,
         MemoryBackendKind::Lucid => LUCID_PROFILE,
         MemoryBackendKind::Resonance => RESONANCE_PROFILE,
+        MemoryBackendKind::Hmem => HMEM_PROFILE,
         MemoryBackendKind::Postgres => POSTGRES_PROFILE,
         MemoryBackendKind::Qdrant => QDRANT_PROFILE,
         MemoryBackendKind::Mem0 => MEM0_PROFILE,
@@ -159,6 +172,11 @@ mod tests {
             classify_memory_backend("resonance"),
             MemoryBackendKind::Resonance
         );
+        assert_eq!(classify_memory_backend("hmem"), MemoryBackendKind::Hmem);
+        assert_eq!(
+            classify_memory_backend("meterless"),
+            MemoryBackendKind::Hmem
+        );
         assert_eq!(
             classify_memory_backend("postgres"),
             MemoryBackendKind::Postgres
@@ -178,12 +196,22 @@ mod tests {
     #[test]
     fn selectable_backends_are_ordered_for_onboarding() {
         let backends = selectable_memory_backends();
-        assert_eq!(backends.len(), 5);
+        assert_eq!(backends.len(), 6);
         assert_eq!(backends[0].key, "sqlite");
         assert_eq!(backends[1].key, "lucid");
         assert_eq!(backends[2].key, "resonance");
-        assert_eq!(backends[3].key, "markdown");
-        assert_eq!(backends[4].key, "none");
+        assert_eq!(backends[3].key, "hmem");
+        assert_eq!(backends[4].key, "markdown");
+        assert_eq!(backends[5].key, "none");
+    }
+
+    #[test]
+    fn hmem_profile_is_sqlite_based_builtin_backend() {
+        let profile = memory_backend_profile("hmem");
+        assert!(profile.sqlite_based);
+        assert!(profile.uses_sqlite_hygiene);
+        assert!(!profile.optional_dependency);
+        assert_eq!(memory_backend_profile("meterless").key, "hmem");
     }
 
     #[test]
