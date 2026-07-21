@@ -1783,7 +1783,11 @@ pub struct AnnaSearchConfig {
     /// Enable the `anna_search` tool. Default: false.
     #[serde(default)]
     pub enabled: bool,
-    /// Base URL of the Anna deployment (e.g. "http://localhost:8000").
+    /// Base URL of the Anna API backend. Default: the hosted deployment
+    /// (`https://bethesdasearch-api.onrender.com`). Note this is the API
+    /// service, not the static frontend (`https://bethesdasearch.vercel.app`),
+    /// which serves no `/api/v1/*` routes. Use "http://localhost:8000" for a
+    /// local Anna.
     #[serde(default = "default_anna_search_base_url")]
     pub base_url: String,
     /// Default number of results per search (server clamps to 1-25).
@@ -1798,7 +1802,7 @@ pub struct AnnaSearchConfig {
 }
 
 fn default_anna_search_base_url() -> String {
-    "http://localhost:8000".into()
+    "https://bethesdasearch-api.onrender.com".into()
 }
 
 fn default_anna_search_limit() -> usize {

@@ -450,4 +450,26 @@ mod tests {
         assert!(!result.success);
         assert!(result.error.unwrap().contains("http://127.0.0.1:9"));
     }
+
+    #[tokio::test]
+    #[ignore = "network: hits the live Anna deployment; run with -- --ignored"]
+    async fn test_execute_against_live_deployment() {
+        let tool = AnnaSearchTool::new(
+            "https://bethesdasearch-api.onrender.com".into(),
+            3,
+            0.0,
+            60, // generous: Render free tier cold-starts
+        );
+        let result = tool
+            .execute(json!({"query": "kalman filter", "limit": 2}))
+            .await
+            .unwrap();
+        assert!(result.success, "error: {:?}", result.error);
+        assert!(
+            result
+                .output
+                .contains("Anna search results for: kalman filter")
+        );
+        assert!(result.output.contains("id: "));
+    }
 }
