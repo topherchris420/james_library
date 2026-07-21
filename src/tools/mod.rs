@@ -15,6 +15,7 @@
 //! To add a new tool, implement [`Tool`] in a new submodule and register it in
 //! [`all_tools_with_runtime`]. See `AGENTS.md` §7.3 for the full change playbook.
 
+pub mod anna_search;
 pub mod backup_tool;
 pub mod browser;
 pub mod browser_delegate;
@@ -94,6 +95,7 @@ mod web_search_provider_routing;
 pub mod web_search_tool;
 pub mod workspace_tool;
 
+pub use anna_search::AnnaSearchTool;
 pub use backup_tool::BackupTool;
 pub use browser::{BrowserTool, ComputerUseConfig};
 #[allow(unused_imports)]
@@ -572,6 +574,16 @@ pub fn all_tools_with_runtime(
             root_config.web_search.timeout_secs,
             root_config.config_path.clone(),
             root_config.secrets.encrypt,
+        )));
+    }
+
+    // Anna agent search tool (conditionally registered)
+    if root_config.anna_search.enabled {
+        tool_arcs.push(Arc::new(AnnaSearchTool::new(
+            root_config.anna_search.base_url.clone(),
+            root_config.anna_search.default_limit,
+            root_config.anna_search.min_score,
+            root_config.anna_search.timeout_secs,
         )));
     }
 

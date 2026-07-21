@@ -4,9 +4,9 @@ pub mod workspace;
 
 #[allow(unused_imports)]
 pub use schema::{
-    AgentConfig, AssemblyAiSttConfig, AuditConfig, AutonomousRuntimeConfig, AutonomyConfig,
-    BackupConfig, BrowserComputerUseConfig, BrowserConfig, BuiltinHooksConfig, ChannelsConfig,
-    ClassificationRule, ClaudeCodeConfig, CloudOpsConfig, ComposioConfig, Config,
+    AgentConfig, AnnaSearchConfig, AssemblyAiSttConfig, AuditConfig, AutonomousRuntimeConfig,
+    AutonomyConfig, BackupConfig, BrowserComputerUseConfig, BrowserConfig, BuiltinHooksConfig,
+    ChannelsConfig, ClassificationRule, ClaudeCodeConfig, CloudOpsConfig, ComposioConfig, Config,
     ConversationalAiConfig, CostConfig, CronConfig, DEFAULT_GWS_SERVICES, DataRetentionConfig,
     DeepgramSttConfig, DelegateAgentConfig, DelegateToolConfig, DiscordConfig, DockerRuntimeConfig,
     EdgeTtsConfig, ElevenLabsTtsConfig, EmbeddingRouteConfig, EstopConfig, FeishuConfig,
