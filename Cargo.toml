@@ -152,7 +152,7 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 postgres = { version = "0.19", features = ["with-chrono-0_4"], optional = true }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 chrono-tz = "0.10"
-cron = "0.15"
+cron = "0.16"
 
 # Interactive CLI prompts
 dialoguer = { version = "0.12", features = ["fuzzy-select"] }
