@@ -1414,6 +1414,25 @@ SKILL_HANDLERS = {
 }
 
 
+def _redact_skill_args(argv):
+    """Build a trace-safe view of a skill argv -- flag names only, no values.
+
+    Argument *values* routinely carry private payloads: the sprout-cli skill
+    documents `messages send --content <message body>`,
+    `draft-create --system-prompt <prompt>` and `mem set <slug> <value>`.
+    Writing those verbatim into meeting_archives/tool_trace.jsonl would persist
+    private message bodies and system prompts in plaintext on disk, so values
+    are never traced (CLAUDE.md 3.6 / 9.1). Flag names are retained because
+    they are the part that makes a trace useful for debugging, and `--flag=value`
+    is split so the value half is dropped too.
+    """
+    flags = []
+    for arg in argv:
+        if arg.startswith("-"):
+            flags.append(arg.split("=", 1)[0])
+    return {"argc": len(argv), "flags": flags, "values": "<redacted>"}
+
+
 def _resolve_skill_handler(tool_name):
     """Return (binary_path, None) when the handler is runnable, else (None, error)."""
     import shutil
@@ -1452,7 +1471,7 @@ def run_skill_tool(tool_name, args=None, timeout=120):
     import subprocess
 
     argv = [str(a) for a in (args or [])]
-    _trace_event("call", tool_name, {"args": argv})
+    _trace_event("call", tool_name, _redact_skill_args(argv))
 
     binary, err = _resolve_skill_handler(tool_name)
     if err is not None:

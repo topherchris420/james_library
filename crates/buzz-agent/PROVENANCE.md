@@ -39,6 +39,20 @@ Only two changes were made to upstream sources; the Rust logic is untouched.
    and the `include_str!` retargeted. The test keeps its value as a regression
    lock on the Rust effort table.
 
+3. **`src/auth.rs` — OAuth token cache is created 0600.** Upstream writes the
+   temp cache with `fs::write`, which applies the process umask to 0666 (mode
+   0644 under a typical 022), and `fs::rename` preserves that mode — leaving
+   Databricks access *and* refresh tokens readable by every other local account.
+   Added `write_private()` (creates the file 0600 up front, so it never exists
+   on disk with wider permissions) and `harden_existing()` (best-effort tighten
+   of a cache left loose by an older build, on read). Both are Unix-gated with
+   no-op fallbacks elsewhere. Reported by automated review on PR #381.
+
+4. **`README.md` — corrected `BUZZ_AGENT_MAX_HISTORY_BYTES` default.** Upstream's
+   config table and limits table both documented 1 MiB, but `Config::from_env`
+   uses `16 * 1024 * 1024` (`src/config.rs:830`). The runtime is authoritative,
+   so the docs now say 16 MiB. Reported by automated review on PR #381.
+
 ## Known upstream issue
 
 `tests/fake_llm.rs` is **flaky, and was flaky before this port** — it fails

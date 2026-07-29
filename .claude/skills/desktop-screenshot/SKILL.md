@@ -84,7 +84,11 @@ while the camera stays put (for unread indicators, badges).
 ### Available Mock Channels
 
 `general`, `random`, `design`, `sales`, `engineering`, `agents`, `watercooler`,
-`announcements`, `alice-tyler`, `bob-tyler`.
+`announcements`, `rain-operator`, `rain-maintainer`.
+
+(Upstream's mock bridge names the two DM channels after personal names; they are
+relabelled here to satisfy the privacy gate in CLAUDE.md 9.1. If you ever wire up
+the real harness, check the fixture for its actual channel identifiers.)
 
 `general` has pre-seeded messages (always shows `hasUnread`). Use `engineering`
 for "no unread" visual states.

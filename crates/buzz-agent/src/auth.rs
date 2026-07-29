@@ -193,7 +193,7 @@ impl PkceOAuthTokenSource {
             .map_err(|e| AgentError::Llm(format!("oauth cache serialize: {e}")))?;
         // Atomic rename so a concurrent reader never sees a partial write.
         let tmp = self.cache_path.with_extension("json.tmp");
-        fs::write(&tmp, &body)
+        write_private(&tmp, &body)
             .map_err(|e| AgentError::Llm(format!("oauth cache write {tmp:?}: {e}")))?;
         fs::rename(&tmp, &self.cache_path)
             .map_err(|e| AgentError::Llm(format!("oauth cache rename: {e}")))?;
@@ -466,7 +466,51 @@ fn cache_path_for(cfg: &PkceOAuthConfig) -> Result<PathBuf, AgentError> {
     Ok(dir.join(format!("{hash}.json")))
 }
 
+/// Write `body` to `path` with owner-only permissions.
+///
+/// The OAuth cache holds access *and* refresh tokens. Plain `fs::write` creates
+/// the file with the process umask applied to 0666 -- mode 0644 under a typical
+/// 022 umask -- which leaves the tokens readable by every other local account,
+/// and `fs::rename` preserves whatever mode the temp file had. Creating the file
+/// 0600 up front closes the window entirely: there is never a moment where the
+/// file exists on disk with wider permissions than intended.
+///
+/// Divergence from upstream block/buzz; see PROVENANCE.md.
+fn write_private(path: &PathBuf, body: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+
+    let mut opts = fs::OpenOptions::new();
+    opts.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opts.mode(0o600);
+    }
+    let mut f = opts.open(path)?;
+    f.write_all(body)?;
+    f.sync_all()
+}
+
+/// Tighten an existing cache file to 0600 if a previous run (or an older
+/// build) left it group/world-readable. Best-effort: a failure here must not
+/// block reading a token the caller is otherwise entitled to.
+#[cfg(unix)]
+fn harden_existing(path: &PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+
+    if let Ok(meta) = fs::metadata(path) {
+        let mode = meta.permissions().mode();
+        if mode & 0o077 != 0 {
+            let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+        }
+    }
+}
+
+#[cfg(not(unix))]
+fn harden_existing(_path: &PathBuf) {}
+
 fn read_cache(path: &PathBuf) -> Option<CachedToken> {
+    harden_existing(path);
     let body = fs::read(path).ok()?;
     serde_json::from_slice(&body).ok()
 }
@@ -716,6 +760,73 @@ mod tests {
     fn token_from_response_rejects_empty_access_token() {
         let v: Value = serde_json::from_str(r#"{"access_token":""}"#).unwrap();
         assert!(token_from_response(&v, None).is_err());
+    }
+
+    /// The cache holds access and refresh tokens; other local accounts must not
+    /// be able to read it. Guards the R.A.I.N. divergence in `write_private`.
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn saved_token_cache_is_not_readable_by_other_accounts() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let cfg = PkceOAuthConfig {
+            discovery_url: "https://example.com/.well-known".into(),
+            client_id: "test-client".into(),
+            scopes: vec!["offline_access".into()],
+            cache_namespace: "test".into(),
+            cache_dir_override: Some(dir.path().to_path_buf()),
+        };
+        let source = PkceOAuthTokenSource::new(cfg).unwrap();
+
+        let mut state = source.state.lock().await;
+        source
+            .save(
+                &mut state,
+                CachedToken {
+                    access_token: "at".into(),
+                    refresh_token: Some("rt".into()),
+                    expires_at: Some(0),
+                },
+            )
+            .unwrap();
+        drop(state);
+
+        let mode = fs::metadata(&source.cache_path)
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(
+            mode & 0o077,
+            0,
+            "cache mode {mode:o} grants group/other access to OAuth tokens"
+        );
+    }
+
+    /// A cache left group/world-readable by an older build is tightened on read.
+    #[cfg(unix)]
+    #[test]
+    fn reading_cache_hardens_loose_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("loose.json");
+        let body = serde_json::to_vec_pretty(&CachedToken {
+            access_token: "at".into(),
+            refresh_token: None,
+            expires_at: Some(0),
+        })
+        .unwrap();
+        fs::write(&path, &body).unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+
+        assert!(
+            read_cache(&path).is_some(),
+            "token should still be readable"
+        );
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode();
+        assert_eq!(mode & 0o077, 0, "read_cache left mode {mode:o} loose");
     }
 
     #[tokio::test]

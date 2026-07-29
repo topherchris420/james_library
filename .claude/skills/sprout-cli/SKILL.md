@@ -109,10 +109,10 @@ Write commands are unaffected. `--format json` (default) returns full fields.
 
 ```bash
 # ✅ Correct — notification delivered automatically
-buzz messages send --channel <UUID> --content "@Alice check this"
+buzz messages send --channel <UUID> --content "@R.A.I.N.Operator check this"
 
 # Multiple mentions — same pattern
-buzz messages send --channel <UUID> --content "@Alice @Bob review please"
+buzz messages send --channel <UUID> --content "@R.A.I.N.Operator @R.A.I.N.Maintainer review please"
 ```
 
 ## DM Management
