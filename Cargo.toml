@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "crates/robot-kit", "crates/logic_prover", "crates/aardvark-sys", "crates/rain-bench"]
+members = [".", "crates/robot-kit", "crates/logic_prover", "crates/aardvark-sys", "crates/rain-bench", "crates/buzz-agent"]
 resolver = "2"
 
 [package]

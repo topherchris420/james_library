@@ -73,7 +73,15 @@ mermaid = generate_mermaid("graph TD; A-->B") # Generate diagrams
 memory = remember_entity("name", "desc") # Remember entities across sessions
 report = invoke_peer_review(document, topic, rounds=6) # Adversarial swarm review
 result = verify_logic("(H1 OR H2) AND (NOT H1)")       # Formal SAT verification
+out = run_skill_tool("sprout-cli", ["channels", "list"]) # Ported skill tools
 ```
+
+## Skill Tools — run_skill_tool()
+Two skill tools are ported from block/buzz: `desktop-screenshot` and
+`sprout-cli`. Both route to an external CLI handler; neither backend ships with
+R.A.I.N., so both return `{"ok": False, "error": ...}` until the corresponding
+binary is installed and pointed to via `$RAIN_SCREENSHOT_BIN` / `$BUZZ_CLI_BIN`.
+Check `result["ok"]` before relying on output — never assume these succeeded.
 
 ## Formal Logic Engine — verify_logic()
 You have access to a **deterministic formal verification tool** called `verify_logic`.
@@ -105,7 +113,7 @@ RULES:
 - Use ONLY research papers from this library and web search.
 - Only use: read_paper(), search_web(), list_papers(), search_library(), semantic_search(),
   visualize_concepts(), generate_mermaid(), remember_entity(), recall_entity(), invoke_peer_review(),
-  verify_logic()
+  verify_logic(), run_skill_tool()
 """
             self._soul_cache = external_soul + rlm_rules
             print(f"     Soul loaded: {self.name.upper()}_SOUL.md")
