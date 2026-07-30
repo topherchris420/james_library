@@ -1389,6 +1389,132 @@ def _verify_logic_python(payload_json):
         return json.dumps({"satisfiable": False})
 
 
+# --- SKILL TOOL ROUTING (ported from block/buzz) ---
+# The desktop-screenshot and sprout-cli skills each drive an external command;
+# neither ships a backend in this repo. The router resolves the handler at call
+# time and fails loudly when it is missing rather than silently no-oping, so an
+# agent gets an actionable error instead of a confusing empty result.
+#
+# buzz-agent is deliberately NOT a target here: it is an ACP peer-agent runtime
+# speaking JSON-RPC over stdio, not a dispatcher for named tools.
+
+SKILL_HANDLERS = {
+    "sprout-cli": {
+        "bin_env": "BUZZ_CLI_BIN",
+        "default_bin": "buzz",
+        "required_env": ["BUZZ_PRIVATE_KEY"],
+        "provided_by": "crates/buzz-cli in block/buzz (not ported into R.A.I.N.)",
+    },
+    "desktop-screenshot": {
+        "bin_env": "RAIN_SCREENSHOT_BIN",
+        "default_bin": "rain-desktop-screenshot",
+        "required_env": [],
+        "provided_by": "a Playwright capture harness (not present in R.A.I.N.)",
+    },
+}
+
+
+def _redact_skill_args(argv):
+    """Build a trace-safe view of a skill argv -- flag names only, no values.
+
+    Argument *values* routinely carry private payloads: the sprout-cli skill
+    documents `messages send --content <message body>`,
+    `draft-create --system-prompt <prompt>` and `mem set <slug> <value>`.
+    Writing those verbatim into meeting_archives/tool_trace.jsonl would persist
+    private message bodies and system prompts in plaintext on disk, so values
+    are never traced (CLAUDE.md 3.6 / 9.1). Flag names are retained because
+    they are the part that makes a trace useful for debugging, and `--flag=value`
+    is split so the value half is dropped too.
+    """
+    flags = []
+    for arg in argv:
+        if arg.startswith("-"):
+            flags.append(arg.split("=", 1)[0])
+    return {"argc": len(argv), "flags": flags, "values": "<redacted>"}
+
+
+def _resolve_skill_handler(tool_name):
+    """Return (binary_path, None) when the handler is runnable, else (None, error)."""
+    import shutil
+
+    spec = SKILL_HANDLERS.get(tool_name)
+    if spec is None:
+        known = ", ".join(sorted(SKILL_HANDLERS))
+        return None, {"error": "unknown skill tool '%s'. Known: %s" % (tool_name, known)}
+
+    binary = os.environ.get(spec["bin_env"]) or spec["default_bin"]
+    resolved = shutil.which(binary)
+    if not resolved:
+        return None, {
+            "error": "handler for '%s' not installed" % tool_name,
+            "missing_binary": binary,
+            "provided_by": spec["provided_by"],
+            "fix": "install it and/or set %s to its absolute path" % spec["bin_env"],
+        }
+
+    missing_env = [k for k in spec["required_env"] if not os.environ.get(k)]
+    if missing_env:
+        return None, {
+            "error": "handler for '%s' is missing required environment" % tool_name,
+            "missing_env": missing_env,
+        }
+    return resolved, None
+
+
+def run_skill_tool(tool_name, args=None, timeout=120):
+    """Route a named skill tool to its local CLI handler.
+
+    Returns a dict with 'ok' plus 'stdout'/'stderr'/'exit_code' on success, or
+    'ok': False and a structured 'error' when the handler cannot run. Never
+    raises -- agent code paths must not crash the meeting loop.
+    """
+    import subprocess
+
+    argv = [str(a) for a in (args or [])]
+    _trace_event("call", tool_name, _redact_skill_args(argv))
+
+    binary, err = _resolve_skill_handler(tool_name)
+    if err is not None:
+        err["ok"] = False
+        _trace_event("error", tool_name, err)
+        return err
+
+    try:
+        proc = subprocess.run(
+            [binary] + argv,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        err = {"ok": False, "error": "'%s' timed out after %ss" % (tool_name, timeout)}
+        _trace_event("error", tool_name, err)
+        return err
+    except Exception as e:
+        err = {"ok": False, "error": "%s: %s" % (type(e).__name__, e)}
+        _trace_event("error", tool_name, err)
+        return err
+
+    out = {
+        "ok": proc.returncode == 0,
+        "exit_code": proc.returncode,
+        "stdout": sanitize_text(proc.stdout),
+        "stderr": sanitize_text(proc.stderr),
+    }
+    _trace_event("result", tool_name, {"ok": out["ok"], "exit_code": out["exit_code"]})
+    return out
+
+
+def desktop_screenshot(*args):
+    """Capture a desktop screenshot via the desktop-screenshot skill handler."""
+    return run_skill_tool("desktop-screenshot", list(args))
+
+
+def sprout_cli(*args):
+    """Invoke the buzz relay CLI via the sprout-cli skill handler."""
+    return run_skill_tool("sprout-cli", list(args))
+
+
 TOOLS_READY = True
 print("[SETUP] tools ready")
 
