@@ -8,7 +8,7 @@ The **RAIN ↔ CIRCLE Experiment Protocol** establishes a reproducible, determin
 
 ## 1. Architectural Philosophy
 
-```
+```text
 R.A.I.N. reasons.
 CIRCLE witnesses.
 The protocol connects them without collapsing their responsibilities.
@@ -56,9 +56,7 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 | `TEST` | Synthetic validation vectors or harness tests. |
 | `INTERVENTION` | Actuation commands and stimulus events (requires decision lineage). |
 
-> [!CAUTION]
-> **Simulated records cannot be classified as `RAW_MEASURED`.**
-> Any attempt by a simulation executor to emit `RAW_MEASURED` records is rejected with an epistemic violation error. LLM explanations can never become experimental evidence.
+> **Caution:** Simulated records cannot be classified as `RAW_MEASURED`. Any attempt by a simulation executor to emit `RAW_MEASURED` records is rejected with an epistemic violation error. LLM explanations can never become experimental evidence.
 
 ---
 
@@ -68,7 +66,7 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 2. **Deterministic Hashing**: The manifest is serialized canonically (sorted keys, compact whitespace) and hashed (`manifest_sha256`).
 3. **Execution**: The `SimulatedCircleExecutor` executes the trial, producing CIRCLE session records (`session_id`, `intervention_id`, `decision_id`, `crc32c`).
 4. **Deterministic Analysis**: The Python engine verifies that `execution_manifest_sha256 == original_manifest_sha256`. If mismatched, `protocol_status = "PROTOCOL_CHANGED"` and the conclusion is forced to `INCONCLUSIVE`.
-5. **Artifact Discrimination**: If the observed response is replicated in the electronic phantom control ($\ge 40\%$ magnitude), the system flags `POTENTIAL_INSTRUMENTATION_ARTIFACT` and downgrades biological claims.
+5. **Artifact Discrimination**: If the observed response is replicated in the electronic phantom control (>= 40% magnitude), the system flags `POTENTIAL_INSTRUMENTATION_ARTIFACT` and downgrades biological claims.
 6. **R.A.I.N. Interpretation**: R.A.I.N. receives only bounded statistical outputs and quality flags to generate an initial interpretation.
 7. **Adversarial Critique**: A secondary pass challenges the initial interpretation against alternative explanations, phantom artifacts, and uncontrolled confounders. Both the initial analysis and adversarial critique are preserved.
 8. **Conclusion Assignment**: The tri-state conclusion (`SUPPORTS`, `REFUTES`, `INCONCLUSIVE`) is recorded.
@@ -109,7 +107,7 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 
 ## 7. Safety Boundaries & Physical Hardware Extension Point
 
-```
+```text
 V1 BACKEND: STRICTLY SIMULATED
 ```
 
@@ -122,6 +120,7 @@ V1 BACKEND: STRICTLY SIMULATED
 ## 8. CLI Usage & Reproducibility
 
 ### Run Standard Experiment
+
 ```powershell
 python launcher/rain_lab.py experiment `
   --question "Does 40Hz acoustic resonance alter phantom impedance?" `
@@ -132,6 +131,7 @@ python launcher/rain_lab.py experiment `
 ```
 
 ### Run Standard Verification Fixtures
+
 ```powershell
 # Positive Control (SUPPORTS)
 python launcher/rain_lab.py experiment --fixture positive
@@ -150,6 +150,7 @@ python launcher/rain_lab.py experiment --fixture protocol-mod
 ```
 
 ### Verify Provenance Bundle Integrity
+
 ```powershell
 python launcher/rain_lab.py experiment --verify-bundle experiments/EXP-XXXXXXXX
 ```
