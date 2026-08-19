@@ -11,6 +11,7 @@ from importlib import import_module
 from types import ModuleType
 
 _SERVICE_MODULES = [
+    "experiment_protocol",
     "external_integrations",
     "kairos_dreamer",
     "openclaw_service",

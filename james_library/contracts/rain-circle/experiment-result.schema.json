@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/rain-circle/experiment-result.schema.json",
+  "title": "RAIN-CIRCLE Experiment Result v1",
+  "description": "Cross-system interoperability wrapper linking execution evidence, CIRCLE records, and quality flags to the preregistered manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "experiment_id",
+    "trial_id",
+    "execution_id",
+    "started_at",
+    "ended_at",
+    "executor_type",
+    "instrument_identity",
+    "hardware_revision",
+    "firmware_version",
+    "software_version",
+    "circle_session_references",
+    "circle_intervention_references",
+    "raw_artifact_references",
+    "quality_flags",
+    "calibration_status",
+    "synchronization_status",
+    "environmental_metadata",
+    "deviations_from_protocol",
+    "failed_measurements",
+    "manifest_sha256",
+    "provenance",
+    "checksums"
+  ],
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-[0-9a-fA-F]{8,}$"
+    },
+    "trial_id": {
+      "type": "string",
+      "pattern": "^TRL-[0-9a-fA-F]{8,}$"
+    },
+    "execution_id": {
+      "type": "string",
+      "pattern": "^EXEC-[0-9a-fA-F]{8,}$"
+    },
+    "started_at": {
+      "type": "string"
+    },
+    "ended_at": {
+      "type": "string"
+    },
+    "executor_type": {
+      "type": "string",
+      "enum": ["SIMULATED", "PHYSICAL_DISABLED", "REPLAY"]
+    },
+    "instrument_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hardware_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "firmware_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "software_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "circle_session_references": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "circle_intervention_references": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "raw_artifact_references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "type"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" },
+          "type": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "quality_flags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "calibration_status": {
+      "type": "string",
+      "enum": ["CALIBRATED", "UNCALIBRATED", "CALIBRATION_EXPIRED", "SIMULATED_IDEAL"]
+    },
+    "synchronization_status": {
+      "type": "string",
+      "enum": ["SYNCHRONIZED", "UNSYNCHRONIZED", "DEGRADED", "SIMULATED_PERFECT"]
+    },
+    "environmental_metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "deviations_from_protocol": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "description", "severity"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "enum": ["INFO", "WARNING", "CRITICAL"] }
+        }
+      }
+    },
+    "failed_measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel", "reason", "timestamp_us"],
+        "properties": {
+          "channel": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "timestamp_us": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "RAW_MEASURED",
+        "DERIVED",
+        "MODEL_INFERRED",
+        "SIMULATED",
+        "TEST",
+        "INTERVENTION"
+      ]
+    },
+    "checksums": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-fA-F]{64}$" }
+    }
+  }
+}

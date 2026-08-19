@@ -2121,6 +2121,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
             "models",
             "onboard",
             "status",
+            "experiment",
         ],
         default="chat",
         help=(
@@ -2725,6 +2726,11 @@ async def run_rain_lab(
 def main(argv: list[str] | None = None) -> int:
     argv = list(argv) if argv is not None else sys.argv[1:]
 
+    # Handle direct 'experiment' subcommand
+    if argv and argv[0] == "experiment":
+        from services.experiment_protocol.cli import main as exp_main
+        return exp_main(argv[1:])
+
     # Handle simple/friendly mode aliases before full parsing
     if argv and argv[0] == "--mode" and len(argv) > 1:
         mode_arg = argv[1]
@@ -2742,6 +2748,13 @@ def main(argv: list[str] | None = None) -> int:
             argv[1] = mode_map[mode_arg]
 
     args, passthrough = parse_args(argv)
+    if args.mode == "experiment":
+        from services.experiment_protocol.cli import main as exp_main
+        exp_args = []
+        if args.topic:
+            exp_args.extend(["--question", args.topic, "--hypothesis", args.topic])
+        exp_args.extend(passthrough)
+        return exp_main(exp_args)
     repo_root = Path(__file__).resolve().parents[2]
     requested_mode = args.mode
     ui_was_explicit = "--ui" in argv

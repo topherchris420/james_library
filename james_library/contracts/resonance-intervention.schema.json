@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://circle.invalid/contracts/resonance-intervention.schema.json",
+  "title": "Resonance Intervention Record and Configuration Schema",
+  "description": "Formal schema for CIRCLE resonance research interventions, multi-element geometric drives, energy accounting, and closed-loop records. Engineering review / bench validation only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "configuration_id",
+    "geometry",
+    "drive_channels",
+    "power_and_energy",
+    "timing",
+    "provenance",
+    "interpretation_level",
+    "status_flags"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["1.0.0"]
+    },
+    "experiment_id": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Globally unique experiment session identifier."
+    },
+    "configuration_id": {
+      "type": "string",
+      "minLength": 3,
+      "description": "Blinded or named configuration identifier."
+    },
+    "sync_event_id": {
+      "type": "string",
+      "description": "Linkage identifier to CIRCLE isolated SYNC IN / SYNC OUT hardware timestamps."
+    },
+    "decision_id": {
+      "type": "string",
+      "description": "Linkage identifier to closed-loop model decision."
+    },
+    "geometry": {
+      "$ref": "#/$defs/geometry"
+    },
+    "drive_channels": {
+      "$ref": "#/$defs/driveChannels"
+    },
+    "power_and_energy": {
+      "$ref": "#/$defs/powerAndEnergy"
+    },
+    "spectral_features": {
+      "$ref": "#/$defs/spectralFeatures"
+    },
+    "timing": {
+      "$ref": "#/$defs/timing"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "interpretation_level": {
+      "$ref": "#/$defs/interpretationLevel"
+    },
+    "hypothesis_context": {
+      "$ref": "#/$defs/hypothesisContext"
+    },
+    "artifact_indicators": {
+      "$ref": "#/$defs/artifactIndicators"
+    },
+    "condition_role": {
+      "type": "string",
+      "enum": ["TARGET_HYPOTHESIS", "ACTIVE_CONTROL", "SHAM", "EXPLORATORY"],
+      "description": "Deterministic experimental classification of the intervention condition."
+    },
+    "factorial_block_id": {
+      "type": "string",
+      "description": "Unique identifier for the balanced matched factorial block."
+    },
+    "factorial_block_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "0-based position within the matched factorial block sequence."
+    },
+    "randomization_id": {
+      "type": "string",
+      "description": "Seed or batch identifier for pseudorandom trial sequence generation."
+    },
+    "blinded_trial_token": {
+      "type": "string",
+      "description": "Opaque cryptographic token used for operator blinding."
+    },
+    "calibration_metadata": {
+      "type": "string",
+      "description": "Physical calibration status of the simulation model."
+    },
+    "status_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "provenance": { "const": "INTERVENTION" }
+        }
+      },
+      "then": {
+        "required": ["decision_id", "condition_role", "blinded_trial_token"]
+      }
+    },
+    {
+      "if": {
+        "required": ["factorial_block_id"]
+      },
+      "then": {
+        "required": ["factorial_block_id", "factorial_block_index", "randomization_id"]
+      }
+    }
+  ],
+  "$defs": {
+    "geometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "geometry_type",
+        "outer_diameter_mm",
+        "middle_diameter_mm",
+        "inner_diameter_mm",
+        "core_geometry",
+        "scaling_factor"
+      ],
+      "properties": {
+        "geometry_type": {
+          "type": "string",
+          "enum": [
+            "GOLDEN_RATIO_SPHERES",
+            "EQUAL_SPHERES",
+            "RANDOM_SPHERES",
+            "SHAM_OFF"
+          ]
+        },
+        "outer_diameter_mm": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "middle_diameter_mm": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "inner_diameter_mm": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "core_geometry": {
+          "type": "string",
+          "enum": [
+            "DUAL_TETRAHEDRON_MERKABA",
+            "SPHERICAL_CORE",
+            "CUBIC_CORE",
+            "NO_CORE",
+            "SHAM_OFF"
+          ]
+        },
+        "scaling_factor": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "geometry_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "channelDrive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "channel_id",
+        "target_frequency_hz",
+        "measured_frequency_hz",
+        "amplitude_v",
+        "phase_deg",
+        "modulation_type",
+        "q_factor",
+        "bandwidth_hz"
+      ],
+      "properties": {
+        "channel_id": {
+          "type": "string",
+          "enum": [
+            "R_outer",
+            "R_middle",
+            "R_inner",
+            "R_core_up",
+            "R_core_down"
+          ]
+        },
+        "target_frequency_hz": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "measured_frequency_hz": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "amplitude_v": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "phase_deg": {
+          "type": "number",
+          "minimum": -360.0,
+          "maximum": 360.0
+        },
+        "modulation_type": {
+          "type": "string",
+          "enum": [
+            "NONE_CW",
+            "SINE_AM",
+            "SINE_FM",
+            "PULSED",
+            "BURST",
+            "CHIRP_LINEAR",
+            "SHAM_OFF"
+          ]
+        },
+        "modulation_frequency_hz": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "coupling_coefficient": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "q_factor": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "bandwidth_hz": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "driveChannels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "R_outer",
+        "R_middle",
+        "R_inner",
+        "R_core_up",
+        "R_core_down"
+      ],
+      "properties": {
+        "R_outer": { "$ref": "#/$defs/channelDrive" },
+        "R_middle": { "$ref": "#/$defs/channelDrive" },
+        "R_inner": { "$ref": "#/$defs/channelDrive" },
+        "R_core_up": { "$ref": "#/$defs/channelDrive" },
+        "R_core_down": { "$ref": "#/$defs/channelDrive" }
+      }
+    },
+    "powerAndEnergy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_power_w",
+        "measured_output_power_w",
+        "dissipated_thermal_power_w",
+        "conservation_verified",
+        "temperature_c"
+      ],
+      "properties": {
+        "input_power_w": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "measured_output_power_w": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "dissipated_thermal_power_w": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "conservation_verified": {
+          "type": "boolean",
+          "description": "True if measured output power does not exceed input power (P_out <= P_in)."
+        },
+        "temperature_c": {
+          "type": "number"
+        }
+      }
+    },
+    "spectralFeatures": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "harmonics_detected": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "intermodulation_products": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "subharmonics": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "mode_splitting_detected": {
+          "type": "boolean"
+        },
+        "phase_locked": {
+          "type": "boolean"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "device_time_start_us",
+        "device_time_end_us",
+        "duration_ms",
+        "baseline_duration_ms",
+        "washout_duration_ms"
+      ],
+      "properties": {
+        "device_time_start_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "device_time_end_us": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "baseline_duration_ms": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "washout_duration_ms": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      }
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "RAW_MEASURED",
+        "DERIVED",
+        "MODEL_INFERRED",
+        "SIMULATED",
+        "TEST",
+        "INTERVENTION"
+      ]
+    },
+    "interpretationLevel": {
+      "type": "string",
+      "enum": [
+        "MEASURED",
+        "DERIVED",
+        "MODEL_INFERRED",
+        "HYPOTHESIS_LABEL"
+      ],
+      "description": "Strict epistemological categorization: MEASURED (raw sensor/instrument metrics), DERIVED (mathematical transforms/spectral features), MODEL_INFERRED (state/response estimates), HYPOTHESIS_LABEL (speculative models, e.g. subtle coherence)."
+    },
+    "hypothesisContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tested_hypothesis_id": {
+          "type": "string"
+        },
+        "phenomenological_label": {
+          "type": "string",
+          "description": "Interpretive label (e.g. geometric_coherence, prana_analogy). Must never be recorded as a physical measurement."
+        },
+        "falsification_criterion": {
+          "type": "string"
+        }
+      }
+    },
+    "artifactIndicators": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "em_pickup_risk_score",
+        "temperature_gradient_risk",
+        "phantom_control_verified"
+      ],
+      "properties": {
+        "em_pickup_risk_score": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Estimated risk of direct electromagnetic interference on sensor circuitry (0.0 = negligible, 1.0 = dominant)."
+        },
+        "temperature_gradient_risk": {
+          "type": "boolean"
+        },
+        "phantom_control_verified": {
+          "type": "boolean"
+        },
+        "artifact_flags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

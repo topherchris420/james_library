@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/rain-circle/experiment-analysis.schema.json",
+  "title": "RAIN-CIRCLE Experiment Analysis v1",
+  "description": "Structured scientific analysis combining deterministic statistical results, artifact discrimination, and R.A.I.N. adversarial critique.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "experiment_id",
+    "trial_id",
+    "execution_id",
+    "manifest_sha256",
+    "result_sha256",
+    "hypothesis",
+    "null_hypothesis",
+    "preregistered_analysis",
+    "observed_effects",
+    "statistical_results",
+    "effect_sizes",
+    "confidence_intervals",
+    "quality_assessment",
+    "protocol_deviations",
+    "artifact_analysis",
+    "alternative_explanations",
+    "evidence_summary",
+    "conclusion",
+    "conclusion_confidence",
+    "initial_analysis",
+    "adversarial_critique",
+    "recommended_next_experiment",
+    "model_identity",
+    "model_version",
+    "analysis_timestamp",
+    "provenance",
+    "post_hoc_analysis"
+  ],
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-[0-9a-fA-F]{8,}$"
+    },
+    "trial_id": {
+      "type": "string",
+      "pattern": "^TRL-[0-9a-fA-F]{8,}$"
+    },
+    "execution_id": {
+      "type": "string",
+      "pattern": "^EXEC-[0-9a-fA-F]{8,}$"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "result_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "protocol_status": {
+      "type": "string",
+      "enum": ["PREREGISTERED_VALID", "PROTOCOL_CHANGED"]
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "null_hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "preregistered_analysis": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "observed_effects": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "statistical_results": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["sample_size", "mean_control", "mean_active", "variance_control", "variance_active", "p_value"],
+      "properties": {
+        "sample_size": { "type": "integer", "minimum": 0 },
+        "mean_control": { "type": "number" },
+        "mean_active": { "type": "number" },
+        "variance_control": { "type": "number", "minimum": 0.0 },
+        "variance_active": { "type": "number", "minimum": 0.0 },
+        "std_dev_control": { "type": "number", "minimum": 0.0 },
+        "std_dev_active": { "type": "number", "minimum": 0.0 },
+        "t_statistic": { "type": ["number", "null"] },
+        "p_value": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "degrees_of_freedom": { "type": ["integer", "null"] }
+      }
+    },
+    "effect_sizes": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["cohens_d", "mean_difference"],
+      "properties": {
+        "cohens_d": { "type": "number" },
+        "mean_difference": { "type": "number" },
+        "mean_difference_percent": { "type": "number" }
+      }
+    },
+    "confidence_intervals": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["confidence_level", "lower_bound", "upper_bound"],
+      "properties": {
+        "confidence_level": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "lower_bound": { "type": "number" },
+        "upper_bound": { "type": "number" }
+      }
+    },
+    "quality_assessment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["data_quality_score", "quality_flags", "is_acceptable"],
+      "properties": {
+        "data_quality_score": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "quality_flags": { "type": "array", "items": { "type": "string" } },
+        "is_acceptable": { "type": "boolean" }
+      }
+    },
+    "protocol_deviations": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "artifact_analysis": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "phantom_tested",
+        "phantom_signal_detected",
+        "artifact_explanation_plausible",
+        "artifact_flags"
+      ],
+      "properties": {
+        "phantom_tested": { "type": "boolean" },
+        "phantom_signal_detected": { "type": "boolean" },
+        "artifact_explanation_plausible": { "type": "boolean" },
+        "artifact_flags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "alternative_explanations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "evidence_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "conclusion": {
+      "type": "string",
+      "enum": ["SUPPORTS", "REFUTES", "INCONCLUSIVE"]
+    },
+    "conclusion_confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "initial_analysis": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["interpretation", "preliminary_conclusion", "rationale"],
+      "properties": {
+        "interpretation": { "type": "string", "minLength": 1 },
+        "preliminary_conclusion": { "type": "string", "enum": ["SUPPORTS", "REFUTES", "INCONCLUSIVE"] },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "adversarial_critique": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "critique",
+        "supporting_evidence",
+        "contradicting_evidence",
+        "potential_artifacts",
+        "uncontrolled_confounders",
+        "missing_measurements",
+        "weakest_assumption",
+        "falsification_criteria_met",
+        "adheres_to_preregistration"
+      ],
+      "properties": {
+        "critique": { "type": "string", "minLength": 1 },
+        "supporting_evidence": { "type": "array", "items": { "type": "string" } },
+        "contradicting_evidence": { "type": "array", "items": { "type": "string" } },
+        "potential_artifacts": { "type": "array", "items": { "type": "string" } },
+        "uncontrolled_confounders": { "type": "array", "items": { "type": "string" } },
+        "missing_measurements": { "type": "array", "items": { "type": "string" } },
+        "weakest_assumption": { "type": "string", "minLength": 1 },
+        "falsification_criteria_met": { "type": "boolean" },
+        "adheres_to_preregistration": { "type": "boolean" }
+      }
+    },
+    "recommended_next_experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reason",
+        "targeted_uncertainty",
+        "hypothesis",
+        "control",
+        "measurement",
+        "expected_information_gain",
+        "requires_human_review"
+      ],
+      "properties": {
+        "reason": { "type": "string", "minLength": 1 },
+        "targeted_uncertainty": { "type": "string", "minLength": 1 },
+        "hypothesis": { "type": "string", "minLength": 1 },
+        "control": { "type": "string", "minLength": 1 },
+        "measurement": { "type": "string", "minLength": 1 },
+        "expected_information_gain": { "type": "string", "minLength": 1 },
+        "requires_human_review": { "type": "boolean", "const": true }
+      }
+    },
+    "model_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "analysis_timestamp": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "RAW_MEASURED",
+        "DERIVED",
+        "MODEL_INFERRED",
+        "SIMULATED",
+        "TEST",
+        "INTERVENTION"
+      ]
+    },
+    "post_hoc_analysis": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

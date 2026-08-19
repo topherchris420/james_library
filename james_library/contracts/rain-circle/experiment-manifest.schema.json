@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/rain-circle/experiment-manifest.schema.json",
+  "title": "RAIN-CIRCLE Experiment Manifest v1",
+  "description": "Preregistered experiment specification defining hypotheses, controls, and analysis plans before evidence collection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "experiment_id",
+    "trial_id",
+    "created_at",
+    "created_by",
+    "research_question",
+    "hypothesis",
+    "null_hypothesis",
+    "alternative_hypothesis",
+    "experimental_design",
+    "independent_variables",
+    "dependent_variables",
+    "control_conditions",
+    "sham_conditions",
+    "confounders",
+    "exclusion_criteria",
+    "stopping_rules",
+    "preregistered_analysis",
+    "expected_measurements",
+    "required_sensor_channels",
+    "intervention_description",
+    "randomization",
+    "blinding",
+    "provenance_requirements",
+    "safety_requirements",
+    "software_versions",
+    "hardware_versions",
+    "requires_human_review"
+  ],
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^EXP-[0-9a-fA-F]{8,}$"
+    },
+    "trial_id": {
+      "type": "string",
+      "pattern": "^TRL-[0-9a-fA-F]{8,}$"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "created_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "research_question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "null_hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "alternative_hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "experimental_design": {
+      "type": "string",
+      "minLength": 1
+    },
+    "independent_variables": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "dependent_variables": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "control_conditions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "sham_conditions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "confounders": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "exclusion_criteria": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "stopping_rules": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "preregistered_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "statistical_test",
+        "alpha_threshold",
+        "min_sample_size",
+        "effect_size_threshold",
+        "falsification_criteria",
+        "artifact_rejection_rules"
+      ],
+      "properties": {
+        "statistical_test": { "type": "string", "minLength": 1 },
+        "alpha_threshold": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "min_sample_size": { "type": "integer", "minimum": 1 },
+        "effect_size_threshold": { "type": "number", "minimum": 0.0 },
+        "falsification_criteria": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "artifact_rejection_rules": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "expected_measurements": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "required_sensor_channels": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "intervention_description": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["type", "parameters"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "parameters": { "type": "object" }
+      }
+    },
+    "randomization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["randomization_id", "method", "seed"],
+      "properties": {
+        "randomization_id": { "type": "string", "minLength": 1 },
+        "method": { "type": "string", "minLength": 1 },
+        "seed": { "type": ["integer", "string", "null"] }
+      }
+    },
+    "blinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["is_blinded", "blinding_token", "condition_role"],
+      "properties": {
+        "is_blinded": { "type": "boolean" },
+        "blinding_token": { "type": "string", "minLength": 1 },
+        "condition_role": { "type": "string", "enum": ["ACTIVE", "CONTROL", "SHAM", "PHANTOM", "UNKNOWN"] }
+      }
+    },
+    "provenance_requirements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "RAW_MEASURED",
+          "DERIVED",
+          "MODEL_INFERRED",
+          "SIMULATED",
+          "TEST",
+          "INTERVENTION"
+        ]
+      },
+      "minItems": 1
+    },
+    "safety_requirements": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1
+    },
+    "software_versions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "hardware_versions": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "requires_human_review": {
+      "type": "boolean"
+    }
+  }
+}
