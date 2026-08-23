@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,8 +17,7 @@ from .fixtures import (
     run_positive_control_fixture,
     run_protocol_modification_fixture,
 )
-from .manifest import calculate_sha256, canonical_json_str, validate_manifest
-from .provenance import Provenance
+from .manifest import calculate_sha256
 from .reasoning import assemble_experiment_analysis, design_experiment
 
 ANSI_CYAN = "\033[96m"
@@ -88,7 +86,11 @@ def print_experiment_report(
         lines.append(f"  * {ANSI_YELLOW}Artifact flags{ANSI_RESET}       : {', '.join(art['artifact_flags'])}")
     lines.extend([
         "-" * 70,
-        f"{ANSI_BOLD}Scientific Conclusion:{ANSI_RESET} {conclusion_color}{ANSI_BOLD}{conclusion}{ANSI_RESET} (confidence: {analysis['conclusion_confidence']:.2f})",
+        (
+            f"{ANSI_BOLD}Scientific Conclusion:{ANSI_RESET} "
+            f"{conclusion_color}{ANSI_BOLD}{conclusion}{ANSI_RESET} "
+            f"(confidence: {analysis['conclusion_confidence']:.2f})"
+        ),
         f"  {analysis['evidence_summary']}",
         "-" * 70,
         f"{ANSI_BOLD}Adversarial Critique:{ANSI_RESET}",
@@ -244,7 +246,9 @@ def main(argv: list[str] | None = None) -> int:
         print(_console_safe(f"Verifying bundle at {target}..."))
         res = verify_bundle_integrity(target)
         if res["valid"]:
-            print(_console_safe(f"{ANSI_GREEN}[OK] Bundle is valid and untampered ({len(res['checked_files'])} files checked).{ANSI_RESET}"))
+            count = len(res["checked_files"])
+            msg = f"{ANSI_GREEN}[OK] Bundle is valid and untampered ({count} files checked).{ANSI_RESET}"
+            print(_console_safe(msg))
             return 0
         else:
             print(_console_safe(f"{ANSI_RED}[FAIL] Bundle verification failed:{ANSI_RESET}"))

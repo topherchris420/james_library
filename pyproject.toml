@@ -60,4 +60,5 @@ static_typing_stage_2_allowlist = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+pythonpath = ["."]
+testpaths = ["tests", "james_library/tests"]

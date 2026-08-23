@@ -272,7 +272,9 @@ def run_deterministic_analysis(
     }
 
     quality_assessment = {
-        "data_quality_score": 1.0 if not critical_failure and not artifact_flags else (0.2 if critical_failure else 0.5),
+        "data_quality_score": (
+            1.0 if not critical_failure and not artifact_flags else (0.2 if critical_failure else 0.5)
+        ),
         "quality_flags": quality_flags + artifact_flags,
         "is_acceptable": not critical_failure,
     }

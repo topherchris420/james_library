@@ -10,15 +10,13 @@ from __future__ import annotations
 
 import abc
 import hashlib
-import json
-import math
 import random
 import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .manifest import calculate_sha256, canonical_json_str, generate_execution_id, validate_manifest
+from .manifest import canonical_json_str, generate_execution_id, validate_manifest
 from .provenance import Provenance, enforce_executor_provenance
 
 
@@ -160,7 +158,9 @@ class SimulatedCircleExecutor(CircleExperimentExecutor):
             "decision_id": decision_id,
             "stimulus_type": "ACOUSTIC_RESONANCE",
             "waveform_parameters": {
-                "frequency_hz": manifest.get("intervention_description", {}).get("parameters", {}).get("frequency_hz", 40.0),
+                "frequency_hz": (
+                    manifest.get("intervention_description", {}).get("parameters", {}).get("frequency_hz", 40.0)
+                ),
                 "amplitude_normalized": 0.5,
                 "duration_ms": 1000.0,
             },

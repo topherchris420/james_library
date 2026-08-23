@@ -60,7 +60,7 @@ jobs:
         run: |
           read -r -a allowlist <<< "$MYPY_STAGE_1_ALLOWLIST"
           mypy "${allowlist[@]}"
-      - run: pytest tests/ -v -ra --tb=long
+      - run: pytest -v -ra --tb=long
 
   governance-contracts:
     name: Governance Contract Checks

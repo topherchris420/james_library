@@ -6,11 +6,9 @@ import hashlib
 import json
 import re
 import secrets
-from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
-from .provenance import CIRCLE_PROVENANCE_VALUES, Provenance
+from .provenance import CIRCLE_PROVENANCE_VALUES
 
 PROTOCOL_VERSION = "1.0.0"
 

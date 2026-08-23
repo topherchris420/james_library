@@ -1,20 +1,16 @@
 """Comprehensive test suite for RAIN <-> CIRCLE Experiment Protocol."""
 
-import hashlib
-import json
-import os
 import shutil
 import tempfile
-from pathlib import Path
 import unittest
+from pathlib import Path
 
-from services.experiment_protocol import (
-    PROTOCOL_VERSION,
+from james_library.services.experiment_protocol import (
     CIRCLE_PROVENANCE_VALUES,
-    Provenance,
+    PhysicalCircleExecutor,
+    SimulatedCircleExecutor,
     calculate_sha256,
     canonical_json_bytes,
-    canonical_json_str,
     compute_cohens_d,
     compute_confidence_interval,
     compute_mean,
@@ -23,10 +19,7 @@ from services.experiment_protocol import (
     compute_variance,
     design_experiment,
     enforce_executor_provenance,
-    generate_blinding_token,
-    generate_execution_id,
     generate_experiment_id,
-    generate_randomization_id,
     generate_trial_id,
     run_artifact_only_fixture,
     run_deterministic_analysis,
@@ -36,14 +29,11 @@ from services.experiment_protocol import (
     run_protocol_modification_fixture,
     save_experiment_bundle,
     validate_manifest,
-    validate_provenance,
     validate_record_provenance_lineage,
     verify_bundle_integrity,
     verify_manifest_hash,
-    PhysicalCircleExecutor,
-    SimulatedCircleExecutor,
 )
-from services.experiment_protocol.cli import run_experiment_workflow
+from james_library.services.experiment_protocol.cli import run_experiment_workflow
 
 
 class TestManifestContracts(unittest.TestCase):

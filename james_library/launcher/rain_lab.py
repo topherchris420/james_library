@@ -2728,7 +2728,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Handle direct 'experiment' subcommand
     if argv and argv[0] == "experiment":
-        from services.experiment_protocol.cli import main as exp_main
+        from james_library.services.experiment_protocol.cli import main as exp_main
         return exp_main(argv[1:])
 
     # Handle simple/friendly mode aliases before full parsing
@@ -2749,7 +2749,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args, passthrough = parse_args(argv)
     if args.mode == "experiment":
-        from services.experiment_protocol.cli import main as exp_main
+        from james_library.services.experiment_protocol.cli import main as exp_main
         exp_args = []
         if args.topic:
             exp_args.extend(["--question", args.topic, "--hypothesis", args.topic])

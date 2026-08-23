@@ -42,9 +42,15 @@ def design_experiment(
     blind_token = generate_blinding_token()
 
     if not null_hypothesis:
-        null_hypothesis = f"Application of {frequency_hz} Hz stimulus produces no measurable change in target channel response relative to baseline."
+        null_hypothesis = (
+            f"Application of {frequency_hz} Hz stimulus produces no measurable change in target channel response "
+            f"relative to baseline."
+        )
     if not alternative_hypothesis:
-        alternative_hypothesis = f"Application of {frequency_hz} Hz stimulus induces a statistically significant response change (Cohen's d >= {effect_size_threshold}, alpha < {alpha_threshold})."
+        alternative_hypothesis = (
+            f"Application of {frequency_hz} Hz stimulus induces a statistically significant response change "
+            f"(Cohen's d >= {effect_size_threshold}, alpha < {alpha_threshold})."
+        )
 
     manifest: dict[str, Any] = {
         "protocol_version": PROTOCOL_VERSION,
@@ -87,11 +93,17 @@ def design_experiment(
             "min_sample_size": min_sample_size,
             "effect_size_threshold": effect_size_threshold,
             "falsification_criteria": [
-                "Mean difference between active and sham is within equivalence margin (+/- 1.0%) with p > 0.50 under adequate statistical power",
+                (
+                    "Mean difference between active and sham is within equivalence margin (+/- 1.0%) "
+                    "with p > 0.50 under adequate statistical power"
+                ),
                 "Observed effect in active condition is replicated in electronic phantom control",
             ],
             "artifact_rejection_rules": [
-                "If electronic phantom response amplitude >= 40% of active response amplitude, flag POTENTIAL_INSTRUMENTATION_ARTIFACT and reject biological interpretation",
+                (
+                    "If electronic phantom response amplitude >= 40% of active response amplitude, "
+                    "flag POTENTIAL_INSTRUMENTATION_ARTIFACT and reject biological interpretation"
+                ),
             ],
         },
         "expected_measurements": [
@@ -165,14 +177,18 @@ def generate_initial_interpretation(
             f"The deterministic analysis indicates a statistically significant difference "
             f"(mean difference = {diff:.3f}, Cohen's d = {d:.3f}, p = {p_val:.4f}, n = {n}). "
             f"The observed data satisfy the preregistered criteria for the alternative hypothesis. "
-            f"However, this supports the hypothesis within the bounds of this protocol; it does not constitute absolute proof."
+            f"However, this supports the hypothesis within the bounds of this protocol; "
+            f"it does not constitute absolute proof."
         )
-        rationale = "Preregistered significance and effect size thresholds were achieved without artifact disqualification."
+        rationale = (
+            "Preregistered significance and effect size thresholds were achieved without artifact disqualification."
+        )
     elif conclusion == "REFUTES":
         interpretation = (
             f"The deterministic analysis indicates that the observed effect is negligible under "
             f"adequate statistical power (n = {n}, p = {p_val:.4f}, mean diff = {diff:.3f}). "
-            f"The preregistered falsification criteria are satisfied, providing positive evidence for the null hypothesis."
+            f"The preregistered falsification criteria are satisfied, providing positive evidence "
+            f"for the null hypothesis."
         )
         rationale = "Preregistered falsification criteria were met."
     else:
@@ -181,7 +197,9 @@ def generate_initial_interpretation(
             f"(sample size n = {n}, p = {p_val:.4f}, d = {d:.3f}). "
             f"No biological or physical effect can be affirmed from this dataset."
         )
-        rationale = "Quality constraints, sample power, protocol matching, or artifact thresholds prevented a clean inference."
+        rationale = (
+            "Quality constraints, sample power, protocol matching, or artifact thresholds prevented a clean inference."
+        )
 
     return {
         "interpretation": interpretation,
@@ -222,12 +240,18 @@ def perform_adversarial_critique(
     if "POTENTIAL_INSTRUMENTATION_ARTIFACT" in flags:
         potential_artifacts.append("Capacitive or electromagnetic cross-talk between stimulator and sensor")
 
+    epistemic_status = "adheres strictly" if stats["protocol_status"] == "PREREGISTERED_VALID" else "VIOLATES"
+    artifact_status = (
+        "CRITICAL ARTIFACT PRESENT"
+        if artifact_analysis.get("phantom_signal_detected")
+        else "Phantom controls show no cross-talk artifact"
+    )
     critique_text = (
         f"Adversarial Review of {conclusion} Assessment:\n"
-        f"1. Epistemic Rigor: The analysis {'adheres strictly' if stats['protocol_status'] == 'PREREGISTERED_VALID' else 'VIOLATES'} the preregistered manifest.\n"
-        f"2. Artifact Vulnerability: {'CRITICAL ARTIFACT PRESENT' if artifact_analysis.get('phantom_signal_detected') else 'Phantom controls show no cross-talk artifact'}.\n"
+        f"1. Epistemic Rigor: The analysis {epistemic_status} the preregistered manifest.\n"
+        f"2. Artifact Vulnerability: {artifact_status}.\n"
         f"3. Uncontrolled Confounders: Electrode drift and ambient thermal gradients remain theoretical confounders.\n"
-        f"4. Model Grounding: All statistics were calculated deterministically; no synthetic LLM metrics were introduced."
+        f"4. Model Grounding: All statistics were calculated deterministically; no synthetic LLM metrics introduced."
     )
 
     return {
@@ -254,7 +278,10 @@ def propose_next_experiment(
     if conclusion == "SUPPORTS":
         reason = "Replicate supported finding with varied frequency sweep and independent phantom isolation."
         target_unc = "Frequency specificity of the observed resonance peak."
-        hyp = f"Resonance effect is maximal at {freq} Hz with a sharp Q-factor drop off at {freq * 0.8:.1f} Hz and {freq * 1.2:.1f} Hz."
+        hyp = (
+            f"Resonance effect is maximal at {freq} Hz with a sharp Q-factor drop off at "
+            f"{freq * 0.8:.1f} Hz and {freq * 1.2:.1f} Hz."
+        )
         control = "Dual-phantom shielded reference with non-conductive sham load."
         meas = "Multi-channel spectral density and phase-lag across frequency steps."
         gain = "Quantifies bandwidth of the resonance effect."
@@ -268,7 +295,10 @@ def propose_next_experiment(
     else:
         reason = "Resolve inconclusive trial by remediating sample size and phantom isolation."
         target_unc = "Elimination of potential instrumentation artifacts and sample power deficit."
-        hyp = f"Under adequate sample size (n=50) and active shielding, {freq} Hz response is distinguishable from phantom baseline."
+        hyp = (
+            f"Under adequate sample size (n=50) and active shielding, {freq} Hz response is distinguishable "
+            f"from phantom baseline."
+        )
         control = "Active ground shielded phantom and matched thermal control."
         meas = "Differential sensor voltage with active common-mode rejection."
         gain = "Provides decisive statistical power and artifact discrimination."
