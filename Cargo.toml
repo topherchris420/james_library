@@ -102,7 +102,7 @@ tempfile = "3.26"
 zip = { version = "8.3", default-features = false, features = ["deflate-flate2"] }
 
 # Error handling
-anyhow = "1.1"
+anyhow = "1.0.103"
 thiserror = "2.0"
 
 # Aardvark I2C/SPI/GPIO USB adapter (Total Phase) — stub when SDK absent
@@ -120,7 +120,7 @@ sha2 = "0.10"
 hex = "0.4"
 
 # CSPRNG for secure token generation
-rand = "0.10"
+rand = "0.10.1"
 
 # Portable atomic fallbacks for targets without native 64-bit atomics
 portable-atomic = "1"
@@ -145,7 +145,7 @@ native-tls = { version = "0.2.18", features = ["vendored"] }
 prost = { version = "0.14", default-features = false, features = ["derive"], optional = true }
 
 # LRU cache for bounded sender state
-lru = "0.16"
+lru = "0.18.2"
 
 # Memory / persistence
 rusqlite = { version = "0.37", features = ["bundled"] }
@@ -172,7 +172,7 @@ which = "8.0"
 tokio-tungstenite = { version = "0.29", features = ["rustls-tls-webpki-roots"] }
 tokio-socks = "0.5"
 futures-util = { version = "0.3", default-features = false, features = ["sink"] }
-nostr-sdk = { version = "0.44.7", default-features = false, features = ["nip04", "nip59"], optional = true }
+nostr-sdk = { version = "0.44", default-features = false, features = ["nip04", "nip59"], optional = true }
 regex = "1.10"
 hostname = "0.4.2"
 rustls = "0.23"
