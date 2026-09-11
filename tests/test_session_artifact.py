@@ -83,6 +83,8 @@ def test_session_artifact_writer_marks_ungrounded_turns(tmp_path: Path) -> None:
 
 
 def test_run_meeting_writes_session_artifact_with_grounded_turn(tmp_path: Path, monkeypatch) -> None:
+    # This is an offline meeting test; client construction must not depend on host proxy settings.
+    monkeypatch.setattr(meeting_module.openai, "OpenAI", lambda **kwargs: SimpleNamespace())
     config = meeting_module.Config(
         library_path=str(tmp_path),
         meeting_log="RAIN_LAB_MEETING_LOG.md",

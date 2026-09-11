@@ -71,17 +71,21 @@ class SessionArtifactWriter:
             ],
         )
 
+        turn_metadata = {
+            "verified_count": len(metadata.get("verified", [])),
+            "unverified_count": len(metadata.get("unverified", [])),
+            "citation_rate": metadata.get("citation_rate", 0.0),
+        }
+        if isinstance(metadata.get("recovery"), dict):
+            turn_metadata["recovery"] = dict(metadata["recovery"])
+
         self._turns.append(
             {
                 "index": len(self._turns) + 1,
                 "timestamp": _utc_now_iso(),
                 "agent": agent_name,
                 "content": content,
-                "metadata": {
-                    "verified_count": len(metadata.get("verified", [])),
-                    "unverified_count": len(metadata.get("unverified", [])),
-                    "citation_rate": metadata.get("citation_rate", 0.0),
-                },
+                "metadata": turn_metadata,
                 "grounded_response": grounded_response,
             }
         )

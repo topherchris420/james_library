@@ -16,6 +16,12 @@ Core modes:
 - `--mode models`
 - `--mode backup -- --json`
 
+In chat meetings, persistent repetition triggers an evidence check, then a
+falsifiable alternative, then an earlier wrap-up if needed. Each attempt allows
+a full panel round; closing turns never restart the debate or exceed the total
+turn limit. Recovery actions are saved in the session artifact. See
+[adaptive meeting recovery](meeting-recovery.md) for details and limitations.
+
 ## R.A.I.N. runtime bridge commands
 
 For the Rust runtime bridge entrypoint:
