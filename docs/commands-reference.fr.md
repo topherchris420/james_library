@@ -16,6 +16,13 @@ Modes principaux:
 - `--mode models`
 - `--mode backup -- --json`
 
+Dans les réunions en mode chat, les répétitions persistantes déclenchent une
+demande de preuves, puis une hypothèse alternative réfutable, puis une conclusion
+anticipée si nécessaire. Chaque tentative laisse un tour complet au groupe ;
+la conclusion ne relance pas le débat et respecte la limite totale de tours.
+Les actions sont enregistrées dans le fichier de session. Voir
+[la reprise adaptative des réunions](meeting-recovery.md) (en anglais).
+
 ## Commandes du pont runtime R.A.I.N.
 
 Point d'entrée pour le runtime Rust:

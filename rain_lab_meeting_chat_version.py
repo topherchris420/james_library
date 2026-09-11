@@ -218,6 +218,7 @@ import argparse
 from james_library.utilities.graph_bridge import HypergraphManager
 from james_library.utilities.session_artifact import SessionArtifactWriter
 from stagnation_monitor import StagnationMonitor
+from james_library.utilities.meeting_recovery import MeetingRecoveryController, RecoveryDecision
 from james_library.utilities.hypothesis_tree import HypothesisTree, NodeStatus
 
 try:
@@ -1884,6 +1885,9 @@ class RainLabOrchestrator:
         self.visual_conversation_active = False
         self.resonance_detector = ResonanceDetector()
         self.stagnation_monitor = StagnationMonitor()
+        self.meeting_recovery = MeetingRecoveryController(
+            cooldown_turns=len(self.team), recovery_turns=len(self.team)
+        )
         self.hypothesis_tree = HypothesisTree()
         self._current_hypothesis_id: Optional[int] = None
         self.tts_audio_dir = Path(config.library_path) / config.tts_audio_dir
@@ -2076,6 +2080,9 @@ class RainLabOrchestrator:
     def run_meeting(self, topic: str):
         """Run the research meeting"""
 
+        self.stagnation_monitor.reset()
+        self.meeting_recovery.reset()
+
         # UTF-8 setup
 
         if sys.stdout.encoding != "utf-8":
@@ -2248,8 +2255,9 @@ class RainLabOrchestrator:
         # Calculate when wrap-up should start
 
         wrap_up_start_turn = self.config.max_turns - self.config.wrap_up_turns
+        meeting_end_turn = self.config.max_turns
 
-        while turn_count < self.config.max_turns:
+        while turn_count < meeting_end_turn:
             external_message = self.diplomat.check_inbox()
 
             if external_message:
@@ -2344,6 +2352,8 @@ class RainLabOrchestrator:
                                 self.session_artifact_writer.record_turn(agent_name="FOUNDER", content=user_input)
 
                             history_log.append(f"FOUNDER: {user_input}")
+                            self.stagnation_monitor.reset()
+                            self.meeting_recovery.reset()
 
                     except (EOFError, KeyboardInterrupt):
                         print("\n\033[90m▶ Resuming automatic discussion...\033[0m\n")
@@ -2458,22 +2468,7 @@ class RainLabOrchestrator:
 
             history_log.append(f"{current_agent.name}: {response}")
 
-            # 6. Epistemic failsafe: check for stagnation / dead-end loops
-
-            verdict = self.stagnation_monitor.check(response)
-            if verdict.intervention_prompt:
-                history_log.append(f"SYSTEM: {verdict.intervention_prompt}")
-                self.log_manager.log_statement("SYSTEM", verdict.intervention_prompt)
-                if self.session_artifact_writer is not None:
-                    self.session_artifact_writer.record_turn(
-                        agent_name="SYSTEM",
-                        content=verdict.intervention_prompt,
-                    )
-                print(f"\n\033[91m{'=' * 70}")
-                print(f"  {verdict.intervention_prompt}")
-                print(f"{'=' * 70}\033[0m\n")
-
-            # 7. Record eval metrics for this turn
+            # 6. Archive the response before any recovery action it triggers.
 
             if self.metrics_tracker is not None:
                 self.metrics_tracker.record_turn(current_agent.name, response, metadata)
@@ -2483,6 +2478,12 @@ class RainLabOrchestrator:
                     content=response,
                     metadata=metadata if isinstance(metadata, dict) else None,
                 )
+
+            # 7. Give each recovery attempt a panel round, then bound the wrap-up.
+            decision = self._check_meeting_progress(clean_response, history_log, is_wrap_up=in_wrap_up)
+            if decision is not None and decision.action == "wrap_up":
+                wrap_up_start_turn = turn_count + 1
+                meeting_end_turn = min(meeting_end_turn, wrap_up_start_turn + self.config.wrap_up_turns)
 
             turn_count += 1
 
@@ -2523,6 +2524,28 @@ class RainLabOrchestrator:
         print(f"\n✅ Session saved to: {self.log_manager.log_path}\n")
         if self.session_artifact_writer is not None:
             print(f"Session artifact: {self.session_artifact_writer.path}\n")
+
+    def _check_meeting_progress(
+        self, response: str, history_log: List[str], *, is_wrap_up: bool
+    ) -> RecoveryDecision | None:
+        """Record a recovery action after its triggering response, if needed."""
+        if is_wrap_up:
+            return None
+        verdict = self.stagnation_monitor.check(response)
+        decision = self.meeting_recovery.observe(verdict)
+        if decision is None:
+            return None
+
+        history_log.append(f"SYSTEM: {decision.prompt}")
+        self.log_manager.log_statement("SYSTEM", decision.prompt)
+        if self.session_artifact_writer is not None:
+            self.session_artifact_writer.record_turn(
+                agent_name="SYSTEM",
+                content=decision.prompt,
+                metadata={"recovery": {"action": decision.action, "reason": decision.reason}},
+            )
+        print(f"\n\033[91m{decision.prompt}\033[0m\n")
+        return decision
 
     def _poll_daemon_events(self):
         if not self.rust_daemon_client:
@@ -2657,11 +2680,13 @@ class RainLabOrchestrator:
 
         prev_speaker = None
 
-        if history_log:
-            last_entry = history_log[-1]
-
-            if ":" in last_entry:
-                prev_speaker = last_entry.split(":")[0].strip()
+        # Recovery and search notes are instructions/context, not panel speakers.
+        speakers = {member.name for member in self.team} | {"FOUNDER"}
+        for entry in reversed(history_log):
+            name, separator, _ = entry.partition(":")
+            if separator and name.strip() in speakers:
+                prev_speaker = name.strip()
+                break
 
         # ENHANCED PROMPT - CONVERSATIONAL TEAM MEETING STYLE
 

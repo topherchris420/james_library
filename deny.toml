@@ -28,6 +28,15 @@ ignore = [
     # proc-macro-error2 unmaintained — transitive via matrix-sdk (aquamarine,
     # matrix-pickle-derive); advisory states no safe upgrade is available
     { id = "RUSTSEC-2026-0173", reason = "proc-macro-error2 via matrix-sdk; awaiting matrix-sdk upgrade" },
+    # Reviewed 2026-09-11: matrix-sdk 0.16.1 and eyeball-im 0.8 require imbl 6.1,
+    # which still depends on bitmaps. Remove when the SDK adopts imbl >=7.0.2.
+    # Upstream tracking: https://github.com/matrix-org/matrix-rust-sdk/issues/6859
+    { id = "RUSTSEC-2026-0247", reason = "bitmaps unmaintained via optional matrix-sdk; awaiting SDK migration to imbl 7" },
+    # Reviewed 2026-09-11: nostr-relay-pool 0.44.3 contains the security fixes.
+    # Remove when the Nostr channel migrates to nostr-sdk >=0.45, which replaces
+    # the standalone pool and changes the signer and notification APIs.
+    # Upstream notice: https://rustsec.org/advisories/RUSTSEC-2026-0243.html
+    { id = "RUSTSEC-2026-0243", reason = "standalone pool unmaintained; patched 0.44.3 retained until optional Nostr SDK migration" },
     # ttf-parser unmaintained — transitive via pdf-extract → lopdf; advisory
     # states no safe upgrade is available (lopdf has not migrated to skrifa)
     { id = "RUSTSEC-2026-0192", reason = "ttf-parser via pdf-extract → lopdf; awaiting lopdf migration off ttf-parser" },

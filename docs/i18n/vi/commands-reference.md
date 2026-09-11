@@ -16,6 +16,13 @@ Chế độ thường dùng:
 - `--mode models`
 - `--mode backup -- --json`
 
+Trong cuộc họp ở chế độ chat, sự lặp lại kéo dài sẽ lần lượt dẫn đến yêu cầu
+bằng chứng, một giả thuyết thay thế có thể kiểm chứng để bác bỏ, rồi chuyển sang
+tổng kết sớm nếu cần. Mỗi lần can thiệp dành một vòng đầy đủ cho các tác nhân;
+phần tổng kết không khởi động lại tranh luận hoặc vượt quá giới hạn lượt.
+Các hành động được lưu trong tệp phiên. Xem
+[cơ chế phục hồi cuộc họp](../../meeting-recovery.md) (tiếng Anh).
+
 ## Lệnh cầu nối runtime R.A.I.N.
 
 Điểm vào cho runtime Rust:
