@@ -13,3 +13,6 @@ config:
 
 ignores:
   - "target/**"
+  # PDF reading-order extracts. Years, patent claims, and equations
+  # look like markdown lists, so product-doc rules do not apply here.
+  - "papers/**"
