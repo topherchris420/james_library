@@ -1,0 +1,13 @@
+{
+  "schema_version": "rain-bounded-request/v1",
+  "decision_class": "continue_stop",
+  "state": "The current analysis has a result that has not been independently verified.",
+  "instructions": "Which bounded next step should the research team consider?",
+  "choices": {
+    "CONTINUE": "Continue the current analysis.",
+    "VERIFY": "Independently check the current finding.",
+    "ESCALATE_TO_HUMAN": "Ask for review if neither step is appropriate."
+  },
+  "consequence": "low",
+  "remote_allowed": false
+}

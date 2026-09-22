@@ -51,3 +51,16 @@ python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id
 This command is separate from conversational chat. Remote evaluation is off by
 default. Recorded replay never contacts a provider. See
 [`typed-judgment.md`](typed-judgment.md) for the packet schema and policy.
+
+## Optional bounded decision routing
+
+`python rain_lab.py decide --request examples/bounded-decision.json` produces a
+proposal only; `decide --replay ARTIFACT` replays it offline.
+`RAIN_DECISION_MODE=off|laya|jev|cascade` defaults to `off`.
+`RAIN_METACOGNITIVE_CONTROL=false` preserves the existing chat loop.
+Local inference requires `RAIN_LAYA_CHECKPOINT`; calibrated proposals require
+`RAIN_DECISION_CALIBRATION`. Missing engines or calibration return to R.A.I.N.
+Remote evaluation requires explicit request consent; chat also requires
+`RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
+See [bounded decisions](bounded-decisions.md) for all settings, diagnostics, calibration,
+privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.

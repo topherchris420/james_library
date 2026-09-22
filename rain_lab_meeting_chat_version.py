@@ -2164,6 +2164,13 @@ class RainLabOrchestrator:
         root_id = self.hypothesis_tree.add_root(topic)
         self._current_hypothesis_id = self.hypothesis_tree.select()
 
+        from james_library.judgment.process import create_process_controller, PROCESS_HINTS
+        try:
+            process_controller = create_process_controller()
+        except ValueError:
+            process_controller = None
+            print("Decision routing unavailable: invalid configuration; continuing normal research.")
+
         # --- AUTONOMOUS LOOP WITH MANUAL INTERVENTION ---
 
         # Calculate when wrap-up should start
@@ -2405,6 +2412,26 @@ class RainLabOrchestrator:
             if decision is not None and decision.action == "wrap_up":
                 wrap_up_start_turn = turn_count + 1
                 meeting_end_turn = min(meeting_end_turn, wrap_up_start_turn + self.config.wrap_up_turns)
+
+            if decision is None and not in_wrap_up and process_controller is not None:
+                proposal = process_controller.suggest(
+                    turn_count=turn_count + 1, max_turns=meeting_end_turn,
+                    verified_count=len(metadata.get("verified", [])) if isinstance(metadata, dict) else 0,
+                    recorder=self.session_artifact_writer.record_decision
+                    if self.session_artifact_writer is not None else None,
+                )
+                if proposal is not None:
+                    # Only host-authored process hints enter the next agent's context.
+                    # Model text cannot change budgets, tools, or discovery gates.
+                    hint = PROCESS_HINTS.get(proposal.selected)
+                    if hint is not None:
+                        message = "SYSTEM: Research process suggestion: " + hint
+                        self.session_artifact_writer.record_turn(
+                            agent_name="SYSTEM", content=message,
+                            metadata={"bounded_decision_id": proposal.decision_id,
+                                      "process_action": proposal.selected},
+                        )
+                        history_log.append(message)
 
             turn_count += 1
 

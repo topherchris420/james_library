@@ -852,3 +852,16 @@ R.A.I.N. service restart
 - [providers-reference.md](providers-reference.md)
 - [operations-runbook.md](../../ops/operations-runbook.md)
 - [troubleshooting.md](../../ops/troubleshooting.md)
+
+## Optional bounded decision routing
+
+`python rain_lab.py decide --request examples/bounded-decision.json` produces a
+proposal only; `decide --replay ARTIFACT` replays it offline.
+`RAIN_DECISION_MODE=off|laya|jev|cascade` defaults to `off`.
+`RAIN_METACOGNITIVE_CONTROL=false` preserves the existing chat loop.
+Local inference requires `RAIN_LAYA_CHECKPOINT`; calibrated proposals require
+`RAIN_DECISION_CALIBRATION`. Missing engines or calibration return to R.A.I.N.
+Remote evaluation requires explicit request consent; chat also requires
+`RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
+See [bounded decisions](../../bounded-decisions.md) for all settings, diagnostics, calibration,
+privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.

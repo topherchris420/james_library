@@ -43,3 +43,17 @@ La relecture des cas de référence désactive toujours le jugement dans ses
 processus enfants et retire les identifiants TypeSafe. `--live-judgment` est
 refusé : utiliser explicitement `judge --evidence` pour une nouvelle évaluation.
 Un résultat `PASS` est une décision de routage bornée, pas une preuve scientifique.
+
+## Routage optionnel des décisions bornées
+
+`python rain_lab.py decide --request examples/bounded-decision.json` produit une
+proposition, sans exécuter d'action. `decide --replay ARTIFACT` relit hors ligne.
+`RAIN_DECISION_MODE=off|laya|jev|cascade` vaut `off` par défaut.
+`RAIN_METACOGNITIVE_CONTROL=false` conserve la conversation existante.
+Laya nécessite `RAIN_LAYA_CHECKPOINT`; les propositions calibrées nécessitent
+`RAIN_DECISION_CALIBRATION`. Un modèle ou une calibration indisponible renvoie
+la décision à R.A.I.N. L'accès distant nécessite un consentement explicite;
+la conversation exige aussi `RAIN_DECISION_REMOTE_ALLOWED=true`.
+Les erreurs de configuration sont signalées. Voir [décisions bornées](bounded-decisions.md)
+pour la configuration complète, les diagnostics et le retour arrière.
+La politique de promotion de `judge` reste inchangée.

@@ -240,3 +240,15 @@ R.A.I.N. channel doctor
 - [one-click-bootstrap.zh-CN.md](../setup-guides/one-click-bootstrap.zh-CN.md)
 - [channels-reference.zh-CN.md](../reference/api/channels-reference.zh-CN.md)
 - [network-deployment.zh-CN.md](network-deployment.zh-CN.md)
+
+## 可选的有界决策路由
+
+`python rain_lab.py decide --request examples/bounded-decision.json` 仅生成建议，不执行操作。
+`decide --replay ARTIFACT` 可离线回放。
+`RAIN_DECISION_MODE=off|laya|jev|cascade` 默认为 `off`。
+`RAIN_METACOGNITIVE_CONTROL=false` 保留现有对话流程。
+本地推理需要 `RAIN_LAYA_CHECKPOINT`，校准后的建议需要 `RAIN_DECISION_CALIBRATION`。
+缺少模型或校准证据时，交由 R.A.I.N. 处理。远程评估需要明确许可；
+对话还需要 `RAIN_DECISION_REMOTE_ALLOWED=true`。配置错误会明确报告。
+完整配置、诊断、隐私边界与回滚方法见[有界决策](../../../bounded-decisions.md)。
+`judge` 的发现晋级策略保持不变。
