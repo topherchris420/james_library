@@ -124,3 +124,46 @@ def test_recovery_reaches_the_prompt_without_becoming_a_panel_speaker(offline_me
     assert "with James" in captured[0] or "what James said" in captured[0]
     assert "with SYSTEM" not in captured[0]
     assert "what SYSTEM said" not in captured[0]
+
+
+def test_opt_in_bounded_hint_reaches_next_turn_and_is_recorded_before_use(offline_meeting, monkeypatch):
+    from james_library.judgment.benchmark import FixtureProvider
+    from james_library.judgment.process import MeetingProcessController
+    from james_library.judgment.routing import DecisionRouter
+    from tests.test_decision_routing import profile
+
+    provider = FixtureProvider("laya", {})
+    router = DecisionRouter(mode="laya", laya=provider)
+    decide = router.decide
+    submitted = []
+    def calibrated(req, **kwargs):
+        from dataclasses import replace
+        submitted.append(req.state)
+        provider.fixtures[req.state] = {"laya": {"choice": "VERIFY", "probability": .99}}
+        router.profiles = (replace(profile("laya", req), model="fixture-laya"),)
+        return decide(req, **kwargs)
+    router.decide = calibrated
+    monkeypatch.setattr("james_library.judgment.process.create_process_controller",
+                        lambda: MeetingProcessController(router))
+    offline_meeting.config.max_turns = 6
+    calls, artifact = run_responses(offline_meeting, lambda _: "A result needs independent checking.")
+    assert len(calls) == 6
+    assert any("SYSTEM: Research process suggestion:" in entry for entry in calls[1]["history"])
+    assert artifact["decisions"] and all(d["selected"] == "VERIFY" for d in artifact["decisions"])
+    hints = [t for t in artifact["turns"] if "bounded_decision_id" in t["metadata"]]
+    assert hints and hints[0]["metadata"]["bounded_decision_id"] == artifact["decisions"][0]["decision_id"]
+    assert all("Acoustic research question" not in state and "Local research context" not in state
+               for state in submitted)
+
+
+def test_unavailable_bounded_engines_preserve_normal_chat(offline_meeting, monkeypatch):
+    from james_library.judgment.process import MeetingProcessController
+    from james_library.judgment.routing import DecisionRouter
+
+    monkeypatch.setattr("james_library.judgment.process.create_process_controller",
+                        lambda: MeetingProcessController(DecisionRouter(mode="cascade")))
+    offline_meeting.config.max_turns = 6
+    calls, artifact = run_responses(offline_meeting, lambda _: "A result needs independent checking.")
+    assert len(calls) == 6
+    assert artifact["decisions"] and all(d["destination"] == "rain" for d in artifact["decisions"])
+    assert not any("Research process suggestion" in entry for call in calls for entry in call["history"])

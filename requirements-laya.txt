@@ -1,0 +1,3 @@
+# Optional inference environment only; not part of R.A.I.N.'s base dependencies.
+# Inspected Laya 0.3.5 API; install explicitly. No model weights are downloaded here.
+laya @ git+https://github.com/NandhaKishorM/laya.git@573e5b62696ba441230cd6be71d593331b5d23af

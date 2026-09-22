@@ -1,0 +1,391 @@
+[
+  {
+    "id": "tool-routing",
+    "request": {
+      "decision_class": "tool_routing",
+      "state": "Need a paper about a measured signal.",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "SEARCH": "Search public literature.",
+        "READ": "Read the supplied local result."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "SEARCH",
+    "fixture": {
+      "laya": {
+        "choice": "SEARCH",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "choice": "SEARCH",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "research-routing",
+    "request": {
+      "decision_class": "research_routing",
+      "state": "A claim needs formal review.",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "FORMAL": "Check logical consistency.",
+        "MEASURE": "Inspect measured evidence."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "FORMAL",
+    "fixture": {
+      "laya": {
+        "choice": "FORMAL",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "choice": "FORMAL",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "continue-stop",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "The bounded task has unfinished work.",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "choice": "CONTINUE",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "verification",
+    "request": {
+      "decision_class": "verification",
+      "state": "The latest finding has not been independently checked.",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "VERIFY": "Verify the finding.",
+        "CONTINUE": "Continue analysis."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "VERIFY",
+    "fixture": {
+      "laya": {
+        "choice": "VERIFY",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "choice": "VERIFY",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "expert-selection",
+    "request": {
+      "decision_class": "expert_selection",
+      "state": "The proposed hardware lacks an energy budget.",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "JASMINE": "Inspect hardware feasibility.",
+        "ELENA": "Inspect formal reasoning."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "JASMINE",
+    "fixture": {
+      "laya": {
+        "choice": "JASMINE",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "choice": "JASMINE",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "ambiguous",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "ambiguous",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE",
+        "probability": 0.51
+      },
+      "typesafe": {
+        "choice": "CONTINUE",
+        "probability": 0.55
+      }
+    }
+  },
+  {
+    "id": "laya-uncertain",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "laya-uncertain",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE",
+        "probability": 0.55
+      },
+      "typesafe": {
+        "choice": "CONTINUE",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "laya-unavailable",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "laya-unavailable",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "error": "provider_not_configured"
+      },
+      "typesafe": {
+        "choice": "CONTINUE",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "both-unavailable",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "both-unavailable",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "error": "provider_not_configured"
+      },
+      "typesafe": {
+        "error": "provider_not_configured"
+      }
+    }
+  },
+  {
+    "id": "timeout",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "timeout",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "error": "provider_timeout"
+      },
+      "typesafe": {
+        "error": "provider_timeout"
+      }
+    }
+  },
+  {
+    "id": "malformed-output",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "malformed-output",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "INVENTED",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "error": "provider_malformed_response"
+      }
+    }
+  },
+  {
+    "id": "engine-disagreement",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "engine-disagreement",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE",
+        "probability": 0.99
+      },
+      "typesafe": {
+        "choice": "STOP",
+        "probability": 0.99
+      }
+    }
+  },
+  {
+    "id": "high-consequence",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "high-consequence",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "high",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE"
+      },
+      "typesafe": {
+        "choice": "CONTINUE"
+      }
+    }
+  },
+  {
+    "id": "evidence-required",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "evidence-required",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true,
+      "requires_evidence": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE"
+      },
+      "typesafe": {
+        "choice": "CONTINUE"
+      }
+    }
+  },
+  {
+    "id": "out-of-distribution",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "out-of-distribution",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true,
+      "out_of_distribution": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE"
+      },
+      "typesafe": {
+        "choice": "CONTINUE"
+      }
+    }
+  },
+  {
+    "id": "validator-refusal",
+    "request": {
+      "decision_class": "continue_stop",
+      "state": "validator-refusal",
+      "instructions": "Choose the next bounded step.",
+      "choices": {
+        "CONTINUE": "Continue the bounded step.",
+        "STOP": "Stop without promoting a claim."
+      },
+      "consequence": "low",
+      "remote_allowed": true
+    },
+    "expected": "CONTINUE",
+    "fixture": {
+      "laya": {
+        "choice": "CONTINUE"
+      },
+      "typesafe": {
+        "choice": "CONTINUE"
+      }
+    },
+    "postcheck": false
+  }
+]

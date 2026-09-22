@@ -116,6 +116,8 @@ def run_replay(
         )
         child_env = dict(os.environ)
         child_env["RAIN_JUDGMENT_PROVIDER"] = "off"
+        child_env["RAIN_DECISION_MODE"] = "off"
+        child_env["RAIN_METACOGNITIVE_CONTROL"] = "false"
         child_env.pop("TYPESAFE_API_KEY", None)
         child_env.pop("TYPESAFE_MODEL", None)
         completed = subprocess.run(
@@ -182,6 +184,17 @@ def replay_recorded_judgments(artifact: Path | str) -> dict[str, Any]:
         judgments = payload.get("judgments", [])
         if not isinstance(judgments, list):
             raise ValueError
+        decisions = payload.get("decisions", [])
+        if not isinstance(decisions, list):
+            raise ValueError
+        from james_library.judgment.calibration import digest_json
+        for decision in decisions:
+            if not isinstance(decision, dict) or decision.get("schema_version") != "rain-bounded-decision/v1":
+                raise ValueError
+            unsigned = dict(decision)
+            envelope_hash = unsigned.pop("envelope_hash", None)
+            if not isinstance(envelope_hash, str) or not hmac.compare_digest(digest_json(unsigned), envelope_hash):
+                raise ValueError
         for judgment in judgments:
             if not isinstance(judgment, dict):
                 raise ValueError
@@ -211,6 +224,7 @@ def replay_recorded_judgments(artifact: Path | str) -> dict[str, Any]:
             "mode": "recorded_judgment",
             "session_id": str(payload.get("session_id", "")),
             "judgments": judgments,
+            "decisions": decisions,
         }
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError, TypeError) as exc:
         raise ValueError("recorded_judgment_invalid") from exc

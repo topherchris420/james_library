@@ -32,7 +32,7 @@ peer score, formal result, numerical result, questions, thresholds, or final
 disposition rules.
 
 The existing conversational `chat` and `rlm` modes do not produce a
-machine-readable five-stage promotion record, so they remain unchanged. The
+machine-readable five-stage promotion record, so their discovery-promotion behavior remains unchanged. The
 explicit strict-cycle command is the supported boundary:
 
 ```bash
@@ -234,3 +234,10 @@ Current TypeSafe contracts were checked from the official
 [`llms.txt`](https://docs.typesafe.ai/llms.txt),
 [`API reference`](https://docs.typesafe.ai/api), and
 [`Python SDK`](https://github.com/typesafe-ai/typesafe-sdk-python).
+
+## Optional bounded workflow routing
+
+The separate [calibrated decision router](bounded-decisions.md) reuses
+`JudgmentProvider` for optional Laya/Jev workflow proposals. It does not change
+this command's fixed promotion policy or enable Laya for claim promotion.
+Chat process hints have their own opt-in flag and curated counter-only state.

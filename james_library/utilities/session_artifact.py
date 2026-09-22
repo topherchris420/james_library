@@ -93,6 +93,16 @@ class SessionArtifactWriter:
         self.started_at = _utc_now_iso()
         self._turns: list[dict[str, Any]] = []
         self._judgments: list[dict[str, Any]] = []
+        self._decisions: list[dict[str, Any]] = []
+
+    def record_decision(self, envelope: Any) -> None:
+        """Checkpoint bounded proposals before the host consumes them."""
+        from james_library.judgment.routing import DecisionEnvelope
+
+        if not isinstance(envelope, DecisionEnvelope):
+            raise TypeError("record_decision requires a DecisionEnvelope")
+        self._decisions.append(envelope.to_dict())
+        self._write_payload(status="in_progress", metrics={}, summary="")
 
     def record_judgment(self, envelope: Any) -> None:
         """Checkpoint one typed judgment without mixing it into grounded turns."""
@@ -151,6 +161,15 @@ class SessionArtifactWriter:
         if isinstance(metadata.get("recovery"), dict):
             turn_metadata["recovery"] = dict(metadata["recovery"])
 
+        if "bounded_decision_id" in metadata:
+            decision = next((item for item in self._decisions
+                             if item["decision_id"] == metadata["bounded_decision_id"]), None)
+            if (decision is None or decision["destination"] != "proposal"
+                    or decision["selected"] != metadata.get("process_action")):
+                raise ValueError("process hint must reference a recorded proposal")
+            turn_metadata["bounded_decision_id"] = decision["decision_id"]
+            turn_metadata["process_action"] = decision["selected"]
+
         self._turns.append(
             {
                 "index": len(self._turns) + 1,
@@ -196,6 +215,7 @@ class SessionArtifactWriter:
             "summary": summary,
             "turns": self._turns,
             "judgments": self._judgments,
+            "decisions": self._decisions,
         }
         temporary = self.path.with_suffix(self.path.suffix + ".tmp")
         temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")

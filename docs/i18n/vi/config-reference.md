@@ -38,3 +38,16 @@ Thiết kế: [`autonomous-runtime-design.md`](../../autonomous-runtime-design.m
 
 Lỗi nhà cung cấp tạo `UNAVAILABLE`, không tự động thử lại hoặc chuyển sang mô
 hình khác. Xem [`typed-judgment.md`](../../typed-judgment.md).
+
+## Định tuyến quyết định có giới hạn (tùy chọn)
+
+`python rain_lab.py decide --request examples/bounded-decision.json` chỉ tạo
+đề xuất, không thực thi hành động. `decide --replay ARTIFACT` đọc lại ngoại tuyến.
+`RAIN_DECISION_MODE=off|laya|jev|cascade` mặc định là `off`.
+`RAIN_METACOGNITIVE_CONTROL=false` giữ nguyên vòng hội thoại hiện tại.
+Laya cần `RAIN_LAYA_CHECKPOINT`; đề xuất đã hiệu chuẩn cần
+`RAIN_DECISION_CALIBRATION`. Nếu thiếu mô hình hoặc hiệu chuẩn, quyết định được
+chuyển về R.A.I.N. Đánh giá từ xa cần sự cho phép rõ ràng; hội thoại còn cần
+`RAIN_DECISION_REMOTE_ALLOWED=true`. Lỗi cấu hình được thông báo.
+Xem [quyết định có giới hạn](../../bounded-decisions.md) để biết cấu hình, chẩn đoán và cách hoàn tác.
+Chính sách chấp thuận của lệnh `judge` không thay đổi.
