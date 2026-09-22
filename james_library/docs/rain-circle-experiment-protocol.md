@@ -33,7 +33,7 @@ sequenceDiagram
     Bridge->>CircleSim: Run Simulated Trial (Seed / Fixture)
     CircleSim-->>Bridge: Emit SIMULATED Records & ExperimentResult
     Bridge->>Engine: Run Pure-Python Statistical Tests & Phantom Checks
-    Engine-->>Analysis: Statistical Output (p-value, Cohen's d, CI)
+    Engine-->>Analysis: Welch p-value and CI, preregistered equivalence interval
     Analysis->>RAIN: Provide Bounded Metadata & Stats
     RAIN->>Analysis: Initial Interpretation & Adversarial Critique Pass
     Analysis->>Analysis: Assign SUPPORTS / REFUTES / INCONCLUSIVE
@@ -66,7 +66,7 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 2. **Deterministic Hashing**: The manifest is serialized canonically (sorted keys, compact whitespace) and hashed (`manifest_sha256`).
 3. **Execution**: The `SimulatedCircleExecutor` executes the trial, producing CIRCLE session records (`session_id`, `intervention_id`, `decision_id`, `crc32c`).
 4. **Deterministic Analysis**: The Python engine verifies that `execution_manifest_sha256 == original_manifest_sha256`. If mismatched, `protocol_status = "PROTOCOL_CHANGED"` and the conclusion is forced to `INCONCLUSIVE`.
-5. **Artifact Discrimination**: If the observed response is replicated in the electronic phantom control (>= 40% magnitude), the system flags `POTENTIAL_INSTRUMENTATION_ARTIFACT` and downgrades biological claims.
+5. **Artifact Discrimination**: When there is a statistically significant active contrast meeting the effect threshold, a matching electronic phantom response (>= 40% of that contrast) flags `POTENTIAL_INSTRUMENTATION_ARTIFACT`. Ratios against near-zero contrasts are not treated as artifacts.
 6. **R.A.I.N. Interpretation**: R.A.I.N. receives only bounded statistical outputs and quality flags to generate an initial interpretation.
 7. **Adversarial Critique**: A secondary pass challenges the initial interpretation against alternative explanations, phantom artifacts, and uncontrolled confounders. Both the initial analysis and adversarial critique are preserved.
 8. **Conclusion Assignment**: The tri-state conclusion (`SUPPORTS`, `REFUTES`, `INCONCLUSIVE`) is recorded.
@@ -99,9 +99,21 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 
 ## 6. Conclusion Semantics
 
-- **`SUPPORTS`**: Preregistered statistical criteria ($p < \alpha$, $|d| \ge d_{\text{min}}$, $n \ge n_{\text{min}}$) favor the alternative hypothesis with no unresolved artifact flags. **`SUPPORTS` does not mean proven.**
-- **`REFUTES`**: Preregistered falsification criteria are satisfied under adequate statistical power. **Absence of statistical significance ($p > \alpha$) alone does NOT equal refutation.**
+- **`SUPPORTS`**: Welch's two-sample t test uses the Student t distribution and unrounded Welch–Satterthwaite degrees of freedom. A two-sided $p < \alpha$, $|d| \ge d_{\text{min}}$, `minimum_effect_percent`, sufficient $n$, and the preregistered `expected_direction` must all agree, with no unresolved artifact flag. This supports only the *encoded* effect criteria, not every numerical assertion in a free-text hypothesis. **`SUPPORTS` does not mean proven.**
+- **`REFUTES`**: A numeric `equivalence_margin_ohms` is committed in the manifest before the trial. At $\alpha=0.05$, the 90% Welch confidence interval for active minus sham must lie *entirely inside* its fixed $\pm$ margin (the two one-sided tests criterion). The result excludes contrasts at or beyond that margin within this simulated setup. A large ordinary p-value, small observed difference, or nominal sample count alone cannot establish equivalence.
 - **`INCONCLUSIVE`**: Mandatory whenever sample size is inadequate, sensors fail, clock sync degrades, artifacts are detected, or protocol hashing indicates tampering (`PROTOCOL_CHANGED`).
+
+If both statistical significance and equivalence pass because the registered effect threshold overlaps the equivalence margin, the combined label is `INCONCLUSIVE`. Both numerical results remain visible so the operator can inspect the protocol design.
+
+The reported 95% interval and the equivalence interval both use the Welch t critical value. Zero-variance samples lack estimable inferential degrees of freedom and return `INCONCLUSIVE` with null interval bounds. Non-finite measurement values are rejected. `statistical_results.method=welch_t_equivalence_v2` distinguishes this analysis from earlier bundles that used a normal approximation and an unregistered `p > 0.5` rule. Saved older bundles are historical records; verification does not rewrite or endorse their original conclusions.
+
+`conclusion_confidence` remains in the v1 schema for compatibility, but new analyses set it to `0.0`: p-values and equivalence intervals are not calibrated probabilities that a hypothesis is true. The report displays the statistical conclusion without a confidence percentage.
+
+### Existing manifest migration
+
+New manifests include `expected_direction` (`decrease`, `increase`, or `two_sided`), `minimum_effect_percent` (the fixture's stated 5% decrease and default CLI's 15% decrease are encoded as 5 and 15), and a positive `equivalence_margin_ohms` (default 1.0 ohm). These fields are optional when *reading* an older v1 manifest so its hash and trial remain intact. If `expected_direction` is absent, analysis returns `INCONCLUSIVE`; without the numeric margin it cannot return `REFUTES`. To use the new inference for a new trial, register a new manifest and hash before producing data. Do not add fields to an already recorded manifest.
+
+The test and equivalence criteria follow the [NIST two-sample t test](https://www.itl.nist.gov/div898/handbook/eda/section3/eda353.htm) and the [statsmodels Welch TOST definition](https://www.statsmodels.org/stable/generated/statsmodels.stats.weightstats.CompareMeans.ttost_ind.html). This code uses no optional scientific package at runtime; fixed SciPy reference values check the numerical implementation in tests.
 
 ---
 

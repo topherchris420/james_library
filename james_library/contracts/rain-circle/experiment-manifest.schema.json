@@ -121,6 +121,9 @@
         "alpha_threshold": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
         "min_sample_size": { "type": "integer", "minimum": 1 },
         "effect_size_threshold": { "type": "number", "minimum": 0.0 },
+        "minimum_effect_percent": { "type": "number", "minimum": 0.0 },
+        "expected_direction": { "type": "string", "enum": ["increase", "decrease", "two_sided"] },
+        "equivalence_margin_ohms": { "type": "number", "exclusiveMinimum": 0.0 },
         "falsification_criteria": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }

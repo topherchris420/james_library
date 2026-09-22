@@ -33,6 +33,9 @@ def design_experiment(
     alpha_threshold: float = 0.05,
     effect_size_threshold: float = 0.5,
     requires_human_review: bool = True,
+    expected_direction: str = "decrease",
+    equivalence_margin_ohms: float = 1.0,
+    minimum_effect_percent: float = 0.0,
 ) -> dict[str, Any]:
     """Design a candidate preregistered ExperimentManifest."""
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -49,7 +52,8 @@ def design_experiment(
     if not alternative_hypothesis:
         alternative_hypothesis = (
             f"Application of {frequency_hz} Hz stimulus induces a statistically significant response change "
-            f"(Cohen's d >= {effect_size_threshold}, alpha < {alpha_threshold})."
+            f"(effect direction: {expected_direction}, |Cohen's d| >= {effect_size_threshold}, "
+            f"|change| >= {minimum_effect_percent}%, alpha = {alpha_threshold})."
         )
 
     manifest: dict[str, Any] = {
@@ -92,12 +96,14 @@ def design_experiment(
             "alpha_threshold": alpha_threshold,
             "min_sample_size": min_sample_size,
             "effect_size_threshold": effect_size_threshold,
+            "minimum_effect_percent": minimum_effect_percent,
+            "expected_direction": expected_direction,
+            "equivalence_margin_ohms": equivalence_margin_ohms,
             "falsification_criteria": [
                 (
-                    "Mean difference between active and sham is within equivalence margin (+/- 1.0%) "
-                    "with p > 0.50 under adequate statistical power"
+                    f"The (1 - 2*alpha) Welch confidence interval for active minus sham "
+                    f"is strictly inside +/-{equivalence_margin_ohms} ohms (TOST equivalence)."
                 ),
-                "Observed effect in active condition is replicated in electronic phantom control",
             ],
             "artifact_rejection_rules": [
                 (
@@ -175,7 +181,7 @@ def generate_initial_interpretation(
     if conclusion == "SUPPORTS":
         interpretation = (
             f"The deterministic analysis indicates a statistically significant difference "
-            f"(mean difference = {diff:.3f}, Cohen's d = {d:.3f}, p = {p_val:.4f}, n = {n}). "
+            f"(mean difference = {diff:.3f}, Cohen's d = {d:.3f}, p = {p_val:.4g}, n = {n}). "
             f"The observed data satisfy the preregistered criteria for the alternative hypothesis. "
             f"However, this supports the hypothesis within the bounds of this protocol; "
             f"it does not constitute absolute proof."
@@ -185,16 +191,15 @@ def generate_initial_interpretation(
         )
     elif conclusion == "REFUTES":
         interpretation = (
-            f"The deterministic analysis indicates that the observed effect is negligible under "
-            f"adequate statistical power (n = {n}, p = {p_val:.4f}, mean diff = {diff:.3f}). "
-            f"The preregistered falsification criteria are satisfied, providing positive evidence "
-            f"for the null hypothesis."
+            f"The deterministic equivalence test bounds the active-versus-sham contrast "
+            f"within the preregistered margin (n = {n}, mean diff = {diff:.3f}). "
+            f"This refutes effects at or beyond that margin in this simulated setup, not every effect."
         )
-        rationale = "Preregistered falsification criteria were met."
+        rationale = "The preregistered Welch equivalence interval is inside the fixed margin."
     else:
         interpretation = (
             f"The deterministic analysis yielded an INCONCLUSIVE outcome: {stats['evidence_summary']} "
-            f"(sample size n = {n}, p = {p_val:.4f}, d = {d:.3f}). "
+            f"(sample size n = {n}, p = {p_val:.4g}, d = {d:.3f}). "
             f"No biological or physical effect can be affirmed from this dataset."
         )
         rationale = (
@@ -226,13 +231,13 @@ def perform_adversarial_critique(
     missing_measurements = []
 
     if conclusion == "SUPPORTS":
-        supporting.append(f"Statistically significant contrast (p={stats['statistical_results']['p_value']:.4f})")
+        supporting.append(f"Statistically significant contrast (p={stats['statistical_results']['p_value']:.4g})")
         supporting.append(f"Effect size Cohen's d={stats['effect_sizes']['cohens_d']:.3f} >= threshold")
         if artifact_analysis.get("phantom_signal_detected"):
             contradicting.append("Signal detected in electronic phantom control at comparable magnitude")
             potential_artifacts.append("Instrumentation coupling into high-impedance channels")
     elif conclusion == "REFUTES":
-        supporting.append("Statistical power sufficient to detect preregistered minimum effect")
+        supporting.append("Welch equivalence interval lies inside the preregistered margin")
         contradicting.append("Alternative biological mechanisms with non-linear latency curves not tested")
     else:
         contradicting.append(f"Material limit: {stats['evidence_summary']}")
@@ -240,7 +245,7 @@ def perform_adversarial_critique(
     if "POTENTIAL_INSTRUMENTATION_ARTIFACT" in flags:
         potential_artifacts.append("Capacitive or electromagnetic cross-talk between stimulator and sensor")
 
-    epistemic_status = "adheres strictly" if stats["protocol_status"] == "PREREGISTERED_VALID" else "VIOLATES"
+    epistemic_status = "adheres strictly to" if stats["protocol_status"] == "PREREGISTERED_VALID" else "violates"
     artifact_status = (
         "CRITICAL ARTIFACT PRESENT"
         if artifact_analysis.get("phantom_signal_detected")

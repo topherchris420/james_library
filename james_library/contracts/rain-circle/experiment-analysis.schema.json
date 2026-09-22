@@ -85,6 +85,7 @@
       "additionalProperties": true,
       "required": ["sample_size", "mean_control", "mean_active", "variance_control", "variance_active", "p_value"],
       "properties": {
+        "method": { "type": "string", "const": "welch_t_equivalence_v2" },
         "sample_size": { "type": "integer", "minimum": 0 },
         "mean_control": { "type": "number" },
         "mean_active": { "type": "number" },
@@ -94,7 +95,18 @@
         "std_dev_active": { "type": "number", "minimum": 0.0 },
         "t_statistic": { "type": ["number", "null"] },
         "p_value": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-        "degrees_of_freedom": { "type": ["integer", "null"] }
+        "degrees_of_freedom": { "type": "number", "minimum": 0 },
+        "equivalence_test": {
+          "type": "object",
+          "required": ["margin_ohms", "confidence_level", "lower_bound", "upper_bound", "established"],
+          "properties": {
+            "margin_ohms": { "type": ["number", "null"] },
+            "confidence_level": { "type": "number" },
+            "lower_bound": { "type": ["number", "null"] },
+            "upper_bound": { "type": ["number", "null"] },
+            "established": { "type": "boolean" }
+          }
+        }
       }
     },
     "effect_sizes": {
@@ -113,8 +125,8 @@
       "required": ["confidence_level", "lower_bound", "upper_bound"],
       "properties": {
         "confidence_level": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-        "lower_bound": { "type": "number" },
-        "upper_bound": { "type": "number" }
+        "lower_bound": { "type": ["number", "null"] },
+        "upper_bound": { "type": ["number", "null"] }
       }
     },
     "quality_assessment": {

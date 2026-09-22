@@ -27,6 +27,7 @@ def run_positive_control_fixture(seed: int = 101) -> tuple[dict[str, Any], dict[
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
+        minimum_effect_percent=5.0,
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -34,7 +35,7 @@ def run_positive_control_fixture(seed: int = 101) -> tuple[dict[str, Any], dict[
     scenario = {
         "sample_count": 30,
         "baseline_mean": 100.0,
-        "active_effect": 8.5,  # Strong positive effect
+        "active_effect": -8.5,  # Preregistered decrease
         "noise_std": 1.2,
         "phantom_effect": 0.1,  # Clean phantom (no artifact)
     }
@@ -54,6 +55,7 @@ def run_negative_control_fixture(seed: int = 102) -> tuple[dict[str, Any], dict[
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
+        minimum_effect_percent=5.0,
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -81,6 +83,7 @@ def run_artifact_only_fixture(seed: int = 103) -> tuple[dict[str, Any], dict[str
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
+        minimum_effect_percent=5.0,
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -88,9 +91,9 @@ def run_artifact_only_fixture(seed: int = 103) -> tuple[dict[str, Any], dict[str
     scenario = {
         "sample_count": 30,
         "baseline_mean": 100.0,
-        "active_effect": 8.0,
+        "active_effect": -8.0,
         "noise_std": 1.0,
-        "phantom_effect": 7.8,  # Signal also appears in electronic phantom!
+        "phantom_effect": -7.8,  # Signal also appears in electronic phantom!
     }
 
     result = executor.run_trial(manifest, manifest_sha, custom_scenario=scenario)
