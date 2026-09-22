@@ -68,7 +68,9 @@ Tests live in `tests/test_judgment_workflow.py` and `tests/test_judgment_artifac
 - [x] Run focused Python tests, full Ruff, staged Ruff, mypy, full pytest, cargo fmt,
   cargo clippy, cargo test; record unrelated baseline failures precisely.
 - [x] Review every changed file, diff scope, and secrets before scoped Lore commits.
-- [ ] Push only the feature branch, open a PR against main, and leave it unmerged.
+- [x] Push only the feature branch, open a PR against main, and leave it unmerged.
+
+Delivery: [PR #407](https://github.com/topherchris420/james_library/pull/407).
 
 ## Validation limitation
 
