@@ -84,7 +84,7 @@ Pour l'architecture, les points d'extension et la contribution, consultez le [`R
 
 ## Remerciements
 
-Un grand merci à l'équipe **ZeroClaw** pour le moteur runtime Rust qui propulse R.A.I.N. Lab. Voir le répertoire `crates/` pour les composants du runtime ZeroClaw.
+Le runtime Rust dans `src/` (binaire `rain`) descend de ZeroClaw. `crates/` contient des crates satellites, pas ce runtime.
 
 ---
 

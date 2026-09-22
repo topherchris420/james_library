@@ -84,7 +84,7 @@ Kiến trúc, điểm mở rộng và hướng dẫn đóng góp có tại [`REA
 
 ## Lời cảm ơn
 
-Đặc biệt cảm ơn đội ngũ **ZeroClaw** đã xây dựng engine runtime Rust làm nền tảng cho R.A.I.N. Lab. Xem thư mục `crates/` để biết thêm chi tiết.
+Runtime Rust trong `src/` (binary `rain`) bắt nguồn từ ZeroClaw. `crates/` là các crate vệ tinh, không phải runtime đó.
 
 ---
 

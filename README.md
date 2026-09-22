@@ -72,7 +72,7 @@ Each agent has a distinct voice, expertise, and set of constraints they bring to
 |-------|------|----------------|
 | **James** | Lead Scientist | Draws from your research papers directly. Cites metrics. Says when data is missing. |
 | **Jasmine** | Hardware Architect | Reality-checks everything against real material constraints. If it can't be built, she knows why. |
-| **Luca** | Field Topographer | Sees geometric patterns others miss. Makes intuitive leaps, then looks for the math to ground them. |
+| **Luca** | Field Tomographer | Sees geometric patterns others miss. Makes intuitive leaps, then looks for the math to ground them. |
 | **Elena** | Quantum Information Theorist | Demands formal rigor. Runs logical verification. Catches errors everyone else misses. |
 
 Each agent's full personality, reasoning principles, and conversation style are defined in their **SOUL** file:
@@ -221,10 +221,12 @@ R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, n
 
 R.A.I.N. Lab is a Rust-first autonomous agent runtime with a Python orchestration layer.
 
-- `src/` — Rust core: trait-driven provider/channel/tool/peripheral system
-- `crates/` — ZeroClaw runtime components
-- `python/` — Python orchestration, RAIN Lab meeting logic, agent souls
-- `agents.py` — Agent factory and delegation
+- `rain_lab.py` — launcher. Chat meetings run `rain_lab_meeting_chat_version.py`; tool-exec meetings run `rain_lab_meeting.py`
+- `james_library/` — Python package for session artifacts, eval, recovery, and the experiment protocol
+- `agents.py` and `*_SOUL.md` — persona files. The chat meeting defines its own `Agent` class and does not import `agents.py`
+- `src/` — Rust `rain` binary (package `rain-labs`): providers, channels, tools, security
+- `crates/` — satellite crates (`logic_prover`, `rain-bench`, `robot-kit`, `buzz-agent`, `aardvark-sys`), not the meeting runtime
+- `python/` — optional LangGraph tool package (`R.A.I.N.-tools`), not the meeting loop
 
 ### Extension Points
 
@@ -261,7 +263,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR workflow and [SECURITY.
 
 ## Acknowledgments
 
-Special thanks to the **ZeroClaw** team for the Rust runtime engine that powers R.A.I.N. Lab under the hood. The performance, stability, and extensibility of the agent runtime wouldn't be possible without their foundational work. See the `crates/` directory for ZeroClaw runtime components.
+The Rust runtime in `src/` (binary `rain`) descends from ZeroClaw. `crates/` holds satellite crates, not that runtime.
 
 ---
 
