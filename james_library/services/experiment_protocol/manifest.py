@@ -185,10 +185,10 @@ def validate_manifest(manifest: Any) -> list[str]:
         if margin is not None and (isinstance(margin, bool) or not isinstance(margin, (int, float))
                                    or not math.isfinite(margin) or margin <= 0):
             errors.append("equivalence_margin_ohms must be a finite positive number")
-        percent = pa.get("minimum_effect_percent")
-        if percent is not None and (isinstance(percent, bool) or not isinstance(percent, (int, float))
-                                    or not math.isfinite(percent) or percent < 0):
-            errors.append("minimum_effect_percent must be a finite non-negative number")
+        minimum = pa.get("minimum_effect_ohms")
+        if minimum is not None and (isinstance(minimum, bool) or not isinstance(minimum, (int, float))
+                                    or not math.isfinite(minimum) or minimum < 0):
+            errors.append("minimum_effect_ohms must be a finite non-negative number")
         effect = pa.get("effect_size_threshold")
         if (isinstance(effect, bool) or not isinstance(effect, (int, float))
                 or not math.isfinite(effect) or effect < 0):

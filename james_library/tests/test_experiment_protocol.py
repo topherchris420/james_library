@@ -59,7 +59,7 @@ class TestManifestContracts(unittest.TestCase):
     def test_valid_manifest_design(self):
         manifest = design_experiment(
             research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-            hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to sham.",
+            hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to sham.",
             frequency_hz=40.0,
             min_sample_size=20,
         )
@@ -77,12 +77,12 @@ class TestManifestContracts(unittest.TestCase):
         manifest = design_experiment("Q", "H")
         pa = manifest["preregistered_analysis"]
         pa["alpha_threshold"] = float("nan")
-        pa["minimum_effect_percent"] = -1
+        pa["minimum_effect_ohms"] = -1
         pa["equivalence_margin_ohms"] = 0
         pa["effect_size_threshold"] = float("inf")
         errors = validate_manifest(manifest)
         self.assertTrue(any("alpha_threshold" in error for error in errors))
-        self.assertTrue(any("minimum_effect_percent" in error for error in errors))
+        self.assertTrue(any("minimum_effect_ohms" in error for error in errors))
         self.assertTrue(any("equivalence_margin_ohms" in error for error in errors))
         self.assertTrue(any("effect_size_threshold" in error for error in errors))
 
@@ -238,7 +238,31 @@ class TestConclusionSemanticsAndArtifacts(unittest.TestCase):
         self.assertLess(analysis["statistical_results"]["p_value"], 0.05)
         self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
 
-    def test_small_precise_effect_cannot_support_registered_five_percent_claim(self):
+    def test_generic_design_preserves_two_sided_support(self):
+        manifest = design_experiment("Synthetic response?", "An effect in either direction")
+        self.assertEqual(manifest["preregistered_analysis"]["expected_direction"], "two_sided")
+        sha = calculate_sha256(manifest)
+        result = SimulatedCircleExecutor(seed=12).run_trial(
+            manifest, sha, custom_scenario={"sample_count": 30, "active_effect": 8.0, "noise_std": 1.0},
+        )
+        analysis = run_deterministic_analysis(manifest, result, sha)
+        self.assertEqual(analysis["conclusion"], "SUPPORTS")
+
+    def test_point_estimate_above_minimum_does_not_establish_magnitude(self):
+        manifest, result, _ = run_positive_control_fixture(seed=201)
+        near_bound = deepcopy(result)
+        near_bound["_embedded_data"]["measurements"].update({
+            "control": [95.0, 105.0] * 25,
+            "active": [89.9, 99.9] * 25,
+            "phantom": [95.0, 105.0] * 25,
+        })
+        analysis = run_deterministic_analysis(manifest, near_bound, calculate_sha256(manifest))
+        self.assertLess(analysis["effect_sizes"]["mean_difference"], -5.0)
+        self.assertLess(analysis["statistical_results"]["p_value"], 0.05)
+        self.assertGreater(analysis["confidence_intervals"]["upper_bound"], -5.0)
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+
+    def test_small_precise_effect_cannot_support_registered_five_ohm_claim(self):
         manifest, result, _ = run_positive_control_fixture(seed=201)
         small = deepcopy(result)
         small["_embedded_data"]["measurements"].update({
@@ -253,7 +277,7 @@ class TestConclusionSemanticsAndArtifacts(unittest.TestCase):
     def test_overlapping_support_and_equivalence_remains_inconclusive(self):
         manifest, result, _ = run_positive_control_fixture(seed=201)
         overlapping = deepcopy(manifest)
-        overlapping["preregistered_analysis"]["minimum_effect_percent"] = 0.0
+        overlapping["preregistered_analysis"]["minimum_effect_ohms"] = 0.0
         overlap_result = deepcopy(result)
         overlap_result["manifest_sha256"] = calculate_sha256(overlapping)
         overlap_result["_embedded_data"]["measurements"].update({
@@ -360,7 +384,7 @@ class TestEndToEndWorkflow(unittest.TestCase):
     def test_full_workflow_execution(self):
         manifest, result, analysis, bundle_path = run_experiment_workflow(
             question="Does 40Hz acoustic resonance alter phantom impedance?",
-            hypothesis="40Hz stimulation induces impedance drop > 15%",
+            hypothesis="40Hz stimulation induces impedance drop > 15 ohms",
             frequency_hz=40.0,
             sample_count=30,
             seed=42,

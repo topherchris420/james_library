@@ -99,7 +99,7 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 
 ## 6. Conclusion Semantics
 
-- **`SUPPORTS`**: Welch's two-sample t test uses the Student t distribution and unrounded Welch–Satterthwaite degrees of freedom. A two-sided $p < \alpha$, $|d| \ge d_{\text{min}}$, `minimum_effect_percent`, sufficient $n$, and the preregistered `expected_direction` must all agree, with no unresolved artifact flag. This supports only the *encoded* effect criteria, not every numerical assertion in a free-text hypothesis. **`SUPPORTS` does not mean proven.**
+- **`SUPPORTS`**: Welch's two-sample t test uses the Student t distribution and unrounded Welch–Satterthwaite degrees of freedom. A two-sided $p < \alpha$, $|d| \ge d_{\text{min}}$, sufficient $n$, and the preregistered `expected_direction` must all agree. The 95% Welch interval must lie entirely beyond the registered `minimum_effect_ohms` in that direction, with no unresolved artifact flag. A point estimate above the threshold is insufficient. This supports only the *encoded* effect criteria, not every numerical assertion in a free-text hypothesis. **`SUPPORTS` does not mean proven.**
 - **`REFUTES`**: A numeric `equivalence_margin_ohms` is committed in the manifest before the trial. At $\alpha=0.05$, the 90% Welch confidence interval for active minus sham must lie *entirely inside* its fixed $\pm$ margin (the two one-sided tests criterion). The result excludes contrasts at or beyond that margin within this simulated setup. A large ordinary p-value, small observed difference, or nominal sample count alone cannot establish equivalence.
 - **`INCONCLUSIVE`**: Mandatory whenever sample size is inadequate, sensors fail, clock sync degrades, artifacts are detected, or protocol hashing indicates tampering (`PROTOCOL_CHANGED`).
 
@@ -111,7 +111,7 @@ The reported 95% interval and the equivalence interval both use the Welch t crit
 
 ### Existing manifest migration
 
-New manifests include `expected_direction` (`decrease`, `increase`, or `two_sided`), `minimum_effect_percent` (the fixture's stated 5% decrease and default CLI's 15% decrease are encoded as 5 and 15), and a positive `equivalence_margin_ohms` (default 1.0 ohm). These fields are optional when *reading* an older v1 manifest so its hash and trial remain intact. If `expected_direction` is absent, analysis returns `INCONCLUSIVE`; without the numeric margin it cannot return `REFUTES`. To use the new inference for a new trial, register a new manifest and hash before producing data. Do not add fields to an already recorded manifest.
+New manifests include `expected_direction` (`decrease`, `increase`, or `two_sided`; the library's default is `two_sided` for existing callers), `minimum_effect_ohms` (5 ohms in the decrease fixtures, 15 ohms in the default CLI run), and a positive `equivalence_margin_ohms` (default 1.0 ohm). The fixtures and CLI explicitly register `decrease`. These fields are optional when *reading* an older v1 manifest so its hash and trial remain intact. If `expected_direction` is absent, analysis returns `INCONCLUSIVE`; without the numeric margin it cannot return `REFUTES`. To use the new inference for a new trial, register a new manifest and hash before producing data. Do not add fields to an already recorded manifest.
 
 The test and equivalence criteria follow the [NIST two-sample t test](https://www.itl.nist.gov/div898/handbook/eda/section3/eda353.htm) and the [statsmodels Welch TOST definition](https://www.statsmodels.org/stable/generated/statsmodels.stats.weightstats.CompareMeans.ttost_ind.html). This code uses no optional scientific package at runtime; fixed SciPy reference values check the numerical implementation in tests.
 
@@ -136,7 +136,7 @@ V1 BACKEND: STRICTLY SIMULATED
 ```powershell
 python launcher/rain_lab.py experiment `
   --question "Does 40Hz acoustic resonance alter phantom impedance?" `
-  --hypothesis "40Hz stimulation induces impedance drop > 15%" `
+  --hypothesis "40Hz stimulation induces impedance drop > 15 ohms" `
   --frequency 40.0 `
   --samples 30 `
   --seed 42

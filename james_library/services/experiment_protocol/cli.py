@@ -154,7 +154,8 @@ def run_experiment_workflow(
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
-        minimum_effect_percent=15.0,
+        minimum_effect_ohms=15.0,
+        expected_direction="decrease",
     )
 
     # 2. Deterministic serialization & SHA-256 calculation
@@ -206,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--hypothesis", "-H",
         type=str,
-        default="40Hz stimulation induces impedance drop > 15%",
+        default="40Hz stimulation induces an impedance drop of at least 15 ohms",
         help="Experimental hypothesis",
     )
     parser.add_argument(

@@ -22,12 +22,13 @@ def run_positive_control_fixture(seed: int = 101) -> tuple[dict[str, Any], dict[
     """Run A. Positive-control fixture."""
     manifest = design_experiment(
         research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-        hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to unpowered sham.",
+        hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to unpowered sham.",
         frequency_hz=40.0,
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
-        minimum_effect_percent=5.0,
+        minimum_effect_ohms=5.0,
+        expected_direction="decrease",
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -50,12 +51,13 @@ def run_negative_control_fixture(seed: int = 102) -> tuple[dict[str, Any], dict[
     """Run B. Negative/null-control fixture."""
     manifest = design_experiment(
         research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-        hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to unpowered sham.",
+        hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to unpowered sham.",
         frequency_hz=40.0,
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
-        minimum_effect_percent=5.0,
+        minimum_effect_ohms=5.0,
+        expected_direction="decrease",
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -78,12 +80,13 @@ def run_artifact_only_fixture(seed: int = 103) -> tuple[dict[str, Any], dict[str
     """Run C. Artifact-only fixture (signal present in phantom)."""
     manifest = design_experiment(
         research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-        hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to unpowered sham.",
+        hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to unpowered sham.",
         frequency_hz=40.0,
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
-        minimum_effect_percent=5.0,
+        minimum_effect_ohms=5.0,
+        expected_direction="decrease",
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -106,11 +109,13 @@ def run_insufficient_sample_fixture(seed: int = 104) -> tuple[dict[str, Any], di
     """Run D. Insufficient-sample fixture (n=3 < min_sample_size=20)."""
     manifest = design_experiment(
         research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-        hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to unpowered sham.",
+        hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to unpowered sham.",
         frequency_hz=40.0,
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
+        minimum_effect_ohms=5.0,
+        expected_direction="decrease",
     )
     manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)
@@ -133,11 +138,13 @@ def run_protocol_modification_fixture(seed: int = 105) -> tuple[dict[str, Any], 
     """Run E. Protocol-modification fixture (manifest modified post-hashing)."""
     manifest = design_experiment(
         research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-        hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to unpowered sham.",
+        hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to unpowered sham.",
         frequency_hz=40.0,
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
+        minimum_effect_ohms=5.0,
+        expected_direction="decrease",
     )
     original_manifest_sha = calculate_sha256(manifest)
     executor = SimulatedCircleExecutor(seed=seed)

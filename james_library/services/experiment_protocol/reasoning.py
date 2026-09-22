@@ -33,9 +33,9 @@ def design_experiment(
     alpha_threshold: float = 0.05,
     effect_size_threshold: float = 0.5,
     requires_human_review: bool = True,
-    expected_direction: str = "decrease",
+    expected_direction: str = "two_sided",
     equivalence_margin_ohms: float = 1.0,
-    minimum_effect_percent: float = 0.0,
+    minimum_effect_ohms: float = 0.0,
 ) -> dict[str, Any]:
     """Design a candidate preregistered ExperimentManifest."""
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -53,7 +53,7 @@ def design_experiment(
         alternative_hypothesis = (
             f"Application of {frequency_hz} Hz stimulus induces a statistically significant response change "
             f"(effect direction: {expected_direction}, |Cohen's d| >= {effect_size_threshold}, "
-            f"|change| >= {minimum_effect_percent}%, alpha = {alpha_threshold})."
+            f"|contrast| >= {minimum_effect_ohms} ohms, alpha = {alpha_threshold})."
         )
 
     manifest: dict[str, Any] = {
@@ -96,7 +96,7 @@ def design_experiment(
             "alpha_threshold": alpha_threshold,
             "min_sample_size": min_sample_size,
             "effect_size_threshold": effect_size_threshold,
-            "minimum_effect_percent": minimum_effect_percent,
+            "minimum_effect_ohms": minimum_effect_ohms,
             "expected_direction": expected_direction,
             "equivalence_margin_ohms": equivalence_margin_ohms,
             "falsification_criteria": [

@@ -177,11 +177,11 @@ def run_deterministic_analysis(
     alpha = float(pa.get("alpha_threshold", 0.05))
     min_n = int(pa.get("min_sample_size", 10))
     effect_threshold = float(pa.get("effect_size_threshold", 0.5))
-    minimum_effect_percent = float(pa.get("minimum_effect_percent", 0.0))
+    minimum_effect_ohms = float(pa.get("minimum_effect_ohms", 0.0))
     if not math.isfinite(alpha) or not 0 < alpha < 0.5 or 1.0 - 2.0 * alpha >= 1.0:
         raise ValueError("alpha_threshold cannot define a valid equivalence interval")
     if (not math.isfinite(effect_threshold) or effect_threshold < 0
-            or not math.isfinite(minimum_effect_percent) or minimum_effect_percent < 0
+            or not math.isfinite(minimum_effect_ohms) or minimum_effect_ohms < 0
             or min_n < 2):
         raise ValueError("invalid preregistered effect or sample threshold")
     direction = pa.get("expected_direction")
@@ -242,14 +242,15 @@ def run_deterministic_analysis(
         and -equivalence_margin < equivalence_interval[0]
         and equivalence_interval[1] < equivalence_margin
     )
-    direction_matches = (
-        direction == "two_sided"
-        or direction == "increase" and mean_diff > 0
-        or direction == "decrease" and mean_diff < 0
+    # A point estimate that merely crosses the registered minimum is not enough.
+    # Its 95% Welch interval must clear the fixed, pre-data magnitude bound.
+    clears_minimum = ci_lower is not None and (
+        (direction in {"increase", "two_sided"} and ci_lower > minimum_effect_ohms)
+        or (direction in {"decrease", "two_sided"} and ci_upper < -minimum_effect_ohms)
     )
     supports = (
         p_val < alpha and abs(cohens_d) >= effect_threshold
-        and abs(mean_diff_pct) >= minimum_effect_percent and direction_matches
+        and clears_minimum
     )
 
     # Artifact Analysis
@@ -338,7 +339,7 @@ def run_deterministic_analysis(
         evidence_summary = (
             f"SUPPORTS: Preregistered statistical criteria satisfied (p={p_val:.4g} < alpha={alpha}, "
             f"|Cohen's d|={abs(cohens_d):.3f} >= threshold={effect_threshold}, "
-            f"|change|={abs(mean_diff_pct):.2f}% >= {minimum_effect_percent:g}%, "
+            f"95% interval clears {minimum_effect_ohms:g} ohms, "
             f"direction={direction}). "
             f"Evidence favors alternative hypothesis. (Does NOT imply absolute proof)."
         )
