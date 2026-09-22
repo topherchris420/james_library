@@ -201,7 +201,7 @@ RESPOND: 50-100 words, conversational, as a scientist.
         ),
         Agent(
             name="Luca",
-            role="Field Tomographer / Theorist",
+            role="Field Topographer / Theorist",
             focus="Analyze topology, fields, and gradients for theoretical consistency.",
             color="\033[96m",
             tool_instruction=(

@@ -28,11 +28,13 @@ These are real, and they are more interesting than the marketing panel.
 
 ## 3. What is weak or overclaimed
 
+The citation-corpus bullets in this section describe the tree as inspected. The P0 fix in section 4 now excludes product files from the default corpus, requires a full quote span, wires `require_quotes`, and stores corpus sha256 hashes. The other weaknesses below are unchanged.
+
 **The default corpus is the repository, so product copy can "verify."** `DEFAULT_LIBRARY_PATH` in `rain_lab_meeting_chat_version.py` is the directory containing that file (the repo root). `_discover_files` keeps top-level `.md` and `.txt` unless the name contains `SOUL`, `LOG`, or `MEETING`. There are 28 top-level markdown files, including `README.md`. `verify_citation` lowercases the quote and searches the first 5 words, then 8, then a middle window, as a substring of a concatenated index. A five-word window from the README sample dialogue can resolve to a "paper." Chat mode refuses to start when `paper_list` is empty, so a fresh clone "succeeds" by reading its own docs.
 
 **`require_quotes` does not require quotes.** `Config.require_quotes = True` is never read. `CitationAnalyzer` records unverified quotes and still returns the turn. The meeting prints a check mark only when something verified; it does not drop, rewrite, or badge the spoken text. `red_badge` is computed later by the artifact writer from whether any quote happened to match. A turn with no quotes gets confidence 0.2 and `grounded: false`, and the meeting continues.
 
-**Session eval rewards fluency markers.** `james_library/utilities/session_eval.py` scores disagreement by substring hits on `disagree`, `however`, `but `, `wrong`, and similar tokens, and actionability by `next step`, `measure`, `run `, `test `. `benchmark_data/session_eval_gold.json` has three topics and thresholds on those ratios. A model can pass by saying "however" and "next step" without a quote that exists in a paper. `session_replay.py` shells out to a live `rain_lab.py --mode chat` run. CI does not run that replay. Nothing in CI fails a meeting for being ungrounded.
+**Session eval rewards fluency markers.** `james_library/utilities/session_eval.py` scores disagreement by substring hits on `disagree`, `however`, `but` followed by a space, `wrong`, and similar tokens, and actionability by `next step`, `measure`, `run` followed by a space, and `test` followed by a space. `benchmark_data/session_eval_gold.json` has three topics and thresholds on those ratios. A model can pass by saying "however" and "next step" without a quote that exists in a paper. `session_replay.py` shells out to a live `rain_lab.py --mode chat` run. CI does not run that replay. Nothing in CI fails a meeting for being ungrounded.
 
 **Demo mode is a template, and the README exchange is not a run.** `_build_demo_session_markdown` in `james_library/launcher/rain_lab.py` writes fixed Founder/Skeptic/Builder paragraphs. The generated note says no model was used. `README.md` "See It In Action" is a authored dialogue (Landauer bound, `10⁴⁵` joules, `verify_logic()`). It is not an artifact from `meeting_archives/`. Treating it as evidence of the system is a category error.
 
@@ -50,7 +52,7 @@ These are real, and they are more interesting than the marketing panel.
 
 **"No cloud calls" is not the default chat configuration.** Chat `enable_web_search` defaults to `True` and uses DuckDuckGo (`WebSearchManager`). `DEFAULT_MODEL_NAME` falls back to `minimax-m2.7:cloud` while `base_url` falls back to `http://127.0.0.1:11434/v1`. A stock run asks Ollama for a cloud model id and fails `test_connection`, or, if that name is aliased, still searches the web unless `--no-web` is passed. `rain_lab_meeting.py` speaks via `edge-tts` when installed, which sends utterance text to a Microsoft endpoint. Chat prefers local `pyttsx3` and falls back to `edge-tts`. Temperature defaults to 0.7 (`--temp` / `Config.temperature`). There is no seed.
 
-**Product-boundary vs README.** `docs/project/product-boundary.md` says the stable core includes the Rust `rain` runtime's provider, tool, memory, security, and gateway contracts. The command `python rain_lab.py` never starts `rain`. A reader who trusts the boundary doc will look for meeting behavior in Rust and will not find it. A reader who trusts the README developer section (before this change) was pointed at `python/` and `crates/` for the meeting. Those paths are wrong. `README.md` also called Luca a "Field Topographer" in the table and a "Field Tomographer" in the link; `LUCA_SOUL.md` says Tomographer.
+**Product-boundary vs README.** `docs/project/product-boundary.md` says the stable core includes the Rust `rain` runtime's provider, tool, memory, security, and gateway contracts. The command `python rain_lab.py` never starts `rain`. A reader who trusts the boundary doc will look for meeting behavior in Rust and will not find it. A reader who trusts the README developer section (before this change) was pointed at `python/` and `crates/` for the meeting. Those paths are wrong. Luca's role is Field Topographer. "Tomographer" in `LUCA_SOUL.md` and the README link was a mistype; both now say Topographer.
 
 **Graph-R1 is a name for the native graph.** `james_library/utilities/graph_bridge.py` `_build_graph_r1_placeholder` calls `_build_native_graph`. Keyword co-occurrence is fine. Calling the mode `graph-r1` is not.
 
@@ -60,7 +62,18 @@ These are real, and they are more interesting than the marketing panel.
 
 ### P0 — Corpus boundary and a citation check that can fail
 
-**Why.** Every other claim (grounded meetings, eval, hypothesis pruning, "papers not smooth talk") depends on this. Today the default library is the repo, the match is a 5-word substring, and `require_quotes` is dead. An outsider cannot tell a cited paper from the README.
+**Status (2026-09-22): implemented.**
+
+- Corpus rules and span match: `james_library/utilities/citation_corpus.py`
+- Chat discovery and `verify_citation`: `rain_lab_meeting_chat_version.py` (`ContextManager._discover_files`, `ContextManager.verify_citation`, `Config.require_quotes`, `CitationAnalyzer`)
+- RLM host file selection: `rain_lab_meeting.py` (`_corpus_candidate_files`, `_host_select_files`, `_host_local_context`)
+- Artifact hashes and spans: `james_library/utilities/session_artifact.py` (`corpus_files`, evidence `span_start` / `span_end`)
+- Offline tests: `tests/test_citation_corpus.py`
+- Boundary note: `docs/project/product-boundary.md` section "Citation Corpus"
+
+`require_quotes` now gates the success checkmark. A required quote that does not match a full corpus span is stored with `grounded: false` and `citation_success: false`. Loaded corpus files are stored with sha256. Temperature and prompt hashes are still not recorded.
+
+**Why.** Every other claim (grounded meetings, eval, hypothesis pruning, "papers not smooth talk") depends on this. Before this change the default library was the repo, the match was a 5-word substring, and `require_quotes` was unread. An outsider could not tell a cited paper from the README.
 
 **Scope.** `ContextManager._discover_files` and `verify_citation` in `rain_lab_meeting_chat_version.py`; the same idea in `rain_lab_meeting.py` host file selection; `truth_layer.py` / artifact writer only if the metadata contract changes. No new service.
 
@@ -162,7 +175,7 @@ An outsider who wants to know whether a meeting was more than fluent generation 
 Factual path and naming fixes only:
 
 - `README.md` developer map: meeting code is the Python chat/RLM scripts and `james_library/`; `src/` is the `rain` binary; `crates/` are satellite crates; `python/` is `R.A.I.N.-tools`.
-- `README.md` Luca row: "Field Topographer" → "Field Tomographer", matching `LUCA_SOUL.md` and the link line in the same file.
+- Luca's role is Field Topographer. An earlier edit on this branch changed the README table from Topographer to Tomographer to match `LUCA_SOUL.md`. That direction was wrong: Tomographer was the typo. `README.md` (table and link), `LUCA_SOUL.md`, and agent-factory role strings now say Topographer. Locale READMEs do not name the role.
 - Acknowledgments in `README.md`, `README.zh-CN.md`, `README.ja.md`, `README.ru.md`, `README.fr.md`, `README.vi.md`: the ZeroClaw-derived runtime is `src/`, not `crates/`.
 
 Left in place on purpose: the README comparison-table claims about in-meeting TRIBE and "no cloud calls." Those are product claims, not broken paths. They are disputed in section 3. `docs/project/product-boundary.md` still lists the Rust runtime as stable core; section 4 P2 is the proposed edit, not done here, because it changes the product contract rather than a wrong directory.

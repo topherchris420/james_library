@@ -24,7 +24,6 @@ Usage::
 from __future__ import annotations
 
 import os
-from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +34,6 @@ from fastmcp import FastMCP
 # ---------------------------------------------------------------------------
 
 _ALLOWED_EXTENSIONS = (".md", ".txt")
-_EXCLUDE_PATTERNS = ("SOUL", "LOG", "MEETING")
 _MAX_READ_CHARS = 120_000
 _MAX_SEARCH_RESULTS = 10
 _MAX_QUERY_LEN = 2_000
@@ -83,16 +81,15 @@ def _policy_check(query: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 def _discover_papers(library_path: str) -> list[Path]:
-    """Return sorted list of research paper paths in the library."""
-    lab = Path(library_path)
-    papers: list[Path] = []
-    for ext in _ALLOWED_EXTENSIONS:
-        papers.extend(lab.glob(f"*{ext}"))
-    return sorted(
-        p
-        for p in papers
-        if not p.name.startswith("_")
-        and not any(pat in p.name.upper() for pat in _EXCLUDE_PATTERNS)
+    """Return sorted research paper paths. Product docs are not papers."""
+    from james_library.utilities.citation_corpus import discover_corpus_files, resolve_corpus_root
+
+    root = resolve_corpus_root(library_path, os.environ.get("RAIN_CORPUS_DIR"))
+    return discover_corpus_files(
+        root,
+        recursive=False,
+        include_product_surface=os.environ.get("RAIN_CORPUS_INCLUDE_PRODUCT", "0") == "1",
+        allow_hello_os_py=False,
     )
 
 
@@ -132,28 +129,28 @@ def _keyword_search(library_path: str, query: str) -> list[dict[str, Any]]:
 
 
 def _verify_citation(library_path: str, quote: str) -> dict[str, Any]:
-    """Check whether a quoted span appears in the local corpus."""
-    quote_lower = quote.lower().strip()
-    if len(quote_lower) < 10:
+    """Check whether the full quoted span appears in the local corpus."""
+    from james_library.utilities.citation_corpus import verify_quote
+
+    quote_clean = quote.strip()
+    if len(quote_clean) < 10 or len(quote_clean.split()) < 3:
         return {"verified": False, "reason": "Quote too short for meaningful verification."}
+    papers: dict[str, str] = {}
     for path in _discover_papers(library_path):
         try:
-            content = path.read_text(encoding="utf-8-sig", errors="ignore")
+            papers[path.name] = path.read_text(encoding="utf-8-sig", errors="ignore")
         except OSError:
             continue
-        if quote_lower in content.lower():
-            return {"verified": True, "source": path.name, "match": "exact"}
-        # Fuzzy fallback: sliding window
-        words = quote_lower.split()
-        window = " ".join(words)
-        content_lower = content.lower()
-        # Check 80% similarity in overlapping windows
-        wlen = len(window)
-        for i in range(0, max(1, len(content_lower) - wlen), wlen // 2 or 1):
-            chunk = content_lower[i : i + wlen]
-            if SequenceMatcher(None, window, chunk).ratio() >= 0.80:
-                return {"verified": True, "source": path.name, "match": "fuzzy"}
-    return {"verified": False, "reason": "No match found in local corpus."}
+    match = verify_quote(papers, quote_clean)
+    if match is None:
+        return {"verified": False, "reason": "No match found in local corpus."}
+    return {
+        "verified": True,
+        "source": match.source,
+        "span_start": match.span_start,
+        "span_end": match.span_end,
+        "match": "exact",
+    }
 
 
 # ---------------------------------------------------------------------------

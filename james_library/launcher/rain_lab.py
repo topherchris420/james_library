@@ -2151,6 +2151,15 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         help="Library path (used directly by chat mode; exported as JAMES_LIBRARY_PATH for rlm mode)",
     )
     parser.add_argument(
+        "--corpus",
+        type=str,
+        default=None,
+        help=(
+            "Chat mode citation root. When omitted, chat uses RAIN_CORPUS_DIR, then "
+            "<library>/papers if present, otherwise the library with product docs excluded."
+        ),
+    )
+    parser.add_argument(
         "--turns",
         type=int,
         default=None,
@@ -2394,6 +2403,8 @@ def build_command(args: argparse.Namespace, passthrough: list[str], repo_root: P
             cmd.extend(["--topic", args.topic])
         if args.library:
             cmd.extend(["--library", args.library])
+        if getattr(args, "corpus", None):
+            cmd.extend(["--corpus", args.corpus])
         if args.turns is not None:
             cmd.extend(["--max-turns", str(args.turns)])
         if args.timeout is not None:

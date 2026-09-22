@@ -16,6 +16,20 @@ The stable core is the path a new user should be able to trust first:
 
 Core changes need user-facing docs, tests or smoke coverage, and CI verification.
 
+## Citation Corpus
+
+A quote counts as a paper citation only when the full span occurs in a file under the citation corpus. Product files are not that corpus: `README*`, `*_SOUL.md`, logs, `START_HERE*`, `CONTRIBUTING*`, `SECURITY*`, `ARCHITECTURE*`, `LICENSE*`, `docs/`, and `assets/`.
+
+Resolution order for chat (`rain_lab_meeting_chat_version.py`) and the RLM host file picker:
+
+1. `--corpus` or `RAIN_CORPUS_DIR`
+2. `<library>/papers` when that directory exists
+3. the library root, still with the product files excluded
+
+`--library` remains the library root (souls, meeting archives, and the default place to look for `papers/`). Point it at a papers directory only when that directory itself is the corpus and does not contain a nested `papers/` folder you did not intend to select.
+
+`RAIN_CORPUS_INCLUDE_PRODUCT=1` opts product files back in. Session artifacts record `corpus_files` as `{path, sha256}` for the files actually loaded. `require_quotes` (default true) stores `grounded: false` and prints an ungrounded badge when a turn has no verified span. It does not print a success checkmark for that turn.
+
 ## Opt-In Extensions
 
 Extensions are supported, but they should not be required for the default path:
