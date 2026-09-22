@@ -10,6 +10,18 @@ Configuration loading and merging logic:
 
 Treat config keys as public contract and coordinate changes with migration notes.
 
+## Typed judgment environment
+
+Typed judgment is opt-in and uses environment variables rather than the Rust
+provider configuration because it is an independent Python evaluation boundary:
+
+- `RAIN_JUDGMENT_PROVIDER=off|typesafe` (default: `off`)
+- `TYPESAFE_API_KEY` (required only when TypeSafe is enabled)
+- `TYPESAFE_MODEL` (default: `jev-latest`)
+
+Provider failure is explicit `UNAVAILABLE`; there is no automatic retry or
+fallback. See [`typed-judgment.md`](typed-judgment.md).
+
 ## Autonomous runtime sections (added 2026-06)
 
 All default to disabled; omitting them preserves prior behavior.

@@ -37,3 +37,14 @@ Ghi chú:
 - `R.A.I.N. gateway` và `R.A.I.N. daemon` dùng `gateway.port` từ config khi không truyền `--port`.
 - Nếu muốn mặc định cầu nối Body-daemon, đặt `gateway.port = 4200` trong config hoặc `R.A.I.N._GATEWAY_PORT=4200` trong môi trường.
 - Khởi động sẽ bị chặn nếu dừng khẩn cấp đang bật ở mức `kill-all` hoặc `network-kill`.
+
+## Phán đoán có kiểu
+
+```bash
+python rain_lab.py judge --evidence cycle.json
+python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id>.json
+```
+
+Lệnh này áp dụng ranh giới thăng cấp năm giai đoạn cho gói bằng chứng đã được
+chọn lọc. Truy cập từ xa mặc định tắt; phát lại bản ghi không gọi nhà cung cấp.
+Xem [`typed-judgment.md`](../../typed-judgment.md).

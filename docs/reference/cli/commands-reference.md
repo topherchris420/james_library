@@ -227,6 +227,19 @@ Skill manifests (`SKILL.toml`) support `prompts` and `[[tools]]`; both are injec
 - `R.A.I.N. peripheral setup-uno-q [--host <ip_or_host>]`
 - `R.A.I.N. peripheral flash-nucleo`
 
+## R.A.I.N. Lab typed judgment
+
+The Python launcher exposes a strict-cycle command for curated claim/evidence:
+
+```bash
+python rain_lab.py judge --evidence cycle.json
+python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id>.json
+```
+
+Remote evaluation is disabled by default. Recorded replay never contacts a
+provider. See [typed judgment](../../typed-judgment.md) for the packet schema,
+deterministic policy, privacy boundary, and artifact contract.
+
 ## Validation Tip
 
 To verify docs against your current binary quickly:

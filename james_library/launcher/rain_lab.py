@@ -2742,6 +2742,11 @@ def main(argv: list[str] | None = None) -> int:
         from james_library.services.experiment_protocol.cli import main as exp_main
         return exp_main(argv[1:])
 
+    # Typed judgment is an explicit strict-cycle command, separate from chat modes.
+    if argv and argv[0] == "judge":
+        from james_library.launcher.judgment_cli import main as judgment_main
+        return judgment_main(argv[1:])
+
     # Handle simple/friendly mode aliases before full parsing
     if argv and argv[0] == "--mode" and len(argv) > 1:
         mode_arg = argv[1]

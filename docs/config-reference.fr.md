@@ -30,3 +30,12 @@ antérieur.
   résultat, durée uniquement ; jamais d'arguments ni de sorties).
 
 Conception : [`autonomous-runtime-design.md`](autonomous-runtime-design.md).
+
+## Environnement du jugement typé
+
+- `RAIN_JUDGMENT_PROVIDER=off|typesafe` (défaut : `off`)
+- `TYPESAFE_API_KEY` (requis uniquement avec TypeSafe)
+- `TYPESAFE_MODEL` (défaut : `jev-latest`)
+
+Un échec du fournisseur produit `UNAVAILABLE`, sans nouvelle tentative ni
+fournisseur de secours. Voir [`typed-judgment.md`](typed-judgment.md).

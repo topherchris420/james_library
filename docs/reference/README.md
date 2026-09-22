@@ -8,6 +8,7 @@ Structured reference index for commands, providers, channels, config, and integr
 - Provider IDs / aliases / env vars: [api/providers-reference.md](api/providers-reference.md)
 - Channel setup + allowlists: [api/channels-reference.md](api/channels-reference.md)
 - Config defaults and keys: [api/config-reference.md](api/config-reference.md)
+- Typed judgment boundary: [../typed-judgment.md](../typed-judgment.md)
 
 ## Provider & Integration Extensions
 

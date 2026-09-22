@@ -76,6 +76,7 @@ Xem thêm tài liệu lệnh và cấu hình trong docs hub và các trang tham 
 |---|---|
 | **Bắt đầu** | [Bắt đầu tại đây](START_HERE.md) -- [Hướng dẫn cho người mới](docs/getting-started/README.md) -- [Cài đặt một cú nhấp](docs/one-click-bootstrap.md) -- [Khắc phục sự cố](docs/troubleshooting.md) |
 | **Bài báo** | [Kho nghiên cứu](https://topherchris420.github.io/research/) |
+| **Phán đoán có kiểu** | [Đánh giá độc lập có giới hạn, chính sách tất định và phát lại](docs/typed-judgment.md) |
 | **Ngôn ngữ khác** | [English](README.md) -- [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) |
 
 ## Dành cho nhà phát triển

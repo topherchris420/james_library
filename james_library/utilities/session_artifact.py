@@ -92,6 +92,16 @@ class SessionArtifactWriter:
         self.path = self.artifact_root / f"session_{self.session_id}.json"
         self.started_at = _utc_now_iso()
         self._turns: list[dict[str, Any]] = []
+        self._judgments: list[dict[str, Any]] = []
+
+    def record_judgment(self, envelope: Any) -> None:
+        """Checkpoint one typed judgment without mixing it into grounded turns."""
+        from james_library.judgment import JudgmentEnvelope
+
+        if not isinstance(envelope, JudgmentEnvelope):
+            raise TypeError("record_judgment requires a JudgmentEnvelope")
+        self._judgments.append(envelope.to_dict())
+        self._write_payload(status="in_progress", metrics={}, summary="")
 
     def record_turn(
         self,
@@ -159,6 +169,15 @@ class SessionArtifactWriter:
         metrics: dict[str, Any] | None = None,
         summary: str | None = None,
     ) -> Path:
+        return self._write_payload(status=status, metrics=metrics or {}, summary=summary or "")
+
+    def _write_payload(
+        self,
+        *,
+        status: str,
+        metrics: dict[str, Any],
+        summary: str,
+    ) -> Path:
         payload = {
             "schema_version": self.schema_version,
             "session_id": self.session_id,
@@ -167,17 +186,20 @@ class SessionArtifactWriter:
             "model": self.model,
             "recursive_depth": self.recursive_depth,
             "started_at": self.started_at,
-            "completed_at": _utc_now_iso(),
+            "completed_at": _utc_now_iso() if status != "in_progress" else "",
             "library_path": self.library_path,
             "log_path": self.log_path,
             "loaded_papers_count": len(self.loaded_papers),
             "loaded_papers": self.loaded_papers,
             "corpus_files": list(self.corpus_files),
-            "metrics": metrics or {},
-            "summary": summary or "",
+            "metrics": metrics,
+            "summary": summary,
             "turns": self._turns,
+            "judgments": self._judgments,
         }
-        self.path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+        temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        temporary.replace(self.path)
         return self.path
 
     def load(self) -> dict[str, Any]:

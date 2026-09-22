@@ -76,6 +76,7 @@ Pour les détails des commandes et de la configuration, consultez le hub docs et
 |---|---|
 | **Premiers pas** | [Commencer ici](START_HERE.md) -- [Guide débutant](docs/getting-started/README.md) -- [Installation en un clic](docs/one-click-bootstrap.md) -- [Dépannage](docs/troubleshooting.md) |
 | **Articles** | [Archives de recherche](https://topherchris420.github.io/research/) |
+| **Jugement typé** | [Évaluation indépendante bornée, politique déterministe et relecture](docs/typed-judgment.md) |
 | **Autres langues** | [English](README.md) -- [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Tiếng Việt](README.vi.md) |
 
 ## Pour les développeurs
