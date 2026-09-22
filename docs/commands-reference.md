@@ -38,3 +38,16 @@ Notes:
 - Startup is blocked if emergency-stop is engaged at `kill-all` or `network-kill` level.
 
 For troubleshooting, see [`troubleshooting.md`](troubleshooting.md).
+
+## Typed judgment
+
+Run the strict five-stage promotion boundary against a curated evidence packet:
+
+```bash
+python rain_lab.py judge --evidence cycle.json
+python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id>.json
+```
+
+This command is separate from conversational chat. Remote evaluation is off by
+default. Recorded replay never contacts a provider. See
+[`typed-judgment.md`](typed-judgment.md) for the packet schema and policy.

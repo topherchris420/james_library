@@ -76,6 +76,7 @@ macOS/Linux の場合：`./install.sh` を実行。
 |---|---|
 | **はじめに** | [ここから開始](START_HERE.md) -- [初心者ガイド](docs/getting-started/README.md) -- [ワンクリックインストール](docs/one-click-bootstrap.md) -- [トラブルシューティング](docs/troubleshooting.md) |
 | **論文** | [研究アーカイブ](https://topherchris420.github.io/research/) |
+| **型付き判断** | [独立した限定評価、決定論的ポリシー、リプレイ](docs/typed-judgment.md) |
 | **他の言語** | [English](README.md) -- [简体中文](README.zh-CN.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
 
 ## 開発者向け

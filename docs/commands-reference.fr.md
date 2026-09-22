@@ -39,3 +39,14 @@ Notes:
 - Le démarrage est bloqué si l'arrêt d'urgence est actif au niveau `kill-all` ou `network-kill`.
 
 Voir aussi: [`troubleshooting.fr.md`](troubleshooting.fr.md).
+
+## Jugement typé
+
+```bash
+python rain_lab.py judge --evidence cycle.json
+python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id>.json
+```
+
+Cette commande applique la limite stricte de promotion à un paquet de preuves
+sélectionné. L'accès distant est désactivé par défaut et la relecture enregistrée
+n'appelle jamais de fournisseur. Voir [`typed-judgment.md`](typed-judgment.md).

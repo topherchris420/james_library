@@ -76,6 +76,7 @@ macOS/Linux: запустите `./install.sh`.
 |---|---|
 | **Начало работы** | [Начните здесь](START_HERE.md) -- [Руководство для начинающих](docs/getting-started/README.md) -- [Установка в один клик](docs/one-click-bootstrap.md) -- [Устранение неполадок](docs/troubleshooting.md) |
 | **Статьи** | [Архив исследований](https://topherchris420.github.io/research/) |
+| **Типизированное суждение** | [Независимая ограниченная оценка, детерминированная политика и воспроизведение](docs/typed-judgment.md) |
 | **Другие языки** | [English](README.md) -- [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
 
 ## Для разработчиков

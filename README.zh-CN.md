@@ -76,6 +76,7 @@ macOS/Linux 用户：运行 `./install.sh`。
 |---|---|
 | **快速入门** | [从这里开始](START_HERE.md) -- [新手指南](docs/getting-started/README.md) -- [一键安装](docs/one-click-bootstrap.md) -- [故障排除](docs/troubleshooting.md) |
 | **论文** | [研究档案](https://topherchris420.github.io/research/) |
+| **类型化判断** | [独立的有界评估、确定性策略和回放](docs/typed-judgment.md) |
 | **其他语言** | [English](README.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
 
 ## 开发者

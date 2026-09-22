@@ -29,3 +29,12 @@ Tất cả mặc định tắt; bỏ qua chúng sẽ giữ nguyên hành vi trư
   kết quả, thời lượng; không bao giờ ghi đối số hay đầu ra).
 
 Thiết kế: [`autonomous-runtime-design.md`](../../autonomous-runtime-design.md).
+
+## Môi trường phán đoán có kiểu
+
+- `RAIN_JUDGMENT_PROVIDER=off|typesafe` (mặc định: `off`)
+- `TYPESAFE_API_KEY` (chỉ bắt buộc khi bật TypeSafe)
+- `TYPESAFE_MODEL` (mặc định: `jev-latest`)
+
+Lỗi nhà cung cấp tạo `UNAVAILABLE`, không tự động thử lại hoặc chuyển sang mô
+hình khác. Xem [`typed-judgment.md`](../../typed-judgment.md).
