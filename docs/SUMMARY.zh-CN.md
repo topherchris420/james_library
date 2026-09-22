@@ -42,6 +42,7 @@
 - [providers-reference.md](i18n/zh-CN/reference/api/providers-reference.zh-CN.md)
 - [channels-reference.md](i18n/zh-CN/reference/api/channels-reference.zh-CN.md)
 - [config-reference.md](i18n/zh-CN/reference/api/config-reference.zh-CN.md)
+- [typed-judgment.md](typed-judgment.md)
 - [custom-providers.md](i18n/zh-CN/contributing/custom-providers.zh-CN.md)
 - [langgraph-integration.md](i18n/zh-CN/contributing/langgraph-integration.zh-CN.md)
 

@@ -16,6 +16,7 @@
 - 统一目录：[`docs/SUMMARY.md`](SUMMARY.md)
 - 入门：[`docs/getting-started/README.md`](getting-started/README.md)
 - 参考：[`docs/reference/README.md`](reference/README.md)
+- 类型化判断：[`docs/typed-judgment.md`](typed-judgment.md)
 - 运维：[`docs/operations/README.md`](operations/README.md)
 - 安全：[`docs/security/README.md`](security/README.md)
 - 硬件：[`docs/hardware/README.md`](hardware/README.md)

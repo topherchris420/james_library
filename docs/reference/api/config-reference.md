@@ -816,6 +816,19 @@ Notes:
 - Place `.md`/`.txt` datasheet files named by board (e.g. `nucleo-f401re.md`, `rpi-gpio.md`) in `datasheet_dir` for RAG retrieval.
 - See [hardware-peripherals-design.md](../../hardware/hardware-peripherals-design.md) for board protocol and firmware notes.
 
+## Typed judgment environment
+
+The independent Python judgment boundary uses these environment variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `RAIN_JUDGMENT_PROVIDER` | `off` | `off` or `typesafe` |
+| `TYPESAFE_API_KEY` | unset | Required only when TypeSafe is enabled |
+| `TYPESAFE_MODEL` | `jev-latest` | Jev model or alias |
+
+No automatic retry or provider fallback occurs. See
+[typed judgment](../../typed-judgment.md) for policy and failure behavior.
+
 ## Security-Relevant Defaults
 
 - deny-by-default channel allowlists (`[]` means deny all)

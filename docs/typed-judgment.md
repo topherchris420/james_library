@@ -69,6 +69,7 @@ Unknown fields, duplicate JSON keys, malformed validation values, and packets
 over 128 KiB fail before provider construction or artifact creation. Omitted
 formal or numerical validation is recorded as `not_run`; it cannot pass the
 gate. A peer score below 8 routes to revision without calling a provider.
+This is reported as `NOT_RUN` with reason `peer_score_below_threshold`.
 
 ## Atomic questions
 
@@ -130,6 +131,12 @@ errors, rate limits, overload, transport errors, HTTP errors, oversized bodies,
 and malformed answers are reduced to categorical codes. Exception strings and
 response bodies are not persisted.
 
+The client has a 5-second connection timeout, a 10-second read-idle timeout,
+and checks a 30-second elapsed budget during response consumption. The response
+is capped at 100,000 bytes. Choice must match a highest-probability option.
+Score must match its probability-weighted level within 0.05; distributions must
+sum to one within 0.01. These tolerances allow rounded provider responses.
+
 ## Privacy boundary
 
 Only the allowlisted packet fields are rendered into this canonical remote state:
@@ -148,11 +155,17 @@ HOST VALIDATION STATUS
 ```
 
 The builder never reads the research library, meeting transcript, private
-memory, credentials, environment context, or unrelated corpus. Each field is
+memory, environment context, or unrelated corpus. Each field is
 limited to 4,000 characters and the state to 24,000 characters. Truncation is
 marked in the state and metadata and forces human review. If the configured API
 key appears in the state, no request is sent and the state body is withheld
 from persistence.
+
+A separate boundary guard checks configured credential values and common
+credential patterns, including bearer tokens and PEM private keys. It never
+adds environment values to the state. Pattern detection cannot recognize every
+possible secret: the caller remains responsible for curating a shareable packet.
+Sensitive state is replaced with a withheld marker and hash before recording.
 
 TypeSafe documents that adversarial or irrelevant state can influence Jev and
 that Jev is not a numerical or scientific verifier. Packet producers must
@@ -166,6 +179,8 @@ returned model, question definitions and version, canonical state and SHA-256,
 truncation, local validation status, typed answers, distributions, confidence
 where the primitive provides it, disposition, policy version, reason codes,
 latency, and sanitized provider error status.
+An `envelope_hash` covers all recorded envelope fields. Judgments are atomically
+checkpointed before workflow promotion, separately from existing grounding.
 
 Illustrative excerpt:
 
@@ -191,12 +206,14 @@ Illustrative excerpt:
   "disposition": "PASS",
   "gate_policy_version": "rain-gate-1",
   "reason_codes": ["bounded_support_requirements_met"],
-  "provider_error": null
+  "provider_error": null,
+  "envelope_hash": "2bf1..."
 }
 ```
 
-Replay reads recorded envelopes and verifies the canonical state hash. It never
-constructs a provider or silently re-evaluates:
+Replay reads recorded envelopes and verifies both the canonical state hash and
+the complete envelope digest. It never constructs a provider or silently
+re-evaluates:
 
 ```bash
 python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id>.json
@@ -206,6 +223,9 @@ python -m james_library.utilities.session_replay --recorded-artifact session_<id
 The output is labeled `RECORDED JUDGMENT`. Gold-session replay disables remote
 judgment in child processes by default; `--live-judgment` is an explicit live
 re-evaluation mode and creates new judgments rather than rewriting recorded ones.
+Offline child environments omit the TypeSafe key. Digests detect accidental
+or partial modification, not an attacker who can rewrite both data and digest;
+these artifacts are not digitally signed.
 
 Current TypeSafe contracts were checked from the official
 [`llms.txt`](https://docs.typesafe.ai/llms.txt),

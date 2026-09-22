@@ -16,6 +16,7 @@ This hub is the canonical entry point for task-oriented documentation.
 - Unified TOC: [`docs/SUMMARY.md`](SUMMARY.md)
 - Getting Started: [`docs/getting-started/README.md`](getting-started/README.md)
 - Reference: [`docs/reference/README.md`](reference/README.md)
+- Typed judgment: [`docs/typed-judgment.md`](typed-judgment.md)
 - Operations: [`docs/operations/README.md`](operations/README.md)
 - Security: [`docs/security/README.md`](security/README.md)
 - Hardware: [`docs/hardware/README.md`](hardware/README.md)
