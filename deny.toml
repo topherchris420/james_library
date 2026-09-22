@@ -32,6 +32,18 @@ ignore = [
     # which still depends on bitmaps. Remove when the SDK adopts imbl >=7.0.2.
     # Upstream tracking: https://github.com/matrix-org/matrix-rust-sdk/issues/6859
     { id = "RUSTSEC-2026-0247", reason = "bitmaps unmaintained via optional matrix-sdk; awaiting SDK migration to imbl 7" },
+    # Reviewed 2026-09-22: panic-safety double-free in imbl-sized-chunks <0.2.0.
+    # imbl 6.1.0 (required by matrix-sdk 0.16.1 and eyeball-im 0.8) depends on
+    # imbl-sized-chunks ^0.1.3, so `cargo update -p imbl-sized-chunks` cannot
+    # reach the patched 0.2.0 release. That release ships with imbl 7.0.2, which
+    # matrix-sdk 0.19.1 pulls, but 0.19.1 sets rust-version 1.96. CI is pinned
+    # to Rust 1.92 and this crate's rust-version is 1.87, so the SDK bump would
+    # fail `cargo check --all-features` until the toolchain moves. Reachable
+    # only if an element's Drop panics during Chunk/InlineArray removal, and
+    # only through the optional channel-matrix feature. Remove together with
+    # the matrix-sdk 0.19 / imbl 7 migration.
+    # Advisory: https://rustsec.org/advisories/RUSTSEC-2026-0292.html
+    { id = "RUSTSEC-2026-0292", reason = "imbl-sized-chunks 0.1.3 via matrix-sdk 0.16.1; patched imbl 7 needs matrix-sdk 0.19 and Rust 1.96" },
     # Reviewed 2026-09-11: nostr-relay-pool 0.44.3 contains the security fixes.
     # Remove when the Nostr channel migrates to nostr-sdk >=0.45, which replaces
     # the standalone pool and changes the signer and notification APIs.
