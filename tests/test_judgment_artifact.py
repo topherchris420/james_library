@@ -26,6 +26,9 @@ def test_session_artifact_persists_judgment_separately_from_turns(tmp_path):
     envelope = evaluator.evaluate(evidence())
     writer = _writer(tmp_path)
     writer.record_judgment(envelope)
+    checkpoint = writer.load()
+    assert checkpoint["status"] == "in_progress"
+    assert checkpoint["judgments"][0]["judgment_id"] == envelope.judgment_id
     writer.record_turn(agent_name="R.A.I.N.Reviewer", content="Peer score: 9", metadata={})
     writer.finalize(status="completed", metrics={"peer_critique_score": 9})
     payload = writer.load()

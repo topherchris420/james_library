@@ -37,8 +37,10 @@ class TypeSafeJudgmentProvider:
                 question_set_version=questions.version,
                 error_code="provider_not_configured",
             )
-        if self._api_key in state.canonical_text or self._api_key in json.dumps(
-            questions.to_dict(), ensure_ascii=False
+        if (
+            self._api_key in self.model
+            or self._api_key in state.canonical_text
+            or self._api_key in json.dumps(questions.to_dict(), ensure_ascii=False)
         ):
             return JudgmentResult(
                 "typesafe",

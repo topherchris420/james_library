@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from hashlib import sha256
 import os
 from time import monotonic
 from uuid import uuid4
@@ -60,7 +61,7 @@ class JudgmentService:
             if result is not None:
                 decision = self.gate.evaluate(result, state, self.questions)
                 if result.error_code == "state_contains_secret":
-                    state = replace(state, canonical_text="[WITHHELD: credential detected; no remote request sent]")
+                    state, result = _withhold_sensitive_state(state, result)
                 return JudgmentEnvelope(
                     str(uuid4()),
                     datetime.now(timezone.utc).isoformat(),
@@ -100,11 +101,23 @@ class JudgmentService:
                                     question_set_version=self.questions.version, error_code="provider_internal_error")
         decision = self.gate.evaluate(result, state, self.questions)
         if result.error_code == "state_contains_secret":
-            state = replace(state, canonical_text="[WITHHELD: credential detected; no remote request sent]")
+            state, result = _withhold_sensitive_state(state, result)
         return JudgmentEnvelope(str(uuid4()), datetime.now(timezone.utc).isoformat(), self.questions,
                                 state, result, decision, round((monotonic() - started) * 1000, 3),
                                 "deterministic_mock" if isinstance(self.provider, DeterministicMockJudgmentProvider)
                                 else "live_evaluation")
+
+
+def _withhold_sensitive_state(
+    state: JudgmentState,
+    result: JudgmentResult,
+) -> tuple[JudgmentState, JudgmentResult]:
+    canonical_text = "[WITHHELD: credential detected; no remote request sent]"
+    state_hash = sha256(canonical_text.encode("utf-8")).hexdigest()
+    return (
+        replace(state, canonical_text=canonical_text, state_hash=state_hash),
+        replace(result, state_hash=state_hash, model=None),
+    )
 
 
 def create_judgment_service() -> JudgmentService | None:

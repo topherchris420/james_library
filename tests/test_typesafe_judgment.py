@@ -134,3 +134,20 @@ def test_secret_echoed_in_response_model_never_persisted():
     payload = response_payload()
     payload["model"] = "fixture-credential"
     assert evaluate(Transport(Response(payload))).error_code == "provider_malformed_response"
+
+
+def test_secret_misconfigured_as_model_is_never_sent_or_persisted():
+    transport = Transport()
+    provider = TypeSafeJudgmentProvider(
+        "fixture-credential",
+        model="fixture-credential",
+        transport=transport,
+    )
+    envelope = JudgmentService(provider).evaluate(ClaimEvidence(claim="Bounded claim"))
+    assert envelope.decision.disposition == GateDisposition.UNAVAILABLE
+    assert envelope.result.error_code == "state_contains_secret"
+    assert transport.calls == []
+    assert "fixture-credential" not in json.dumps(envelope.to_dict())
+    assert envelope.state.state_hash == __import__("hashlib").sha256(
+        envelope.state.canonical_text.encode("utf-8")
+    ).hexdigest()
