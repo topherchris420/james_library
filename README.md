@@ -1,6 +1,6 @@
 # R.A.I.N. Lab
 
-**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
+**An experimental scientific-agent architecture from Vers3Dynamics: multi-agent research, bounded judgment, and deterministic validation.**
 
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -18,7 +18,10 @@ Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
 perspectives, grounds strong claims in papers or explicit evidence, and returns
 the strongest explanations, disagreements, and next moves.
 
-Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+We separate generation, evidence, judgment, and authorization. James, Jasmine,
+Luca, and Elena investigate; optional Laya and Jev providers propose bounded
+decisions; host code checks policy and retains authority. Recorded artifacts
+make decisions inspectable and replayable.
 
 James is the assistant inside the R.A.I.N. Lab.
 
@@ -60,7 +63,80 @@ For the maintainer boundary between core, extension, and experimental work, see
 | Understand a new field | Gives you a search result page | Maps agreements, open questions, and where the literature still fights itself |
 | Decide what to read next | Hands you a pile of citations | Ends with the paper, experiment, or measurement most likely to validate or kill the current idea |
 | Validate a stimulus against brain science | Sends you into a separate neuroscience workflow | Runs TRIBE v2 on video, audio, or text inside the same research meeting |
-| Keep the work private | Assumes a hosted stack | Runs locally with [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/), no cloud calls, no telemetry, no data sharing |
+| Keep the work private | Assumes a hosted stack | Supports local model inference with [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/); hosted providers, web tools and Jev have separate network boundaries |
+
+---
+
+## Technical Architecture
+
+The Python research meeting is the default entry point. The Rust runtime and
+model-backed decision layers are optional extensions with separate boundaries.
+
+```mermaid
+flowchart TD
+    Q["Research question"] --> M["Python meeting: James, Jasmine, Luca, Elena"]
+    P["Papers and tool evidence"] --> M
+    M --> A["Session artifacts and offline replay"]
+    M -. "Opt-in process counters" .-> R["Bounded decision router: host precheck"]
+    R --> L["Local Laya: calibrated proposal"]
+    L -. "Escalation with remote consent" .-> J["TypeSafe Jev: bounded evaluation"]
+    L --> V["Host validator"]
+    J --> V
+    R --> H["R.A.I.N. handoff or human review"]
+    V --> H
+    V --> D["Proposal record: no action execution"]
+    D --> A
+    D -. "Chat maps eligible proposals to fixed hints" .-> M
+    H -. "Chat retains normal research loop" .-> M
+```
+
+| Layer | Implementation | Responsibility and boundary |
+| --- | --- | --- |
+| Research orchestration | [`rain_lab.py`](rain_lab.py), [`james_library/`](james_library/) | Launch meetings, gather evidence, preserve critique and session artifacts |
+| Local judgment | [`laya.py`](james_library/judgment/laya.py), [`laya_worker.py`](james_library/judgment/laya_worker.py) | Evaluate explicit choices using a provisioned local checkpoint in a timeout-bounded worker |
+| Independent remote judgment | [`typesafe.py`](james_library/judgment/typesafe.py) | Evaluate bounded state with Jev; external requests require opt-in configuration |
+| Decision policy | [`routing.py`](james_library/judgment/routing.py), [`calibration.py`](james_library/judgment/calibration.py) | Check policy, calibration, uncertainty and consent; validate proposals or return a handoff |
+| Claim promotion | [`gate.py`](james_library/judgment/gate.py) | Apply the separate fixed promotion policy to local validation and typed evidence |
+| Runtime extensions | [`src/`](src/), [`crates/`](crates/) | Rust providers, channels, tools, security and satellite crates; not required for the Python meeting |
+
+**Workflow proposals and claim promotion are separate paths.** The `decide`
+command returns a proposal or handoff. The `judge` command accepts a curated
+claim/evidence packet, checks formal and numerical validation status, obtains
+optional independent Jev judgment, and records a deterministic disposition:
+`PASS`, `REVISE`, `HUMAN_REVIEW`, or `UNAVAILABLE`. A peer score below the
+threshold skips judgment. Laya routing does not replace that promotion gate.
+A policy pass is not scientific proof or permission to execute arbitrary actions.
+
+### Try the bounded decision interfaces
+
+```bash
+# Inspect a bounded request; routing remains off unless explicitly configured.
+python rain_lab.py decide --request examples/bounded-decision.json
+
+# Inspect a recorded decision without loading a model.
+python rain_lab.py decide --replay path/to/session_decision.json
+
+# Evaluate a caller-curated claim/evidence packet using the separate promotion path.
+python rain_lab.py judge --evidence cycle.json
+```
+
+`cycle.json` is caller-supplied; its schema is in the
+[typed judgment guide](docs/typed-judgment.md). The replay path is a placeholder
+for a previously recorded artifact.
+
+- Routing defaults to `RAIN_DECISION_MODE=off`; claim judgment defaults to
+  `RAIN_JUDGMENT_PROVIDER=off`. Enabling one does not enable the other.
+- Local Laya requires optional dependencies, an explicitly provisioned checkpoint,
+  and matching calibration. No weights or production calibration profiles ship.
+- Cascade routing calls Jev only with explicit remote consent. Missing calibration,
+  invalid output, disagreement, or unresolved uncertainty produces a handoff.
+- Chat process hints require `RAIN_METACOGNITIVE_CONTROL=true`; only curated
+  counters enter that router. Models cannot change tools, permissions or budgets.
+- Replay verifies recorded digests without inference. These digests are integrity
+  checks, not digital signatures. Real-model accuracy and speed remain unmeasured.
+
+See [calibrated bounded decisions](docs/bounded-decisions.md) for installation,
+configuration, calibration, benchmarks and limitations.
 
 ---
 
@@ -94,7 +170,7 @@ R.A.I.N. Lab includes a **TRIBE v2 integration** that predicts fMRI brain activa
 |------------|--------|
 | Input | video file, audio file, or raw text |
 | Output | predicted fMRI activation patterns across 20,484 cortical vertices |
-| Use case | validate whether a stimulus (image, sound, phrase) actually engages the brain regions your hypothesis claims |
+| Use case | explore model-predicted responses to a stimulus; predictions do not establish measured brain activation |
 | Runtime | sidecar service in [`tools/tribev2_sidecar/`](tools/tribev2_sidecar/) wrapping Facebook Research's TRIBE v2 model |
 
 Want to wire it into your own workflow? Read the [TRIBE v2 sidecar README](tools/tribev2_sidecar/README.md).
@@ -207,6 +283,7 @@ R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, n
 |---|---|
 | **Docs** | [Start Here](START_HERE.md) -- [Beginner Guide](docs/getting-started/README.md) -- [One-Click Install](docs/one-click-bootstrap.md) -- [Troubleshooting](docs/troubleshooting.md) |
 | **Papers** | [Research Archive](https://topherchris420.github.io/research/) |
+| **Bounded decisions** | [Local Laya, optional Jev escalation, calibration and process hints](docs/bounded-decisions.md) |
 | **Typed judgment** | [Independent bounded evaluation, deterministic policy, and replay](docs/typed-judgment.md) |
 | **Handout** | [<img src="assets/marketing/rain_lab_trifold_preview.png" alt="R.A.I.N. Lab Trifold preview" width="360">](assets/marketing/rain_lab_trifold.html) — [R.A.I.N. Lab Trifold](assets/marketing/rain_lab_trifold.html), printable one-pager overview |
 | **Language** | [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
@@ -249,6 +326,20 @@ cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 ```
+
+### Security audit scope
+
+[Sec Audit](https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml)
+runs Rust dependency auditing and license/source checks on relevant pushes and
+pull requests, weekly, and manually. Changes to the audit workflow and its
+configuration also trigger these checks.
+
+A green check means the configured policy passed, including documented exceptions
+in [`.cargo/audit.toml`](.cargo/audit.toml) and [`deny.toml`](deny.toml). It does
+not mean every dependency is vulnerability-free. In particular,
+`RUSTSEC-2026-0292` remains excepted for the optional Matrix dependency chain;
+the vulnerable dependency has not been patched by that exception. See the
+configuration comments for the upgrade constraint and removal condition.
 
 ### Design Principles
 
