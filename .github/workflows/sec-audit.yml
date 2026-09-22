@@ -39,6 +39,16 @@ jobs:
         name: Security Audit
         runs-on: ubuntu-latest
         timeout-minutes: 20
+        # Job permissions replace the workflow set. rustsec/audit-check files
+        # an issue for every vulnerability and warning on schedule, and
+        # core.setFailed if that create call throws. Warnings alone take this
+        # path, so issues:write is required even when cargo audit exits 0.
+        permissions:
+            contents: read
+            security-events: write
+            actions: read
+            checks: write
+            issues: write
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
