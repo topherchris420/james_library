@@ -770,7 +770,7 @@ SOURCE RULE: Use only local research papers + web search; do not rely on other s
         ),
         Agent(
             name="Luca",
-            role="Field Tomographer / Theorist",
+            role="Field Topographer / Theorist",
             focus="Analyze 'Topology', 'Fields', 'Gradients'. Describe geometry of the theory.",
             color="\033[96m",  # Cyan
             tool_instruction=(
@@ -812,19 +812,23 @@ MODE: Recursive Language Model - Code Execution Enabled
             f.write(text)
 
 
+def _corpus_candidate_files() -> list[Path]:
+    """Files allowed to ground a meeting. Product docs are not candidates."""
+    from james_library.utilities.citation_corpus import discover_corpus_files, resolve_corpus_root
+
+    library = Path(TARGET_PATH)
+    root = resolve_corpus_root(library, os.environ.get("RAIN_CORPUS_DIR"))
+    return discover_corpus_files(
+        root,
+        recursive=False,
+        include_product_surface=os.environ.get("RAIN_CORPUS_INCLUDE_PRODUCT", "0") == "1",
+        allow_hello_os_py=True,
+    )
+
+
 def _host_local_context(topic: str) -> tuple[list[str], str]:
     """Build a small local context snippet from the library for the given topic."""
-    lib = Path(TARGET_PATH)
-    files = list(lib.glob("*.md")) + list(lib.glob("*.txt"))
-    # filter out SOUL/LOG and underscore files
-    candidates = []
-    for f in files:
-        name = f.name.upper()
-        if f.name.startswith("_"):
-            continue
-        if "SOUL" in name or "LOG" in name:
-            continue
-        candidates.append(f)
+    candidates = _corpus_candidate_files()
     if not candidates:
         return [], ""
 
@@ -851,16 +855,7 @@ def _host_local_context(topic: str) -> tuple[list[str], str]:
 
 
 def _host_select_files(topic: str, max_files: int = 2) -> list[Path]:
-    lib = Path(TARGET_PATH)
-    files = list(lib.glob("*.md")) + list(lib.glob("*.txt"))
-    candidates = []
-    for f in files:
-        name = f.name.upper()
-        if f.name.startswith("_"):
-            continue
-        if "SOUL" in name or "LOG" in name:
-            continue
-        candidates.append(f)
+    candidates = _corpus_candidate_files()
     if not candidates:
         return []
 

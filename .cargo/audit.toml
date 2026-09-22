@@ -17,4 +17,8 @@ ignore = [
     "RUSTSEC-2025-0057",  # fxhash via extism → wasmtime
     "RUSTSEC-2025-0134",  # rustls-pemfile — latest version, no replacement available
     "RUSTSEC-2025-0119",  # number_prefix via indicatif — cosmetic dep
+    # imbl-sized-chunks panic-safety double-free via optional matrix-sdk 0.16.1.
+    # Fixed in >=0.2.0 (imbl 7.0.2). matrix-sdk 0.19.1 requires Rust 1.96;
+    # CI stays on 1.92, so the bump is deferred. See deny.toml.
+    "RUSTSEC-2026-0292",
 ]

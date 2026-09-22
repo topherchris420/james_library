@@ -497,7 +497,7 @@ def _build_rust_agent_registry() -> dict:
         {
             "id": "luca",
             "name": "Luca",
-            "role": "Field Tomographer / Theorist",
+            "role": "Field Topographer / Theorist",
             "system_prompt": (
                 f"{base_prompt}\n\n"
                 "Primary objective: challenge topology/field assumptions and maintain rigorous math checks."

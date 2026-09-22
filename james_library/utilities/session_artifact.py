@@ -15,6 +15,55 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _span_index(spans: Any) -> dict[tuple[str, str], tuple[int | None, int | None]]:
+    indexed: dict[tuple[str, str], tuple[int | None, int | None]] = {}
+    if not isinstance(spans, list):
+        return indexed
+    for item in spans:
+        if not isinstance(item, dict):
+            continue
+        quote = item.get("quote")
+        source = item.get("source")
+        if not isinstance(quote, str) or not isinstance(source, str):
+            continue
+        indexed[(quote, source)] = (_as_int(item.get("span_start")), _as_int(item.get("span_end")))
+    return indexed
+
+
+def _as_int(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _iter_verified(
+    verified: Any,
+    span_by_key: dict[tuple[str, str], tuple[int | None, int | None]],
+) -> list[tuple[str, str, int | None, int | None]]:
+    rows: list[tuple[str, str, int | None, int | None]] = []
+    if not isinstance(verified, list):
+        return rows
+    for entry in verified:
+        if isinstance(entry, dict):
+            quote = entry.get("quote")
+            source = entry.get("source")
+            if not isinstance(quote, str) or not isinstance(source, str):
+                continue
+            rows.append((quote, source, _as_int(entry.get("span_start")), _as_int(entry.get("span_end"))))
+            continue
+        if not isinstance(entry, (tuple, list)) or len(entry) < 2:
+            continue
+        quote, source = entry[0], entry[1]
+        if not isinstance(quote, str) or not isinstance(source, str):
+            continue
+        span_start = _as_int(entry[2]) if len(entry) > 2 else None
+        span_end = _as_int(entry[3]) if len(entry) > 3 else None
+        if span_start is None or span_end is None:
+            span_start, span_end = span_by_key.get((quote, source), (span_start, span_end))
+        rows.append((quote, source, span_start, span_end))
+    return rows
+
+
 def _confidence_from_metadata(metadata: dict[str, Any]) -> float:
     verified = len(metadata.get("verified", []))
     unverified = len(metadata.get("unverified", []))
@@ -34,6 +83,7 @@ class SessionArtifactWriter:
     library_path: str
     log_path: str
     loaded_papers: list[str] = field(default_factory=list)
+    corpus_files: list[dict[str, str]] = field(default_factory=list)
     schema_version: str = "rain-session-artifact/v1"
 
     def __post_init__(self) -> None:
@@ -55,10 +105,18 @@ class SessionArtifactWriter:
         provenance: list[str] = []
         evidence: list[Evidence] = []
 
-        for quote, source in verified:
+        span_by_key = _span_index(metadata.get("verified_spans"))
+        for quote, source, span_start, span_end in _iter_verified(verified, span_by_key):
             if source not in provenance:
                 provenance.append(source)
-            evidence.append(Evidence(source=source, quote=quote))
+            evidence.append(
+                Evidence(
+                    source=source,
+                    quote=quote,
+                    span_start=span_start,
+                    span_end=span_end,
+                )
+            )
 
         grounded_response = build_grounded_response(
             answer=content,
@@ -76,6 +134,10 @@ class SessionArtifactWriter:
             "unverified_count": len(metadata.get("unverified", [])),
             "citation_rate": metadata.get("citation_rate", 0.0),
         }
+        if "citation_success" in metadata:
+            turn_metadata["citation_success"] = bool(metadata.get("citation_success"))
+        if "require_quotes" in metadata:
+            turn_metadata["require_quotes"] = bool(metadata.get("require_quotes"))
         if isinstance(metadata.get("recovery"), dict):
             turn_metadata["recovery"] = dict(metadata["recovery"])
 
@@ -110,6 +172,7 @@ class SessionArtifactWriter:
             "log_path": self.log_path,
             "loaded_papers_count": len(self.loaded_papers),
             "loaded_papers": self.loaded_papers,
+            "corpus_files": list(self.corpus_files),
             "metrics": metrics or {},
             "summary": summary or "",
             "turns": self._turns,

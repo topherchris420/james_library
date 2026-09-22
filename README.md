@@ -79,7 +79,7 @@ Each agent's full personality, reasoning principles, and conversation style are 
 
 - [JAMES_SOUL.md](JAMES_SOUL.md) — Lead Scientist
 - [JASMINE_SOUL.md](JASMINE_SOUL.md) — Hardware Architect
-- [LUCA_SOUL.md](LUCA_SOUL.md) — Field Tomographer
+- [LUCA_SOUL.md](LUCA_SOUL.md) — Field Topographer
 - [ELENA_SOUL.md](ELENA_SOUL.md) — Quantum Information Theorist
 
 The SOUL files are part of the product. They're what make the agents feel like colleagues, not search results.
@@ -221,10 +221,12 @@ R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, n
 
 R.A.I.N. Lab is a Rust-first autonomous agent runtime with a Python orchestration layer.
 
-- `src/` — Rust core: trait-driven provider/channel/tool/peripheral system
-- `crates/` — ZeroClaw runtime components
-- `python/` — Python orchestration, RAIN Lab meeting logic, agent souls
-- `agents.py` — Agent factory and delegation
+- `rain_lab.py` — launcher. Chat meetings run `rain_lab_meeting_chat_version.py`; tool-exec meetings run `rain_lab_meeting.py`
+- `james_library/` — Python package for session artifacts, eval, recovery, and the experiment protocol
+- `agents.py` and `*_SOUL.md` — persona files. The chat meeting defines its own `Agent` class and does not import `agents.py`
+- `src/` — Rust `rain` binary (package `rain-labs`): providers, channels, tools, security
+- `crates/` — satellite crates (`logic_prover`, `rain-bench`, `robot-kit`, `buzz-agent`, `aardvark-sys`), not the meeting runtime
+- `python/` — optional LangGraph tool package (`R.A.I.N.-tools`), not the meeting loop
 
 ### Extension Points
 
@@ -261,7 +263,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR workflow and [SECURITY.
 
 ## Acknowledgments
 
-Special thanks to the **ZeroClaw** team for the Rust runtime engine that powers R.A.I.N. Lab under the hood. The performance, stability, and extensibility of the agent runtime wouldn't be possible without their foundational work. See the `crates/` directory for ZeroClaw runtime components.
+The Rust runtime in `src/` (binary `rain`) descends from ZeroClaw. `crates/` holds satellite crates, not that runtime.
 
 ---
 

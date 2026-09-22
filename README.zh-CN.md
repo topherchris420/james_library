@@ -84,7 +84,7 @@ macOS/Linux 用户：运行 `./install.sh`。
 
 ## 致谢
 
-特别感谢 **ZeroClaw** 团队提供的 Rust 运行时引擎，它是 R.A.I.N. Lab 的底层核心。详见 `crates/` 目录。
+`src/` 中的 Rust 运行时（二进制 `rain`）源自 ZeroClaw。`crates/` 是附属 crate，不是该运行时。
 
 ---
 

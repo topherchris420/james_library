@@ -84,7 +84,7 @@ macOS/Linux の場合：`./install.sh` を実行。
 
 ## 謝辞
 
-R.A.I.N. Lab の基盤となる Rust ランタイムエンジンを提供してくださった **ZeroClaw** チームに特別な感謝を。詳細は `crates/` ディレクトリをご覧ください。
+`src/` の Rust ランタイム（バイナリ `rain`）は ZeroClaw 由来です。`crates/` は付属クレートであり、そのランタイムではありません。
 
 ---
 

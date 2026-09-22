@@ -532,7 +532,7 @@ The lab is organized around four role-specialized agents:
 
 - James: Lead Scientist. Draws directly from the research corpus, cites metrics, and states when data is missing.
 - Jasmine: Hardware Architect. Checks theoretical proposals against material, actuator, thermal, and build constraints.
-- Luca: Field Tomographer. Looks for geometric and topological patterns, then grounds intuition in math.
+- Luca: Field Topographer. Looks for geometric and topological patterns, then grounds intuition in math.
 - Elena: Quantum Information Theorist. Demands formal rigor, verifies logic, and catches inconsistent assumptions.
 
 The orchestration pattern is a multi-agent research meeting: James frames the question,

@@ -42,8 +42,6 @@ import re
 
 import select
 
-import bisect
-
 
 # --- PRE-COMPILED REGEX PATTERNS ---
 
@@ -571,6 +569,12 @@ class Config:
 
     library_path: str = DEFAULT_LIBRARY_PATH
 
+    # Explicit citation root. Empty means RAIN_CORPUS_DIR, else <library>/papers, else library_path.
+    corpus_dir: str | None = None
+
+    # When true, README/SOUL/docs may verify quotes. Default denies that surface.
+    include_product_surface: bool = False
+
     meeting_log: str = "RAIN_LAB_MEETING_LOG.md"
 
     # Conversation Settings
@@ -843,7 +847,7 @@ class RainLabAgentFactory:
             ),
             Agent(
                 name="Luca",
-                role="Field Tomographer / Theorist",
+                role="Field Topographer / Theorist",
                 personality=(
                     "Diplomatic peacemaker who tries to find common ground."
                     " Sees beauty in everyone's perspective. Rarely directly disagrees"
@@ -898,106 +902,27 @@ class ContextManager:
 
         self.paper_list: List[str] = []
 
+        self.corpus_root: Path = Path(config.library_path)
+
+        self.corpus_paths: List[Path] = []
+
+        self.corpus_hashes: List[Dict[str, str]] = []
+
     def _discover_files(self) -> List[Path]:
-        """Discover candidate research files, optionally including nested directories."""
+        """Discover corpus files. Product docs are excluded unless explicitly opted in."""
 
-        skip_dirs = set(self.config.library_exclude_dirs)
+        from james_library.utilities.citation_corpus import discover_corpus_files, resolve_corpus_root
 
-        allowed_suffixes = (".md", ".txt", ".py")
-
-        exclude_patterns = ["SOUL", "LOG", "MEETING"]
-
-        candidates = []
-
-        if self.config.recursive_library_scan:
-            for root, dirs, files in os.walk(self.lab_path):
-                # Prune skip_dirs in-place to prevent traversing them
-
-                dirs[:] = [d for d in dirs if d not in skip_dirs]
-
-                # Pre-calculate parent dir check for .py files
-
-                # If root ends with "hello_os", then files in it are inside hello_os package
-
-                parent_name = os.path.basename(root)
-
-                is_hello_os_dir = parent_name == "hello_os"
-
-                for file in files:
-                    # 1. Fast suffix check (string op, no object creation)
-
-                    name_lower = file.lower()
-
-                    if not name_lower.endswith(allowed_suffixes):
-                        continue
-
-                    # 2. Check exclusions
-
-                    name_upper = file.upper()
-
-                    if any(p in name_upper for p in exclude_patterns):
-                        continue
-
-                    if file in skip_dirs:
-                        continue
-
-                    # 3. Apply specific filtering rules
-
-                    # Rule: .md/.txt are always allowed. .py only if hello_os.py or inside hello_os dir.
-
-                    is_md_txt = name_lower.endswith((".md", ".txt"))
-
-                    is_valid_py = False
-
-                    if name_lower.endswith(".py"):
-                        if file == "hello_os.py":
-                            is_valid_py = True
-
-                        elif is_hello_os_dir:
-                            is_valid_py = True
-
-                    if is_md_txt or is_valid_py:
-                        candidates.append(Path(root) / file)
-
-        else:
-            # Non-recursive scan (top-level only)
-
-            for f in self.lab_path.iterdir():
-                if not f.is_file():
-                    continue
-
-                name = f.name
-
-                name_lower = name.lower()
-
-                if not name_lower.endswith(allowed_suffixes):
-                    continue
-
-                if name in skip_dirs:
-                    continue
-
-                name_upper = name.upper()
-
-                if any(p in name_upper for p in exclude_patterns):
-                    continue
-
-                is_md_txt = name_lower.endswith((".md", ".txt"))
-
-                is_valid_py = False
-
-                if name_lower.endswith(".py"):
-                    if name == "hello_os.py":
-                        is_valid_py = True
-
-                    # Check if the library itself is the hello_os package folder
-
-                    elif self.lab_path.name == "hello_os":
-                        is_valid_py = True
-
-                if is_md_txt or is_valid_py:
-                    candidates.append(f)
-
-        return sorted(candidates)[: self.config.max_library_files]
+        root = resolve_corpus_root(self.lab_path, getattr(self.config, "corpus_dir", None))
+        self.corpus_root = root
+        return discover_corpus_files(
+            root,
+            recursive=bool(self.config.recursive_library_scan),
+            exclude_dirs=set(self.config.library_exclude_dirs),
+            max_files=self.config.max_library_files,
+            include_product_surface=bool(getattr(self.config, "include_product_surface", False)),
+            allow_hello_os_py=True,
+        )
 
     def get_library_context(self, verbose: bool = False) -> Tuple[str, List[str]]:
         """Read COMPLETE papers from local library"""
@@ -1024,9 +949,18 @@ class ContextManager:
 
         buffer = []
 
-        # Load all valid text files (recursive by default)
+        # Load corpus files. Product docs are not papers unless opted in.
 
         all_files = self._discover_files()
+
+        self.corpus_paths = []
+
+        self.corpus_hashes = []
+
+        if not self.corpus_root.exists():
+            print(f"❌ Citation corpus does not exist: {self.corpus_root}")
+
+            return "Citation corpus not accessible.", []
 
         if verbose:
             scope = "recursive" if self.config.recursive_library_scan else "top-level"
@@ -1054,9 +988,11 @@ class ContextManager:
 
                     # Store FULL content for citation verification
 
-                    paper_ref = str(filepath.relative_to(self.lab_path))
+                    paper_ref = filepath.resolve().relative_to(self.corpus_root.resolve()).as_posix()
 
                     self.loaded_papers[paper_ref] = content
+
+                    self.corpus_paths.append(filepath)
 
                     self.paper_list.append(paper_ref)
 
@@ -1102,11 +1038,15 @@ class ContextManager:
 
                 continue
 
-        # Finalize global index
+        # Finalize global index (legacy field; verification uses per-file spans).
 
         self.global_context_index = "\0".join(index_parts)
 
         self.offset_keys = [o[0] for o in self.context_offsets]
+
+        from james_library.utilities.citation_corpus import hash_corpus_files
+
+        self.corpus_hashes = hash_corpus_files(self.corpus_paths, self.corpus_root)
 
         combined = "\n".join(buffer)
 
@@ -1117,65 +1057,17 @@ class ContextManager:
 
         return combined, self.paper_list
 
-    def verify_citation(self, quote: str, fuzzy: bool = True) -> Optional[str]:
-        """Verify if a quote exists in loaded papers using global index"""
+    def verify_citation(self, quote: str, fuzzy: bool = True):
+        """Return a CitationMatch when the full quote occurs in one corpus file.
 
-        quote_clean = quote.strip().lower()
+        ``fuzzy`` is accepted for callers that still pass it. Matching is an
+        exact span (case and whitespace normalized), not a five-word prefix.
+        """
 
-        # Skip very short quotes
+        del fuzzy  # prefix windows are not evidence
+        from james_library.utilities.citation_corpus import verify_quote
 
-        if len(quote_clean.split()) < 3:
-            return None
-
-        windows_to_check = []
-
-        if fuzzy:
-            quote_words = quote_clean.split()
-
-            if len(quote_words) > 3:
-                # Check multiple word windows for better matching
-
-                # Try first 5 words, then first 8, then middle section
-
-                raw_windows = [
-                    " ".join(quote_words[:5]),
-                    " ".join(quote_words[:8]) if len(quote_words) >= 8 else None,
-                    " ".join(quote_words[2:7]) if len(quote_words) >= 7 else None,
-                ]
-
-                # Filter out None values once
-
-                windows_to_check = [w for w in raw_windows if w]
-
-        else:
-            windows_to_check = [quote_clean]
-
-        # Use global index search
-
-        best_offset = -1
-
-        for window in windows_to_check:
-            # Find earliest occurrence in global index
-
-            idx = self.global_context_index.find(window)
-
-            if idx != -1:
-                # If we found a match, check if it's earlier than previous matches
-
-                if best_offset == -1 or idx < best_offset:
-                    best_offset = idx
-
-        if best_offset != -1:
-            # Map offset to paper using binary search
-
-            # bisect_right returns insertion point to maintain order
-
-            paper_idx = bisect.bisect_right(self.offset_keys, best_offset) - 1
-
-            if 0 <= paper_idx < len(self.context_offsets):
-                return self.context_offsets[paper_idx][1]
-
-        return None
+        return verify_quote(self.loaded_papers, quote)
 
 
 # --- WEB SEARCH MANAGER ---
@@ -1368,11 +1260,22 @@ class CitationAnalyzer:
 
         unverified = []
 
-        for quote in quotes:
-            source = self.context_manager.verify_citation(quote)
+        verified_spans = []
 
-            if source:
-                verified.append((quote, source))
+        for quote in quotes:
+            match = self.context_manager.verify_citation(quote)
+
+            if match:
+                verified.append((quote, match.source))
+
+                verified_spans.append(
+                    {
+                        "quote": quote,
+                        "source": match.source,
+                        "span_start": match.span_start,
+                        "span_end": match.span_end,
+                    }
+                )
 
                 self.verified_quotes += 1
 
@@ -1381,12 +1284,19 @@ class CitationAnalyzer:
 
         has_speculation = "[SPECULATION]" in response.upper() or "[THEORY]" in response.upper()
 
+        require_quotes = bool(getattr(self.context_manager.config, "require_quotes", True))
+
+        citation_success = len(verified) > 0
+
         return {
             "quotes_found": len(quotes),
             "verified": verified,
             "unverified": unverified,
+            "verified_spans": verified_spans,
             "has_speculation_tag": has_speculation,
             "citation_rate": len(verified) / len(quotes) if quotes else 0,
+            "require_quotes": require_quotes,
+            "citation_success": citation_success,
         }
 
     def get_stats(self) -> str:
@@ -1585,6 +1495,9 @@ MODE: GENIUS
 
             for quote, source in citations[:2]:  # Show first 2
                 entry += f'      • "{quote[:50]}..." [from {source}]\n'
+
+        elif metadata and metadata.get("require_quotes") and metadata.get("citation_success") is False:
+            entry += "   └─ Ungrounded: required quote did not match the corpus\n"
 
         entry += "\n"
 
@@ -2166,6 +2079,7 @@ class RainLabOrchestrator:
             library_path=self.config.library_path,
             log_path=str(self.log_manager.log_path),
             loaded_papers=list(paper_list),
+            corpus_files=list(self.context_manager.corpus_hashes),
         )
 
         # Load agent souls from external files
@@ -2456,11 +2370,18 @@ class RainLabOrchestrator:
 
             # Show citation feedback
 
-            if metadata and metadata.get("verified"):
+            from james_library.utilities.citation_corpus import citation_console_status
+
+            citation_status = citation_console_status(metadata if isinstance(metadata, dict) else None)
+
+            if citation_status == "verified" and metadata:
                 print(f"\033[90m   ✓ {len(metadata['verified'])} citation(s) verified\033[0m")
 
                 for quote, source in metadata["verified"][:1]:  # Show first citation
                     print(f'\033[90m      • "{quote[:60]}..." [from {source}]\033[0m')
+
+            elif citation_status == "ungrounded":
+                print("\033[91m   ✗ ungrounded: required quote did not match the corpus\033[0m")
 
             # 5. Log
 
@@ -3533,6 +3454,16 @@ Examples:
 
     parser.add_argument("--library", type=str, default=DEFAULT_LIBRARY_PATH, help="Path to research library folder")
 
+    parser.add_argument(
+        "--corpus",
+        type=str,
+        default=os.environ.get("RAIN_CORPUS_DIR") or None,
+        help=(
+            "Citation corpus directory. Defaults to RAIN_CORPUS_DIR, then <library>/papers "
+            "when that directory exists, otherwise the library root with product docs excluded."
+        ),
+    )
+
     parser.add_argument("--topic", type=str, help="Research topic (if not provided, will prompt)")
 
     parser.add_argument(
@@ -3693,6 +3624,7 @@ def main():
 
     config = Config(
         library_path=args.library,
+        corpus_dir=args.corpus,
         temperature=args.temp,
         max_turns=args.max_turns,
         max_tokens=args.max_tokens,
