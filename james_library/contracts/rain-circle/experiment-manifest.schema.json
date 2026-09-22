@@ -118,9 +118,12 @@
       ],
       "properties": {
         "statistical_test": { "type": "string", "minLength": 1 },
-        "alpha_threshold": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-        "min_sample_size": { "type": "integer", "minimum": 1 },
+        "alpha_threshold": { "type": "number", "exclusiveMinimum": 0.0, "exclusiveMaximum": 0.5 },
+        "min_sample_size": { "type": "integer", "minimum": 2 },
         "effect_size_threshold": { "type": "number", "minimum": 0.0 },
+        "minimum_effect_ohms": { "type": "number", "minimum": 0.0 },
+        "expected_direction": { "type": "string", "enum": ["increase", "decrease", "two_sided"] },
+        "equivalence_margin_ohms": { "type": "number", "exclusiveMinimum": 0.0 },
         "falsification_criteria": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }

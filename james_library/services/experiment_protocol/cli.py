@@ -48,6 +48,8 @@ def print_experiment_report(
 
     stats = analysis["statistical_results"]
     effect = analysis["effect_sizes"]
+    interval = analysis["confidence_intervals"]
+    equivalence = stats["equivalence_test"]
     critique = analysis["adversarial_critique"]
     next_exp = analysis["recommended_next_experiment"]
 
@@ -72,7 +74,17 @@ def print_experiment_report(
         f"  * Active mean     : {stats['mean_active']} (sd={stats['std_dev_active']})",
         f"  * Mean Difference : {effect['mean_difference']} ({effect.get('mean_difference_percent', 0.0):.2f}%)",
         f"  * Cohen's d       : {effect['cohens_d']}",
-        f"  * p-value (t-test): {stats['p_value']:.6f} (alpha={manifest['preregistered_analysis']['alpha_threshold']})",
+        f"  * Welch p-value   : {stats['p_value']:.6g} (alpha={manifest['preregistered_analysis']['alpha_threshold']})",
+        (
+            f"  * 95% Welch CI    : [{interval['lower_bound']:.4g}, {interval['upper_bound']:.4g}] ohms"
+            if interval["lower_bound"] is not None else "  * 95% Welch CI    : not estimable"
+        ),
+        (
+            f"  * Equivalence     : {equivalence['established']} within "
+            f"+/-{equivalence['margin_ohms']} ohms "
+            f"({equivalence['confidence_level']:.0%} interval)"
+            if equivalence["margin_ohms"] is not None else "  * Equivalence     : no preregistered numeric margin"
+        ),
         "-" * 70,
         f"{ANSI_BOLD}Artifact Discrimination:{ANSI_RESET}",
     ]
@@ -89,7 +101,7 @@ def print_experiment_report(
         (
             f"{ANSI_BOLD}Scientific Conclusion:{ANSI_RESET} "
             f"{conclusion_color}{ANSI_BOLD}{conclusion}{ANSI_RESET} "
-            f"(confidence: {analysis['conclusion_confidence']:.2f})"
+            "(statistical conclusion; not a probability of truth)"
         ),
         f"  {analysis['evidence_summary']}",
         "-" * 70,
@@ -142,6 +154,8 @@ def run_experiment_workflow(
         min_sample_size=20,
         alpha_threshold=0.05,
         effect_size_threshold=0.5,
+        minimum_effect_ohms=15.0,
+        expected_direction="decrease",
     )
 
     # 2. Deterministic serialization & SHA-256 calculation
@@ -152,7 +166,7 @@ def run_experiment_workflow(
     scenario = {
         "sample_count": sample_count,
         "baseline_mean": 100.0,
-        "active_effect": 8.0,
+        "active_effect": -16.0,
         "noise_std": 1.2,
         "phantom_effect": 0.05,
     }
@@ -193,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--hypothesis", "-H",
         type=str,
-        default="40Hz stimulation induces impedance drop > 15%",
+        default="40Hz stimulation induces an impedance drop of at least 15 ohms",
         help="Experimental hypothesis",
     )
     parser.add_argument(

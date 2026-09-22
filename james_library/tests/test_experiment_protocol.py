@@ -3,6 +3,7 @@
 import shutil
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 from james_library.services.experiment_protocol import (
@@ -58,7 +59,7 @@ class TestManifestContracts(unittest.TestCase):
     def test_valid_manifest_design(self):
         manifest = design_experiment(
             research_question="Does 40Hz acoustic stimulation alter baseline impedance?",
-            hypothesis="40Hz stimulation induces a >= 5% impedance decrease relative to sham.",
+            hypothesis="40Hz stimulation induces a >= 5 ohm impedance decrease relative to sham.",
             frequency_hz=40.0,
             min_sample_size=20,
         )
@@ -71,6 +72,19 @@ class TestManifestContracts(unittest.TestCase):
         del manifest["preregistered_analysis"]
         errors = validate_manifest(manifest)
         self.assertTrue(any("preregistered_analysis" in e for e in errors))
+
+    def test_invalid_numeric_preregistration_is_rejected(self):
+        manifest = design_experiment("Q", "H")
+        pa = manifest["preregistered_analysis"]
+        pa["alpha_threshold"] = float("nan")
+        pa["minimum_effect_ohms"] = -1
+        pa["equivalence_margin_ohms"] = 0
+        pa["effect_size_threshold"] = float("inf")
+        errors = validate_manifest(manifest)
+        self.assertTrue(any("alpha_threshold" in error for error in errors))
+        self.assertTrue(any("minimum_effect_ohms" in error for error in errors))
+        self.assertTrue(any("equivalence_margin_ohms" in error for error in errors))
+        self.assertTrue(any("effect_size_threshold" in error for error in errors))
 
     def test_manifest_immutability_verification(self):
         manifest = design_experiment("Q", "H")
@@ -157,6 +171,22 @@ class TestDeterministicStatistics(unittest.TestCase):
         self.assertGreater(abs(t_stat), 10.0)
         self.assertLess(p_val, 0.001)
 
+    def test_welch_small_unequal_samples_match_reference_distribution(self):
+        # Independently calculated with scipy.stats.ttest_ind(b, a, equal_var=False).
+        a, b = [1.0, 2.0, 4.0], [0.0, 3.0, 10.0]
+        t_stat, p_val, df = compute_p_value_two_sample(a, b)
+        self.assertAlmostEqual(t_stat, 0.6469966392206302, places=12)
+        self.assertAlmostEqual(df, 2.351669316375199, places=12)
+        self.assertAlmostEqual(p_val, 0.5751237799117214, places=12)
+        from math import sqrt
+        se = sqrt(compute_variance(a) / len(a) + compute_variance(b) / len(b))
+        ci = compute_confidence_interval(2.0, se, 0.95, df)
+        self.assertAlmostEqual(ci[0], -9.564966757778379, places=9)
+        self.assertAlmostEqual(ci[1], 13.564966757778379, places=9)
+
+    def test_zero_variance_has_no_inferential_degrees_of_freedom(self):
+        self.assertEqual(compute_p_value_two_sample([1.0, 1.0], [3.0, 3.0]), (0.0, 1.0, 0.0))
+
     def test_confidence_interval(self):
         lower, upper = compute_confidence_interval(10.0, 1.0, 0.95)
         self.assertAlmostEqual(lower, 8.04, places=1)
@@ -172,9 +202,110 @@ class TestConclusionSemanticsAndArtifacts(unittest.TestCase):
 
     def test_negative_control_fixture_refutes_or_inconclusive(self):
         manifest, result, analysis = run_negative_control_fixture(seed=202)
-        self.assertIn(analysis["conclusion"], ("REFUTES", "INCONCLUSIVE"))
-        if analysis["conclusion"] == "REFUTES":
-            self.assertTrue(analysis["falsification_criteria_met"])
+        self.assertEqual(analysis["conclusion"], "REFUTES")
+        self.assertTrue(analysis["falsification_criteria_met"])
+        self.assertTrue(analysis["statistical_results"]["equivalence_test"]["established"])
+        self.assertFalse(analysis["artifact_analysis"]["phantom_signal_detected"])
+
+    def test_high_p_value_without_equivalence_is_inconclusive(self):
+        manifest, result, _ = run_negative_control_fixture(seed=202)
+        noisy = deepcopy(result)
+        noisy["_embedded_data"]["measurements"].update({
+            "control": [80.0, 120.0] * 25,
+            "active": [80.1, 119.9] * 25,
+            "phantom": [80.0, 120.0] * 25,
+        })
+        analysis = run_deterministic_analysis(manifest, noisy, calculate_sha256(manifest))
+        self.assertGreater(analysis["statistical_results"]["p_value"], 0.5)
+        self.assertFalse(analysis["statistical_results"]["equivalence_test"]["established"])
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+
+    def test_legacy_manifest_without_numeric_margin_cannot_refute(self):
+        manifest, result, _ = run_negative_control_fixture(seed=202)
+        legacy = deepcopy(manifest)
+        del legacy["preregistered_analysis"]["equivalence_margin_ohms"]
+        legacy_result = dict(result, manifest_sha256=calculate_sha256(legacy))
+        analysis = run_deterministic_analysis(legacy, legacy_result, calculate_sha256(legacy))
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+        self.assertFalse(analysis["falsification_criteria_met"])
+
+    def test_wrong_direction_does_not_support_directional_claim(self):
+        manifest, result, _ = run_positive_control_fixture(seed=201)
+        reversed_result = deepcopy(result)
+        values = reversed_result["_embedded_data"]["measurements"]["active"]
+        reversed_result["_embedded_data"]["measurements"]["active"] = [v + 17.0 for v in values]
+        analysis = run_deterministic_analysis(manifest, reversed_result, calculate_sha256(manifest))
+        self.assertLess(analysis["statistical_results"]["p_value"], 0.05)
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+
+    def test_generic_design_preserves_two_sided_support(self):
+        manifest = design_experiment("Synthetic response?", "An effect in either direction")
+        self.assertEqual(manifest["preregistered_analysis"]["expected_direction"], "two_sided")
+        sha = calculate_sha256(manifest)
+        result = SimulatedCircleExecutor(seed=12).run_trial(
+            manifest, sha, custom_scenario={"sample_count": 30, "active_effect": 8.0, "noise_std": 1.0},
+        )
+        analysis = run_deterministic_analysis(manifest, result, sha)
+        self.assertEqual(analysis["conclusion"], "SUPPORTS")
+
+    def test_point_estimate_above_minimum_does_not_establish_magnitude(self):
+        manifest, result, _ = run_positive_control_fixture(seed=201)
+        near_bound = deepcopy(result)
+        near_bound["_embedded_data"]["measurements"].update({
+            "control": [95.0, 105.0] * 25,
+            "active": [89.9, 99.9] * 25,
+            "phantom": [95.0, 105.0] * 25,
+        })
+        analysis = run_deterministic_analysis(manifest, near_bound, calculate_sha256(manifest))
+        self.assertLess(analysis["effect_sizes"]["mean_difference"], -5.0)
+        self.assertLess(analysis["statistical_results"]["p_value"], 0.05)
+        self.assertGreater(analysis["confidence_intervals"]["upper_bound"], -5.0)
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+
+    def test_small_precise_effect_cannot_support_registered_five_ohm_claim(self):
+        manifest, result, _ = run_positive_control_fixture(seed=201)
+        small = deepcopy(result)
+        small["_embedded_data"]["measurements"].update({
+            "control": [100.0 + (i % 2) * 0.02 for i in range(50)],
+            "active": [99.5 + (i % 2) * 0.02 for i in range(50)],
+            "phantom": [100.0 + (i % 2) * 0.02 for i in range(50)],
+        })
+        analysis = run_deterministic_analysis(manifest, small, calculate_sha256(manifest))
+        self.assertLess(analysis["statistical_results"]["p_value"], 0.05)
+        self.assertEqual(analysis["conclusion"], "REFUTES")
+
+    def test_overlapping_support_and_equivalence_remains_inconclusive(self):
+        manifest, result, _ = run_positive_control_fixture(seed=201)
+        overlapping = deepcopy(manifest)
+        overlapping["preregistered_analysis"]["minimum_effect_ohms"] = 0.0
+        overlap_result = deepcopy(result)
+        overlap_result["manifest_sha256"] = calculate_sha256(overlapping)
+        overlap_result["_embedded_data"]["measurements"].update({
+            "control": [100.0 + (i % 2) * 0.02 for i in range(50)],
+            "active": [99.5 + (i % 2) * 0.02 for i in range(50)],
+            "phantom": [100.0 + (i % 2) * 0.02 for i in range(50)],
+        })
+        analysis = run_deterministic_analysis(overlapping, overlap_result, calculate_sha256(overlapping))
+        self.assertTrue(analysis["statistical_results"]["equivalence_test"]["established"])
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+        self.assertIn("Both significance and equivalence", analysis["evidence_summary"])
+
+    def test_zero_variance_analysis_is_inconclusive_without_interval(self):
+        manifest, result, _ = run_positive_control_fixture(seed=201)
+        flat = deepcopy(result)
+        flat["_embedded_data"]["measurements"].update({
+            "control": [100.0] * 30, "active": [90.0] * 30, "phantom": [100.0] * 30,
+        })
+        analysis = run_deterministic_analysis(manifest, flat, calculate_sha256(manifest))
+        self.assertEqual(analysis["conclusion"], "INCONCLUSIVE")
+        self.assertIsNone(analysis["confidence_intervals"]["lower_bound"])
+
+    def test_nonfinite_measurement_is_rejected_before_conclusion(self):
+        manifest, result, _ = run_negative_control_fixture(seed=202)
+        invalid = deepcopy(result)
+        invalid["_embedded_data"]["measurements"]["active"][0] = float("nan")
+        with self.assertRaisesRegex(ValueError, "finite numeric"):
+            run_deterministic_analysis(manifest, invalid, calculate_sha256(manifest))
 
     def test_artifact_only_fixture_detected_and_inconclusive(self):
         manifest, result, analysis = run_artifact_only_fixture(seed=203)
@@ -253,7 +384,7 @@ class TestEndToEndWorkflow(unittest.TestCase):
     def test_full_workflow_execution(self):
         manifest, result, analysis, bundle_path = run_experiment_workflow(
             question="Does 40Hz acoustic resonance alter phantom impedance?",
-            hypothesis="40Hz stimulation induces impedance drop > 15%",
+            hypothesis="40Hz stimulation induces impedance drop > 15 ohms",
             frequency_hz=40.0,
             sample_count=30,
             seed=42,

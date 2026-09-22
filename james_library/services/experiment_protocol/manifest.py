@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import secrets
 from typing import Any
@@ -167,12 +168,31 @@ def validate_manifest(manifest: Any) -> list[str]:
                 errors.append(f"Missing preregistered_analysis field: '{pa_field}'")
 
         alpha = pa.get("alpha_threshold")
-        if not isinstance(alpha, (int, float)) or alpha <= 0 or alpha > 1:
-            errors.append(f"alpha_threshold must be a float in (0, 1], got {alpha}")
+        if (isinstance(alpha, bool) or not isinstance(alpha, (int, float))
+                or not math.isfinite(alpha) or not 0 < alpha < 0.5 or 1.0 - 2.0 * alpha >= 1.0):
+            errors.append(f"alpha_threshold must be a finite number in (0, 0.5), got {alpha}")
 
         min_n = pa.get("min_sample_size")
-        if not isinstance(min_n, int) or min_n < 1:
-            errors.append(f"min_sample_size must be a positive integer, got {min_n}")
+        if isinstance(min_n, bool) or not isinstance(min_n, int) or min_n < 2:
+            errors.append(f"min_sample_size must be an integer of at least two, got {min_n}")
+
+        direction = pa.get("expected_direction")
+        if direction is not None and (
+            not isinstance(direction, str) or direction not in {"increase", "decrease", "two_sided"}
+        ):
+            errors.append("expected_direction must be increase, decrease, or two_sided")
+        margin = pa.get("equivalence_margin_ohms")
+        if margin is not None and (isinstance(margin, bool) or not isinstance(margin, (int, float))
+                                   or not math.isfinite(margin) or margin <= 0):
+            errors.append("equivalence_margin_ohms must be a finite positive number")
+        minimum = pa.get("minimum_effect_ohms")
+        if minimum is not None and (isinstance(minimum, bool) or not isinstance(minimum, (int, float))
+                                    or not math.isfinite(minimum) or minimum < 0):
+            errors.append("minimum_effect_ohms must be a finite non-negative number")
+        effect = pa.get("effect_size_threshold")
+        if (isinstance(effect, bool) or not isinstance(effect, (int, float))
+                or not math.isfinite(effect) or effect < 0):
+            errors.append("effect_size_threshold must be a finite non-negative number")
 
     # Check provenance requirements
     prov_reqs = manifest.get("provenance_requirements")
