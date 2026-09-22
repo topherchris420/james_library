@@ -1,6 +1,6 @@
 # R.A.I.N. Lab
 
-**An experimental scientific-agent architecture from Vers3Dynamics: multi-agent research, bounded judgment, and deterministic validation.**
+**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
 
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
@@ -18,12 +18,14 @@ Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
 perspectives, grounds strong claims in papers or explicit evidence, and returns
 the strongest explanations, disagreements, and next moves.
 
+Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+
+James is the assistant inside the R.A.I.N. Lab.
+
 We separate generation, evidence, judgment, and authorization. James, Jasmine,
 Luca, and Elena investigate; optional Laya and Jev providers propose bounded
 decisions; host code checks policy and retains authority. Recorded artifacts
 make decisions inspectable and replayable.
-
-James is the assistant inside the R.A.I.N. Lab.
 
 ---
 
