@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shlex
@@ -71,6 +72,7 @@ def run_replay(
     report_dir: Path | str,
     command_template: str = DEFAULT_COMMAND_TEMPLATE,
     library_path: Path | str,
+    live_judgment: bool = False,
 ) -> dict[str, Any]:
     gold_path = Path(gold_path)
     artifact_dir = Path(artifact_dir)
@@ -95,9 +97,13 @@ def run_replay(
             topic=topic,
             library_path=library_path,
         )
+        child_env = dict(os.environ)
+        if not live_judgment:
+            child_env["RAIN_JUDGMENT_PROVIDER"] = "off"
         completed = subprocess.run(
             command,
             cwd=library_path,
+            env=child_env,
             shell=True,
             capture_output=True,
             text=True,
@@ -122,6 +128,8 @@ def run_replay(
 
     eval_report = evaluate_artifacts_against_gold(artifact_paths, gold_cases)
     report = {
+        "mode": "live_session_replay",
+        "judgment_mode": "live_reevaluation" if live_judgment else "disabled",
         "timestamp": _utc_stamp(),
         "command_template": command_template,
         "gold_path": str(gold_path),
@@ -137,6 +145,33 @@ def run_replay(
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     report["report_path"] = str(report_path)
     return report
+
+
+def replay_recorded_judgments(artifact: Path | str) -> dict[str, Any]:
+    """Read recorded envelopes only; this path never constructs a provider."""
+    try:
+        payload = json.loads(Path(artifact).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("schema_version") != "rain-session-artifact/v1":
+            raise ValueError
+        judgments = payload.get("judgments", [])
+        if not isinstance(judgments, list):
+            raise ValueError
+        for judgment in judgments:
+            if not isinstance(judgment, dict):
+                raise ValueError
+            state = judgment.get("state")
+            state_hash = judgment.get("state_hash")
+            if not isinstance(state, str) or not isinstance(state_hash, str):
+                raise ValueError
+            if hashlib.sha256(state.encode("utf-8")).hexdigest() != state_hash:
+                raise ValueError
+        return {
+            "mode": "recorded_judgment",
+            "session_id": str(payload.get("session_id", "")),
+            "judgments": judgments,
+        }
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError, TypeError) as exc:
+        raise ValueError("recorded_judgment_invalid") from exc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -164,7 +199,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--library", type=str, default=".", help="Repo/library root used as subprocess cwd.")
     parser.add_argument("--json", action="store_true", help="Print machine-readable JSON.")
+    parser.add_argument("--recorded-artifact", type=str, default=None,
+                        help="Replay recorded judgments without launching a session or provider.")
+    parser.add_argument("--live-judgment", action="store_true",
+                        help="Allow explicit live judgment during new gold-session replay.")
     args = parser.parse_args(argv)
+
+    if args.recorded_artifact:
+        report = replay_recorded_judgments(args.recorded_artifact)
+        if args.json:
+            print(json.dumps(report, indent=2))
+        else:
+            print("RECORDED JUDGMENT")
+            for item in report["judgments"]:
+                print(f"{item.get('judgment_id', '')}: {item.get('disposition', '')}")
+        return 0
 
     library_path = Path(args.library).resolve()
     artifact_dir = (
@@ -184,6 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         report_dir=report_dir,
         command_template=args.command_template,
         library_path=library_path,
+        live_judgment=args.live_judgment,
     )
 
     if args.json:

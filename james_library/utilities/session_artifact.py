@@ -92,6 +92,15 @@ class SessionArtifactWriter:
         self.path = self.artifact_root / f"session_{self.session_id}.json"
         self.started_at = _utc_now_iso()
         self._turns: list[dict[str, Any]] = []
+        self._judgments: list[dict[str, Any]] = []
+
+    def record_judgment(self, envelope: Any) -> None:
+        """Checkpoint one typed judgment without mixing it into grounded turns."""
+        from james_library.judgment import JudgmentEnvelope
+
+        if not isinstance(envelope, JudgmentEnvelope):
+            raise TypeError("record_judgment requires a JudgmentEnvelope")
+        self._judgments.append(envelope.to_dict())
 
     def record_turn(
         self,
@@ -176,8 +185,11 @@ class SessionArtifactWriter:
             "metrics": metrics or {},
             "summary": summary or "",
             "turns": self._turns,
+            "judgments": self._judgments,
         }
-        self.path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        temporary = self.path.with_suffix(self.path.suffix + ".tmp")
+        temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        temporary.replace(self.path)
         return self.path
 
     def load(self) -> dict[str, Any]:
