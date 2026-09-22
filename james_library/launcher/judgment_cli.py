@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 import json
-import os
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -13,6 +12,7 @@ from uuid import uuid4
 from james_library.judgment import (
     ClaimEvidence,
     ValidationStatus,
+    contains_sensitive_material,
     create_judgment_service,
     format_judgment,
 )
@@ -46,6 +46,10 @@ def _pairs_without_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
             raise ValueError("duplicate key")
         result[key] = value
     return result
+
+
+def _reject_constant(value: str) -> None:
+    raise ValueError(f"invalid JSON constant: {value}")
 
 
 def _required_text(payload: dict[str, Any], name: str) -> str:
@@ -92,18 +96,25 @@ def _numerical_channel(value: Any) -> tuple[str, ValidationStatus]:
 
 def load_cycle(path: Path | str) -> JudgmentCycle:
     try:
-        raw = Path(path).read_bytes()
+        with Path(path).open("rb") as packet_file:
+            raw = packet_file.read(MAX_PACKET_BYTES + 1)
         if len(raw) > MAX_PACKET_BYTES:
             raise ValueError
-        payload = json.loads(raw.decode("utf-8"), object_pairs_hook=_pairs_without_duplicates)
+        decoded = raw.decode("utf-8")
+        if contains_sensitive_material(decoded):
+            raise ValueError
+        payload = json.loads(
+            decoded,
+            object_pairs_hook=_pairs_without_duplicates,
+            parse_constant=_reject_constant,
+        )
         if not isinstance(payload, dict):
+            raise ValueError
+        if contains_sensitive_material(json.dumps(payload, ensure_ascii=False)):
             raise ValueError
         if set(payload) - (_REQUIRED_KEYS | _OPTIONAL_KEYS) or not _REQUIRED_KEYS <= set(payload):
             raise ValueError
         if payload["schema_version"] != CYCLE_SCHEMA_VERSION:
-            raise ValueError
-        secret = os.getenv("TYPESAFE_API_KEY", "")
-        if secret and secret in raw.decode("utf-8"):
             raise ValueError
         sources = payload["source_identifiers"]
         if not isinstance(sources, list) or not all(isinstance(item, str) and item.strip() for item in sources):
@@ -193,18 +204,34 @@ def main(argv: list[str] | None = None) -> int:
     workflow.set_peer_critique(cycle.reviewer, cycle.peer_score, cycle.evidence.peer_critique)
     accepted = workflow.finalize_discovery_gate(evidence=cycle.evidence if service is not None else None)
     envelope = workflow.record.judgment
-    disposition = envelope.decision.disposition.value if envelope is not None else "DISABLED"
+    if envelope is not None:
+        typed_status = envelope.decision.disposition.value
+        gate_disposition = envelope.decision.disposition.value
+    elif service is not None:
+        typed_status = "NOT_RUN"
+        gate_disposition = workflow.history[-1]["gate_disposition"]
+    else:
+        typed_status = "DISABLED"
+        gate_disposition = "PASS" if accepted else "REVISE"
     writer.finalize(
         status="completed",
         metrics={
             "peer_critique_score": cycle.peer_score,
             "discovery_accepted": accepted,
-            "gate_disposition": disposition,
+            "gate_disposition": gate_disposition,
+            "typed_judgment_status": typed_status,
         },
-        summary=f"Peer score {cycle.peer_score}; typed judgment {disposition}.",
+        summary=f"Peer score {cycle.peer_score}; typed judgment {typed_status}.",
     )
     print(f"Peer critique: {cycle.peer_score} / 10")
-    print(format_judgment(envelope) if envelope is not None else "Typed Judgment: DISABLED")
+    if envelope is not None:
+        print(format_judgment(envelope))
+    elif service is not None:
+        print("Typed Judgment: NOT RUN")
+        print("Reason: peer_score_below_threshold")
+        print(f"Gate: {gate_disposition}")
+    else:
+        print("Typed Judgment: DISABLED")
     print(f"Artifact: {writer.path}")
     return 0 if accepted else 1
 

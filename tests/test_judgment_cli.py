@@ -94,6 +94,26 @@ def test_cli_disabled_gate_preserves_score_only_promotion(tmp_path, monkeypatch,
     assert "DISABLED" in capsys.readouterr().out
 
 
+def test_enabled_low_peer_score_reports_not_run_without_provider_call(tmp_path, monkeypatch, capsys):
+    from james_library.launcher import judgment_cli
+    from tests.judgment_helpers import service
+
+    evaluator, provider = service()
+    monkeypatch.setattr(judgment_cli, "create_judgment_service", lambda: evaluator)
+    data = packet()
+    data["peer_critique"]["score"] = 7
+    source = tmp_path / "cycle.json"
+    source.write_text(json.dumps(data), encoding="utf-8")
+    output = tmp_path / "artifacts"
+    assert judgment_cli.main(["--evidence", str(source), "--output-dir", str(output)]) == 1
+    assert provider.calls == []
+    assert "Typed Judgment: NOT RUN" in capsys.readouterr().out
+    artifact = json.loads(next(output.glob("session_*.json")).read_text(encoding="utf-8"))
+    assert artifact["judgments"] == []
+    assert artifact["metrics"]["typed_judgment_status"] == "NOT_RUN"
+    assert artifact["metrics"]["gate_disposition"] == "REVISE"
+
+
 @pytest.mark.parametrize("validation", ["formal_logic_result", "numerical_validation"])
 def test_failed_instruments_cannot_be_rescued_by_model(tmp_path, monkeypatch, validation):
     from james_library.launcher import judgment_cli
@@ -119,6 +139,34 @@ def test_packet_duplicate_keys_and_oversize_are_rejected(tmp_path):
         source.write_text(content, encoding="utf-8")
         with pytest.raises(ValueError, match="invalid_evidence_packet"):
             load_cycle(source)
+
+
+def test_packet_rejects_other_configured_credentials(tmp_path, monkeypatch):
+    from james_library.launcher.judgment_cli import load_cycle
+
+    secret = "sk-fixture-other-provider-not-real"
+    monkeypatch.setenv("OPENAI_API_KEY", secret)
+    data = packet()
+    data["observations"] = secret
+    source = tmp_path / "cycle.json"
+    source.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid_evidence_packet"):
+        load_cycle(source)
+
+
+def test_json_escaped_key_cannot_leak_through_artifact_topic(tmp_path, monkeypatch):
+    from james_library.launcher import judgment_cli
+
+    secret = "fixture-credential-never-real"
+    monkeypatch.setenv("TYPESAFE_API_KEY", secret)
+    data = packet()
+    data["claim"] = secret
+    escaped_secret = "".join("\\u%04x" % ord(character) for character in secret)
+    source = tmp_path / "cycle.json"
+    source.write_text(json.dumps(data).replace(secret, escaped_secret), encoding="utf-8")
+    output = tmp_path / "artifacts"
+    assert judgment_cli.main(["--evidence", str(source), "--output-dir", str(output)]) == 2
+    assert not output.exists()
 
 
 def test_packet_with_configured_secret_is_never_persisted(tmp_path, monkeypatch, capsys):

@@ -7,7 +7,7 @@ import requests
 
 from james_library.judgment import (
     DEFAULT_QUESTION_SET, ClaimEvidence, GateDisposition, JudgmentService,
-    TypeSafeJudgmentProvider, build_state,
+    TypeSafeJudgmentProvider, ValidationStatus, build_state,
 )
 
 
@@ -69,7 +69,7 @@ def test_documented_request_and_typed_response_without_invented_noul_confidence(
     assert request["json"]["model"] == "jev-latest"
     assert request["json"]["questions"] == DEFAULT_QUESTION_SET.to_dict()
     assert request["allow_redirects"] is False
-    assert request["timeout"] == (5, 30)
+    assert request["timeout"] == (5, 10)
     assert request["verify"] is True
     assert request["stream"] is True
 
@@ -85,6 +85,19 @@ def test_documented_request_and_typed_response_without_invented_noul_confidence(
     lambda p: p["answers"]["human_review"].update(type="choice"),
     lambda p: p["answers"]["claim_support"].update(probabilities={"supported": 1}),
     lambda p: p["answers"]["claim_support"]["probabilities"].update(supported=.2),
+    lambda p: p["answers"]["claim_support"].update(
+        choice="supported",
+        probabilities={
+            "supported": .01,
+            "mixed": .01,
+            "unsupported": .97,
+            "insufficient_evidence": .01,
+        },
+    ),
+    lambda p: p["answers"]["evidence_quality"].update(
+        score=3.0,
+        probabilities={"0": 1.0, "1": 0.0, "2": 0.0, "3": 0.0},
+    ),
 ])
 def test_malformed_response_is_rejected(mutation):
     payload = response_payload()
@@ -105,7 +118,9 @@ def test_transport_errors_are_categorical_and_never_leak(error, code):
 
 @pytest.mark.parametrize("status,code", [(401, "provider_authentication_error"),
                                          (403, "provider_authentication_error"),
-                                         (429, "provider_rate_limited"), (500, "provider_http_error"),
+                                         (429, "provider_rate_limited"),
+                                         (529, "provider_overloaded"),
+                                         (500, "provider_http_error"),
                                          (302, "provider_http_error")])
 def test_http_failures_do_not_persist_response_body(status, code):
     result = evaluate(Transport(Response(status=status, raw=b"fixture-credential private content")))
@@ -117,6 +132,19 @@ def test_http_failures_do_not_persist_response_body(status, code):
 def test_bounded_response_and_invalid_json_rejected():
     assert evaluate(Transport(Response(raw=b"x" * 100001))).error_code == "provider_response_too_large"
     assert evaluate(Transport(Response(raw=b"not JSON"))).error_code == "provider_malformed_response"
+
+
+def test_total_response_deadline_is_enforced(monkeypatch):
+    import james_library.judgment.typesafe as typesafe_module
+
+    ticks = iter((0.0, 31.0))
+    monkeypatch.setattr(typesafe_module, "monotonic", lambda: next(ticks))
+    assert evaluate(Transport()).error_code == "provider_timeout"
+
+
+def test_duplicate_response_keys_are_rejected():
+    raw = b'{"model":"jev-1","model":"jev-2","answers":{},"usage":{"input_tokens":0,"output_tokens":0}}'
+    assert evaluate(Transport(Response(raw=raw))).error_code == "provider_malformed_response"
 
 
 def test_configured_secret_in_state_never_sent_or_recorded():
@@ -143,7 +171,14 @@ def test_secret_misconfigured_as_model_is_never_sent_or_persisted():
         model="fixture-credential",
         transport=transport,
     )
-    envelope = JudgmentService(provider).evaluate(ClaimEvidence(claim="Bounded claim"))
+    envelope = JudgmentService(provider).evaluate(ClaimEvidence(
+        claim="Bounded claim",
+        observations="Measured observation",
+        tool_evidence="fixture run",
+        source_identifiers=("fixture",),
+        formal_status=ValidationStatus.PASSED,
+        numerical_status=ValidationStatus.PASSED,
+    ))
     assert envelope.decision.disposition == GateDisposition.UNAVAILABLE
     assert envelope.result.error_code == "state_contains_secret"
     assert transport.calls == []
@@ -151,3 +186,26 @@ def test_secret_misconfigured_as_model_is_never_sent_or_persisted():
     assert envelope.state.state_hash == __import__("hashlib").sha256(
         envelope.state.canonical_text.encode("utf-8")
     ).hexdigest()
+
+
+def test_other_configured_secret_misconfigured_as_model_is_blocked(monkeypatch):
+    model_secret = "sk-fixture-openai-model-secret-123456"
+    monkeypatch.setenv("OPENAI_API_KEY", model_secret)
+    transport = Transport()
+    provider = TypeSafeJudgmentProvider(
+        "different-typesafe-key",
+        model=model_secret,
+        transport=transport,
+    )
+    envelope = JudgmentService(provider).evaluate(ClaimEvidence(claim="Bounded claim"))
+    assert envelope.result.error_code == "state_contains_secret"
+    assert transport.calls == []
+    assert model_secret not in json.dumps(envelope.to_dict())
+
+
+def test_missing_key_does_not_echo_sensitive_model_from_direct_provider():
+    secret = "sk-fixture-model-not-real-123456789"
+    provider = TypeSafeJudgmentProvider(None, model=secret)
+    result = provider.evaluate(build_state(ClaimEvidence(claim="Bounded claim")), DEFAULT_QUESTION_SET)
+    assert result.error_code == "state_contains_secret"
+    assert secret not in repr(result)

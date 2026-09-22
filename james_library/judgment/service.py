@@ -3,16 +3,19 @@
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from hashlib import sha256
+import json
 import os
+import re
 from time import monotonic
 from uuid import uuid4
 
 from .contracts import (
     DEFAULT_QUESTION_SET, ClaimEvidence, DeterministicMockJudgmentProvider, JudgmentProvider,
     JudgmentResult, JudgmentState, QuestionSet,
+    valid_answers,
 )
 from .gate import GateDecision, JudgmentGate
-from .state import build_state
+from .state import build_state, contains_sensitive_material
 from .typesafe import PROVIDER_ERROR_CODES, TypeSafeJudgmentProvider
 
 
@@ -29,7 +32,7 @@ class JudgmentEnvelope:
     schema_version: int = 1
 
     def to_dict(self) -> dict:
-        return {
+        payload = {
             "schema_version": self.schema_version, "judgment_id": self.judgment_id,
             "timestamp": self.timestamp, "mode": self.mode,
             "provider": self.result.provider, "model": self.result.model,
@@ -44,6 +47,15 @@ class JudgmentEnvelope:
             "provider_error": {"code": self.result.error_code, "status": self.result.error_status}
             if self.result.error_code else None,
         }
+        encoded = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        payload["envelope_hash"] = sha256(encoded).hexdigest()
+        return payload
 
 
 class JudgmentService:
@@ -55,23 +67,36 @@ class JudgmentService:
     def evaluate(self, evidence: ClaimEvidence) -> JudgmentEnvelope:
         state = build_state(evidence)
         started = monotonic()
+        if contains_sensitive_material(state.canonical_text):
+            result = JudgmentResult(
+                "unavailable",
+                state_hash=state.state_hash,
+                question_set_version=self.questions.version,
+                error_code="state_contains_secret",
+            )
+            decision = self.gate.evaluate(result, state, self.questions)
+            state, result = _withhold_sensitive_state(state, result)
+            return self._envelope(state, result, decision, started, "provider_precheck")
+        provider_result = None
         provider_preflight = getattr(self.provider, "preflight", None)
         if callable(provider_preflight):
-            result = provider_preflight(state, self.questions)
-            if result is not None:
-                decision = self.gate.evaluate(result, state, self.questions)
-                if result.error_code == "state_contains_secret":
-                    state, result = _withhold_sensitive_state(state, result)
-                return JudgmentEnvelope(
-                    str(uuid4()),
-                    datetime.now(timezone.utc).isoformat(),
-                    self.questions,
-                    state,
-                    result,
-                    decision,
-                    round((monotonic() - started) * 1000, 3),
-                    "provider_precheck",
+            try:
+                provider_result = provider_preflight(state, self.questions)
+            except Exception:
+                provider_result = JudgmentResult(
+                    "unavailable",
+                    state_hash=state.state_hash,
+                    question_set_version=self.questions.version,
+                    error_code="provider_internal_error",
                 )
+            if provider_result is not None:
+                provider_result = _sanitize_result(provider_result, state, self.questions)
+                if provider_result.error_code == "state_contains_secret":
+                    decision = self.gate.evaluate(provider_result, state, self.questions)
+                    state, provider_result = _withhold_sensitive_state(state, provider_result)
+                    return self._envelope(
+                        state, provider_result, decision, started, "provider_precheck"
+                    )
         preflight = self.gate.preflight(state)
         if preflight is not None:
             result = JudgmentResult(
@@ -79,22 +104,15 @@ class JudgmentService:
                 state_hash=state.state_hash,
                 question_set_version=self.questions.version,
             )
-            return JudgmentEnvelope(
-                str(uuid4()),
-                datetime.now(timezone.utc).isoformat(),
-                self.questions,
-                state,
-                result,
-                preflight,
-                round((monotonic() - started) * 1000, 3),
-                "deterministic_precheck",
+            return self._envelope(state, result, preflight, started, "deterministic_precheck")
+        if provider_result is not None:
+            decision = self.gate.evaluate(provider_result, state, self.questions)
+            return self._envelope(
+                state, provider_result, decision, started, "provider_precheck"
             )
         try:
             result = self.provider.evaluate(state, self.questions)
-            if not isinstance(result, JudgmentResult):
-                raise ValueError("invalid judgment result")
-            if result.error_code and result.error_code not in PROVIDER_ERROR_CODES:
-                result = replace(result, answers=(), error_code="provider_internal_error", error_status=None)
+            result = _sanitize_result(result, state, self.questions)
         except Exception:
             # Third-party providers may raise exceptions containing authorization headers or state.
             result = JudgmentResult("unavailable", state_hash=state.state_hash,
@@ -102,10 +120,31 @@ class JudgmentService:
         decision = self.gate.evaluate(result, state, self.questions)
         if result.error_code == "state_contains_secret":
             state, result = _withhold_sensitive_state(state, result)
-        return JudgmentEnvelope(str(uuid4()), datetime.now(timezone.utc).isoformat(), self.questions,
-                                state, result, decision, round((monotonic() - started) * 1000, 3),
-                                "deterministic_mock" if isinstance(self.provider, DeterministicMockJudgmentProvider)
-                                else "live_evaluation")
+        mode = (
+            "deterministic_mock"
+            if isinstance(self.provider, DeterministicMockJudgmentProvider)
+            else "live_evaluation"
+        )
+        return self._envelope(state, result, decision, started, mode)
+
+    def _envelope(
+        self,
+        state: JudgmentState,
+        result: JudgmentResult,
+        decision: GateDecision,
+        started: float,
+        mode: str,
+    ) -> JudgmentEnvelope:
+        return JudgmentEnvelope(
+            str(uuid4()),
+            datetime.now(timezone.utc).isoformat(),
+            self.questions,
+            state,
+            result,
+            decision,
+            round((monotonic() - started) * 1000, 3),
+            mode,
+        )
 
 
 def _withhold_sensitive_state(
@@ -117,6 +156,65 @@ def _withhold_sensitive_state(
     return (
         replace(state, canonical_text=canonical_text, state_hash=state_hash),
         replace(result, state_hash=state_hash, model=None),
+    )
+
+
+_SAFE_LABEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,99}\Z")
+
+
+def _sanitize_result(
+    result: object,
+    state: JudgmentState,
+    questions: QuestionSet,
+) -> JudgmentResult:
+    """Copy only policy-safe provider fields into an auditable result."""
+    if not isinstance(result, JudgmentResult):
+        return _provider_failure(state, questions, "provider_internal_error")
+    if result.state_hash != state.state_hash or result.question_set_version != questions.version:
+        return _provider_failure(state, questions, "provider_malformed_response")
+    if result.error_code:
+        if result.error_code not in PROVIDER_ERROR_CODES:
+            return _provider_failure(state, questions, "provider_internal_error")
+        provider = result.provider if _safe_label(result.provider) else "unavailable"
+        model = result.model if result.model is None or _safe_label(result.model) else None
+        status = (
+            result.error_status
+            if type(result.error_status) is int and 100 <= result.error_status <= 599
+            else None
+        )
+        return JudgmentResult(
+            provider,
+            model=model,
+            state_hash=state.state_hash,
+            question_set_version=questions.version,
+            error_code=result.error_code,
+            error_status=status,
+        )
+    if not _safe_label(result.provider) or (
+        result.model is not None and not _safe_label(result.model)
+    ) or not valid_answers(result, questions):
+        return _provider_failure(state, questions, "provider_malformed_response")
+    return result
+
+
+def _safe_label(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(_SAFE_LABEL.fullmatch(value))
+        and not contains_sensitive_material(value)
+    )
+
+
+def _provider_failure(
+    state: JudgmentState,
+    questions: QuestionSet,
+    code: str,
+) -> JudgmentResult:
+    return JudgmentResult(
+        "unavailable",
+        state_hash=state.state_hash,
+        question_set_version=questions.version,
+        error_code=code,
     )
 
 

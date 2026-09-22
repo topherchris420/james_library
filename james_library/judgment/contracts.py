@@ -92,7 +92,7 @@ class AtomicQuestion:
     levels: tuple[str, ...] = ()
 
     def to_dict(self) -> dict:
-        value = {"type": self.type.value, "instructions": self.instructions}
+        value: dict[str, object] = {"type": self.type.value, "instructions": self.instructions}
         if self.type == QuestionType.CHOICE:
             value["criteria"] = dict(self.choices)
         elif self.type == QuestionType.SCORE:
@@ -206,4 +206,11 @@ def valid_answers(result: JudgmentResult, questions: QuestionSet) -> bool:
             return False
         if abs(sum(probabilities.values()) - 1) > .01:
             return False
+        if question.type == QuestionType.CHOICE:
+            if probabilities[str(answer.value)] < max(probabilities.values()) - 1e-9:
+                return False
+        else:
+            expected_score = sum(int(level) * probability for level, probability in probabilities.items())
+            if abs(float(answer.value) - expected_score) > .05:
+                return False
     return True

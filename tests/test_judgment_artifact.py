@@ -76,6 +76,20 @@ def test_recorded_replay_detects_state_tampering(tmp_path):
         replay_recorded_judgments(path)
 
 
+def test_recorded_replay_detects_disposition_tampering(tmp_path):
+    from james_library.utilities.session_replay import replay_recorded_judgments
+
+    evaluator, _ = service()
+    writer = _writer(tmp_path)
+    writer.record_judgment(evaluator.evaluate(evidence()))
+    path = writer.finalize(status="completed")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["judgments"][0]["disposition"] = "REVISE"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="recorded_judgment_invalid"):
+        replay_recorded_judgments(path)
+
+
 def test_old_artifact_replays_with_no_judgments(tmp_path):
     from james_library.utilities.session_replay import replay_recorded_judgments
 
@@ -98,3 +112,28 @@ def test_live_gold_replay_disables_remote_judgment_by_default(tmp_path):
     )
     assert report["mode"] == "live_session_replay"
     assert report["judgment_mode"] == "disabled"
+
+
+def test_offline_gold_replay_removes_typesafe_credentials_from_child(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from james_library.utilities import session_replay
+
+    secret = "fixture-typesafe-secret-not-real"
+    monkeypatch.setenv("TYPESAFE_API_KEY", secret)
+    gold = tmp_path / "gold.json"
+    gold.write_text(json.dumps([{"id": "one", "topic": "bounded claim"}]), encoding="utf-8")
+    child_environments = []
+
+    def fake_run(*args, **kwargs):
+        child_environments.append(kwargs["env"])
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(session_replay.subprocess, "run", fake_run)
+    session_replay.run_replay(
+        gold_path=gold,
+        artifact_dir=tmp_path / "artifacts",
+        report_dir=tmp_path / "reports",
+        library_path=tmp_path,
+    )
+    assert child_environments[0]["RAIN_JUDGMENT_PROVIDER"] == "off"
+    assert "TYPESAFE_API_KEY" not in child_environments[0]

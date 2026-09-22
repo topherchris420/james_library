@@ -7,7 +7,7 @@ from .contracts import (
 )
 from .gate import GATE_POLICY_VERSION, GateDecision, JudgmentGate
 from .service import JudgmentEnvelope, JudgmentService, create_judgment_service, format_judgment
-from .state import build_state
+from .state import build_state, contains_sensitive_material
 from .typesafe import TypeSafeJudgmentProvider
 
 __all__ = [
@@ -15,5 +15,6 @@ __all__ = [
     "DeterministicMockJudgmentProvider", "GateDecision", "GateDisposition", "JudgmentAnswer",
     "JudgmentEnvelope", "JudgmentGate", "JudgmentProvider", "JudgmentResult", "JudgmentService",
     "JudgmentState", "QuestionSet", "QuestionType", "StateTruncation", "TypeSafeJudgmentProvider",
-    "ValidationStatus", "build_state", "create_judgment_service", "format_judgment",
+    "ValidationStatus", "build_state", "contains_sensitive_material",
+    "create_judgment_service", "format_judgment",
 ]

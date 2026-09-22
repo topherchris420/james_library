@@ -57,16 +57,17 @@ class JudgmentGate:
         review: list[str] = []
         if answers["claim_support"].value != "supported":
             revise.append("claim_not_supported")
-        if answers["evidence_quality"].value < MIN_EVIDENCE_QUALITY:
+        if float(answers["evidence_quality"].value) < MIN_EVIDENCE_QUALITY:
             revise.append("evidence_quality_low")
         for question_id in ("contradiction_present", "scope_violation"):
-            if answers[question_id].value >= REVISION_PROBABILITY:
+            if float(answers[question_id].value) >= REVISION_PROBABILITY:
                 revise.append(question_id)
         for question_id in ("claim_support", "evidence_quality"):
-            if answers[question_id].confidence < MIN_CONFIDENCE:
+            confidence = answers[question_id].confidence
+            if confidence is None or confidence < MIN_CONFIDENCE:
                 review.append(f"{question_id}_low_confidence")
         for question_id in ("contradiction_present", "scope_violation", "human_review"):
-            if answers[question_id].value >= REVIEW_PROBABILITY:
+            if float(answers[question_id].value) >= REVIEW_PROBABILITY:
                 review.append(f"{question_id}_uncertainty")
         if revise:
             return GateDecision(GateDisposition.REVISE, tuple(revise + review))

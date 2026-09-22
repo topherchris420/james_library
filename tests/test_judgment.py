@@ -45,6 +45,21 @@ def run(packet=None, fixture=None):
 
 def changed_answer(question_id, **changes):
     fixture = result()
+    if "value" in changes and "probabilities" not in changes:
+        value = changes["value"]
+        if question_id == "claim_support":
+            choices = ("supported", "mixed", "unsupported", "insufficient_evidence")
+            changes["probabilities"] = tuple(
+                (choice, 1.0 if choice == value else 0.0) for choice in choices
+            )
+        elif question_id == "evidence_quality":
+            lower = int(value)
+            upper = min(3, lower + 1)
+            upper_weight = float(value) - lower
+            weights = {str(index): 0.0 for index in range(4)}
+            weights[str(lower)] = 1.0 - upper_weight
+            weights[str(upper)] += upper_weight
+            changes["probabilities"] = tuple(weights.items())
     return replace(fixture, answers=tuple(
         replace(answer, **changes) if answer.question_id == question_id else answer
         for answer in fixture.answers
@@ -175,3 +190,63 @@ def test_enabled_without_key_is_unavailable_without_network(monkeypatch):
     envelope = create_judgment_service().evaluate(evidence())
     assert envelope.decision.disposition == GateDisposition.UNAVAILABLE
     assert envelope.result.error_code == "provider_not_configured"
+
+
+def test_failed_validation_precedes_missing_provider_configuration(monkeypatch):
+    monkeypatch.setenv("RAIN_JUDGMENT_PROVIDER", "typesafe")
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    envelope = create_judgment_service().evaluate(
+        evidence(formal_status=ValidationStatus.FAILED)
+    )
+    assert envelope.decision.disposition == GateDisposition.REVISE
+    assert envelope.mode == "deterministic_precheck"
+
+
+@pytest.mark.parametrize(
+    "secret_text",
+    [
+        "OPENAI_API_KEY=sk-fixture-not-real-123456789",
+        "Authorization: Bearer fixture-token-not-real-123456789",
+        "password=fixture-password-not-real",
+        "-----BEGIN PRIVATE KEY-----\nfixture-private-material\n-----END PRIVATE KEY-----",
+        "AKIAIOSFODNN7EXAMPLE",
+        "AIzaSyD-fixtureGoogleKeyMaterial123456",
+    ],
+)
+def test_sensitive_patterns_never_reach_any_provider(secret_text):
+    provider = DeterministicMockJudgmentProvider(result())
+    envelope = JudgmentService(provider).evaluate(evidence(observations=secret_text))
+    assert provider.calls == []
+    assert envelope.decision.disposition == GateDisposition.UNAVAILABLE
+    assert secret_text not in json.dumps(envelope.to_dict())
+
+
+def test_configured_non_typesafe_secret_is_blocked(monkeypatch):
+    secret = "sk-fixture-openai-not-real-123456789"
+    monkeypatch.setenv("OPENAI_API_KEY", secret)
+    provider = DeterministicMockJudgmentProvider(result())
+    envelope = JudgmentService(provider).evaluate(evidence(observations=secret))
+    assert provider.calls == []
+    assert secret not in json.dumps(envelope.to_dict())
+
+
+def test_provider_preflight_exception_and_malformed_result_are_scrubbed():
+    class RaisingProvider:
+        def preflight(self, state, questions):
+            raise RuntimeError("Bearer private-provider-secret")
+
+        def evaluate(self, state, questions):
+            raise AssertionError("unreachable")
+
+    raised = JudgmentService(RaisingProvider()).evaluate(evidence())
+    assert raised.result.error_code == "provider_internal_error"
+    assert "private-provider-secret" not in json.dumps(raised.to_dict())
+
+    malicious = JudgmentResult(
+        provider="password=private-provider-secret",
+        model="private-provider-secret",
+        answers=(JudgmentAnswer("claim_support", QuestionType.CHOICE, "private-provider-secret"),),
+    )
+    scrubbed = JudgmentService(DeterministicMockJudgmentProvider(malicious)).evaluate(evidence())
+    assert scrubbed.result.error_code == "provider_malformed_response"
+    assert "private-provider-secret" not in json.dumps(scrubbed.to_dict())

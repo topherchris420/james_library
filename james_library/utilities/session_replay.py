@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import os
 import shlex
@@ -19,6 +20,20 @@ from james_library.utilities.session_eval import evaluate_artifacts_against_gold
 DEFAULT_COMMAND_TEMPLATE = (
     '{python} rain_lab.py --mode chat --topic "{topic}" --turns 4 --ui off --library "{library_path}"'
 )
+MAX_RECORDED_ARTIFACT_BYTES = 5_000_000
+
+
+def _pairs_without_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError
+        result[key] = value
+    return result
+
+
+def _reject_constant(value: str) -> None:
+    raise ValueError(f"invalid JSON constant: {value}")
 
 
 def _utc_stamp() -> str:
@@ -100,6 +115,8 @@ def run_replay(
         child_env = dict(os.environ)
         if not live_judgment:
             child_env["RAIN_JUDGMENT_PROVIDER"] = "off"
+            child_env.pop("TYPESAFE_API_KEY", None)
+            child_env.pop("TYPESAFE_MODEL", None)
         completed = subprocess.run(
             command,
             cwd=library_path,
@@ -150,7 +167,15 @@ def run_replay(
 def replay_recorded_judgments(artifact: Path | str) -> dict[str, Any]:
     """Read recorded envelopes only; this path never constructs a provider."""
     try:
-        payload = json.loads(Path(artifact).read_text(encoding="utf-8"))
+        with Path(artifact).open("rb") as artifact_file:
+            raw = artifact_file.read(MAX_RECORDED_ARTIFACT_BYTES + 1)
+        if len(raw) > MAX_RECORDED_ARTIFACT_BYTES:
+            raise ValueError
+        payload = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=_pairs_without_duplicates,
+            parse_constant=_reject_constant,
+        )
         if not isinstance(payload, dict) or payload.get("schema_version") != "rain-session-artifact/v1":
             raise ValueError
         judgments = payload.get("judgments", [])
@@ -161,9 +186,25 @@ def replay_recorded_judgments(artifact: Path | str) -> dict[str, Any]:
                 raise ValueError
             state = judgment.get("state")
             state_hash = judgment.get("state_hash")
-            if not isinstance(state, str) or not isinstance(state_hash, str):
+            envelope_hash = judgment.get("envelope_hash")
+            if (
+                not isinstance(state, str)
+                or not isinstance(state_hash, str)
+                or not isinstance(envelope_hash, str)
+            ):
                 raise ValueError
-            if hashlib.sha256(state.encode("utf-8")).hexdigest() != state_hash:
+            if not hmac.compare_digest(hashlib.sha256(state.encode("utf-8")).hexdigest(), state_hash):
+                raise ValueError
+            unsigned = dict(judgment)
+            del unsigned["envelope_hash"]
+            encoded = json.dumps(
+                unsigned,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+            if not hmac.compare_digest(hashlib.sha256(encoded).hexdigest(), envelope_hash):
                 raise ValueError
         return {
             "mode": "recorded_judgment",

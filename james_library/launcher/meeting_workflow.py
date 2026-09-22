@@ -73,8 +73,9 @@ STAGE_CONFIGS: dict[MeetingStage, StageConfig] = {
         description="Gate outcomes to truth layer + P2P publish or loopback mutation.",
         prompt_template=(
             "STAGE 5 — DISCOVERY\n"
-            "If score >= 8: persist discovery and notify human.\n"
-            "If score < 8: mutate hypothesis and repeat from Stage 1."
+            "If score < 8: mutate the hypothesis and repeat from Stage 1.\n"
+            "If score >= 8: apply every configured promotion gate. Persist and notify "
+            "only when all enabled gates pass; disabled gates preserve score-only behavior."
         ),
     ),
 }
@@ -206,6 +207,7 @@ class MeetingWorkflow:
             return self._gate_accepted
 
         judgment = None
+        reasons: tuple[str, ...]
         if score < 8:
             disposition = GateDisposition.REVISE
             reasons = ("peer_score_below_threshold",)
@@ -215,7 +217,10 @@ class MeetingWorkflow:
             if (evidence.claim.strip() != self.record.hypothesis
                     or evidence.peer_critique.strip() != self.record.critique_feedback):
                 raise ValueError("Judgment evidence must match the current claim and peer critique")
-            judgment = self.judgment_service.evaluate(evidence)
+            service = self.judgment_service
+            if service is None:
+                raise ValueError("Enabled judgment requires a judgment service")
+            judgment = service.evaluate(evidence)
             # Persistence must succeed before discovery can be accepted.
             if self.judgment_recorder is not None:
                 self.judgment_recorder(judgment)

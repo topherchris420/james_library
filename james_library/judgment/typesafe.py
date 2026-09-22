@@ -2,21 +2,38 @@
 
 import json
 import re
+from time import monotonic
 
 import requests
 
 from .contracts import (
     JudgmentAnswer, JudgmentResult, JudgmentState, QuestionSet, QuestionType, valid_answers,
 )
+from .state import contains_sensitive_material
 
 ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 MAX_RESPONSE_BYTES = 100000
+RESPONSE_DEADLINE_SECONDS = 30.0
 SAFE_MODEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,99}\Z")
 PROVIDER_ERROR_CODES = frozenset({
     "provider_not_configured", "provider_timeout", "provider_transport_error", "provider_authentication_error",
-    "provider_rate_limited", "provider_http_error", "provider_response_too_large", "provider_malformed_response",
+    "provider_rate_limited", "provider_overloaded", "provider_http_error",
+    "provider_response_too_large", "provider_malformed_response",
     "state_contains_secret", "provider_internal_error",
 })
+
+
+def _pairs_without_duplicates(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key")
+        result[key] = value
+    return result
+
+
+def _reject_constant(value):
+    raise ValueError(f"invalid JSON constant: {value}")
 
 
 class TypeSafeJudgmentProvider:
@@ -29,6 +46,22 @@ class TypeSafeJudgmentProvider:
 
     def preflight(self, state: JudgmentState, questions: QuestionSet) -> JudgmentResult | None:
         """Reject configuration or credential exposure before deterministic routing."""
+        if (
+            contains_sensitive_material(self.model)
+            or contains_sensitive_material(state.canonical_text)
+            or (
+                bool(self._api_key)
+                and (self._api_key in self.model
+                     or self._api_key in state.canonical_text
+                     or self._api_key in json.dumps(questions.to_dict(), ensure_ascii=False))
+            )
+        ):
+            return JudgmentResult(
+                "typesafe",
+                state_hash=state.state_hash,
+                question_set_version=questions.version,
+                error_code="state_contains_secret",
+            )
         if not self._api_key:
             return JudgmentResult(
                 "typesafe",
@@ -36,17 +69,6 @@ class TypeSafeJudgmentProvider:
                 state_hash=state.state_hash,
                 question_set_version=questions.version,
                 error_code="provider_not_configured",
-            )
-        if (
-            self._api_key in self.model
-            or self._api_key in state.canonical_text
-            or self._api_key in json.dumps(questions.to_dict(), ensure_ascii=False)
-        ):
-            return JudgmentResult(
-                "typesafe",
-                state_hash=state.state_hash,
-                question_set_version=questions.version,
-                error_code="state_contains_secret",
             )
         return None
 
@@ -64,23 +86,45 @@ class TypeSafeJudgmentProvider:
             # Avoid ambient proxy credentials and netrc overriding the explicit authorization boundary.
             session.trust_env = False
         response = None
+        started = monotonic()
         try:
             response = session.post(ENDPOINT, json=payload,
                                     headers={"Authorization": f"Bearer {self._api_key}"},
-                                    timeout=(5, 30), allow_redirects=False, stream=True, verify=True)
+                                    timeout=(5, 10), allow_redirects=False, stream=True, verify=True)
+            if monotonic() - started > RESPONSE_DEADLINE_SECONDS:
+                return failed("provider_timeout")
             status = response.status_code
             if status != 200:
-                code = ("provider_authentication_error" if status in (401, 403)
-                        else "provider_rate_limited" if status in (429, 529) else "provider_http_error")
+                code = (
+                    "provider_authentication_error"
+                    if status in (401, 403)
+                    else "provider_rate_limited"
+                    if status == 429
+                    else "provider_overloaded"
+                    if status == 529
+                    else "provider_http_error"
+                )
                 return failed(code, status)
             body = bytearray()
-            for chunk in response.iter_content(chunk_size=8192):
+            # Yield each received byte so a slowly dripping body cannot hide inside
+            # an 8192-byte read and defer the elapsed-budget check indefinitely.
+            for chunk in response.iter_content(chunk_size=1):
+                if monotonic() - started > RESPONSE_DEADLINE_SECONDS:
+                    return failed("provider_timeout")
                 body.extend(chunk)
                 if len(body) > MAX_RESPONSE_BYTES:
                     return failed("provider_response_too_large")
             if self._api_key.encode() in body:
                 return failed("provider_malformed_response")
-            return parse_response(json.loads(body), state, questions)
+            return parse_response(
+                json.loads(
+                    body,
+                    object_pairs_hook=_pairs_without_duplicates,
+                    parse_constant=_reject_constant,
+                ),
+                state,
+                questions,
+            )
         except requests.Timeout:
             return failed("provider_timeout")
         except requests.RequestException:
