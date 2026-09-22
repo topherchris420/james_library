@@ -220,9 +220,12 @@ python rain_lab.py judge --replay meeting_archives/session_artifacts/session_<id
 python -m james_library.utilities.session_replay --recorded-artifact session_<id>.json
 ```
 
-The output is labeled `RECORDED JUDGMENT`. Gold-session replay disables remote
-judgment in child processes by default; `--live-judgment` is an explicit live
-re-evaluation mode and creates new judgments rather than rewriting recorded ones.
+The output is labeled `RECORDED JUDGMENT`. Gold-session replay always disables
+typed judgment in its chat subprocesses. It rejects `--live-judgment` before
+reading inputs, creating outputs, or launching subprocesses because those chat
+sessions do not implement the typed promotion boundary. To evaluate again,
+explicitly run `rain_lab.py judge --evidence cycle.json` with TypeSafe enabled.
+This creates a new judgment rather than rewriting a recorded one.
 Offline child environments omit the TypeSafe key. Digests detect accidental
 or partial modification, not an attacker who can rewrite both data and digest;
 these artifacts are not digitally signed.

@@ -137,3 +137,33 @@ def test_offline_gold_replay_removes_typesafe_credentials_from_child(tmp_path, m
     )
     assert child_environments[0]["RAIN_JUDGMENT_PROVIDER"] == "off"
     assert "TYPESAFE_API_KEY" not in child_environments[0]
+
+
+def test_gold_replay_rejects_unsupported_live_judgment_before_side_effects(tmp_path, monkeypatch):
+    from james_library.utilities import session_replay
+
+    monkeypatch.setattr(session_replay.subprocess, "run", lambda *a, **k: pytest.fail("subprocess called"))
+    gold = tmp_path / "gold.json"
+    gold.write_text("[]", encoding="utf-8")
+    output = tmp_path / "artifacts"
+    report = tmp_path / "reports"
+    with pytest.raises(ValueError, match="judge --evidence"):
+        session_replay.run_replay(
+            gold_path=gold,
+            artifact_dir=output,
+            report_dir=report,
+            library_path=tmp_path,
+            live_judgment=True,
+        )
+    assert not output.exists()
+    assert not report.exists()
+
+
+def test_live_replay_cli_rejects_unsupported_mode_before_reading_inputs(tmp_path, capsys):
+    from james_library.utilities import session_replay
+
+    with pytest.raises(SystemExit) as error:
+        session_replay.main(["--live-judgment", "--library", str(tmp_path)])
+    assert error.value.code == 2
+    assert "judge --evidence" in capsys.readouterr().err
+    assert list(tmp_path.iterdir()) == []

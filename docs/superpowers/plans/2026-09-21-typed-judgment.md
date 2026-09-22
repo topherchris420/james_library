@@ -57,7 +57,8 @@ Tests live in `tests/test_judgment_workflow.py` and `tests/test_judgment_artifac
   typed answers, uncertainty, local validation, disposition, reasons and safe provider status.
 - [x] Add explicit curated JSON packet command through the existing launcher subcommand pattern.
 - [x] Add recorded-artifact replay with zero network/subprocess calls; existing live gold
-  replay must disable remote judgment unless live reevaluation is explicitly requested.
+  replay must disable remote judgment. Explicit reevaluation uses `judge --evidence`;
+  gold replay rejects unsupported live-judgment requests.
 - [x] Verify packet command end to end with a deterministic mock, including failed validation.
 
 ## Task 3: Documentation, review, and delivery

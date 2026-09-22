@@ -89,6 +89,8 @@ def run_replay(
     library_path: Path | str,
     live_judgment: bool = False,
 ) -> dict[str, Any]:
+    if live_judgment:
+        raise ValueError("Live judgment is unsupported by gold replay; use rain_lab.py judge --evidence instead.")
     gold_path = Path(gold_path)
     artifact_dir = Path(artifact_dir)
     report_dir = Path(report_dir)
@@ -113,10 +115,9 @@ def run_replay(
             library_path=library_path,
         )
         child_env = dict(os.environ)
-        if not live_judgment:
-            child_env["RAIN_JUDGMENT_PROVIDER"] = "off"
-            child_env.pop("TYPESAFE_API_KEY", None)
-            child_env.pop("TYPESAFE_MODEL", None)
+        child_env["RAIN_JUDGMENT_PROVIDER"] = "off"
+        child_env.pop("TYPESAFE_API_KEY", None)
+        child_env.pop("TYPESAFE_MODEL", None)
         completed = subprocess.run(
             command,
             cwd=library_path,
@@ -146,7 +147,7 @@ def run_replay(
     eval_report = evaluate_artifacts_against_gold(artifact_paths, gold_cases)
     report = {
         "mode": "live_session_replay",
-        "judgment_mode": "live_reevaluation" if live_judgment else "disabled",
+        "judgment_mode": "disabled",
         "timestamp": _utc_stamp(),
         "command_template": command_template,
         "gold_path": str(gold_path),
@@ -243,8 +244,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--recorded-artifact", type=str, default=None,
                         help="Replay recorded judgments without launching a session or provider.")
     parser.add_argument("--live-judgment", action="store_true",
-                        help="Allow explicit live judgment during new gold-session replay.")
+                        help="Unsupported; use rain_lab.py judge --evidence for live judgment.")
     args = parser.parse_args(argv)
+    if args.live_judgment:
+        parser.error("Live judgment is unsupported by gold replay; use rain_lab.py judge --evidence instead.")
 
     if args.recorded_artifact:
         report = replay_recorded_judgments(args.recorded_artifact)
