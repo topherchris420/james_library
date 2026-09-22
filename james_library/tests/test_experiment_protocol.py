@@ -79,10 +79,12 @@ class TestManifestContracts(unittest.TestCase):
         pa["alpha_threshold"] = float("nan")
         pa["minimum_effect_percent"] = -1
         pa["equivalence_margin_ohms"] = 0
+        pa["effect_size_threshold"] = float("inf")
         errors = validate_manifest(manifest)
         self.assertTrue(any("alpha_threshold" in error for error in errors))
         self.assertTrue(any("minimum_effect_percent" in error for error in errors))
         self.assertTrue(any("equivalence_margin_ohms" in error for error in errors))
+        self.assertTrue(any("effect_size_threshold" in error for error in errors))
 
     def test_manifest_immutability_verification(self):
         manifest = design_experiment("Q", "H")

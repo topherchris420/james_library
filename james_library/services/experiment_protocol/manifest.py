@@ -189,6 +189,10 @@ def validate_manifest(manifest: Any) -> list[str]:
         if percent is not None and (isinstance(percent, bool) or not isinstance(percent, (int, float))
                                     or not math.isfinite(percent) or percent < 0):
             errors.append("minimum_effect_percent must be a finite non-negative number")
+        effect = pa.get("effect_size_threshold")
+        if (isinstance(effect, bool) or not isinstance(effect, (int, float))
+                or not math.isfinite(effect) or effect < 0):
+            errors.append("effect_size_threshold must be a finite non-negative number")
 
     # Check provenance requirements
     prov_reqs = manifest.get("provenance_requirements")

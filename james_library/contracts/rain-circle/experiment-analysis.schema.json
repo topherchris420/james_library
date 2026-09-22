@@ -100,8 +100,8 @@
           "type": "object",
           "required": ["margin_ohms", "confidence_level", "lower_bound", "upper_bound", "established"],
           "properties": {
-            "margin_ohms": { "type": ["number", "null"] },
-            "confidence_level": { "type": "number" },
+            "margin_ohms": { "type": ["number", "null"], "exclusiveMinimum": 0.0 },
+            "confidence_level": { "type": "number", "exclusiveMinimum": 0.0, "exclusiveMaximum": 1.0 },
             "lower_bound": { "type": ["number", "null"] },
             "upper_bound": { "type": ["number", "null"] },
             "established": { "type": "boolean" }
