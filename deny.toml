@@ -72,8 +72,19 @@ allow = [
     "0BSD",
     "BSL-1.0",
     "CC0-1.0",
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
 ]
 unused-allowed-license = "allow"
+
+# `unescaper` advertises `GPL-3.0/MIT`, which is not a valid SPDX expression.
+# Clarify it to the actual dual-license intent so cargo-deny can process the
+# dependency instead of failing on the malformed metadata from a transitive crate.
+[[licenses.clarify]]
+name = "unescaper"
+version = "0.1.8"
+expression = "MIT OR GPL-3.0-or-later"
+license-files = []
 
 [bans]
 multiple-versions = "warn"
