@@ -72,5 +72,8 @@ La politique de promotion de `judge` reste inchangée.
   rien ne l'autorise explicitement. Utilisez `host = "127.0.0.1"`.
 - `research library not found` : lancez `rain rig` depuis le dépôt James
   Library ou passez `--library <chemin>`.
-- Avertissement `meeting inference` : le modèle de la réunion Python est un
-  modèle Ollama `:cloud` ou n'est pas fixé. Définissez `RAIN_LLM_MODEL`.
+- La réunion refuse de démarrer (`[rig] privacy = "local" refuses the meeting model`) :
+  en mode local, la réunion Python refuse les points d'accès hébergés et les
+  modèles Ollama `:cloud` (le modèle par défaut en est un). Lancez
+  `rain rig setup` pour fixer `[rig.meeting]` sur un serveur local, ou
+  définissez `[rig.meeting] model` / `RAIN_LLM_MODEL`.

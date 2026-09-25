@@ -170,11 +170,12 @@ it. Set `host = "127.0.0.1"` unless remote access is intended.
 
 Run `rain rig` from the James Library checkout or pass `--library <path>`.
 
-### `meeting inference` warns about a hosted model
+### The meeting refuses to start: `[rig] privacy = "local" refuses the meeting model`
 
-The Python meeting's model is an Ollama `:cloud` model or is unpinned. Set
-`RAIN_LLM_MODEL` to a model listed by `rain rig models`. The runtime's
-`local` privacy enforcement does not govern the separate Python meeting process.
+Under local privacy the Python meeting refuses hosted endpoints and Ollama
+`:cloud` models. The built-in default model is one of those. Run
+`rain rig setup`, which pins `[rig.meeting]` to a running local server, or set
+`[rig.meeting] model` / `RAIN_LLM_MODEL` to a model listed by `rain rig models`.
 
 ### `--json` output mixed with log lines
 

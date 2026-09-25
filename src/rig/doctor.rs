@@ -10,9 +10,7 @@ use super::research::MeetingInference;
 use super::status::{RigStatus, collect};
 use super::system::BindExposure;
 use crate::config::{RigPrivacyMode, builtin_rig_profile};
-use crate::providers::locality::{
-    InferenceTargetKind, classify_endpoint_resolved, resolve_inference_target,
-};
+use crate::providers::locality::{InferenceTargetKind, resolve_inference_target};
 use serde::Serialize;
 use std::time::Duration;
 
@@ -475,11 +473,19 @@ fn privacy_checks(ctx: &RigContext, status: &RigStatus) -> Vec<DoctorCheck> {
     }
 
     let meeting = MeetingInference::from_context(ctx);
+    let sources = format!(
+        "endpoint from {}, model from {}",
+        meeting.base_url_source.label(),
+        meeting.model_source.label()
+    );
     if meeting.is_hosted() {
         let what = if meeting.hosted_model {
-            "the meeting model is an Ollama cloud model (hosted)"
+            format!(
+                "meeting model {} is an Ollama cloud model (hosted; {sources})",
+                meeting.model
+            )
         } else {
-            "the meeting endpoint (RAIN_LLM_BASE_URL) is not local"
+            format!("meeting endpoint is not local ({sources})")
         };
         checks.push(with_hint(
             check(
@@ -488,33 +494,30 @@ fn privacy_checks(ctx: &RigContext, status: &RigStatus) -> Vec<DoctorCheck> {
                 if local { CheckResult::Fail } else { CheckResult::Warn },
                 what,
             ),
-            "set RAIN_LLM_MODEL to a local model; the Python meeting is not governed by the runtime's provider enforcement",
-        ));
-    } else if meeting.model.is_none() {
-        checks.push(with_hint(
-            check(
-                "privacy",
-                "meeting inference",
-                if local {
-                    CheckResult::Warn
-                } else {
-                    CheckResult::Skip
-                },
-                "meeting model is not pinned; its built-in default may be a hosted (:cloud) model",
-            ),
-            "set RAIN_LLM_MODEL to a model served by your local server",
+            if local {
+                "the meeting will refuse to start under local privacy; run `rain rig setup` to pin [rig.meeting] to a running local server, or set RAIN_LLM_MODEL"
+            } else {
+                "run `rain rig setup` or set [rig.meeting] model to keep meeting prompts local"
+            },
         ));
     } else {
-        checks.push(check(
+        let mut item = check(
             "privacy",
             "meeting inference",
             CheckResult::Pass,
             format!(
-                "model {} · endpoint {}",
-                meeting.model.as_deref().unwrap_or_default(),
-                classify_endpoint_resolved(&meeting.base_url).label()
+                "model {} · endpoint {} ({sources})",
+                meeting.model,
+                meeting.endpoint_locality.label()
             ),
-        ));
+        );
+        if meeting.uses_environment() {
+            item = with_hint(
+                item,
+                "value comes from this shell's environment; persist it with [rig.meeting] so every shell agrees",
+            );
+        }
+        checks.push(item);
     }
 
     if let Some(jev) = find(status, "jev") {

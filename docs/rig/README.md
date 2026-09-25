@@ -69,9 +69,6 @@ ancestors of the `rain` binary.
 - No radio or SDR hardware backend. Nothing can key a transmitter.
 - Rig does not start llama.cpp, Ollama, LM Studio or rnsd, and it does not
   download models.
-- The Python meeting (`rain_lab.py`) is not governed by the runtime's provider
-  enforcement. `rig status` and `rig doctor` report its endpoint and model
-  honestly, but enforcement there is advisory in this release.
 
 ## Guides
 

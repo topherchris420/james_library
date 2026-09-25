@@ -62,7 +62,16 @@ pre-Rig behavior. Unknown keys are rejected.
 profile = "local"        # local | node | field (built-in, human-readable TOML)
 node_name = "rain-local" # shareable name: lowercase letters, digits, '-'; 1-32 chars
 privacy = "local"        # local | hybrid | hosted; default: profile's, else hybrid
+
+[rig.meeting]            # optional; shared with `python rain_lab.py`
+base_url = "http://127.0.0.1:8080/v1"
+model = "Qwen3-4B-Q4_K_M.gguf"
 ```
+
+- `[rig.meeting]` persists the meeting endpoint/model. Precedence in both the
+  Python meeting and Rig: `RAIN_LLM_*` / `LM_STUDIO_*` env > `[rig.meeting]` >
+  built-in default. Under `local` privacy the Python chat/RLM meeting and the
+  lab-server runtime refuse hosted endpoints and Ollama `:cloud` models.
 
 - `privacy = "local"` makes provider construction refuse any inference
   endpoint that is not loopback or private-network, including fallback
@@ -71,7 +80,7 @@ privacy = "local"        # local | hybrid | hosted; default: profile's, else hyb
   `hosted` is informational and enforces like `hybrid`.
 - All built-in profiles default to `local` privacy. Profiles cannot change
   security, autonomy, or bind policy.
-- Rig reads these environment variables for reporting only:
+- Rig reads these environment variables (reporting, plus the meeting precedence above):
   `RAIN_LLM_BASE_URL`, `RAIN_LLM_MODEL`, `LM_STUDIO_BASE_URL`,
   `LM_STUDIO_MODEL`, `RAIN_DECISION_MODE`, `RAIN_LAYA_CHECKPOINT`,
   `RAIN_JUDGMENT_PROVIDER`, `TYPESAFE_API_KEY` (presence only).

@@ -61,7 +61,16 @@ Tùy chọn; nếu bỏ qua, hành vi cũ được giữ nguyên. Khóa không x
 profile = "local"        # local | node | field
 node_name = "rain-local" # chữ thường, chữ số, '-'; 1-32 ký tự
 privacy = "local"        # local | hybrid | hosted; mặc định: theo profile, nếu không thì hybrid
+
+[rig.meeting]            # tùy chọn; dùng chung với `python rain_lab.py`
+base_url = "http://127.0.0.1:8080/v1"
+model = "Qwen3-4B-Q4_K_M.gguf"
 ```
+
+- `[rig.meeting]` lưu điểm truy cập và mô hình của cuộc họp. Thứ tự ưu tiên:
+  biến `RAIN_LLM_*` / `LM_STUDIO_*` > `[rig.meeting]` > mặc định tích hợp. Ở chế
+  độ `local`, cuộc họp Python (chat, RLM) và runtime lab-server từ chối điểm
+  truy cập lưu trữ bên ngoài và mô hình Ollama `:cloud`.
 
 - `privacy = "local"` khiến việc tạo nhà cung cấp từ chối mọi điểm suy luận
   không phải loopback hoặc mạng riêng, kể cả nhà cung cấp dự phòng, tuyến mô

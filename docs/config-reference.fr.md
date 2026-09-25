@@ -64,7 +64,16 @@ inconnues sont refusées.
 profile = "local"        # local | node | field
 node_name = "rain-local" # minuscules, chiffres, '-' ; 1 à 32 caractères
 privacy = "local"        # local | hybrid | hosted ; défaut : celui du profil, sinon hybrid
+
+[rig.meeting]            # facultatif ; partagé avec `python rain_lab.py`
+base_url = "http://127.0.0.1:8080/v1"
+model = "Qwen3-4B-Q4_K_M.gguf"
 ```
+
+- `[rig.meeting]` fixe le point d'accès et le modèle de la réunion.
+  Priorité : variables `RAIN_LLM_*` / `LM_STUDIO_*` > `[rig.meeting]` > défaut
+  intégré. En mode `local`, la réunion Python (chat, RLM) et le runtime du
+  lab-server refusent les points d'accès hébergés et les modèles Ollama `:cloud`.
 
 - `privacy = "local"` fait refuser, à la construction du fournisseur, tout
   point d'accès d'inférence qui n'est ni loopback ni réseau privé, y compris

@@ -79,7 +79,10 @@ pub(crate) mod test_support {
         config.workspace_dir = std::env::temp_dir();
         RigContext {
             config,
-            env: RigEnv::from_pairs([("RAIN_LLM_BASE_URL", unreachable_url("/v1"))]),
+            env: RigEnv::from_pairs([
+                ("RAIN_LLM_BASE_URL", unreachable_url("/v1")),
+                ("RAIN_LLM_MODEL", "local-test-model".to_string()),
+            ]),
             library_root: None,
             endpoints: ProbeEndpoints {
                 llamacpp: llamacpp.unwrap_or_else(|| unreachable_url("/v1")),

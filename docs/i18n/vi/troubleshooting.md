@@ -66,5 +66,8 @@ Chính sách chấp thuận của lệnh `judge` không thay đổi.
   loopback và không được cho phép rõ ràng. Hãy dùng `host = "127.0.0.1"`.
 - `research library not found`: chạy `rain rig` từ thư mục James Library hoặc
   truyền `--library <đường dẫn>`.
-- Cảnh báo `meeting inference`: mô hình của cuộc họp Python là mô hình Ollama
-  `:cloud` hoặc chưa được chỉ định. Hãy đặt `RAIN_LLM_MODEL`.
+- Cuộc họp từ chối khởi động (`[rig] privacy = "local" refuses the meeting model`):
+  ở chế độ local, cuộc họp Python từ chối điểm truy cập lưu trữ bên ngoài và mô
+  hình Ollama `:cloud` (mô hình mặc định là một ví dụ). Chạy `rain rig setup`
+  để gắn `[rig.meeting]` vào máy chủ cục bộ, hoặc đặt `[rig.meeting] model` /
+  `RAIN_LLM_MODEL`.

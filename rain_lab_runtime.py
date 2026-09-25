@@ -250,6 +250,14 @@ def _validate_runtime_config(config: RuntimeConfig) -> None:
             "Set LM_STUDIO_API_KEY or llm.api_key."
         )
 
+    # [rig] privacy = "local" in the rain config refuses hosted endpoints/models.
+    from james_library.utilities.rig_settings import RigPrivacyError, enforce_meeting_privacy
+
+    try:
+        enforce_meeting_privacy(base_url, model)
+    except RigPrivacyError as exc:
+        raise RuntimeError(f"R.A.I.N. runtime config error: {exc}") from exc
+
 
 def validate_runtime_config(config: RuntimeConfig) -> None:
     """Validate a runtime config using the same rules as the main runtime."""

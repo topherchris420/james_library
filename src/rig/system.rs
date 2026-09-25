@@ -159,15 +159,21 @@ pub fn assess_privacy(ctx: &RigContext) -> PrivacyStatus {
         let what = if meeting.hosted_model {
             format!(
                 "R.A.I.N. Lab meeting model {} (Ollama cloud)",
-                meeting.model.as_deref().unwrap_or_default()
+                meeting.model
             )
         } else {
-            "R.A.I.N. Lab meeting endpoint (RAIN_LLM_BASE_URL)".to_string()
+            "R.A.I.N. Lab meeting endpoint".to_string()
         };
+        if local_mode {
+            violations.push(format!(
+                "{what} is hosted; the Python meeting will refuse to start in local privacy mode (from {})",
+                meeting.model_source.label()
+            ));
+        }
         external.push(ExternalService {
             kind: "meeting".into(),
             name: what,
-            refused_in_local_mode: false,
+            refused_in_local_mode: true,
         });
     }
 

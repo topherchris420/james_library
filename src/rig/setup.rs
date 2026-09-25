@@ -68,10 +68,11 @@ pub fn plan(config: &Config, status: &RigStatus, request: &SetupRequest) -> Resu
     if let Some(name) = node_name.as_deref() {
         validate_rig_node_name(name)?;
     }
-    let rig = RigConfig {
+    let mut rig = RigConfig {
         profile: Some(profile_kind),
         node_name,
         privacy: request.privacy.or(config.rig.privacy),
+        meeting: config.rig.meeting.clone(),
     };
     let privacy = rig.effective_privacy().0;
 
@@ -92,7 +93,7 @@ pub fn plan(config: &Config, status: &RigStatus, request: &SetupRequest) -> Resu
     });
 
     if privacy == RigPrivacyMode::Local && !current_is_local {
-        match running_preferred {
+        match running_preferred.clone() {
             Some((id, cap)) => {
                 let model = cap
                     .inference
@@ -107,6 +108,42 @@ pub fn plan(config: &Config, status: &RigStatus, request: &SetupRequest) -> Resu
             None => notes.push(format!(
                 "default provider '{current_display}' is hosted and no local server is running: with local privacy the runtime will refuse inference until you start one and re-run `rain rig setup` (or choose --privacy hybrid)"
             )),
+        }
+    }
+
+    // Pin the Python meeting to a running local server when it would be hosted.
+    let meeting_hosted = status
+        .get("lab-meeting")
+        .and_then(|cap| cap.inference.as_ref())
+        .is_some_and(|detail| detail.locality == "remote");
+    if meeting_hosted {
+        let pin = running_preferred.and_then(|(id, cap)| {
+            let detail = cap.inference.as_ref()?;
+            let endpoint = detail.endpoint.clone()?;
+            let base_url = if id == "ollama" {
+                format!("{}/v1", endpoint.trim_end_matches('/'))
+            } else {
+                endpoint
+            };
+            Some((cap.name.clone(), base_url, detail.models.first().cloned()?))
+        });
+        match (pin, privacy) {
+            (Some((server, base_url, model)), RigPrivacyMode::Local) => {
+                notes.push(format!(
+                    "the meeting would use a hosted model; setup pins [rig.meeting] to the running {server} server"
+                ));
+                rig.meeting = Some(crate::config::RigMeetingConfig {
+                    base_url: Some(base_url),
+                    model: Some(model),
+                });
+            }
+            (Some((server, _, _)), _) => notes.push(format!(
+                "the meeting uses a hosted model; rerun with --privacy local to pin it to the running {server} server"
+            )),
+            (None, RigPrivacyMode::Local) => notes.push(
+                "the meeting uses a hosted model and no local server is running: under local privacy the meeting refuses to start until one runs (then re-run `rain rig setup`)".to_string(),
+            ),
+            (None, _) => {}
         }
     }
 
@@ -209,6 +246,15 @@ fn render_plan(config: &Config, plan: &SetupPlan) -> String {
             let _ = writeln!(out, "  default_model    = \"{model}\"");
         }
     }
+    if let Some(meeting) = &plan.rig.meeting {
+        let _ = writeln!(out, "  [rig.meeting]");
+        if let Some(url) = &meeting.base_url {
+            let _ = writeln!(out, "  base_url = \"{url}\"");
+        }
+        if let Some(model) = &meeting.model {
+            let _ = writeln!(out, "  model    = \"{model}\"");
+        }
+    }
     if plan.clear_api_url {
         let _ = writeln!(
             out,
@@ -298,6 +344,7 @@ mod tests {
         CapabilityStatus::new("llamacpp", CapabilityState::Running, "ready").with_inference(
             InferenceDetail {
                 provider: "llamacpp".into(),
+                endpoint: Some("http://localhost:8080/v1".into()),
                 locality: "local".into(),
                 models: vec!["Qwen3-4B-Q4_K_M.gguf".into()],
                 ..InferenceDetail::default()
@@ -345,6 +392,51 @@ mod tests {
         assert!(updated.api_url.is_none());
         assert!(
             crate::providers::provider_runtime_options_from_config(&updated).local_inference_only
+        );
+    }
+
+    fn hosted_meeting() -> CapabilityStatus {
+        CapabilityStatus::new("lab-meeting", CapabilityState::Unavailable, "x").with_inference(
+            InferenceDetail {
+                provider: "rain-lab-meeting".into(),
+                locality: "remote".into(),
+                ..InferenceDetail::default()
+            },
+        )
+    }
+
+    #[test]
+    fn local_setup_pins_hosted_meeting_to_running_server() {
+        let config = Config::default();
+        let local_plan = plan(
+            &config,
+            &status_with(vec![running_llamacpp(), hosted_meeting()]),
+            &SetupRequest::default(),
+        )
+        .unwrap();
+        let meeting = local_plan.rig.meeting.clone().unwrap();
+        assert_eq!(
+            meeting.base_url.as_deref(),
+            Some("http://localhost:8080/v1")
+        );
+        assert_eq!(meeting.model.as_deref(), Some("Qwen3-4B-Q4_K_M.gguf"));
+
+        let hybrid = SetupRequest {
+            privacy: Some(RigPrivacyMode::Hybrid),
+            ..SetupRequest::default()
+        };
+        let hybrid_plan = plan(
+            &config,
+            &status_with(vec![running_llamacpp(), hosted_meeting()]),
+            &hybrid,
+        )
+        .unwrap();
+        assert!(hybrid_plan.rig.meeting.is_none());
+        assert!(
+            hybrid_plan
+                .notes
+                .iter()
+                .any(|n| n.contains("--privacy local"))
         );
     }
 

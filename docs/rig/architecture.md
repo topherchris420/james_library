@@ -81,9 +81,16 @@ refuses non-local targets with a typed `LocalInferenceViolation`. Fallback
 providers and model routes propagate that error instead of skipping the
 entry, so there is no silent hosted fallback. The violation is non-retryable.
 
-`status` and `doctor` also assess the Python meeting's endpoint and model
-(`RAIN_LLM_BASE_URL`, `RAIN_LLM_MODEL`) and Jev. Those are advisory: the
-meeting is a separate process with its own configuration.
+The Python meeting reads the same `config.toml` through
+`james_library/utilities/rig_settings.py` (same file resolution, the same
+profile files, and the same locality rules). Its endpoint and model resolve as
+environment (`RAIN_LLM_*` / `LM_STUDIO_*`), then `[rig.meeting]`, then the
+built-in default. The built-in default model is an Ollama `:cloud` model,
+which is hosted. Under `local` privacy the chat meeting, the RLM meeting and
+the lab-server runtime refuse a hosted endpoint or `:cloud` model before any
+request, and exit with a clear message. `status` and `doctor` report where
+each setting came from, so a value inherited from one shell's environment is
+visible.
 
 ## Action boundary
 

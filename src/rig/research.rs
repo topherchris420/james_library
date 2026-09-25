@@ -27,12 +27,41 @@ pub const RESEARCH_AGENTS: &[(&str, &str)] = &[
 const LIBRARY_MISSING: &str =
     "research library not found; run from the james_library checkout or pass --library <path>";
 
-/// Meeting inference settings resolved from the environment.
+/// Model the meeting uses when neither env nor `[rig.meeting]` pins one
+/// (`DEFAULT_MODEL_NAME` in `rain_lab_meeting_chat_version.py`). It is an
+/// Ollama cloud model, i.e. hosted inference.
+pub const MEETING_DEFAULT_MODEL: &str = "minimax-m2.7:cloud";
+
+/// Where a meeting setting came from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SettingSource {
+    /// `RAIN_LLM_*` / `LM_STUDIO_*` in the invoking shell.
+    Environment,
+    /// `[rig.meeting]` in `config.toml` (shared with the Python meeting).
+    RigConfig,
+    /// The meeting's built-in default.
+    MeetingDefault,
+}
+
+impl SettingSource {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Environment => "environment",
+            Self::RigConfig => "[rig.meeting]",
+            Self::MeetingDefault => "meeting default",
+        }
+    }
+}
+
+/// Meeting inference settings, resolved like the Python meeting resolves
+/// them: environment > `[rig.meeting]` > built-in default.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MeetingInference {
     pub base_url: String,
-    /// `None` when unpinned (the meeting's built-in default applies).
-    pub model: Option<String>,
+    pub base_url_source: SettingSource,
+    pub model: String,
+    pub model_source: SettingSource,
     pub endpoint_locality: EndpointLocality,
     /// Ollama `:cloud` models run on Ollama's hosted service even when the
     /// endpoint is a local Ollama daemon.
@@ -41,30 +70,46 @@ pub struct MeetingInference {
 
 impl MeetingInference {
     pub fn from_context(ctx: &RigContext) -> Self {
-        let base_url = ctx
-            .env
-            .get("RAIN_LLM_BASE_URL")
-            .or_else(|| ctx.env.get("LM_STUDIO_BASE_URL"))
-            .unwrap_or(MEETING_DEFAULT_BASE_URL)
-            .trim_end_matches('/')
-            .to_string();
-        let model = ctx
-            .env
-            .get("RAIN_LLM_MODEL")
-            .or_else(|| ctx.env.get("LM_STUDIO_MODEL"))
-            .map(str::to_string);
-        let hosted_model = model.as_deref().is_some_and(|m| m.ends_with(":cloud"));
+        let meeting = ctx.config.rig.meeting.as_ref();
+        let pick = |env_keys: [&str; 2], configured: Option<&String>, default: &str| {
+            if let Some(value) = env_keys.iter().find_map(|key| ctx.env.get(key)) {
+                return (value.to_string(), SettingSource::Environment);
+            }
+            match configured.map(|v| v.trim()).filter(|v| !v.is_empty()) {
+                Some(value) => (value.to_string(), SettingSource::RigConfig),
+                None => (default.to_string(), SettingSource::MeetingDefault),
+            }
+        };
+        let (base_url, base_url_source) = pick(
+            ["RAIN_LLM_BASE_URL", "LM_STUDIO_BASE_URL"],
+            meeting.and_then(|m| m.base_url.as_ref()),
+            MEETING_DEFAULT_BASE_URL,
+        );
+        let base_url = base_url.trim_end_matches('/').to_string();
+        let (model, model_source) = pick(
+            ["RAIN_LLM_MODEL", "LM_STUDIO_MODEL"],
+            meeting.and_then(|m| m.model.as_ref()),
+            MEETING_DEFAULT_MODEL,
+        );
         Self {
             endpoint_locality: classify_endpoint_resolved(&base_url),
+            hosted_model: model.ends_with(":cloud"),
             base_url,
+            base_url_source,
             model,
-            hosted_model,
+            model_source,
         }
     }
 
     /// Whether meeting prompts leave this machine / LAN.
     pub fn is_hosted(&self) -> bool {
         self.hosted_model || !self.endpoint_locality.is_local()
+    }
+
+    /// Whether any setting depends on the invoking shell's environment.
+    pub fn uses_environment(&self) -> bool {
+        self.base_url_source == SettingSource::Environment
+            || self.model_source == SettingSource::Environment
     }
 }
 
@@ -135,10 +180,7 @@ pub async fn probe_research(ctx: &RigContext) -> Vec<CapabilityStatus> {
 
 async fn probe_meeting(ctx: &RigContext) -> CapabilityStatus {
     let meeting = MeetingInference::from_context(ctx);
-    let model_label = meeting
-        .model
-        .clone()
-        .unwrap_or_else(|| "meeting default (set RAIN_LLM_MODEL to pin)".into());
+    let model_label = format!("{} ({})", meeting.model, meeting.model_source.label());
     let locality = if meeting.is_hosted() {
         EndpointLocality::Remote
     } else {
@@ -152,7 +194,7 @@ async fn probe_meeting(ctx: &RigContext) -> CapabilityStatus {
         locality: locality.label().into(),
         auth_configured: false,
         selected: false,
-        models: meeting.model.clone().into_iter().collect(),
+        models: vec![meeting.model.clone()],
         ..InferenceDetail::default()
     };
     if !meeting.endpoint_locality.is_local() {
@@ -176,11 +218,10 @@ async fn probe_meeting(ctx: &RigContext) -> CapabilityStatus {
     match outcome.ok_json() {
         Some(body) => {
             let served = parse_openai_compatible_model_ids(body);
-            let model_state = match meeting.model.as_deref() {
-                Some(model) if !served.iter().any(|id| id == model) => {
-                    " · pinned model not listed by the server"
-                }
-                _ => "",
+            let model_state = if served.contains(&meeting.model) {
+                ""
+            } else {
+                " · model not listed by the server"
             };
             CapabilityStatus::new(
                 "lab-meeting",
@@ -356,6 +397,36 @@ mod tests {
         assert!(!MeetingInference::from_context(&ctx).is_hosted());
         ctx.env = RigEnv::from_pairs([("RAIN_LLM_BASE_URL", "https://api.example.com/v1")]);
         assert!(MeetingInference::from_context(&ctx).is_hosted());
+    }
+
+    #[test]
+    fn meeting_settings_precedence_env_then_rig_config_then_default() {
+        let mut ctx = context();
+        ctx.env = RigEnv::default();
+        let unpinned = MeetingInference::from_context(&ctx);
+        assert_eq!(unpinned.model, MEETING_DEFAULT_MODEL);
+        assert_eq!(unpinned.model_source, SettingSource::MeetingDefault);
+        assert!(
+            unpinned.is_hosted(),
+            "the built-in default is an Ollama cloud model"
+        );
+
+        ctx.config.rig.meeting = Some(crate::config::RigMeetingConfig {
+            base_url: Some("http://127.0.0.1:8080/v1".into()),
+            model: Some("Qwen3-4B-Q4_K_M.gguf".into()),
+        });
+        let pinned = MeetingInference::from_context(&ctx);
+        assert_eq!(pinned.base_url, "http://127.0.0.1:8080/v1");
+        assert_eq!(pinned.model_source, SettingSource::RigConfig);
+        assert!(!pinned.is_hosted());
+        assert!(!pinned.uses_environment());
+
+        ctx.env = RigEnv::from_pairs([("RAIN_LLM_MODEL", "other.gguf")]);
+        let overridden = MeetingInference::from_context(&ctx);
+        assert_eq!(overridden.model, "other.gguf");
+        assert_eq!(overridden.model_source, SettingSource::Environment);
+        assert_eq!(overridden.base_url_source, SettingSource::RigConfig);
+        assert!(overridden.uses_environment());
     }
 
     #[test]

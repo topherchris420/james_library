@@ -147,6 +147,22 @@ pub struct RigConfig {
     /// profile default, or `hybrid` (pre-Rig behavior) when no profile is set.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub privacy: Option<RigPrivacyMode>,
+    /// Persisted endpoint/model for the Python meeting (`[rig.meeting]`).
+    /// `RAIN_LLM_BASE_URL` / `RAIN_LLM_MODEL` still take precedence.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub meeting: Option<RigMeetingConfig>,
+}
+
+/// Meeting inference settings shared by `rain rig` and `python rain_lab.py`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RigMeetingConfig {
+    /// OpenAI-compatible base URL (for example `http://127.0.0.1:8080/v1`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base_url: Option<String>,
+    /// Model id served at `base_url`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 impl RigConfig {
@@ -189,6 +205,13 @@ impl RigConfig {
     pub fn validate(&self) -> Result<()> {
         if let Some(name) = self.node_name.as_deref() {
             validate_rig_node_name(name)?;
+        }
+        if let Some(url) = self.meeting.as_ref().and_then(|m| m.base_url.as_deref()) {
+            let parsed = reqwest::Url::parse(url.trim())
+                .map_err(|_| anyhow::anyhow!("rig.meeting.base_url is not a valid URL"))?;
+            if !matches!(parsed.scheme(), "http" | "https") || parsed.host_str().is_none() {
+                bail!("rig.meeting.base_url must be an http(s) URL with a host");
+            }
         }
         if let Some(kind) = self.profile {
             builtin_rig_profile(kind)?;
@@ -407,6 +430,22 @@ wanted_capabilities = []
         let parsed: crate::config::Config = toml::from_str(&rendered).unwrap();
         assert_eq!(parsed.rig, with_rig.rig);
         parsed.validate().unwrap();
+    }
+
+    #[test]
+    fn rig_meeting_table_parses_and_validates() {
+        let parsed: RigConfig = toml::from_str(
+            "profile = \"local\"\n[meeting]\nbase_url = \"http://127.0.0.1:8080/v1\"\nmodel = \"m.gguf\"",
+        )
+        .unwrap();
+        parsed.validate().unwrap();
+        assert_eq!(
+            parsed.meeting.as_ref().unwrap().model.as_deref(),
+            Some("m.gguf")
+        );
+        let bad: RigConfig = toml::from_str("[meeting]\nbase_url = \"ftp://x\"").unwrap();
+        assert!(bad.validate().is_err());
+        assert!(toml::from_str::<RigConfig>("[meeting]\napi_key = \"x\"").is_err());
     }
 
     #[test]
