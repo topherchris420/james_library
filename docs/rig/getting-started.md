@@ -114,8 +114,10 @@ security, autonomy, or bind policy.
 | `hosted` | Hosted inference expected. Enforcement matches `hybrid`. |
 
 CLI wrappers such as `claude-code` and `gemini-cli` count as hosted. So do
-Ollama `:cloud` models. Endpoint classification uses no DNS: a hostname that
-is not `localhost`, `*.local`, `*.home.arpa`, or a private IP counts as remote.
+Ollama `:cloud` models. IP literals and `localhost` are classified directly.
+Any other hostname (including `*.local`) is resolved, and counts as local only
+when every address it resolves to is loopback or private. A lookup failure
+counts as remote.
 
 ## Rollback
 

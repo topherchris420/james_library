@@ -1,12 +1,18 @@
 //! Safe, bounded HTTP probes for local services.
 //!
-//! Probes never contact remote endpoints: URLs are classified with
+//! Probes never contact remote endpoints: hosts are classified with
 //! [`crate::providers::locality`] first and anything not loopback or
-//! private-network is reported as [`ProbeOutcome::NotProbed`]. The client
-//! bypasses proxies (local traffic must not be forwarded off-box), follows
-//! no redirects, uses short timeouts, and caps response size.
+//! private-network is reported as [`ProbeOutcome::NotProbed`]. Hostnames are
+//! resolved once, every address must be local, and the request is pinned to
+//! the verified address so a second lookup cannot redirect it (DNS
+//! rebinding). The client bypasses proxies (local traffic must not be
+//! forwarded off-box), follows no redirects, uses short timeouts, and caps
+//! response size.
 
-use crate::providers::locality::classify_endpoint;
+use crate::providers::locality::{
+    EndpointLocality, classify_addresses, classify_host, is_literal_host,
+};
+use std::net::SocketAddr;
 use std::time::Duration;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_millis(800);
@@ -62,29 +68,93 @@ impl Default for ProbeClient {
     }
 }
 
+fn client_builder() -> reqwest::ClientBuilder {
+    reqwest::Client::builder()
+        .no_proxy()
+        .redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(CONNECT_TIMEOUT)
+        .timeout(REQUEST_TIMEOUT)
+}
+
+/// Result of verifying a host before contacting it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerifiedHost {
+    pub locality: EndpointLocality,
+    /// Verified address to pin for hostnames (`None` for literals).
+    pub pinned: Option<SocketAddr>,
+}
+
+/// Resolve and classify `host:port` asynchronously; every address must be
+/// local. Literal hosts are classified without a lookup.
+pub async fn verify_host(host: &str, port: u16) -> VerifiedHost {
+    let bare = host.trim_start_matches('[').trim_end_matches(']');
+    if is_literal_host(bare) {
+        return VerifiedHost {
+            locality: classify_host(bare),
+            pinned: None,
+        };
+    }
+    let lookup = tokio::time::timeout(CONNECT_TIMEOUT, tokio::net::lookup_host((bare, port))).await;
+    let addresses: Vec<SocketAddr> = match lookup {
+        Ok(Ok(addresses)) => addresses.collect(),
+        _ => Vec::new(),
+    };
+    let ips: Vec<_> = addresses.iter().map(SocketAddr::ip).collect();
+    let locality = classify_addresses(&ips);
+    VerifiedHost {
+        pinned: locality
+            .is_local()
+            .then(|| addresses.first().copied())
+            .flatten(),
+        locality,
+    }
+}
+
+/// Resolved locality of a URL (remote when unparsable or unresolvable).
+pub async fn endpoint_locality(url: &str) -> EndpointLocality {
+    let Ok(parsed) = reqwest::Url::parse(url.trim()) else {
+        return EndpointLocality::Remote;
+    };
+    let (Some(host), Some(port)) = (parsed.host_str(), parsed.port_or_known_default()) else {
+        return EndpointLocality::Remote;
+    };
+    verify_host(host, port).await.locality
+}
+
 impl ProbeClient {
     pub fn new() -> Self {
-        let http = reqwest::Client::builder()
-            .no_proxy()
-            .redirect(reqwest::redirect::Policy::none())
-            .connect_timeout(CONNECT_TIMEOUT)
-            .timeout(REQUEST_TIMEOUT)
-            .build()
-            .ok();
-        Self { http }
+        Self {
+            http: client_builder().build().ok(),
+        }
     }
 
     /// GET `url` if it is a local endpoint. `bearer` is sent only when set.
     pub async fn get(&self, url: &str, bearer: Option<&str>) -> ProbeOutcome {
-        if !classify_endpoint(url).is_local() {
+        let Ok(parsed) = reqwest::Url::parse(url.trim()) else {
+            return ProbeOutcome::NotProbed;
+        };
+        let (Some(host), Some(port)) = (parsed.host_str(), parsed.port_or_known_default()) else {
+            return ProbeOutcome::NotProbed;
+        };
+        let verified = verify_host(host, port).await;
+        if !verified.locality.is_local() {
             return ProbeOutcome::NotProbed;
         }
-        let Some(http) = self.http.as_ref() else {
+        let pinned_client;
+        let http = match verified.pinned {
+            // Pin the verified address so the request cannot be re-resolved.
+            Some(address) => {
+                pinned_client = client_builder().resolve(host, address).build().ok();
+                pinned_client.as_ref()
+            }
+            None => self.http.as_ref(),
+        };
+        let Some(http) = http else {
             return ProbeOutcome::Unreachable {
                 reason: "HTTP client unavailable".into(),
             };
         };
-        let mut request = http.get(url);
+        let mut request = http.get(parsed);
         if let Some(token) = bearer.map(str::trim).filter(|token| !token.is_empty()) {
             request = request.bearer_auth(token);
         }
@@ -126,13 +196,14 @@ impl ProbeClient {
     /// Whether a TCP connection to a local `host:port` succeeds.
     pub async fn tcp_open(&self, host: &str, port: u16) -> bool {
         let host = host.trim_start_matches('[').trim_end_matches(']');
-        if !crate::providers::locality::classify_host(host).is_local() {
+        let verified = verify_host(host, port).await;
+        if !verified.locality.is_local() {
             return false;
         }
-        let address = if host.contains(':') {
-            format!("[{host}]:{port}")
-        } else {
-            format!("{host}:{port}")
+        let address = match verified.pinned {
+            Some(address) => address.to_string(),
+            None if host.contains(':') => format!("[{host}]:{port}"),
+            None => format!("{host}:{port}"),
         };
         matches!(
             tokio::time::timeout(CONNECT_TIMEOUT, tokio::net::TcpStream::connect(address)).await,
@@ -196,6 +267,30 @@ mod tests {
             .get(&format!("{}/redirect", server.uri()), None)
             .await;
         assert_eq!(outcome.status(), Some(302));
+    }
+
+    #[tokio::test]
+    async fn localhost_names_resolve_and_unresolvable_names_are_not_probed() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/ok"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"a": 1})))
+            .mount(&server)
+            .await;
+        let port = server.address().port();
+        let client = ProbeClient::new();
+        let ok = client
+            .get(&format!("http://localhost:{port}/ok"), None)
+            .await;
+        assert!(ok.ok_json().is_some(), "{ok:?}");
+        let unresolvable = client
+            .get("http://rig-no-such-host.invalid:8080/v1/models", None)
+            .await;
+        assert_eq!(unresolvable, ProbeOutcome::NotProbed);
+        assert_eq!(
+            endpoint_locality("http://rig-no-such-host.invalid/").await,
+            EndpointLocality::Remote
+        );
     }
 
     #[tokio::test]

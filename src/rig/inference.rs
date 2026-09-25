@@ -12,8 +12,8 @@ use crate::onboard::wizard::{
     parse_ollama_model_ids, parse_openai_compatible_model_ids, resolve_live_models_endpoint,
 };
 use crate::providers::locality::{
-    EndpointLocality, InferenceTargetKind, classify_endpoint, display_provider_id,
-    redact_url_userinfo, resolve_inference_target,
+    EndpointLocality, InferenceTargetKind, display_provider_id, redact_url_userinfo,
+    resolve_inference_target,
 };
 
 use std::fmt::Write as _;
@@ -74,7 +74,7 @@ fn auth_rejected(outcome: &ProbeOutcome) -> bool {
 pub async fn probe_llamacpp(ctx: &RigContext) -> CapabilityStatus {
     let selected = is_selected(ctx, &["llamacpp", "llama.cpp"]);
     let base = ctx.endpoints.llamacpp.trim_end_matches('/').to_string();
-    let locality = classify_endpoint(&base);
+    let locality = super::probe::endpoint_locality(&base).await;
     let credential = provider_credential(ctx, "llamacpp", selected);
     let mut detail = InferenceDetail {
         provider: "llamacpp".into(),
@@ -151,7 +151,7 @@ pub async fn probe_ollama(ctx: &RigContext) -> CapabilityStatus {
     let selected = is_selected(ctx, &["ollama"]);
     let base = ctx.endpoints.ollama.trim_end_matches('/').to_string();
     let base = base.strip_suffix("/api").unwrap_or(&base).to_string();
-    let locality = classify_endpoint(&base);
+    let locality = super::probe::endpoint_locality(&base).await;
     let credential = provider_credential(ctx, "ollama", selected);
     let mut detail = InferenceDetail {
         provider: "ollama".into(),
@@ -211,7 +211,7 @@ pub async fn probe_ollama(ctx: &RigContext) -> CapabilityStatus {
 pub async fn probe_lmstudio(ctx: &RigContext) -> CapabilityStatus {
     let selected = is_selected(ctx, &["lmstudio", "lm-studio"]);
     let base = ctx.endpoints.lmstudio.trim_end_matches('/').to_string();
-    let locality = classify_endpoint(&base);
+    let locality = super::probe::endpoint_locality(&base).await;
     let mut detail = InferenceDetail {
         provider: "lmstudio".into(),
         endpoint: Some(base.clone()),

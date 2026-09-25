@@ -55,10 +55,16 @@ default_model = "your-model.gguf"   # an id listed by `rain rig models`
 
 ## Locality
 
-`localhost`, `127.0.0.0/8` and `::1` are `local`. RFC 1918, link-local, ULA,
-`*.local` and `*.home.arpa` are `lan`, which `local` privacy accepts, for
-example a llama.cpp box on a home server. Anything else is `remote`: `local`
-privacy refuses it, and `hybrid` produces a doctor `WARN`.
+`localhost`, `127.0.0.0/8` and `::1` are `local`. RFC 1918, link-local and ULA
+addresses are `lan`, which `local` privacy accepts, for example a llama.cpp box
+on a home server. A hostname such as `gpu-box.local` is resolved and counts as
+`lan` only when every address it resolves to is private; a public answer or a
+failed lookup is `remote`. `local` privacy refuses `remote`, and `hybrid`
+produces a doctor `WARN`.
+
+Rig probes pin the address they verified, so a second DNS answer cannot
+redirect a probe. The runtime's HTTP clients resolve again when they connect,
+so enforcement checks the name at provider construction time.
 
 ## Testing without a GPU
 

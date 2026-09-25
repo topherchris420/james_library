@@ -107,7 +107,7 @@ credential is not reused for fallback providers.
 
 - With `[rig] privacy = "local"` (or any built-in Rig profile), provider construction refuses inference endpoints that are not loopback or private-network: hosted APIs, CLI wrappers for hosted services (`claude-code`, `gemini-cli`, `kilocli`), and self-hosted providers pointed at a public host.
 - Fallback providers and model routes fail closed with the same typed error instead of being skipped; there is no silent hosted fallback.
-- Classification is syntactic (no DNS): `localhost`, `127.0.0.0/8`, `::1` are local; RFC 1918, link-local, ULA, `*.local`, `*.home.arpa` are LAN; everything else is remote.
+- `localhost`, `127.0.0.0/8` and `::1` are local; RFC 1918, link-local and ULA addresses are LAN. Other hostnames (including `*.local`) are resolved and accepted only when every resolved address is loopback or private; lookup failure is remote. Hosted providers with fixed public endpoints are never resolved.
 
 ### SGLang Server Notes
 

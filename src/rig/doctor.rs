@@ -11,7 +11,7 @@ use super::status::{RigStatus, collect};
 use super::system::BindExposure;
 use crate::config::{RigPrivacyMode, builtin_rig_profile};
 use crate::providers::locality::{
-    InferenceTargetKind, classify_endpoint, resolve_inference_target,
+    InferenceTargetKind, classify_endpoint_resolved, resolve_inference_target,
 };
 use serde::Serialize;
 use std::time::Duration;
@@ -512,7 +512,7 @@ fn privacy_checks(ctx: &RigContext, status: &RigStatus) -> Vec<DoctorCheck> {
             format!(
                 "model {} · endpoint {}",
                 meeting.model.as_deref().unwrap_or_default(),
-                classify_endpoint(&meeting.base_url).label()
+                classify_endpoint_resolved(&meeting.base_url).label()
             ),
         ));
     }

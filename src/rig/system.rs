@@ -9,7 +9,9 @@ use super::capability::{CapabilityState, CapabilityStatus};
 use super::context::{RigContext, selected_provider};
 use super::research::{MeetingInference, jev_enabled};
 use crate::config::{RigPrivacyMode, RigPrivacySource};
-use crate::providers::locality::{EndpointLocality, classify_host, resolve_inference_target};
+use crate::providers::locality::{
+    EndpointLocality, classify_host_resolved, resolve_inference_target, system_resolve,
+};
 use serde::Serialize;
 
 /// How widely a listener is reachable.
@@ -29,7 +31,7 @@ impl BindExposure {
         if matches!(bare, "0.0.0.0" | "::" | "0:0:0:0:0:0:0:0") {
             return Self::AllInterfaces;
         }
-        match classify_host(bare) {
+        match classify_host_resolved(bare, system_resolve) {
             EndpointLocality::Loopback => Self::Loopback,
             EndpointLocality::PrivateNetwork => Self::PrivateNetwork,
             EndpointLocality::Remote => Self::Public,

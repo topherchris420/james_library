@@ -7,9 +7,11 @@
 //! the local network, or by a remote/hosted service?
 //!
 //! Used by the provider factory to enforce `[rig] privacy = "local"` and by
-//! `rain rig` status/doctor reporting. Classification is purely syntactic (no
-//! DNS lookups); hostnames that are not provably local are treated as remote
-//! so enforcement fails closed.
+//! `rain rig` status/doctor reporting. IP literals and `localhost` are
+//! classified directly. Any other hostname (including `*.local`) is resolved
+//! and accepted as local only when *every* resolved address is loopback or
+//! private; resolution failure means remote, so enforcement fails closed.
+//! Hosted providers with fixed public endpoints are never resolved.
 
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
@@ -35,7 +37,7 @@ pub const LITELLM_DEFAULT_BASE_URL: &str = "http://localhost:4000/v1";
 pub enum EndpointLocality {
     /// This machine (127.0.0.0/8, ::1, `localhost`).
     Loopback,
-    /// Non-globally-routable network (RFC 1918, link-local, ULA, `.local`).
+    /// Non-globally-routable network (RFC 1918, link-local, ULA).
     PrivateNetwork,
     /// Anything else, including unparsable URLs and public hostnames.
     Remote,
@@ -56,25 +58,72 @@ impl EndpointLocality {
     }
 }
 
-/// Classify a host string (IP literal, bracketed IPv6, or hostname).
-pub fn classify_host(host: &str) -> EndpointLocality {
-    let bare = host
-        .trim()
+fn bare_host(host: &str) -> String {
+    host.trim()
         .trim_start_matches('[')
         .trim_end_matches(']')
         .trim_end_matches('.')
-        .to_ascii_lowercase();
-    if bare == "localhost" || bare.ends_with(".localhost") {
+        .to_ascii_lowercase()
+}
+
+/// Classify a host without resolving it: IP literals and `localhost` only.
+/// Every other hostname is `Remote` here; use [`classify_host_resolved`] to
+/// verify names.
+pub fn classify_host(host: &str) -> EndpointLocality {
+    let bare = bare_host(host);
+    if bare == "localhost" {
         return EndpointLocality::Loopback;
     }
     if let Ok(ip) = bare.parse::<IpAddr>() {
         return classify_ip(ip);
     }
-    // RFC 6762 (mDNS) and RFC 8375 names are local-network by definition.
-    if bare.ends_with(".local") || bare.ends_with(".home.arpa") {
-        return EndpointLocality::PrivateNetwork;
-    }
     EndpointLocality::Remote
+}
+
+/// Whether `host` is an IP literal or `localhost` (no resolution needed).
+pub fn is_literal_host(host: &str) -> bool {
+    let bare = bare_host(host);
+    bare == "localhost" || bare.parse::<IpAddr>().is_ok()
+}
+
+/// Resolve a hostname with the system resolver. `None` on failure.
+pub fn system_resolve(host: &str) -> Option<Vec<IpAddr>> {
+    use std::net::ToSocketAddrs;
+    let addresses: Vec<IpAddr> = (bare_host(host).as_str(), 0)
+        .to_socket_addrs()
+        .ok()?
+        .map(|address| address.ip())
+        .collect();
+    (!addresses.is_empty()).then_some(addresses)
+}
+
+/// Classify a set of resolved addresses: local only if every one is local.
+pub fn classify_addresses(addresses: &[IpAddr]) -> EndpointLocality {
+    if addresses.is_empty() {
+        return EndpointLocality::Remote;
+    }
+    let mut widest = EndpointLocality::Loopback;
+    for ip in addresses {
+        match classify_ip(*ip) {
+            EndpointLocality::Remote => return EndpointLocality::Remote,
+            EndpointLocality::PrivateNetwork => widest = EndpointLocality::PrivateNetwork,
+            EndpointLocality::Loopback => {}
+        }
+    }
+    widest
+}
+
+/// Classify a host, resolving names with `resolver`.
+pub fn classify_host_resolved(
+    host: &str,
+    resolver: impl Fn(&str) -> Option<Vec<IpAddr>>,
+) -> EndpointLocality {
+    if is_literal_host(host) {
+        return classify_host(host);
+    }
+    resolver(host).map_or(EndpointLocality::Remote, |addresses| {
+        classify_addresses(&addresses)
+    })
 }
 
 fn classify_ip(ip: IpAddr) -> EndpointLocality {
@@ -113,11 +162,29 @@ fn classify_v6(v6: Ipv6Addr) -> EndpointLocality {
     }
 }
 
-/// Classify a URL by its host. Unparsable or host-less URLs are remote.
+/// Classify a URL by its host without resolving names. Unparsable or
+/// host-less URLs are remote.
 pub fn classify_endpoint(url: &str) -> EndpointLocality {
+    classify_endpoint_with(url, |_| None)
+}
+
+/// Classify a URL, resolving its hostname with the system resolver.
+pub fn classify_endpoint_resolved(url: &str) -> EndpointLocality {
+    classify_endpoint_with(url, system_resolve)
+}
+
+/// Classify a URL with an explicit resolver (tests inject one).
+pub fn classify_endpoint_with(
+    url: &str,
+    resolver: impl Fn(&str) -> Option<Vec<IpAddr>>,
+) -> EndpointLocality {
     reqwest::Url::parse(url.trim())
         .ok()
-        .and_then(|parsed| parsed.host_str().map(classify_host))
+        .and_then(|parsed| {
+            parsed
+                .host_str()
+                .map(|host| classify_host_resolved(host, &resolver))
+        })
         .unwrap_or(EndpointLocality::Remote)
 }
 
@@ -212,12 +279,23 @@ fn non_empty(value: Option<&str>) -> Option<&str> {
 /// factory's URL handling: providers that ignore `api_url` (LM Studio, fixed
 /// hosted APIs) are classified by the URL they actually call.
 pub fn resolve_inference_target(name: &str, api_url: Option<&str>) -> InferenceTarget {
+    resolve_inference_target_with(name, api_url, system_resolve)
+}
+
+/// [`resolve_inference_target`] with an explicit resolver. Only
+/// self-hostable endpoints are ever resolved; fixed hosted APIs are remote
+/// without a DNS lookup.
+pub fn resolve_inference_target_with(
+    name: &str,
+    api_url: Option<&str>,
+    resolver: impl Fn(&str) -> Option<Vec<IpAddr>>,
+) -> InferenceTarget {
     let name = name.trim();
     let endpoint_target = |endpoint: &str| InferenceTarget {
         provider: name.to_string(),
         kind: InferenceTargetKind::Endpoint,
         endpoint: Some(endpoint.to_string()),
-        locality: classify_endpoint(endpoint),
+        locality: classify_endpoint_with(endpoint, &resolver),
     };
 
     if let Some(url) = name
@@ -298,14 +376,7 @@ mod tests {
 
     #[test]
     fn classify_host_covers_loopback_private_and_remote() {
-        for host in [
-            "localhost",
-            "127.0.0.1",
-            "127.8.9.10",
-            "::1",
-            "[::1]",
-            "api.localhost",
-        ] {
+        for host in ["localhost", "127.0.0.1", "127.8.9.10", "::1", "[::1]"] {
             assert_eq!(classify_host(host), EndpointLocality::Loopback, "{host}");
         }
         for host in [
@@ -315,8 +386,6 @@ mod tests {
             "169.254.3.3",
             "fd00::1",
             "fe80::1",
-            "rig-node.local",
-            "lab.home.arpa",
         ] {
             assert_eq!(
                 classify_host(host),
@@ -334,6 +403,50 @@ mod tests {
         ] {
             assert_eq!(classify_host(host), EndpointLocality::Remote, "{host}");
         }
+    }
+
+    fn fake_resolver(host: &str) -> Option<Vec<IpAddr>> {
+        match host {
+            "rig-node.local" => Some(vec!["192.168.1.40".parse().unwrap()]),
+            "gpu-box" => Some(vec!["10.0.0.9".parse().unwrap(), "::1".parse().unwrap()]),
+            "loop.test" => Some(vec!["127.0.0.1".parse().unwrap()]),
+            "split.home.arpa" => Some(vec![
+                "192.168.1.2".parse().unwrap(),
+                "203.0.113.7".parse().unwrap(),
+            ]),
+            "public.local" => Some(vec!["8.8.8.8".parse().unwrap()]),
+            _ => None,
+        }
+    }
+
+    #[test]
+    fn hostnames_are_verified_by_resolution_not_by_name() {
+        let classify = |host| classify_host_resolved(host, fake_resolver);
+        assert_eq!(classify("rig-node.local"), EndpointLocality::PrivateNetwork);
+        assert_eq!(classify("gpu-box"), EndpointLocality::PrivateNetwork);
+        assert_eq!(classify("loop.test"), EndpointLocality::Loopback);
+        // Any public address, a public answer for a ".local" name, or a
+        // failed lookup is remote.
+        assert_eq!(classify("split.home.arpa"), EndpointLocality::Remote);
+        assert_eq!(classify("public.local"), EndpointLocality::Remote);
+        assert_eq!(classify("unresolvable.local"), EndpointLocality::Remote);
+        // Without a resolver, names are never trusted.
+        assert_eq!(classify_host("rig-node.local"), EndpointLocality::Remote);
+        assert_eq!(classify_host("api.localhost"), EndpointLocality::Remote);
+    }
+
+    #[test]
+    fn inference_targets_use_the_resolver_for_endpoints_only() {
+        let lan = resolve_inference_target_with(
+            "llamacpp",
+            Some("http://gpu-box:8080/v1"),
+            fake_resolver,
+        );
+        assert_eq!(lan.locality, EndpointLocality::PrivateNetwork);
+        let hosted = resolve_inference_target_with("openrouter", None, |_| {
+            panic!("hosted providers must not be resolved")
+        });
+        assert_eq!(hosted.locality, EndpointLocality::Remote);
     }
 
     #[test]

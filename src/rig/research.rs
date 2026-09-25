@@ -8,7 +8,7 @@
 use super::capability::{CapabilityState, CapabilityStatus, InferenceDetail};
 use super::context::RigContext;
 use crate::onboard::wizard::parse_openai_compatible_model_ids;
-use crate::providers::locality::{EndpointLocality, classify_endpoint};
+use crate::providers::locality::{EndpointLocality, classify_endpoint_resolved};
 use std::path::Path;
 
 /// Base URL the meeting uses when neither `RAIN_LLM_BASE_URL` nor
@@ -55,7 +55,7 @@ impl MeetingInference {
             .map(str::to_string);
         let hosted_model = model.as_deref().is_some_and(|m| m.ends_with(":cloud"));
         Self {
-            endpoint_locality: classify_endpoint(&base_url),
+            endpoint_locality: classify_endpoint_resolved(&base_url),
             base_url,
             model,
             hosted_model,
