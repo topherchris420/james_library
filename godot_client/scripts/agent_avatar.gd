@@ -62,12 +62,21 @@ const TONE_ALIASES := {
 	"analytical": "focused",
 }
 
-## Per-character silhouettes. Colours always come from the theme style.
+## Per-character designs. Clothing colours come from the theme style; identity
+## traits (skin tone, natural hair colour, lip colour) live here so a theme can
+## restyle an outfit without changing who the character is.
 const LOOKS := {
 	"james": {"archetype": "octopus", "accessory": "spectacles"},
-	"jasmine": {"archetype": "humanoid", "hair": "bob", "outfit": "overalls", "accessory": "goggles"},
+	"jasmine": {
+		"archetype": "humanoid", "build": "feminine", "hair": "afro", "outfit": "overalls",
+		"accessory": "goggles", "earrings": "hoops", "lashes": true,
+		"skin": "#8a5a3f", "hair_color": "#231713", "lips": "#6e2a36",
+	},
 	"luca": {"archetype": "humanoid", "hair": "swept", "outfit": "scarf", "accessory": ""},
-	"elena": {"archetype": "humanoid", "hair": "bun", "outfit": "blazer", "accessory": "glasses"},
+	"elena": {
+		"archetype": "humanoid", "build": "feminine", "hair": "long", "outfit": "blazer_skirt",
+		"accessory": "glasses", "lashes": true, "lips": "#b4485a",
+	},
 }
 const FALLBACK_HAIR: Array[String] = ["short", "bob", "swept", "bun"]
 
@@ -91,6 +100,7 @@ var _baked: bool = false
 
 # Baked textures.
 var _body_tex: Dictionary = {}        # "pose:phase" -> Texture2D
+var _arms_tex: Dictionary = {}        # pose -> raised arms drawn in front of the head
 var _secondary_tex: Array[Texture2D] = []
 var _head_tex: Texture2D
 var _eyes_tex: Dictionary = {}        # "lid:gaze" -> Texture2D
@@ -107,6 +117,7 @@ var _ground: Sprite2D
 var _rig: Node2D
 var _body: Sprite2D
 var _secondary: Sprite2D
+var _arms: Sprite2D
 var _head: Node2D
 var _head_base: Sprite2D
 var _eyes: Sprite2D
@@ -167,6 +178,8 @@ func _init() -> void:
 	_rig.add_child(_body)
 	_rig.add_child(_secondary)
 	_rig.add_child(_head)
+	_arms = _make_sprite("RaisedArms")
+	_rig.add_child(_arms)
 
 	_head_base = _make_sprite("HeadBase")
 	_blush = _make_sprite("Blush")
@@ -176,7 +189,7 @@ func _init() -> void:
 	_mouth = _make_sprite("Mouth")
 	for part in [_head_base, _blush, _eyes, _front, _brows, _mouth]:
 		_head.add_child(part)
-	for part in [_body, _secondary, _head_base, _blush, _eyes, _front, _brows, _mouth]:
+	for part in [_body, _secondary, _arms, _head_base, _blush, _eyes, _front, _brows, _mouth]:
 		part.position = Vector2(-CANVAS_W * 0.5, -CANVAS_H)
 
 	_marker = _make_sprite("Marker")
@@ -504,6 +517,8 @@ func _apply_layers() -> void:
 	var phase := int(_time * phase_rate + _phase * 2.0) % BODY_PHASES
 	var pose := _pose if POSES.has(_pose) else "rest"
 	_body.texture = _body_tex.get("%s:%d" % [pose, phase], _body_tex.get("rest:0"))
+	_arms.texture = _arms_tex.get(pose)
+	_arms.visible = _arms.texture != null
 
 	_secondary.visible = not _secondary_tex.is_empty()
 	if _secondary.visible:
@@ -550,11 +565,11 @@ func _look_for(key: String) -> Dictionary:
 func _palette_from(cfg: Dictionary) -> Dictionary:
 	var body := _color(cfg.get("body"), "#5f8dd4")
 	var accent := _color(cfg.get("accent"), "#3d5d93")
-	var skin := _color(cfg.get("skin"), "#f2d4b3")
-	var hair := _color(cfg.get("hair"), "#2f3b52")
+	var skin := _color(_look.get("skin", cfg.get("skin")), "#f2d4b3")
+	var hair := _color(_look.get("hair_color", cfg.get("hair")), "#2f3b52")
 	var outline := _color(cfg.get("outline"), "#1b2230")
 	var eye := _color(cfg.get("eye"), "#101318")
-	var mouth := _color(cfg.get("mouth"), "#5d2d2d")
+	var mouth := _color(_look.get("lips", cfg.get("mouth")), "#5d2d2d")
 	var octopus: bool = _look.get("archetype", "") == "octopus"
 	var face_skin := body if octopus else skin
 	return {
@@ -593,6 +608,7 @@ func _color(value: Variant, fallback_hex: String) -> Color:
 
 func _bake_all() -> void:
 	_body_tex.clear()
+	_arms_tex.clear()
 	_eyes_tex.clear()
 	_brows_tex.clear()
 	_mouth_tex.clear()
@@ -603,6 +619,8 @@ func _bake_all() -> void:
 		for phase in BODY_PHASES:
 			var img := _bake_octopus_body(pose, phase) if octopus else _bake_humanoid_body(pose)
 			_body_tex["%s:%d" % [pose, phase]] = ImageTexture.create_from_image(img)
+		if not octopus and pose != "rest":
+			_arms_tex[pose] = ImageTexture.create_from_image(_bake_raised_arms(pose))
 	if _look.get("outfit", "") == "scarf":
 		for frame in SECONDARY_FRAMES:
 			_secondary_tex.append(ImageTexture.create_from_image(_bake_scarf_tail(frame)))
@@ -677,30 +695,47 @@ func _bake_humanoid_body(pose: String) -> Image:
 	var img := _canvas()
 	var pal := _pal
 	var outfit := str(_look.get("outfit", "plain"))
-	var pants: Color = pal.accent_shade if outfit == "scarf" or outfit == "blazer" else pal.accent
+	var feminine: bool = _look.get("build", "") == "feminine"
+	# Torso columns (inclusive) and the left edge of each arm. The feminine build
+	# has narrower shoulders and a nipped waist.
+	var left := 6 if feminine else 5
+	var right := 13 if feminine else 14
+	var arm_l := left - 2
+	var arm_r := right + 1
+	var width := right - left + 1
 
 	_rect(img, 9, 11, 2, 2, pal.skin.darkened(0.12))                  # neck
-	_rect(img, 7, 21, 2, 4, pants)                                     # legs
-	_rect(img, 11, 21, 2, 4, pants)
-	_rect(img, 6, 25, 3, 2, pal.shoe)                                  # shoes
-	_rect(img, 11, 25, 3, 2, pal.shoe)
-	_rect(img, 5, 13, 10, 8, pal.body)                                 # torso
-	_rect(img, 14, 13, 1, 8, pal.body_shade)
-	_rect(img, 6, 13, 8, 1, pal.body_light)
+	if outfit == "blazer_skirt":
+		_rect(img, 7, 23, 2, 2, pal.skin.darkened(0.08))               # legs
+		_rect(img, 11, 23, 2, 2, pal.skin.darkened(0.08))
+		_rect(img, 6, 25, 3, 1, pal.shoe)                              # heeled shoes
+		_rect(img, 11, 25, 3, 1, pal.shoe)
+		_px(img, 8, 26, pal.shoe)
+		_px(img, 11, 26, pal.shoe)
+	else:
+		var pants: Color = pal.accent_shade if outfit == "scarf" or outfit == "blazer" else pal.accent
+		_rect(img, 7, 21, 2, 4, pants)                                 # legs
+		_rect(img, 11, 21, 2, 4, pants)
+		_rect(img, 6, 25, 3, 2, pal.shoe)                              # shoes
+		_rect(img, 11, 25, 3, 2, pal.shoe)
+
+	_rect(img, left, 13, width, 8, pal.body)                           # torso
+	_rect(img, right, 13, 1, 8, pal.body_shade)
+	_rect(img, left + 1, 13, width - 2, 1, pal.body_light)
 
 	match outfit:
 		"overalls":
-			_rect(img, 7, 13, 1, 4, pal.accent)
-			_rect(img, 12, 13, 1, 4, pal.accent)
-			_rect(img, 7, 16, 6, 5, pal.accent)
+			_rect(img, left + 1, 13, 1, 4, pal.accent)
+			_rect(img, right - 1, 13, 1, 4, pal.accent)
+			_rect(img, left + 1, 16, width - 2, 5, pal.accent)
 			_rect(img, 9, 17, 2, 1, pal.accent_shade)
-			_px(img, 7, 16, pal.gold)
-			_px(img, 12, 16, pal.gold)
+			_px(img, left + 1, 16, pal.gold)
+			_px(img, right - 1, 16, pal.gold)
 		"scarf":
 			_rect(img, 6, 12, 8, 2, pal.accent)
 			_rect(img, 6, 13, 8, 1, pal.accent_shade)
 			_rect(img, 5, 17, 10, 1, pal.body_light)
-		"blazer":
+		"blazer", "blazer_skirt":
 			_rect(img, 8, 13, 4, 1, pal.white)
 			_rect(img, 9, 14, 2, 1, pal.white)
 			_px(img, 8, 14, pal.accent)
@@ -708,28 +743,49 @@ func _bake_humanoid_body(pose: String) -> Image:
 			_px(img, 8, 15, pal.accent)
 			_px(img, 11, 15, pal.accent)
 			_px(img, 9, 17, pal.gold)
-			_px(img, 9, 19, pal.gold)
+			if outfit == "blazer":
+				_px(img, 9, 19, pal.gold)
 		_:
 			_rect(img, 5, 20, 10, 1, pal.accent_shade)
 
-	var sleeve: Color = pal.body_shade
-	# Left arm.
-	if pose == "cheer":
-		_rect(img, 3, 12, 2, 2, sleeve)
-		_rect(img, 1, 10, 2, 2, sleeve)
-		_rect(img, 1, 8, 2, 2, pal.skin)
-	else:
-		_rect(img, 3, 13, 2, 6, sleeve)
-		_rect(img, 3, 19, 2, 2, pal.skin)
-	# Right arm.
-	if pose == "gesture" or pose == "cheer":
-		_rect(img, 15, 12, 2, 2, sleeve)
-		_rect(img, 17, 10, 2, 2, sleeve)
-		_rect(img, 17, 8, 2, 2, pal.skin)
-	else:
-		_rect(img, 15, 13, 2, 6, sleeve)
-		_rect(img, 15, 19, 2, 2, pal.skin)
+	if outfit == "blazer_skirt":
+		# Knee-length A-line skirt below a fitted jacket.
+		_rect(img, left, 19, width, 2, pal.accent_shade)
+		_rect(img, left - 1, 21, width + 2, 2, pal.accent_shade)
+		_rect(img, left - 1, 22, width + 2, 1, pal.accent_shade.darkened(0.2))
+		_px(img, 9, 21, pal.accent_shade.darkened(0.2))                # pleat
+	if feminine:
+		_clear(img, left, 17)                                          # waist
+		_clear(img, right, 17)
 
+	# Resting arms hang at the sides; raised arms live in their own layer in
+	# front of the head (see _bake_raised_arms) so hair never hides them.
+	var sleeve: Color = pal.body_shade
+	if pose != "cheer":
+		_rect(img, arm_l, 13, 2, 6, sleeve)
+		_rect(img, arm_l, 19, 2, 2, pal.skin)
+	if pose == "rest":
+		_rect(img, arm_r, 13, 2, 6, sleeve)
+		_rect(img, arm_r, 19, 2, 2, pal.skin)
+
+	_outline(img, pal.outline)
+	return img
+
+
+func _bake_raised_arms(pose: String) -> Image:
+	var img := _canvas()
+	var pal := _pal
+	var feminine: bool = _look.get("build", "") == "feminine"
+	var arm_l := 4 if feminine else 3
+	var arm_r := 14 if feminine else 15
+	var sleeve: Color = pal.body_shade
+	if pose == "cheer":
+		_rect(img, arm_l, 12, 2, 2, sleeve)
+		_rect(img, arm_l - 2, 10, 2, 2, sleeve)
+		_rect(img, arm_l - 2, 8, 2, 2, pal.skin)
+	_rect(img, arm_r, 12, 2, 2, sleeve)
+	_rect(img, arm_r + 2, 10, 2, 2, sleeve)
+	_rect(img, arm_r + 2, 8, 2, 2, pal.skin)
 	_outline(img, pal.outline)
 	return img
 
@@ -811,6 +867,36 @@ func _bake_humanoid_head() -> Image:
 			_rect(img, 4, 3, 1, 4, pal.hair)
 			_rect(img, 15, 3, 1, 5, pal.hair)
 			_rect(img, 7, 2, 3, 1, pal.hair_light)
+		"afro":
+			# Full, rounded natural afro that frames the face, with curl highlights.
+			var rows := {1: [6, 13], 2: [4, 15], 3: [3, 16], 4: [2, 17], 5: [2, 17], 6: [2, 17],
+				7: [2, 17], 8: [2, 17], 9: [2, 17], 10: [3, 16], 11: [4, 15]}
+			for row in rows.keys():
+				var y: int = row
+				var span: Array = rows[row]
+				for x in range(int(span[0]), int(span[1]) + 1):
+					var inside_face: bool = x >= 5 and x <= 14 and y >= 5
+					if not inside_face:
+						_px(img, x, y, pal.hair)
+			for curl in [Vector2i(8, 1), Vector2i(11, 1), Vector2i(5, 2), Vector2i(13, 2), Vector2i(3, 4),
+					Vector2i(9, 3), Vector2i(16, 4), Vector2i(2, 6), Vector2i(17, 7), Vector2i(3, 9),
+					Vector2i(16, 10), Vector2i(6, 3), Vector2i(15, 3), Vector2i(3, 11)]:
+				if _opaque(img, curl.x, curl.y):
+					_px(img, curl.x, curl.y, pal.hair_light)
+		"long":
+			# Long hair with a side part, falling past the shoulders.
+			_rect(img, 6, 1, 8, 1, pal.hair)
+			_rect(img, 5, 2, 10, 3, pal.hair)
+			_rect(img, 4, 3, 1, 12, pal.hair)
+			_rect(img, 15, 3, 1, 12, pal.hair)
+			_rect(img, 3, 8, 1, 7, pal.hair)
+			_rect(img, 16, 8, 1, 7, pal.hair)
+			_rect(img, 12, 5, 3, 1, pal.hair)
+			_px(img, 14, 6, pal.hair)
+			_px(img, 4, 15, pal.hair)
+			_px(img, 15, 15, pal.hair)
+			_rect(img, 7, 2, 3, 1, pal.hair_light)
+			_rect(img, 4, 9, 1, 3, pal.hair_light)
 		"bun":
 			_rect(img, 8, 1, 4, 2, pal.hair)
 			_px(img, 9, 1, pal.hair_light)
@@ -827,11 +913,18 @@ func _bake_humanoid_head() -> Image:
 			_rect(img, 7, 2, 2, 1, pal.hair_light)
 
 	if _look.get("accessory", "") == "goggles":
-		_rect(img, 4, 4, 12, 1, pal.accent)
+		# Safety goggles worn as a headband.
+		var band_left := 2 if _look.get("hair", "") == "afro" else 4
+		_rect(img, band_left, 4, 20 - 2 * band_left, 1, pal.accent)
 		_rect(img, 6, 3, 2, 2, pal.lens)
 		_rect(img, 12, 3, 2, 2, pal.lens)
 		_px(img, 6, 3, pal.white)
 		_px(img, 12, 3, pal.white)
+
+	if _look.get("earrings", "") == "hoops":
+		for x in [4, 15]:
+			_px(img, x, 12, pal.gold)
+			_px(img, x, 13, pal.gold)
 
 	_outline(img, pal.outline)
 	return img
@@ -884,6 +977,10 @@ func _bake_eyes(lid: String, gaze: int) -> Image:
 				_px(img, x0, y0 + 1, pal.eye)
 				_px(img, x0 + 1, y0, pal.eye)
 				_px(img, x0 + 2, y0 + 1, pal.eye)
+		if _look.get("lashes", false) and lid != "happy":
+			# A lash flick at the outer corner of each eye.
+			var outer := x0 - 1 if eye == _face.eye_l else x0 + 3
+			_px(img, outer, y0 + h - 1 if lid == "closed" else y0, pal.eye)
 	return img
 
 

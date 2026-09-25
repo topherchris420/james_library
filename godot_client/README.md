@@ -75,10 +75,17 @@ head, eyes, brows, mouth, blush, accessories, secondary motion). Their textures
 are baked once per theme style and then swapped or offset in whole sprite
 pixels, so nothing is allocated per frame.
 
-- **Characters:** James is a spectacled octopus with swaying tentacles, Jasmine
-  wears safety goggles and overalls, Luca has swept hair and a scarf that
-  sways, and Elena has a bun and glasses. Other agent ids get a generic
-  humanoid. Colours come from the theme's `agents` styles.
+- **Characters:**
+  - James is a spectacled octopus with swaying tentacles.
+  - Jasmine is a Black woman with deep brown skin and a full natural afro. She
+    wears her safety goggles as a headband, with gold hoops and fitted overalls.
+  - Luca has swept hair and a scarf that sways.
+  - Elena is a woman with long hair and glasses, in a fitted blazer,
+    knee-length skirt and heels.
+  - Other agent ids get a generic humanoid.
+- **Colours:** clothing colours come from the theme's `agents` styles. Identity
+  traits in `LOOKS` (Jasmine's skin tone and hair colour, lip colours) always
+  apply, so a theme restyles outfits without changing who a character is.
 - **Idle:** breathing bob, randomised blinks (sometimes a double blink),
   wandering gaze.
 - **Listening:** eyes and a one-pixel head lean follow the active speaker.

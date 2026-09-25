@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_test_tone_reader()
 	_test_canonical_tones()
 	_test_avatar_bakes_every_layer()
+	_test_character_identity()
 	_test_avatar_animates()
 	_test_wav_loader()
 	_test_syllable_voice()
@@ -67,7 +68,37 @@ func _test_avatar_bakes_every_layer() -> void:
 		_check(avatar._mouth_tex.size() == 7, "%s bakes 7 mouth shapes" % agent_id)
 		_check(avatar._brows_tex.size() == 5, "%s bakes 5 brow shapes" % agent_id)
 		_check((avatar._secondary_tex.size() > 0) == (agent_id == "luca"), "%s secondary motion" % agent_id)
+		_check(avatar._arms_tex.size() == (0 if agent_id == "james" else 2), "%s raised-arm layer" % agent_id)
 		avatar.free()
+
+
+func _test_character_identity() -> void:
+	# Jasmine's skin tone and natural hair colour belong to the character, not the theme.
+	var light_theme := {"skin": "#f3d5b5", "hair": "#b08050", "body": "#e7a56b"}
+	var jasmine: Node2D = AgentAvatarScript.new()
+	jasmine.configure("jasmine", "Jasmine", light_theme)
+	_check(jasmine._pal["skin"].is_equal_approx(Color("#8a5a3f")), "theme cannot change Jasmine's skin tone")
+	_check(jasmine._pal["hair"].is_equal_approx(Color("#231713")), "theme cannot change Jasmine's hair colour")
+	var jasmine_head: Image = jasmine._head_tex.get_image()
+	_check(jasmine_head.get_pixel(2, 6).a > 0.0 and jasmine_head.get_pixel(17, 6).a > 0.0, "afro is wider than the face")
+	var cheer: Image = jasmine._arms_tex["cheer"].get_image()
+	_check(cheer.get_pixel(2, 8).a > 0.0 and cheer.get_pixel(16, 8).a > 0.0, "raised hands are drawn in front of the hair")
+	var jasmine_eyes: Image = jasmine._eyes_tex["open:0"].get_image()
+	_check(jasmine_eyes.get_pixel(5, 7).a > 0.0 and jasmine_eyes.get_pixel(14, 7).a > 0.0, "lashes at the outer corners")
+	jasmine.free()
+
+	var elena: Node2D = AgentAvatarScript.new()
+	elena.configure("elena", "Elena", {})
+	var elena_head: Image = elena._head_tex.get_image()
+	_check(elena_head.get_pixel(4, 14).a > 0.0 and elena_head.get_pixel(15, 14).a > 0.0, "long hair falls past the jaw")
+	var elena_body: Image = elena._body_tex["rest:0"].get_image()
+	_check(elena_body.get_pixel(5, 22).a > 0.0 and elena_body.get_pixel(14, 22).a > 0.0, "A-line skirt flares at the hem")
+	elena.free()
+
+	var luca: Node2D = AgentAvatarScript.new()
+	luca.configure("luca", "Luca", light_theme)
+	_check(luca._pal["skin"].is_equal_approx(Color("#f3d5b5")), "characters without a set skin tone use the theme")
+	luca.free()
 
 
 func _test_avatar_animates() -> void:
