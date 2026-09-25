@@ -16,10 +16,12 @@ pub mod inference;
 pub mod probe;
 pub mod render;
 pub mod research;
+pub mod setup;
 pub mod skybridge;
 pub mod status;
 pub mod system;
 pub mod transport;
+pub mod up;
 
 #[cfg(test)]
 pub(crate) mod test_support {
