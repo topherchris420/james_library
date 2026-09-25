@@ -51,9 +51,11 @@ rain rig setup --profile field --node-name field-kit-1
 
 Setup writes a `[rig]` table and, under `local` privacy, offers to switch a
 hosted default provider to a running local server. It edits `config.toml`
-directly, so values that come only from environment variables are never
-persisted and encrypted secrets stay as written. Comments in the file are not
-preserved. It never downloads models, installs software, changes services or
+directly: only the `[rig]` tables and, when switching servers,
+`default_provider` / `default_model` / `api_url` change. Comments, formatting
+and every other key stay as written (setup verifies this before replacing the
+file atomically), values that come only from environment variables are never
+persisted, and encrypted secrets are untouched. It never downloads models, installs software, changes services or
 firewall rules, or opens listeners. In a non-interactive shell it refuses to
 write unless you pass `--yes`.
 

@@ -178,32 +178,183 @@ pub fn plan(config: &Config, status: &RigStatus, request: &SetupRequest) -> Resu
     })
 }
 
-/// Apply a plan to the on-disk config file.
-///
-/// Edits the TOML document directly instead of re-serializing the runtime
-/// `Config`, so environment overrides (API keys, providers) are never
-/// persisted and every other key, including encrypted secrets, is kept as
-/// written. The result is parsed and validated before an atomic replace.
-pub fn write_plan(config_path: &Path, plan: &SetupPlan) -> Result<()> {
-    let raw = std::fs::read_to_string(config_path)
-        .with_context(|| format!("reading {}", config_path.display()))?;
-    let mut document: toml::Table =
-        toml::from_str(&raw).with_context(|| format!("parsing {}", config_path.display()))?;
-    document.insert("rig".into(), toml::Value::try_from(&plan.rig)?);
+/// Keys `write_plan` may change; everything else must survive verbatim.
+const MANAGED_TOP_LEVEL_KEYS: &[&str] = &[
+    "rig",
+    "default_provider",
+    "model_provider",
+    "default_model",
+    "model",
+    "api_url",
+];
+
+/// Table header name of a line (`[a.b]` / `[[a.b]]`), if it is one.
+fn header_name(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+    let inner = trimmed
+        .strip_prefix("[[")
+        .and_then(|rest| rest.split_once("]]"))
+        .or_else(|| {
+            trimmed
+                .strip_prefix('[')
+                .and_then(|rest| rest.split_once(']'))
+        })?;
+    let (name, trailing) = inner;
+    let trailing = trailing.trim();
+    (trailing.is_empty() || trailing.starts_with('#')).then(|| name.trim().to_string())
+}
+
+/// Top-level key assigned on a line (`key = …`, `key.sub = …`).
+fn assigned_key(line: &str) -> Option<&str> {
+    let trimmed = line.trim_start();
+    if trimmed.starts_with('#') {
+        return None;
+    }
+    let (key, _) = trimmed.split_once('=')?;
+    let key = key.trim().trim_matches('"');
+    let first = key.split('.').next()?.trim().trim_matches('"');
+    (!first.is_empty()).then_some(first)
+}
+
+fn is_rig_table(name: &str) -> bool {
+    name == "rig" || name.starts_with("rig.")
+}
+
+/// Rewrite config text in place: replace the `[rig]` tables and the managed
+/// top-level keys, keeping every other line (including comments) verbatim.
+pub fn edit_config_text(raw: &str, plan: &SetupPlan) -> Result<String> {
+    let newline = if raw.contains("\r\n") { "\r\n" } else { "\n" };
+    let lines: Vec<&str> = raw.lines().collect();
+    let first_header = lines
+        .iter()
+        .position(|line| header_name(line).is_some())
+        .unwrap_or(lines.len());
+
+    let mut replacements: Vec<(&str, Option<String>)> = Vec::new();
     if let Some((provider, model)) = &plan.switch_provider {
-        // Drop serde aliases so the canonical keys are the only ones present.
-        document.remove("model_provider");
-        document.insert("default_provider".into(), provider.clone().into());
+        replacements.push(("default_provider", Some(provider.clone())));
+        replacements.push(("model_provider", None));
         if let Some(model) = model {
-            document.remove("model");
-            document.insert("default_model".into(), model.clone().into());
+            replacements.push(("default_model", Some(model.clone())));
+            replacements.push(("model", None));
         }
     }
     if plan.clear_api_url {
-        document.remove("api_url");
+        replacements.push(("api_url", None));
     }
-    let rendered = toml::to_string(&document)?;
+    let render =
+        |key: &str, value: &str| format!("{key} = {}", toml::Value::String(value.to_string()));
+
+    let mut out: Vec<String> = Vec::with_capacity(lines.len() + 8);
+    let mut placed: Vec<&str> = Vec::new();
+    let mut index = 0;
+    while index < lines.len() {
+        let line = lines[index];
+        if index < first_header {
+            match assigned_key(line) {
+                // Inline `rig = {…}` / dotted `rig.x = …`: replaced by the table below.
+                Some("rig") => {}
+                Some(key) => match replacements.iter().find(|(k, _)| *k == key) {
+                    Some((k, Some(value))) => {
+                        out.push(render(k, value));
+                        placed.push(k);
+                    }
+                    Some((_, None)) => {}
+                    None => out.push(line.to_string()),
+                },
+                None => out.push(line.to_string()),
+            }
+            index += 1;
+            if index == first_header {
+                // Insert managed keys the file did not have, before the first table.
+                let insert_at = out
+                    .iter()
+                    .rposition(|l| !l.trim().is_empty())
+                    .map_or(0, |i| i + 1);
+                let missing: Vec<String> = replacements
+                    .iter()
+                    .filter(|(k, v)| v.is_some() && !placed.contains(k))
+                    .map(|(k, v)| render(k, v.as_deref().unwrap_or_default()))
+                    .collect();
+                out.splice(insert_at..insert_at, missing);
+                placed.extend(replacements.iter().map(|(k, _)| *k));
+            }
+            continue;
+        }
+        if header_name(line).is_some_and(|name| is_rig_table(&name)) {
+            // Skip the rig table body, but keep trailing comments/blank lines
+            // that belong to the next table.
+            let next = lines[index + 1..]
+                .iter()
+                .position(|l| header_name(l).is_some())
+                .map_or(lines.len(), |offset| index + 1 + offset);
+            let mut keep_from = next;
+            while keep_from > index + 1 {
+                let previous = lines[keep_from - 1].trim();
+                if previous.is_empty() || previous.starts_with('#') {
+                    keep_from -= 1;
+                } else {
+                    break;
+                }
+            }
+            out.extend(lines[keep_from..next].iter().map(|l| (*l).to_string()));
+            index = next;
+            continue;
+        }
+        out.push(line.to_string());
+        index += 1;
+    }
+    if first_header == lines.len() {
+        // No tables at all: managed keys not yet placed go at the end.
+        for (key, value) in &replacements {
+            if let Some(value) = value {
+                if !placed.contains(key) {
+                    out.push(render(key, value));
+                }
+            }
+        }
+    }
+
+    #[derive(serde::Serialize)]
+    struct RigOnly<'a> {
+        rig: &'a RigConfig,
+    }
+    let rig_block = toml::to_string(&RigOnly { rig: &plan.rig })?;
+    while out.last().is_some_and(|l| l.trim().is_empty()) {
+        out.pop();
+    }
+    if !out.is_empty() {
+        out.push(String::new());
+    }
+    out.extend(rig_block.trim_end().lines().map(str::to_string));
+    let mut rendered = out.join(newline);
+    rendered.push_str(newline);
+    Ok(rendered)
+}
+
+/// Apply a plan to the on-disk config file.
+///
+/// Edits the file text instead of re-serializing the runtime `Config`, so
+/// comments and formatting survive, environment overrides (API keys,
+/// providers) are never persisted, and encrypted secrets stay as written.
+/// Before an atomic replace, the result must parse, its `[rig]` must
+/// validate, and every unmanaged top-level value must be unchanged.
+pub fn write_plan(config_path: &Path, plan: &SetupPlan) -> Result<()> {
+    let raw = std::fs::read_to_string(config_path)
+        .with_context(|| format!("reading {}", config_path.display()))?;
+    let before: toml::Table =
+        toml::from_str(&raw).with_context(|| format!("parsing {}", config_path.display()))?;
+    let rendered = edit_config_text(&raw, plan)?;
+    let after: toml::Table = toml::from_str(&rendered).context("updated config does not parse")?;
+    for (key, value) in &before {
+        if !MANAGED_TOP_LEVEL_KEYS.contains(&key.as_str()) && after.get(key) != Some(value) {
+            bail!("refusing to write: editing would change unrelated key '{key}'");
+        }
+    }
     let parsed: Config = toml::from_str(&rendered).context("updated config does not parse")?;
+    if parsed.rig != plan.rig {
+        bail!("refusing to write: [rig] did not round-trip");
+    }
     parsed.rig.validate()?;
 
     let temp = config_path.with_extension("toml.rig-setup.tmp");
@@ -529,6 +680,78 @@ mod tests {
             !written.contains("from-environment"),
             "env overrides leaked: {written}"
         );
+    }
+
+    #[test]
+    fn write_plan_preserves_comments_and_unrelated_tables() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        let original = "# my R.A.I.N. config\n\
+default_provider = \"openrouter\" # hosted for now\n\
+api_url = \"https://openrouter.ai/api/v1\"\n\
+default_temperature = 0.7\n\
+\n\
+# old rig settings\n\
+[rig]\n\
+profile = \"node\"\n\
+\n\
+[rig.meeting]\n\
+model = \"old\"\n\
+\n\
+# Gateway: keep on loopback!\n\
+[gateway]\n\
+host = \"127.0.0.1\" # never 0.0.0.0\n\
+port = 42617\n";
+        std::fs::write(&path, original).unwrap();
+        let plan = SetupPlan {
+            rig: RigConfig {
+                profile: Some(RigProfileKind::Local),
+                meeting: Some(crate::config::RigMeetingConfig {
+                    base_url: Some("http://localhost:8080/v1".into()),
+                    model: Some("m.gguf".into()),
+                }),
+                ..RigConfig::default()
+            },
+            switch_provider: Some(("llamacpp".into(), Some("m.gguf".into()))),
+            clear_api_url: true,
+            notes: vec![],
+        };
+        write_plan(&path, &plan).unwrap();
+        let written = std::fs::read_to_string(&path).unwrap();
+        for kept in [
+            "# my R.A.I.N. config",
+            "# Gateway: keep on loopback!",
+            "host = \"127.0.0.1\" # never 0.0.0.0",
+            "default_temperature = 0.7",
+        ] {
+            assert!(written.contains(kept), "lost {kept:?}:\n{written}");
+        }
+        assert!(!written.contains("api_url"));
+        assert!(!written.contains("model = \"old\""));
+        assert!(written.contains("default_provider = \"llamacpp\""));
+        assert!(written.contains("default_model = \"m.gguf\""));
+        let updated: Config = toml::from_str(&written).unwrap();
+        assert_eq!(updated.rig, plan.rig);
+        assert_eq!(updated.gateway.port, 42617);
+    }
+
+    #[test]
+    fn edit_handles_inline_rig_and_configs_without_tables() {
+        let plan = SetupPlan {
+            rig: RigConfig {
+                profile: Some(RigProfileKind::Field),
+                ..RigConfig::default()
+            },
+            switch_provider: None,
+            clear_api_url: false,
+            notes: vec![],
+        };
+        let edited = edit_config_text("rig = { profile = \"node\" }\n# note\n", &plan).unwrap();
+        let parsed: Config = toml::from_str(&edited).unwrap();
+        assert_eq!(parsed.rig.profile, Some(RigProfileKind::Field));
+        assert!(edited.contains("# note"));
+        let crlf = edit_config_text("a_comment = 1\r\n", &plan);
+        assert!(crlf.unwrap().contains("\r\n[rig]\r\n"));
     }
 
     #[test]
