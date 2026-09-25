@@ -14,6 +14,7 @@ pub mod inbox;
 pub mod inference;
 pub mod probe;
 pub mod research;
+pub mod skybridge;
 pub mod system;
 pub mod transport;
 

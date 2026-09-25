@@ -184,6 +184,7 @@ pub async fn probe_transports(ctx: &RigContext) -> Vec<CapabilityStatus> {
         loopback_status(),
         reticulum_status(reticulum_facts, shared),
         lxmf_status(lxmf_facts),
+        crate::rig::skybridge::skybridge_status(),
     ]
 }
 
