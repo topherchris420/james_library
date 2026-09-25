@@ -9,12 +9,15 @@
 pub mod action;
 pub mod capability;
 pub mod context;
+pub mod doctor;
 pub mod identity;
 pub mod inbox;
 pub mod inference;
 pub mod probe;
+pub mod render;
 pub mod research;
 pub mod skybridge;
+pub mod status;
 pub mod system;
 pub mod transport;
 
