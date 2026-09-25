@@ -17,6 +17,8 @@ signal demo_playback_state_changed(paused: bool)
 @export var ping_interval_s: float = 15.0
 @export var ping_timeout_s: float = 8.0
 @export var demo_loop: bool = false
+## Pause after a demo line finishes before the next event, so each line plays out.
+@export var demo_turn_gap_s: float = 0.45
 
 var _socket: WebSocketPeer = WebSocketPeer.new()
 var _demo_events: Array = []
@@ -152,8 +154,23 @@ func _process_demo(delta: float) -> void:
 		_demo_wait_s = float(event_wrapper.get("delay_s", 0.0))
 		var payload: Variant = event_wrapper.get("event", {})
 		if payload is Dictionary:
+			# A line must finish before the next event, or the speaker is cut off mid-sentence.
+			_demo_wait_s = maxf(_demo_wait_s, _utterance_hold_s(payload))
 			emit_signal("event_received", payload)
 	_emit_demo_progress()
+
+
+func _utterance_hold_s(payload: Dictionary) -> float:
+	if str(payload.get("type", "")) != "agent_utterance":
+		return 0.0
+	var audio: Variant = payload.get("audio", {})
+	if audio is Dictionary:
+		var audio_cfg: Dictionary = audio
+		if audio_cfg.has("duration_ms"):
+			return float(audio_cfg["duration_ms"]) / 1000.0 + demo_turn_gap_s
+		if audio_cfg.has("duration_s"):
+			return float(audio_cfg["duration_s"]) + demo_turn_gap_s
+	return 0.0
 
 
 func _poll_websocket() -> void:

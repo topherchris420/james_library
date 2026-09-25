@@ -20,10 +20,22 @@ const AGENT_AVATAR_SCENE: PackedScene = preload("res://scenes/agent_avatar.tscn"
 @onready var _event_client = $Managers/EventClient
 @onready var _audio_sync = $Managers/AudioSync
 
+const FEET_BASELINE_Y := 452.0
+const STAGE_LEFT_X := 170.0
+const STAGE_RIGHT_X := 1110.0
+const ENTRANCE_STAGGER_S := 0.14
+## Speaker tones that make listeners nod along rather than frown.
+const NODDING_TONES: Array[String] = ["neutral", "pleased", "excited", "focused", "curious"]
+## How listeners' faces respond to the speaker's tone.
+const LISTENER_REACTIONS := {"excited": "pleased", "pleased": "pleased", "skeptical": "concerned", "curious": "curious"}
+
 var _participants: Array[String] = []
 var _avatars: Dictionary = {}
 var _active_speaker_id: String = ""
+var _talking_agent_id: String = ""
 var _syncing_demo_scrubber: bool = false
+var _mouth_flap_threshold: float = 0.08
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
@@ -37,9 +49,16 @@ func _ready() -> void:
 	if not _theme_manager.apply_theme(initial_theme_id):
 		push_warning("Initial theme could not be loaded: %s" % initial_theme_id)
 
+	_rng.seed = 424242
 	_spawn_participants(fallback_participants)
 	_dialogue_ui.show_status("Waiting for conversation events...")
 	_configure_demo_controls()
+
+
+func _process(_delta: float) -> void:
+	# Lip-sync: the talking avatar's mouth follows the live voice level.
+	if _talking_agent_id != "" and _avatars.has(_talking_agent_id):
+		_avatars[_talking_agent_id].set_voice_level(_audio_sync.get_voice_level())
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -63,6 +82,7 @@ func _on_theme_applied(theme_id: String, theme_cfg: Dictionary) -> void:
 	_background_layer.apply_theme(theme_id, background_cfg)
 	_dialogue_ui.apply_theme(ui_cfg, theme_id)
 	_audio_sync.apply_theme_audio(audio_cfg)
+	_mouth_flap_threshold = float(audio_cfg.get("mouth_flap_threshold", 0.08))
 	_theme_badge.text = "Theme: %s (1=flower_field, 2=lab)" % theme_id
 
 	_apply_theme_to_avatars()
@@ -98,7 +118,9 @@ func _handle_conversation_started(event_payload: Dictionary) -> void:
 	var participants := _parse_participants(event_payload.get("participants", []))
 	if participants.is_empty():
 		participants = fallback_participants.duplicate()
-	_spawn_participants(participants)
+	# Same cast already on stage: keep them rather than making everyone drop in again.
+	if participants != _participants:
+		_spawn_participants(participants)
 	_dialogue_ui.show_status("Conversation started.")
 
 
@@ -117,10 +139,13 @@ func _handle_agent_utterance(event_payload: Dictionary) -> void:
 	if text == "":
 		return
 
-	var tone := str(event_payload.get("tone", "neutral")).to_lower()
+	var tone := str(event_payload.get("tone", "")).strip_edges().to_lower()
+	if tone == "" or tone == "neutral":
+		tone = ToneReader.infer(text)
 	_set_avatar_tone(speaker_id, tone)
 
 	_set_active_speaker(speaker_id)
+	_react_listeners(speaker_id, tone)
 	_dialogue_ui.show_line(speaker_name, text)
 	_audio_sync.play_utterance(speaker_id, _to_dict(event_payload.get("audio", {})), text)
 
@@ -146,6 +171,10 @@ func _handle_resonance_state(event_payload: Dictionary) -> void:
 func _handle_conversation_ended() -> void:
 	_audio_sync.stop_current_utterance(true)
 	_set_active_speaker("")
+	for i in _participants.size():
+		var avatar = _avatars.get(_participants[i])
+		if avatar != null and avatar.has_method("celebrate"):
+			avatar.celebrate(0.15 + float(i) * ENTRANCE_STAGGER_S)
 	_background_layer.apply_resonance(0.0, 0.0, 0.5)
 	_dialogue_ui.show_status("Conversation ended.")
 
@@ -158,11 +187,14 @@ func _handle_conversation_reset() -> void:
 
 
 func _on_utterance_started(agent_id: String) -> void:
+	_talking_agent_id = agent_id
 	for key in _avatars.keys():
 		_set_avatar_talking(key, str(key) == agent_id)
 
 
 func _on_utterance_finished(agent_id: String) -> void:
+	if _talking_agent_id == agent_id:
+		_talking_agent_id = ""
 	_set_avatar_talking(agent_id, false)
 
 
@@ -182,21 +214,19 @@ func _spawn_participants(agent_ids: Array[String]) -> void:
 	if _participants.is_empty():
 		return
 
+	# Everyone stands on one ground line (feet at FEET_BASELINE_Y), evenly spaced,
+	# and drops in left to right.
 	var count := _participants.size()
-	var left_x := 130.0
-	var right_x := 1150.0
-	var base_y := 378.0
-
 	for i in count:
 		var agent_id := _participants[i]
 		var t := 0.5 if count == 1 else float(i) / float(count - 1)
-		var x := lerpf(left_x, right_x, t)
-		var y := base_y + absf(t - 0.5) * 92.0
+		var x := lerpf(STAGE_LEFT_X, STAGE_RIGHT_X, t)
 
-		var avatar = load("res://scripts/agent_avatar.gd").new()
+		var avatar = avatar_scene.instantiate()
+		avatar.configure(agent_id, _title_case(agent_id), _avatar_style(agent_id))
+		avatar.position = Vector2(roundf(x), FEET_BASELINE_Y)
 		_character_layer.add_child(avatar)
-		avatar.configure(agent_id, _title_case(agent_id), _theme_manager.get_agent_style(agent_id))
-		avatar.position = Vector2(x, y)
+		avatar.play_entrance(float(i) * ENTRANCE_STAGGER_S)
 		_avatars[agent_id] = avatar
 
 	_set_active_speaker("")
@@ -206,15 +236,41 @@ func _apply_theme_to_avatars() -> void:
 	for key in _avatars.keys():
 		var avatar = _avatars[key]
 		if avatar.has_method("apply_style"):
-			avatar.apply_style(_theme_manager.get_agent_style(str(key)))
+			avatar.apply_style(_avatar_style(str(key)))
+
+
+func _avatar_style(agent_id: String) -> Dictionary:
+	var avatar_style: Dictionary = _theme_manager.get_agent_style(agent_id)
+	avatar_style["mouth_flap_threshold"] = _mouth_flap_threshold
+	return avatar_style
 
 
 func _set_active_speaker(agent_id: String) -> void:
 	_active_speaker_id = agent_id
+	var speaker = _avatars.get(agent_id)
 	for key in _avatars.keys():
 		var avatar = _avatars[key]
 		if avatar.has_method("set_active"):
 			avatar.set_active(str(key) == agent_id)
+		if avatar.has_method("set_focus_direction"):
+			var direction := 0
+			if speaker != null and avatar != speaker:
+				direction = signi(int(speaker.position.x - avatar.position.x))
+			avatar.set_focus_direction(direction)
+
+
+## Listeners glance at the speaker, nod along to agreeable lines, and let the
+## speaker's tone show on their faces for a moment.
+func _react_listeners(speaker_id: String, tone: String) -> void:
+	var canonical := AgentAvatar.canonical_tone(tone)
+	for key in _avatars.keys():
+		if str(key) == speaker_id:
+			continue
+		var avatar = _avatars[key]
+		if LISTENER_REACTIONS.has(canonical) and _rng.randf() < 0.75:
+			avatar.react(str(LISTENER_REACTIONS[canonical]))
+		if NODDING_TONES.has(canonical) and _rng.randf() < 0.6:
+			avatar.nod(_rng.randf_range(0.6, 2.4))
 
 
 func _set_avatar_tone(agent_id: String, tone: String) -> void:
