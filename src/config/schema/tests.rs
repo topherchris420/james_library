@@ -566,6 +566,7 @@ async fn config_toml_roundtrip() {
         verifiable_intent: VerifiableIntentConfig::default(),
         claude_code: ClaudeCodeConfig::default(),
         tribev2: TribeV2Config::default(),
+        rig: RigConfig::default(),
     };
 
     let toml_str = toml::to_string_pretty(&config).unwrap();
@@ -948,6 +949,7 @@ async fn config_save_and_load_tmpdir() {
         verifiable_intent: VerifiableIntentConfig::default(),
         claude_code: ClaudeCodeConfig::default(),
         tribev2: TribeV2Config::default(),
+        rig: RigConfig::default(),
     };
 
     config.save().await.unwrap();

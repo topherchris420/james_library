@@ -21,7 +21,8 @@ pub use schema::{
     OpenAiTtsConfig, OpenVpnTunnelConfig, OtpConfig, OtpMethod, PacingConfig,
     PeripheralBoardConfig, PeripheralsConfig, PluginsConfig, ProjectIntelConfig, ProxyConfig,
     ProxyScope, QdrantConfig, QueryClassificationConfig, ReliabilityConfig, ResourceLimitsConfig,
-    RuntimeConfig, SandboxBackend, SandboxConfig, SchedulerConfig, SecretsConfig, SecurityConfig,
+    RigConfig, RigPrivacyMode, RigPrivacySource, RigProfile, RigProfileKind, RuntimeConfig,
+    SandboxBackend, SandboxConfig, SchedulerConfig, SecretsConfig, SecurityConfig,
     SecurityOpsConfig, SensesConfig, SkillCreationConfig, SkillsConfig, SkillsPromptInjectionMode,
     SlackConfig, StorageConfig, StorageProviderConfig, StorageProviderSection, StreamMode,
     SwarmConfig, SwarmStrategy, TelegramConfig, TextBrowserConfig, ToolFilterGroup,
@@ -30,7 +31,8 @@ pub use schema::{
     WhatsAppChatPolicy, WhatsAppWebMode, WorkspaceConfig, apply_channel_proxy_to_builder,
     apply_runtime_proxy_to_builder, build_channel_proxy_client,
     build_channel_proxy_client_with_timeouts, build_runtime_proxy_client,
-    build_runtime_proxy_client_with_timeouts, runtime_proxy_config, set_runtime_proxy_config,
+    build_runtime_proxy_client_with_timeouts, builtin_rig_profile, runtime_proxy_config,
+    set_runtime_proxy_config, validate_rig_node_name,
 };
 
 pub fn name_and_presence<T: traits::ChannelConfig>(channel: Option<&T>) -> (&'static str, bool) {

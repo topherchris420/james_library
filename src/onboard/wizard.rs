@@ -205,6 +205,7 @@ pub async fn run_wizard(force: bool) -> Result<Config> {
         verifiable_intent: crate::config::VerifiableIntentConfig::default(),
         claude_code: crate::config::ClaudeCodeConfig::default(),
         tribev2: crate::config::TribeV2Config::default(),
+        rig: crate::config::RigConfig::default(),
     };
 
     println!(
@@ -622,6 +623,7 @@ async fn run_quick_setup_with_home(
         verifiable_intent: crate::config::VerifiableIntentConfig::default(),
         claude_code: crate::config::ClaudeCodeConfig::default(),
         tribev2: crate::config::TribeV2Config::default(),
+        rig: crate::config::RigConfig::default(),
     };
 
     config.save().await?;

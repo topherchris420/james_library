@@ -1,0 +1,10 @@
+# R.A.I.N. Rig profile: node
+#
+# An always-on mini PC or home server. Listeners stay on loopback unless the
+# operator explicitly configures otherwise; this profile does not change that.
+name = "node"
+summary = "Always-on mini PC or home server."
+privacy = "local"
+always_on = true
+preferred_inference = ["llamacpp", "ollama"]
+wanted_capabilities = ["research-registry", "gateway"]
