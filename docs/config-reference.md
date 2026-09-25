@@ -2,7 +2,7 @@
 
 Canonical configuration schema is defined in:
 
-- [`../src/config/schema.rs`](../src/config/schema.rs)
+- [`../src/config/schema/mod.rs`](../src/config/schema/mod.rs)
 
 Configuration loading and merging logic:
 
@@ -51,3 +51,31 @@ Remote evaluation requires explicit request consent; chat also requires
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
 See [bounded decisions](bounded-decisions.md) for all settings, diagnostics, calibration,
 privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.
+
+## R.A.I.N. Rig section (`[rig]`, added 2026-09)
+
+Optional and omitted from generated configs while unset; omitting it keeps
+pre-Rig behavior. Unknown keys are rejected.
+
+```toml
+[rig]
+profile = "local"        # local | node | field (built-in, human-readable TOML)
+node_name = "rain-local" # shareable name: lowercase letters, digits, '-'; 1-32 chars
+privacy = "local"        # local | hybrid | hosted; default: profile's, else hybrid
+```
+
+- `privacy = "local"` makes provider construction refuse any inference
+  endpoint that is not loopback or private-network, including fallback
+  providers, model routes, and delegate agents (typed, non-retryable error;
+  no silent hosted fallback). `hybrid` is the default pre-Rig behavior;
+  `hosted` is informational and enforces like `hybrid`.
+- All built-in profiles default to `local` privacy. Profiles cannot change
+  security, autonomy, or bind policy.
+- Rig reads these environment variables for reporting only:
+  `RAIN_LLM_BASE_URL`, `RAIN_LLM_MODEL`, `LM_STUDIO_BASE_URL`,
+  `LM_STUDIO_MODEL`, `RAIN_DECISION_MODE`, `RAIN_LAYA_CHECKPOINT`,
+  `RAIN_JUDGMENT_PROVIDER`, `TYPESAFE_API_KEY` (presence only).
+- Rig state: `<workspace>/rig/dispositions.jsonl` (action-boundary records;
+  payload digests only).
+
+Rollback: delete the `[rig]` table. Details: [`rig/getting-started.md`](rig/getting-started.md).

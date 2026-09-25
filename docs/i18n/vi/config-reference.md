@@ -2,7 +2,7 @@
 
 Schema cấu hình chuẩn:
 
-- [`../../../src/config/schema.rs`](../../../src/config/schema.rs)
+- [`../../../src/config/schema/mod.rs`](../../../src/config/schema/mod.rs)
 
 Mã tải/gộp cấu hình:
 
@@ -51,3 +51,23 @@ chuyển về R.A.I.N. Đánh giá từ xa cần sự cho phép rõ ràng; hội
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Lỗi cấu hình được thông báo.
 Xem [quyết định có giới hạn](../../bounded-decisions.md) để biết cấu hình, chẩn đoán và cách hoàn tác.
 Chính sách chấp thuận của lệnh `judge` không thay đổi.
+
+## Mục R.A.I.N. Rig (`[rig]`, thêm vào 2026-09)
+
+Tùy chọn; nếu bỏ qua, hành vi cũ được giữ nguyên. Khóa không xác định bị từ chối.
+
+```toml
+[rig]
+profile = "local"        # local | node | field
+node_name = "rain-local" # chữ thường, chữ số, '-'; 1-32 ký tự
+privacy = "local"        # local | hybrid | hosted; mặc định: theo profile, nếu không thì hybrid
+```
+
+- `privacy = "local"` khiến việc tạo nhà cung cấp từ chối mọi điểm suy luận
+  không phải loopback hoặc mạng riêng, kể cả nhà cung cấp dự phòng, tuyến mô
+  hình và agent ủy quyền (lỗi có kiểu, không thử lại; không có dự phòng lưu
+  trữ ngầm).
+- Mọi profile tích hợp mặc định là `local` và không thể thay đổi chính sách
+  bảo mật, quyền tự chủ hay địa chỉ lắng nghe.
+
+Hoàn tác: xóa bảng `[rig]`. Chi tiết: [`rig/getting-started.md`](../../rig/getting-started.md) (tiếng Anh).

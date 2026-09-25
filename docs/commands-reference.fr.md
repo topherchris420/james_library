@@ -64,3 +64,25 @@ la conversation exige aussi `RAIN_DECISION_REMOTE_ALLOWED=true`.
 Les erreurs de configuration sont signalées. Voir [décisions bornées](bounded-decisions.md)
 pour la configuration complète, les diagnostics et le retour arrière.
 La politique de promotion de `judge` reste inchangée.
+
+## R.A.I.N. Rig (optionnel)
+
+Rig est une couche de nœud facultative du runtime Rust ; `python rain_lab.py`
+n'en dépend pas. Voir [`rig/README.md`](rig/README.md).
+
+```bash
+rain rig status [--json]          # état du nœud (READY/DEGRADED/BLOCKED)
+rain rig doctor [--json]          # PASS/WARN/FAIL/SKIP ; code de sortie non nul si FAIL
+rain rig models [--json]          # modèles sur llama.cpp / Ollama / LM Studio / réunion
+rain rig capabilities [--json]    # registre des capacités et état courant
+rain rig peers [--json]           # identité partageable et transports pairs
+rain rig setup [--profile local|node|field] [--node-name NOM] [--privacy local|hybrid|hosted] [--yes] [--dry-run]
+rain rig up [--dry-run]           # démarre le démon R.A.I.N. sur son adresse configurée
+rain rig radio status|encode|decode   # modem logiciel Skybridge (expérimental, aucune émission RF)
+```
+
+- La découverte ne sonde que des adresses locales (loopback ou réseau privé) et
+  ne contacte jamais de service hébergé.
+- `setup` demande confirmation avant d'écrire `config.toml` (`--yes` requis en
+  mode non interactif) et n'installe ni ne télécharge rien.
+- `up` ne démarre que le démon R.A.I.N. ; un nœud BLOCKED ne démarre rien.

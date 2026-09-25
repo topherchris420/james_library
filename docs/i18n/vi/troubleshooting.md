@@ -53,3 +53,18 @@ chuyển về R.A.I.N. Đánh giá từ xa cần sự cho phép rõ ràng; hội
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Lỗi cấu hình được thông báo.
 Xem [quyết định có giới hạn](../../bounded-decisions.md) để biết cấu hình, chẩn đoán và cách hoàn tác.
 Chính sách chấp thuận của lệnh `judge` không thay đổi.
+
+## R.A.I.N. Rig
+
+- `rain rig doctor` báo `FAIL default provider … not reachable`: máy chủ cục
+  bộ đã cấu hình chưa chạy. Hãy tự khởi động (ví dụ `llama-server -m model.gguf --port 8080`
+  hoặc `ollama serve`); Rig không bao giờ khởi động máy chủ của bên thứ ba.
+- `privacy mode 'local' refuses inference provider '…'`: có nhà cung cấp lưu
+  trữ bên ngoài trong khi quyền riêng tư là `local`. Dùng máy chủ cục bộ
+  (`rain rig setup` sẽ đề xuất nếu phát hiện) hoặc đặt `[rig] privacy = "hybrid"`.
+- Trạng thái `BLOCKED` với `EXTERNAL BIND`: `[gateway] host` không phải
+  loopback và không được cho phép rõ ràng. Hãy dùng `host = "127.0.0.1"`.
+- `research library not found`: chạy `rain rig` từ thư mục James Library hoặc
+  truyền `--library <đường dẫn>`.
+- Cảnh báo `meeting inference`: mô hình của cuộc họp Python là mô hình Ollama
+  `:cloud` hoặc chưa được chỉ định. Hãy đặt `RAIN_LLM_MODEL`.

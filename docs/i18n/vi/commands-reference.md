@@ -61,3 +61,25 @@ chuyển về R.A.I.N. Đánh giá từ xa cần sự cho phép rõ ràng; hội
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Lỗi cấu hình được thông báo.
 Xem [quyết định có giới hạn](../../bounded-decisions.md) để biết cấu hình, chẩn đoán và cách hoàn tác.
 Chính sách chấp thuận của lệnh `judge` không thay đổi.
+
+## R.A.I.N. Rig (tùy chọn)
+
+Rig là lớp nút tùy chọn trong runtime Rust; `python rain_lab.py` không phụ
+thuộc vào nó. Xem [`rig/README.md`](../../rig/README.md) (tiếng Anh).
+
+```bash
+rain rig status [--json]          # trạng thái nút (READY/DEGRADED/BLOCKED)
+rain rig doctor [--json]          # PASS/WARN/FAIL/SKIP; mã thoát khác 0 khi có FAIL
+rain rig models [--json]          # mô hình trên llama.cpp / Ollama / LM Studio / cuộc họp
+rain rig capabilities [--json]    # danh sách khả năng và trạng thái hiện tại
+rain rig peers [--json]           # danh tính có thể chia sẻ và các transport
+rain rig setup [--profile local|node|field] [--node-name TEN] [--privacy local|hybrid|hosted] [--yes] [--dry-run]
+rain rig up [--dry-run]           # khởi động daemon R.A.I.N. trên địa chỉ đã cấu hình
+rain rig radio status|encode|decode   # modem phần mềm Skybridge (thử nghiệm, không phát RF)
+```
+
+- Việc dò tìm chỉ kiểm tra địa chỉ cục bộ (loopback hoặc mạng riêng) và không
+  bao giờ liên hệ dịch vụ lưu trữ bên ngoài.
+- `setup` hỏi xác nhận trước khi ghi `config.toml` (cần `--yes` khi không
+  tương tác) và không cài đặt hay tải xuống gì.
+- `up` chỉ khởi động daemon R.A.I.N.; nút ở trạng thái BLOCKED không khởi động gì.

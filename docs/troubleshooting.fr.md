@@ -57,3 +57,20 @@ la conversation exige aussi `RAIN_DECISION_REMOTE_ALLOWED=true`.
 Les erreurs de configuration sont signalées. Voir [décisions bornées](bounded-decisions.md)
 pour la configuration complète, les diagnostics et le retour arrière.
 La politique de promotion de `judge` reste inchangée.
+
+## R.A.I.N. Rig
+
+- `rain rig doctor` signale `FAIL default provider … not reachable` : le
+  serveur local configuré ne tourne pas. Démarrez-le vous-même (par exemple
+  `llama-server -m model.gguf --port 8080` ou `ollama serve`) ; Rig ne démarre
+  jamais de serveur tiers.
+- `privacy mode 'local' refuses inference provider '…'` : un fournisseur
+  hébergé est configuré alors que la confidentialité est `local`. Utilisez un
+  serveur local (`rain rig setup` le propose s'il en détecte un) ou définissez
+  `[rig] privacy = "hybrid"`.
+- État `BLOCKED` avec `EXTERNAL BIND` : `[gateway] host` n'est pas loopback et
+  rien ne l'autorise explicitement. Utilisez `host = "127.0.0.1"`.
+- `research library not found` : lancez `rain rig` depuis le dépôt James
+  Library ou passez `--library <chemin>`.
+- Avertissement `meeting inference` : le modèle de la réunion Python est un
+  modèle Ollama `:cloud` ou n'est pas fixé. Définissez `RAIN_LLM_MODEL`.

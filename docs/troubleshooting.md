@@ -145,3 +145,37 @@ Remote evaluation requires explicit request consent; chat also requires
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
 See [bounded decisions](bounded-decisions.md) for all settings, diagnostics, calibration,
 privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.
+
+## R.A.I.N. Rig
+
+### `rain rig doctor` reports `FAIL default provider … not reachable`
+
+The configured local server is not running. Start it yourself (Rig never
+starts third-party servers), for example `llama-server -m model.gguf --port 8080`
+or `ollama serve`, then rerun `rain rig doctor`.
+
+### `privacy mode 'local' refuses inference provider '…'`
+
+`[rig]` privacy is `local` (explicitly or via a profile) and a hosted provider
+is configured as default, fallback, model route, or delegate. Point it at a
+local server (`rain rig setup` proposes this when one is running) or set
+`[rig] privacy = "hybrid"` to allow hosted inference explicitly.
+
+### Node status is `BLOCKED` with `EXTERNAL BIND`
+
+`[gateway] host` is not loopback and no `allow_public_bind` or tunnel allows
+it. Set `host = "127.0.0.1"` unless remote access is intended.
+
+### `research library not found`
+
+Run `rain rig` from the James Library checkout or pass `--library <path>`.
+
+### `meeting inference` warns about a hosted model
+
+The Python meeting's model is an Ollama `:cloud` model or is unpinned. Set
+`RAIN_LLM_MODEL` to a model listed by `rain rig models`. The runtime's
+`local` privacy enforcement does not govern the separate Python meeting process.
+
+### `--json` output mixed with log lines
+
+Rig logs go to stderr; redirect with `2>/dev/null` or set `RUST_LOG=error`.

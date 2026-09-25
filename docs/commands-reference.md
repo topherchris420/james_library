@@ -64,3 +64,27 @@ Remote evaluation requires explicit request consent; chat also requires
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
 See [bounded decisions](bounded-decisions.md) for all settings, diagnostics, calibration,
 privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.
+
+## R.A.I.N. Rig (optional)
+
+Rig is an opt-in node layer in the Rust runtime; `python rain_lab.py` does not
+depend on it. See [`rig/README.md`](rig/README.md).
+
+```bash
+rain rig status [--json]          # node snapshot and readiness (READY/DEGRADED/BLOCKED)
+rain rig doctor [--json]          # PASS/WARN/FAIL/SKIP; exits non-zero on FAIL
+rain rig models [--json]          # models on llama.cpp / Ollama / LM Studio / meeting endpoint
+rain rig capabilities [--json]    # capability registry with current states
+rain rig peers [--json]           # shareable identity and peer transports
+rain rig setup [--profile local|node|field] [--node-name NAME] [--privacy local|hybrid|hosted] [--yes] [--dry-run]
+rain rig up [--dry-run]           # start the R.A.I.N. daemon on its configured bind
+rain rig radio status|encode|decode   # Skybridge software modem (experimental, no RF)
+rain rig --library PATH <command> # point discovery at a James Library checkout
+```
+
+- Discovery probes only loopback/private-network endpoints and never contacts
+  hosted services.
+- `setup` asks before writing `config.toml` (non-interactive runs need
+  `--yes`) and never installs, downloads, or opens listeners.
+- `up` starts only the R.A.I.N. daemon; a BLOCKED node starts nothing.
+- Rig commands log at WARN to stderr by default so `--json` stays clean.

@@ -2,7 +2,7 @@
 
 Schéma de configuration canonique:
 
-- [`../src/config/schema.rs`](../src/config/schema.rs)
+- [`../src/config/schema/mod.rs`](../src/config/schema/mod.rs)
 
 Chargement/fusion de config:
 
@@ -53,3 +53,24 @@ la conversation exige aussi `RAIN_DECISION_REMOTE_ALLOWED=true`.
 Les erreurs de configuration sont signalées. Voir [décisions bornées](bounded-decisions.md)
 pour la configuration complète, les diagnostics et le retour arrière.
 La politique de promotion de `judge` reste inchangée.
+
+## Section R.A.I.N. Rig (`[rig]`, ajoutée en 2026-09)
+
+Facultative ; absente, le comportement antérieur est conservé. Les clés
+inconnues sont refusées.
+
+```toml
+[rig]
+profile = "local"        # local | node | field
+node_name = "rain-local" # minuscules, chiffres, '-' ; 1 à 32 caractères
+privacy = "local"        # local | hybrid | hosted ; défaut : celui du profil, sinon hybrid
+```
+
+- `privacy = "local"` fait refuser, à la construction du fournisseur, tout
+  point d'accès d'inférence qui n'est ni loopback ni réseau privé, y compris
+  les fournisseurs de secours, les routes de modèles et les agents délégués
+  (erreur typée, sans nouvelle tentative ; aucun repli hébergé silencieux).
+- Tous les profils intégrés utilisent `local` par défaut et ne peuvent pas
+  modifier la sécurité, l'autonomie ni la politique d'écoute réseau.
+
+Retour arrière : supprimer la table `[rig]`. Détails : [`rig/getting-started.md`](rig/getting-started.md).
