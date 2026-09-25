@@ -464,8 +464,8 @@ def _build_follow_up_moves(topic: str | None, current_preset: str | None) -> lis
     moves.append(
         FollowUpMove(
             label="Instant wow demo",
-            description="Run the zero-setup preview again if you want a fast shareable result.",
-            command=_command_for_mode("demo", preset="startup-debate"),
+            description="Run the zero-setup research meeting again on a new question.",
+            command=_command_for_mode("demo"),
         )
     )
     return moves[:3]
@@ -985,12 +985,14 @@ def _prepare_beginner_args(
 
 
 def _prepare_demo_args(args: argparse.Namespace) -> argparse.Namespace:
+    """The demo is an offline research meeting on the raw question; presets only label the share card."""
+
+    from james_library.launcher.offline_meeting import DEFAULT_QUESTION
+
     prepared = _copy_args_with_mode(args, "demo")
-    if not getattr(prepared, "preset", None):
-        prepared.preset = "startup-debate"
-    display_topic, effective_topic = _render_beginner_topic(prepared.topic, prepared.preset)
-    prepared.display_topic = display_topic
-    prepared.topic = effective_topic
+    question = " ".join((prepared.topic or "").split()) or DEFAULT_QUESTION
+    prepared.display_topic = question
+    prepared.topic = question
     return prepared
 
 
@@ -1825,6 +1827,7 @@ def _write_beginner_share_card(
     launched_mode: str,
     exit_code: int,
     session_log_path: Path | None = None,
+    highlight: str | None = None,
 ) -> Path | None:
     if requested_mode not in {"beginner", "demo"}:
         return None
@@ -1838,11 +1841,11 @@ def _write_beginner_share_card(
     share_html_path = share_dir / f"BEGINNER_SHARE_{timestamp}.html"
     poster_path = _poster_path_for_share_card(share_html_path)
     session_log = session_log_path or (library_root / "RAIN_LAB_MEETING_LOG.md")
-    excerpt = _read_share_excerpt(session_log)
+    excerpt = highlight or _read_share_excerpt(session_log)
     topic = getattr(args, "display_topic", args.topic or "Open exploration")
     preset = _resolve_beginner_preset(getattr(args, "preset", None))
-    preset_title = preset.title if preset else "Custom Prompt"
     demo_mode = requested_mode == "demo"
+    preset_title = preset.title if preset else ("Offline Research Meeting" if demo_mode else "Custom Prompt")
     if demo_mode:
         session_label = "Instant demo, no setup required"
     else:
@@ -1954,110 +1957,51 @@ def _write_beginner_share_card(
     return share_html_path
 
 
-def _build_demo_session_markdown(args: argparse.Namespace) -> str:
-    preset = _resolve_beginner_preset(getattr(args, "preset", None)) or BEGINNER_PRESETS["startup-debate"]
-    topic = getattr(args, "display_topic", args.topic or preset.default_topic)
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    if preset.slug == "startup-debate":
-        body = f"""
-## Opening Spark
-
-James frames the idea as a real startup pitch: {topic}.
-
-## Demo Exchange
-
-Founder Voice:
-This could win because the pain is obvious, the value is easy to repeat, and the best version is surprisingly memorable.
-
-Skeptic Voice:
-Right now it still sounds generic. The wedge is weak, the first user is blurry, and the
-retention story is doing too much hand-waving.
-
-Builder Voice:
-Shrink the surface. Make one painful job dramatically easier. Then give it one line that a user
-would actually say to a friend.
-
-## Punchy Takeaway
-
-The demo says the concept is not dead. It just needs a more precise buyer, a stronger promise,
-and one feature people would immediately miss.
-""".strip()
-    elif preset.slug == "idea-roast":
-        body = f"""
-## Opening Spark
-
-James takes a swing at the idea: {topic}.
-
-## Demo Exchange
-
-Roast:
-This version feels like three products wearing the same hoodie. It wants to be clever, social,
-premium, and frictionless all at once.
-
-Rescue:
-Keep the strongest emotional hook. Cut the rest. If the pitch cannot survive in one sentence,
-the product is still hiding from itself.
-
-## Punchy Takeaway
-
-The roast lands, but the fix is clear: sharper audience, smaller promise, faster payoff.
-""".strip()
-    else:
-        body = f"""
-## Opening Spark
-
-James explains the topic in plain language: {topic}.
-
-## Demo Exchange
-
-Simple Version:
-Think of it like pushing someone on a swing. Tiny pushes do almost nothing unless you hit the
-timing just right. When the timing matches, the motion suddenly gets bigger.
-
-Why It Matters:
-That is the difference between noise and resonance. Same effort, much bigger effect.
-
-## Punchy Takeaway
-
-The demo turns a dense concept into something concrete enough to retell.
-""".strip()
-
-    return f"""# R.A.I.N. Lab Instant Demo
-
-Date: {timestamp}
-Preset: {preset.title}
-Topic: {topic}
-Mode Feel: {preset.recommended_mode}
-
-Note: This is a no-model demo generated locally so new users can try the product flow before setup.
-
-{body}
-"""
-
-
 def _run_demo_session(
     args: argparse.Namespace,
     repo_root: Path,
     log_path: Path | None,
 ) -> int:
-    preset = _resolve_beginner_preset(getattr(args, "preset", None)) or BEGINNER_PRESETS["startup-debate"]
+    """Run the offline research meeting: four agents, verbatim corpus quotes, no model."""
+
+    from james_library.launcher.offline_meeting import DEFAULT_QUESTION, build_offline_meeting
+    from james_library.launcher.offline_meeting_view import render_markdown, share_highlight, stream_meeting
+    from james_library.utilities.citation_corpus import resolve_corpus_root
+
     library_root = _resolve_library_root(args, repo_root)
     archive_dir = library_root / "meeting_archives"
     archive_dir.mkdir(parents=True, exist_ok=True)
+    corpus_root = resolve_corpus_root(library_root, getattr(args, "corpus", None))
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    session_log_path = archive_dir / f"DEMO_SESSION_{timestamp}.md"
-    session_log_path.write_text(_build_demo_session_markdown(args), encoding="utf-8")
+    # No explicit question: let the meeting pick one the library can actually answer.
+    requested = (getattr(args, "display_topic", None) or args.topic or "").strip()
+    meeting = build_offline_meeting(None if requested == DEFAULT_QUESTION else requested, corpus_root)
+    question = meeting.question
+    args.display_topic = question
+    stream_meeting(meeting)
 
-    print(f"{ANSI_CYAN}Instant demo mode: no local model required.{ANSI_RESET}")
-    print(f"{ANSI_DIM}{preset.summary}{ANSI_RESET}")
-    print(f"{ANSI_GREEN}Demo session saved to: {session_log_path}{ANSI_RESET}")
+    preset = _resolve_beginner_preset(getattr(args, "preset", None))
+    timestamp = datetime.now()
+    session_log_path = archive_dir / f"DEMO_SESSION_{timestamp.strftime('%Y%m%d_%H%M%S')}.md"
+    session_log_path.write_text(
+        render_markdown(
+            meeting,
+            timestamp=timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            preset_title=preset.title if preset is not None else None,
+        ),
+        encoding="utf-8",
+    )
+    print()
+    print(f"{ANSI_GREEN}Transcript saved: {session_log_path}{ANSI_RESET}")
     _append_launcher_event(
         log_path,
         "demo_session_generated",
-        preset=preset.slug,
-        topic=getattr(args, "display_topic", args.topic),
+        preset=preset.slug if preset is not None else None,
+        topic=question,
+        grounding=meeting.grounding,
+        quotes_checked=meeting.audit.checked,
+        quotes_verified=meeting.audit.verified,
+        corpus_sha256=meeting.audit.corpus_sha256,
         session_log=str(session_log_path),
     )
 
@@ -2065,15 +2009,15 @@ def _run_demo_session(
         args,
         repo_root,
         requested_mode="demo",
-        launched_mode=preset.recommended_mode,
+        launched_mode="demo",
         exit_code=0,
         session_log_path=session_log_path,
+        highlight=share_highlight(meeting),
     )
     if share_card_path is not None:
         print(f"{ANSI_GREEN}Share card ready: {share_card_path}{ANSI_RESET}")
         showcase_path = _write_beginner_showcase_page(args, repo_root, latest_share_card=share_card_path)
         print(f"{ANSI_GREEN}Local showcase ready: {showcase_path}{ANSI_RESET}")
-        _print_follow_up_moves(getattr(args, "display_topic", args.topic), getattr(args, "preset", None))
         _append_launcher_event(
             log_path,
             "beginner_share_card_created",
@@ -2087,6 +2031,13 @@ def _run_demo_session(
             launched_mode="demo",
         )
 
+    print(f"{ANSI_CYAN}Try next:{ANSI_RESET}")
+    print(f"{ANSI_DIM}- Ask your own question: {_command_for_mode('demo', topic='your research question')}{ANSI_RESET}")
+    print(f"{ANSI_DIM}- Argue from your own papers: add .md or .txt files to {corpus_root} and rerun{ANSI_RESET}")
+    print(
+        f"{ANSI_DIM}- Run this room live with a local model: "
+        f"{_command_for_mode('chat', topic=question)}{ANSI_RESET}"
+    )
     return 0
 
 
@@ -2155,7 +2106,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
         type=str,
         default=None,
         help=(
-            "Chat mode citation root. When omitted, chat uses RAIN_CORPUS_DIR, then "
+            "Chat and demo citation root. When omitted, they use RAIN_CORPUS_DIR, then "
             "<library>/papers if present, otherwise the library with product docs excluded."
         ),
     )
@@ -2813,7 +2764,6 @@ def main(argv: list[str] | None = None) -> int:
         if choice in {"", "1"}:
             print(f"\n{ANSI_GREEN}Starting instant demo...{ANSI_RESET}")
             args.mode = "demo"
-            args.preset = "startup-debate"
         elif choice == "2":
             print(f"\n{ANSI_GREEN}Starting beginner mode...{ANSI_RESET}")
             args.mode = "beginner"
@@ -2840,7 +2790,6 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"\n{ANSI_YELLOW}Starting instant demo...{ANSI_RESET}")
             args.mode = "demo"
-            args.preset = "startup-debate"
 
         requested_mode = args.mode
 
@@ -2862,7 +2811,6 @@ def main(argv: list[str] | None = None) -> int:
                 if wants_demo:
                     args.mode = "demo"
                     requested_mode = "demo"
-                    args.preset = "startup-debate"
                 else:
                     if preset_name is not None:
                         args.preset = preset_name
@@ -2895,8 +2843,12 @@ def main(argv: list[str] | None = None) -> int:
         if not banner_printed:
             _print_banner()
             banner_printed = True
+        print(f"{ANSI_GREEN}Instant demo: an offline research meeting over your local library.{ANSI_RESET}")
         if preset is not None:
-            print(f"{ANSI_GREEN}Instant demo: loading {preset.title}.{ANSI_RESET}")
+            print(
+                f"{ANSI_DIM}The {preset.title} preset shapes model-backed sessions; "
+                f"the offline demo always runs the research meeting.{ANSI_RESET}"
+            )
 
     if not banner_printed:
         _print_banner()

@@ -1,10 +1,11 @@
+import json
 from pathlib import Path
 
 import james_library.launcher.rain_lab as rain_launcher
+from james_library.launcher.offline_meeting import DEFAULT_QUESTION
 from james_library.launcher.rain_lab import (
     _apply_beginner_shortcut,
     _build_follow_up_moves,
-    _build_demo_session_markdown,
     _choose_beginner_mode,
     _prepare_beginner_args,
     _prepare_demo_args,
@@ -377,12 +378,21 @@ def test_prepare_beginner_args_uses_preset_template():
     assert "Roast this idea with wit" in prepared.topic
 
 
-def test_prepare_demo_args_sets_default_preset_and_topic():
+def test_prepare_demo_args_uses_research_question_without_preset_template():
     args, _ = parse_args(["--mode", "demo"])
     prepared = _prepare_demo_args(args)
     assert prepared.mode == "demo"
-    assert prepared.preset == "startup-debate"
-    assert prepared.display_topic == "an AI tutor for overwhelmed college students"
+    assert prepared.preset is None
+    assert prepared.display_topic == DEFAULT_QUESTION
+    assert prepared.topic == DEFAULT_QUESTION
+
+
+def test_prepare_demo_args_keeps_raw_topic_with_preset():
+    args, _ = parse_args(["--mode", "demo", "--preset", "idea-roast", "--topic", "  plasma   confinement "])
+    prepared = _prepare_demo_args(args)
+    assert prepared.preset == "idea-roast"
+    assert prepared.display_topic == "plasma confinement"
+    assert prepared.topic == "plasma confinement"
 
 
 def test_write_beginner_share_card_uses_session_log(repo_root, tmp_path):
@@ -443,15 +453,7 @@ def test_write_beginner_share_card_skips_non_beginner(repo_root, tmp_path):
     assert share_path is None
 
 
-def test_build_demo_session_markdown_mentions_no_model():
-    args, _ = parse_args(["--mode", "demo", "--preset", "startup-debate"])
-    args.display_topic = "an AI coach for anxious founders"
-    text = _build_demo_session_markdown(args)
-    assert "no-model demo generated locally" in text
-    assert "an AI coach for anxious founders" in text
-
-
-def test_run_demo_session_writes_artifacts(repo_root, tmp_path):
+def test_run_demo_session_writes_artifacts(repo_root, tmp_path, capsys):
     args, _ = parse_args(["--mode", "demo", "--preset", "idea-roast", "--library", str(tmp_path)])
     args = _prepare_demo_args(args)
     rc = _run_demo_session(args, repo_root, tmp_path / "meeting_archives" / "launcher_events.jsonl")
@@ -464,6 +466,41 @@ def test_run_demo_session_writes_artifacts(repo_root, tmp_path):
     assert share_cards
     assert posters
     assert showcases
+    transcript = artifacts[0].read_text(encoding="utf-8")
+    assert "No model ran." in transcript
+    assert "| Preset | Idea Roast |" in transcript
+    out = capsys.readouterr().out
+    assert "OFFLINE RESEARCH MEETING" in out
+    assert "Transcript saved:" in out
+
+
+def test_run_demo_session_quotes_the_library_and_logs_the_audit(repo_root, tmp_path, capsys):
+    papers = tmp_path / "papers"
+    papers.mkdir()
+    (papers / "Coupled Oscillators.md").write_text(
+        "Abstract\n"
+        "In a benchtop array of 64 oscillators, phase coherence rose to 0.91 within 12 seconds of coupling.\n"
+        "This result does not establish that phase coherence causes synchronization in larger networks.\n"
+        "Phase coherence across the oscillators decayed within seconds once the coupling was switched off.\n",
+        encoding="utf-8",
+    )
+    log_path = tmp_path / "meeting_archives" / "launcher_events.jsonl"
+    args, _ = parse_args(["--mode", "demo", "--library", str(tmp_path), "--topic", "phase coherence in oscillators"])
+    args = _prepare_demo_args(args)
+
+    assert _run_demo_session(args, repo_root, log_path) == 0
+
+    out = capsys.readouterr().out
+    assert "phase coherence rose to 0.91" in out
+    assert "2/2 quotes re-verified verbatim" in out
+    events = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+    generated = next(event for event in events if event["event"] == "demo_session_generated")
+    assert generated["grounding"] == "strong"
+    assert generated["quotes_checked"] == generated["quotes_verified"] == 2
+    assert len(generated["corpus_sha256"]) == 64
+    share_md = next((tmp_path / "meeting_archives").glob("BEGINNER_SHARE_*.md")).read_text(encoding="utf-8")
+    assert "Preset: Offline Research Meeting" in share_md
+    assert "Elena, citing Coupled Oscillators" in share_md
 
 
 def test_write_beginner_showcase_page_includes_recent_sessions(repo_root, tmp_path):
@@ -531,5 +568,5 @@ def test_main_without_args_defaults_to_demo(monkeypatch, repo_root):
 
     assert rc == 0
     assert recorded["mode"] == "demo"
-    assert recorded["preset"] == "startup-debate"
-    assert recorded["display_topic"] == "an AI tutor for overwhelmed college students"
+    assert recorded["preset"] is None
+    assert recorded["display_topic"] == DEFAULT_QUESTION

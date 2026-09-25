@@ -7,7 +7,7 @@ R.A.I.N. Lab is a local-first research assistant that runs a structured expert-p
 The stable core is the path a new user should be able to trust first:
 
 - `python rain_lab.py`
-- `python rain_lab.py --mode demo --preset startup-debate`
+- `python rain_lab.py --mode demo`
 - `python rain_lab.py --mode validate`
 - `python rain_lab.py --mode chat --topic "..."`
 - The Rust `rain` runtime and its default provider, tool, memory, security, and gateway contracts
@@ -20,7 +20,8 @@ Core changes need user-facing docs, tests or smoke coverage, and CI verification
 
 A quote counts as a paper citation only when the full span occurs in a file under the citation corpus. Product files are not that corpus: `README*`, `*_SOUL.md`, logs, `START_HERE*`, `CONTRIBUTING*`, `SECURITY*`, `ARCHITECTURE*`, `LICENSE*`, `docs/`, and `assets/`.
 
-Resolution order for chat (`rain_lab_meeting_chat_version.py`) and the RLM host file picker:
+Resolution order for chat (`rain_lab_meeting_chat_version.py`), the RLM host file picker, and the offline
+instant demo (`--mode demo`):
 
 1. `--corpus` or `RAIN_CORPUS_DIR`
 2. `<library>/papers` when that directory exists

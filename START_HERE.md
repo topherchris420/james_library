@@ -100,7 +100,7 @@ That's it. Just run that command, press Enter for the instant demo if you want t
 |---------------------|----------|
 | **I'm not sure where to start** | `python rain_lab.py` (starts wizard) |
 | **Give it one idea and let it choose for me** | `python rain_lab.py --mode beginner --topic "your idea"` |
-| **Try a no-setup instant demo** | `python rain_lab.py --mode demo --preset startup-debate` |
+| **Try a no-setup instant demo** | `python rain_lab.py --mode demo` |
 | Chat with AI about my research | `python rain_lab.py --mode chat --topic "your topic"` |
 | Check if my system is ready | `python rain_lab.py --mode validate` |
 | See what AI models are available | `python rain_lab.py --mode models` |

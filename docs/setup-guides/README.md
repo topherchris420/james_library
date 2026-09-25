@@ -25,7 +25,7 @@ If you are new to the product, start with [../../README.md](../../README.md) and
 
 - Main product entrypoint: `python rain_lab.py`
 - Guided setup: `python rain_lab.py --mode first-run`
-- Instant preview: `python rain_lab.py --mode demo --preset startup-debate`
+- Instant preview: `python rain_lab.py --mode demo` (offline research meeting over `papers/`, no model)
 - Validate environment: `python rain_lab.py --mode validate`
 - Existing config protection still applies when setup rewrites `.env` or `config.toml`
 
