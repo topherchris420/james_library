@@ -68,6 +68,7 @@ pub mod organization;
 pub mod peripherals;
 pub mod providers;
 pub mod rag;
+pub mod rig;
 pub mod routines;
 pub mod runtime;
 pub(crate) mod security;

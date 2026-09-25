@@ -790,7 +790,10 @@ pub async fn api_error(provider: &str, response: reqwest::Response) -> anyhow::E
 /// For MiniMax, OAuth mode supports `api_key = "minimax-oauth"`, resolving credentials from
 /// `MINIMAX_OAUTH_TOKEN` first, then `MINIMAX_API_KEY`, and finally
 /// `MINIMAX_OAUTH_REFRESH_TOKEN` (automatic access-token refresh).
-fn resolve_provider_credential(name: &str, credential_override: Option<&str>) -> Option<String> {
+pub(crate) fn resolve_provider_credential(
+    name: &str,
+    credential_override: Option<&str>,
+) -> Option<String> {
     let mut minimax_oauth_placeholder_requested = false;
 
     if let Some(raw_override) = credential_override {
