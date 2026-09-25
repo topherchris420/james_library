@@ -28,6 +28,7 @@ mod factory;
 pub mod gemini;
 pub mod gemini_cli;
 pub mod kilocli;
+pub mod locality;
 pub mod ollama;
 pub mod openai;
 pub mod openai_codex;
@@ -651,6 +652,10 @@ pub struct ProviderRuntimeOptions {
     /// Custom API path suffix for OpenAI-compatible providers
     /// (e.g. "/v2/generate" instead of the default "/chat/completions").
     pub api_path: Option<String>,
+    /// Refuse any provider whose inference endpoint is not loopback or
+    /// private-network (`[rig] privacy = "local"`). Applies to the primary,
+    /// fallback, and routed providers built from these options.
+    pub local_inference_only: bool,
 }
 
 impl Default for ProviderRuntimeOptions {
@@ -665,6 +670,7 @@ impl Default for ProviderRuntimeOptions {
             provider_timeout_secs: None,
             extra_headers: std::collections::HashMap::new(),
             api_path: None,
+            local_inference_only: false,
         }
     }
 }
@@ -682,6 +688,7 @@ pub fn provider_runtime_options_from_config(
         provider_timeout_secs: Some(config.provider_timeout_secs),
         extra_headers: config.extra_headers.clone(),
         api_path: config.api_path.clone(),
+        local_inference_only: config.rig.enforces_local_inference(),
     }
 }
 
@@ -962,12 +969,35 @@ pub fn create_provider_with_options(
     api_key: Option<&str>,
     options: &ProviderRuntimeOptions,
 ) -> anyhow::Result<Box<dyn Provider>> {
+    enforce_inference_privacy(name, None, options)?;
     match name {
         "openai-codex" | "openai_codex" | "codex" => Ok(Box::new(
             openai_codex::OpenAiCodexProvider::new(options, api_key)?,
         )),
         _ => create_provider_with_url_and_options(name, api_key, None, options),
     }
+}
+
+/// Fail closed when local-only inference is required and `name` would send
+/// prompts to a remote or hosted endpoint. Returns a typed
+/// [`locality::LocalInferenceViolation`] so fallback/route builders can
+/// propagate it instead of skipping the provider.
+fn enforce_inference_privacy(
+    name: &str,
+    api_url: Option<&str>,
+    options: &ProviderRuntimeOptions,
+) -> anyhow::Result<()> {
+    if !options.local_inference_only {
+        return Ok(());
+    }
+    locality::check_local_inference(name, api_url)?;
+    Ok(())
+}
+
+fn is_local_inference_violation(error: &anyhow::Error) -> bool {
+    error
+        .downcast_ref::<locality::LocalInferenceViolation>()
+        .is_some()
 }
 
 /// Factory: create the right provider from config with optional custom base URL
@@ -987,6 +1017,8 @@ fn create_provider_with_url_and_options(
     api_url: Option<&str>,
     options: &ProviderRuntimeOptions,
 ) -> anyhow::Result<Box<dyn Provider>> {
+    enforce_inference_privacy(name, api_url, options)?;
+
     // Closure to optionally apply the configured provider timeout and extra
     // headers to OpenAI-compatible providers before boxing them as trait objects.
     let compat = {
@@ -1304,7 +1336,7 @@ fn create_provider_with_url_and_options(
                 .unwrap_or("lm-studio");
             Ok(compat(OpenAiCompatibleProvider::new(
                 "LM Studio",
-                "http://localhost:1234/v1",
+                locality::LMSTUDIO_DEFAULT_BASE_URL,
                 Some(lm_studio_key),
                 AuthStyle::Bearer,
             )))
@@ -1313,7 +1345,7 @@ fn create_provider_with_url_and_options(
             let base_url = api_url
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
-                .unwrap_or("http://localhost:8080/v1");
+                .unwrap_or(locality::LLAMACPP_DEFAULT_BASE_URL);
             let llama_cpp_key = key
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
@@ -1330,7 +1362,7 @@ fn create_provider_with_url_and_options(
             let base_url = api_url
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
-                .unwrap_or("http://localhost:30000/v1");
+                .unwrap_or(locality::SGLANG_DEFAULT_BASE_URL);
             Ok(compat(OpenAiCompatibleProvider::new(
                 "SGLang",
                 base_url,
@@ -1342,7 +1374,7 @@ fn create_provider_with_url_and_options(
             let base_url = api_url
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
-                .unwrap_or("http://localhost:8000/v1");
+                .unwrap_or(locality::VLLM_DEFAULT_BASE_URL);
             Ok(compat(OpenAiCompatibleProvider::new(
                 "vLLM",
                 base_url,
@@ -1354,7 +1386,7 @@ fn create_provider_with_url_and_options(
             let base_url = api_url
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
-                .unwrap_or("http://localhost:1337/v1");
+                .unwrap_or(locality::OSAURUS_DEFAULT_BASE_URL);
             let osaurus_key = key
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
@@ -1398,7 +1430,7 @@ fn create_provider_with_url_and_options(
             let base_url = api_url
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
-                .unwrap_or("http://localhost:4000/v1");
+                .unwrap_or(locality::LITELLM_DEFAULT_BASE_URL);
             Ok(compat(OpenAiCompatibleProvider::new(
                 "LiteLLM",
                 base_url,
@@ -1655,6 +1687,9 @@ pub fn create_resilient_provider_with_options(
 
         match create_provider_with_options(provider_name, None, &fallback_options) {
             Ok(provider) => providers.push((fallback.clone(), provider)),
+            // Local-only privacy: a hosted fallback is a configuration
+            // contradiction, not a skippable typo. Fail closed.
+            Err(error) if is_local_inference_violation(&error) => return Err(error),
             Err(_error) => {
                 tracing::warn!(
                     fallback_provider = fallback,
@@ -1743,7 +1778,7 @@ pub fn create_routed_provider_with_options(
         match create_resilient_provider_with_options(name, key, url, reliability, options) {
             Ok(provider) => providers.push((name.clone(), provider)),
             Err(e) => {
-                if name == primary_name {
+                if name == primary_name || is_local_inference_violation(&e) {
                     return Err(e);
                 }
                 tracing::warn!(
@@ -3177,6 +3212,156 @@ mod tests {
         };
         assert_eq!(options.extra_headers.len(), 1);
         assert_eq!(options.extra_headers.get("X-Title").unwrap(), "R.A.I.N.");
+    }
+
+    fn local_only_options() -> ProviderRuntimeOptions {
+        ProviderRuntimeOptions {
+            local_inference_only: true,
+            ..ProviderRuntimeOptions::default()
+        }
+    }
+
+    #[test]
+    fn local_inference_only_is_off_by_default_and_hosted_still_builds() {
+        assert!(!ProviderRuntimeOptions::default().local_inference_only);
+        assert!(
+            !provider_runtime_options_from_config(&crate::config::Config::default())
+                .local_inference_only
+        );
+        assert!(
+            create_provider_with_options(
+                "openrouter",
+                Some("key"),
+                &ProviderRuntimeOptions::default()
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn local_inference_only_refuses_hosted_and_cli_wrapper_providers() {
+        let options = local_only_options();
+        for name in [
+            "openrouter",
+            "anthropic",
+            "groq",
+            "claude-code",
+            "gemini-cli",
+        ] {
+            let error = create_provider_with_options(name, Some("key"), &options)
+                .err()
+                .unwrap_or_else(|| panic!("{name} must be refused in local mode"));
+            assert!(is_local_inference_violation(&error), "{name}: {error}");
+            assert!(error.to_string().contains("privacy mode 'local'"));
+        }
+    }
+
+    #[test]
+    fn local_inference_only_allows_llamacpp_lmstudio_and_private_endpoints() {
+        let options = local_only_options();
+        assert!(create_provider_with_options("llamacpp", None, &options).is_ok());
+        assert!(create_provider_with_options("llama.cpp", None, &options).is_ok());
+        assert!(create_provider_with_options("lmstudio", None, &options).is_ok());
+        assert!(
+            create_provider_with_url_and_options(
+                "llamacpp",
+                None,
+                Some("http://192.168.1.40:8080/v1"),
+                &options,
+            )
+            .is_ok()
+        );
+        let remote = create_provider_with_url_and_options(
+            "llamacpp",
+            None,
+            Some("https://gpu.example.com/v1"),
+            &options,
+        )
+        .err()
+        .expect("remote llama.cpp endpoint must be refused");
+        assert!(is_local_inference_violation(&remote));
+    }
+
+    #[test]
+    fn local_inference_only_rejects_ollama_remote_endpoint() {
+        let _env_lock = env_lock();
+        // SAFETY: single-threaded test/init context guarded by env_lock
+        unsafe {
+            std::env::remove_var("rain_PROVIDER_URL");
+        }
+        let options = local_only_options();
+        assert!(create_provider_with_url_and_options("ollama", None, None, &options).is_ok());
+        assert!(
+            create_provider_with_url_and_options(
+                "ollama",
+                None,
+                Some("https://ollama.example.com"),
+                &options,
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn local_inference_only_fails_closed_on_hosted_fallback() {
+        let reliability = crate::config::ReliabilityConfig {
+            fallback_providers: vec!["openrouter".into()],
+            ..crate::config::ReliabilityConfig::default()
+        };
+        let error = create_resilient_provider_with_options(
+            "llamacpp",
+            None,
+            None,
+            &reliability,
+            &local_only_options(),
+        )
+        .err()
+        .expect("hosted fallback must fail closed in local mode");
+        assert!(is_local_inference_violation(&error), "{error}");
+
+        // Without local-only privacy the same chain keeps building (unchanged behavior).
+        assert!(
+            create_resilient_provider_with_options(
+                "llamacpp",
+                None,
+                None,
+                &reliability,
+                &ProviderRuntimeOptions::default(),
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn local_inference_only_fails_closed_on_hosted_model_route() {
+        let routes = vec![crate::config::ModelRouteConfig {
+            hint: "reasoning".into(),
+            provider: "anthropic".into(),
+            model: "claude-sonnet".into(),
+            api_key: None,
+        }];
+        let error = create_routed_provider_with_options(
+            "llamacpp",
+            None,
+            None,
+            &crate::config::ReliabilityConfig::default(),
+            &routes,
+            "local-model",
+            &local_only_options(),
+        )
+        .err()
+        .expect("hosted route must fail closed in local mode");
+        assert!(is_local_inference_violation(&error), "{error}");
+        assert!(reliable::is_non_retryable(&error));
+    }
+
+    #[test]
+    fn rig_profile_turns_on_local_inference_in_runtime_options() {
+        let mut config = crate::config::Config::default();
+        config.rig.profile = Some(crate::config::RigProfileKind::Local);
+        assert!(provider_runtime_options_from_config(&config).local_inference_only);
+        config.rig.privacy = Some(crate::config::RigPrivacyMode::Hybrid);
+        assert!(!provider_runtime_options_from_config(&config).local_inference_only);
     }
 
     #[test]

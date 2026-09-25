@@ -470,6 +470,15 @@ impl ModelRoutingConfigTool {
     async fn probe_model(&self, provider_name: &str, model: &str) -> anyhow::Result<()> {
         use crate::providers;
 
+        // Local-only privacy: never contact a hosted provider, even for a
+        // probe. The violation is non-retryable, so the caller rolls back.
+        if self.config.rig.enforces_local_inference() {
+            providers::locality::check_local_inference(
+                provider_name,
+                self.config.api_url.as_deref(),
+            )?;
+        }
+
         // Use the runtime config's API key (which includes env-sourced keys),
         // not the on-disk config (which may have no key at all).
         let api_key = self.config.api_key.as_deref();
