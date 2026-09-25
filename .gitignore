@@ -83,3 +83,6 @@ target/
 /launcher/
 /services/
 /utilities/
+
+# Godot editor/import cache
+godot_client/.godot/

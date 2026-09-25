@@ -240,7 +240,15 @@ Want to wire it into your own workflow? Read the [TRIBE v2 sidecar README](tools
 python rain_lab.py
 ```
 
-Press Enter for demo mode, or connect to LM Studio / Ollama for full local operation.
+Press Enter for the instant demo, or connect to LM Studio / Ollama for full local operation.
+
+The instant demo is an offline research meeting over the papers in `papers/`. No
+model runs. James, Jasmine, Luca and Elena argue from verbatim quotes, each
+re-verified against the library with the same citation verifier the live
+meeting uses. The meeting ends with a verdict, a next move and a citation audit.
+When the library does not cover a question, the room says so instead of quoting
+unrelated passages. Ask your own question with
+`python rain_lab.py --mode demo --topic "..."`.
 
 On Windows: double-click `INSTALL_RAIN.cmd` to create shortcuts.
 On macOS/Linux: run `./install.sh`.

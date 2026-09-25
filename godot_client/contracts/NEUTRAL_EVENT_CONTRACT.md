@@ -45,9 +45,15 @@ The Godot client maps these events to theme-specific visuals/audio.
 }
 ```
 
+`tone` is optional. The client recognises `curious`, `excited`, `focused`,
+`skeptical`, `concerned`, `pleased` and `neutral`, plus a few aliases (for
+example `doubtful` → `skeptical`, `happy` → `pleased`). Unknown tones render as
+`neutral`. When `tone` is missing or `neutral`, the client infers an expression
+from `text`. This only affects the avatar's face, never the conversation.
+
 `audio.mode` values supported by MVP:
 
-- `file` with local path (`.wav`, `.mp3`, `.ogg`)
+- `file` with local path (`.wav` as 8/16-bit PCM, `.mp3`, `.ogg`); decoded at runtime and metered for lip-sync
 - `res` with `res://` resource path
 - `url` (accepted, but MVP falls back to synthetic voice unless a downloader is added)
 - missing/unknown mode falls back to synthetic timing-based voice

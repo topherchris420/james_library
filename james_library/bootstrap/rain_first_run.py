@@ -35,7 +35,7 @@ def _print_next_steps(topic: str) -> None:
     print(rich_ui.color("═" * 65, "bright_black"))
 
     print(f"  {rich_ui.bold('1. Beginner:')}     python rain_lab.py --mode beginner --topic \"{topic}\"")
-    print(f"  {rich_ui.bold('2. Instant Demo:')} python rain_lab.py --mode demo --preset startup-debate")
+    print(f"  {rich_ui.bold('2. Instant Demo:')} python rain_lab.py --mode demo")
     print(f"  {rich_ui.bold('3. Backup:')}       python rain_lab.py --mode backup")
     print(f"  {rich_ui.bold('4. Docs:')}         Review docs/troubleshooting.md")
 
@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\n[first-run] Fix the checks above, then re-run:")
         print("  python rain_lab.py --mode first-run")
         print("[first-run] Want to try the product before fixing setup?")
-        print("  python rain_lab.py --mode demo --preset startup-debate")
+        print("  python rain_lab.py --mode demo")
         return 1
 
     print("[first-run] Preflight failed unexpectedly.")
