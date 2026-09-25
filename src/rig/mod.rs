@@ -3,11 +3,29 @@
 //!
 //! The Rig is additive and opt-in. It observes, reports, and coordinates;
 //! it does not replace `python rain_lab.py` or change the research meeting.
-//! Discovery never contacts remote services, never starts third-party
-//! servers, and degrades gracefully when optional pieces are missing.
+//!
+//! ```text
+//! R.A.I.N. Lab (James · Jasmine · Luca · Elena)
+//!         │
+//! decision / authorization boundary  ── action (policy → validation → human)
+//!         │
+//! Rig capability bus ── capability registry + status/doctor
+//!    │            │                 │
+//! inference     research        transports / hardware
+//! (providers)   (library)       (loopback · Reticulum · LXMF · Skybridge)
+//! ```
+//!
+//! Safety properties:
+//! - Discovery never contacts remote services, never starts third-party
+//!   servers, and degrades gracefully when optional pieces are missing.
+//! - Transports can only send with an [`action::AuthorizedAction`], which
+//!   only the action boundary mints; inbound data can only become inert
+//!   [`inbox::InboundRequest`]s.
+//! - Skybridge is software-only; RF transmit is disabled in this build.
 
 pub mod action;
 pub mod capability;
+pub mod cli;
 pub mod context;
 pub mod doctor;
 pub mod identity;
@@ -22,6 +40,8 @@ pub mod status;
 pub mod system;
 pub mod transport;
 pub mod up;
+
+pub use cli::handle_command;
 
 #[cfg(test)]
 pub(crate) mod test_support {

@@ -406,6 +406,11 @@ pub(crate) async fn dispatch_command(command: Commands, config: Config) -> Resul
             hardware::handle_command(hardware_command.clone(), &config)
         }
 
+        Commands::Rig {
+            library,
+            rig_command,
+        } => Box::pin(rig::handle_command(rig_command, library, config)).await,
+
         Commands::Peripheral { peripheral_command } => {
             Box::pin(peripherals::handle_command(
                 peripheral_command.clone(),

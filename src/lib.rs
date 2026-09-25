@@ -542,6 +542,139 @@ Examples:
     },
 }
 
+/// R.A.I.N. Rig subcommands
+#[derive(Subcommand, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RigCommands {
+    /// Show node status: inference, research, decision, transports, network
+    #[command(long_about = "\
+Show R.A.I.N. Rig node status.
+
+Probes local inference servers (llama.cpp, Ollama, LM Studio) on loopback \
+or private-network endpoints only, reads the research library, the \
+decision-layer environment, transports and listeners, and reports a \
+readiness verdict. Remote services are never contacted.
+
+Examples:
+  rain rig status
+  rain rig status --json
+  rain rig --library ~/james_library status")]
+    Status {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Diagnose the node (PASS / WARN / FAIL / SKIP); exits non-zero on FAIL
+    Doctor {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// List models discovered on local inference servers
+    Models {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// List every Rig capability and its current state
+    Capabilities {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Show the shareable node identity and peer transports
+    Peers {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Write [rig] configuration after confirmation (never installs or downloads)
+    #[command(long_about = "\
+Discover what exists, explain what is missing, and write [rig] settings.
+
+Setup asks before writing config.toml. It never downloads models, \
+installs software, changes services or firewall rules, or opens \
+network listeners.
+
+Examples:
+  rain rig setup
+  rain rig setup --profile field --node-name field-kit-1
+  rain rig setup --profile local --privacy local --yes
+  rain rig setup --dry-run")]
+    Setup {
+        /// Profile: local, node, or field
+        #[arg(long, value_parser = ["local", "node", "field"])]
+        profile: Option<String>,
+        /// Shareable node name (lowercase letters, digits, '-')
+        #[arg(long)]
+        node_name: Option<String>,
+        /// Privacy mode: local, hybrid, or hosted
+        #[arg(long, value_parser = ["local", "hybrid", "hosted"])]
+        privacy: Option<String>,
+        /// Apply without the interactive confirmation prompt
+        #[arg(long)]
+        yes: bool,
+        /// Show the plan without writing anything
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Preflight, then start the R.A.I.N. daemon on its configured bind
+    #[command(long_about = "\
+Preflight the node, then start the R.A.I.N. daemon in the foreground.
+
+Only services R.A.I.N. owns are started. llama.cpp, Ollama, LM Studio \
+and Reticulum are never started for you. The gateway binds to its \
+configured host (127.0.0.1 by default); a blocked node starts nothing.
+
+Examples:
+  rain rig up --dry-run
+  rain rig up")]
+    Up {
+        /// Print the plan without starting anything
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Skybridge software modem (experimental; never transmits RF)
+    Radio {
+        #[command(subcommand)]
+        radio_command: RigRadioCommands,
+    },
+}
+
+/// Skybridge (experimental) subcommands
+#[derive(Subcommand, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RigRadioCommands {
+    /// Show modem parameters and the RF transmit state
+    Status {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Encode a plaintext message into a baseband WAV file (no RF)
+    Encode {
+        /// Station identifier (A-Z, 0-9, '/', '-'; up to 9 characters)
+        #[arg(long)]
+        station: String,
+        /// Plaintext message (up to 200 bytes)
+        #[arg(long)]
+        text: String,
+        /// Output WAV path
+        #[arg(long)]
+        out: std::path::PathBuf,
+        /// Overwrite an existing output file
+        #[arg(long)]
+        force: bool,
+    },
+    /// Decode a baseband WAV file through the restricted inbox
+    Decode {
+        /// Input WAV path (PCM16 mono)
+        #[arg(long)]
+        input: std::path::PathBuf,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+}
+
 /// Peripheral (hardware) management subcommands
 #[derive(Subcommand, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum PeripheralCommands {

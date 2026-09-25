@@ -107,6 +107,7 @@ mod peripherals;
 #[cfg(feature = "plugins-wasm")]
 mod plugins;
 mod providers;
+mod rig;
 mod routines;
 mod runtime;
 mod security;
@@ -126,7 +127,8 @@ use config::Config;
 // Re-export so binary modules can use crate::<CommandEnum> while keeping a single source of truth.
 pub use rain_labs::{
     ChannelCommands, CronCommands, GatewayCommands, HardwareCommands, IntegrationCommands,
-    MigrateCommands, PeripheralCommands, ServiceCommands, SkillCommands, SopCommands,
+    MigrateCommands, PeripheralCommands, RigCommands, RigRadioCommands, ServiceCommands,
+    SkillCommands, SopCommands,
 };
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, ValueEnum)]
@@ -447,6 +449,31 @@ Examples:
     Peripheral {
         #[command(subcommand)]
         peripheral_command: rain_labs::PeripheralCommands,
+    },
+
+    /// R.A.I.N. Rig: run the research lab as a self-contained local node
+    #[command(long_about = "\
+R.A.I.N. Rig — a research lab you can run on a machine you own.
+
+Optional appliance layer over the existing runtime: discovers local \
+inference (llama.cpp, Ollama, LM Studio), the research library, the \
+decision layer, transports and listeners. Opt-in; `python rain_lab.py` \
+does not depend on it.
+
+Examples:
+  rain rig status
+  rain rig doctor
+  rain rig models
+  rain rig capabilities
+  rain rig setup --dry-run
+  rain rig radio status")]
+    Rig {
+        /// Research library root (default: the checkout containing rain_lab.py)
+        #[arg(long, global = true)]
+        library: Option<PathBuf>,
+
+        #[command(subcommand)]
+        rig_command: rain_labs::RigCommands,
     },
 
     /// Manage agent memory (list, get, stats, clear)
@@ -825,14 +852,27 @@ async fn main() -> Result<()> {
         return run_lsp_query_command().await;
     }
 
-    // Initialize logging - respects RUST_LOG env var, defaults to INFO
-    let subscriber = fmt::Subscriber::builder()
-        .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-        )
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    // Initialize logging - respects RUST_LOG env var, defaults to INFO.
+    // `rain rig` reports are meant to be read or piped (`--json`), so its
+    // logs default to WARN and go to stderr.
+    if matches!(cli.command, Commands::Rig { .. }) {
+        let subscriber = fmt::Subscriber::builder()
+            .with_env_filter(
+                EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("warn")),
+            )
+            .with_writer(std::io::stderr)
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+    } else {
+        let subscriber = fmt::Subscriber::builder()
+            .with_env_filter(
+                EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+            )
+            .finish();
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("setting default subscriber failed");
+    }
 
     // Onboard auto-detects the environment: if stdin/stdout are a TTY and no
     // provider flags were given, it runs the full interactive wizard; otherwise
