@@ -6,13 +6,16 @@
 //! Discovery never contacts remote services, never starts third-party
 //! servers, and degrades gracefully when optional pieces are missing.
 
+pub mod action;
 pub mod capability;
 pub mod context;
 pub mod identity;
+pub mod inbox;
 pub mod inference;
 pub mod probe;
 pub mod research;
 pub mod system;
+pub mod transport;
 
 #[cfg(test)]
 pub(crate) mod test_support {
