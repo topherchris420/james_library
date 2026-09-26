@@ -1,0 +1,13 @@
+# R.A.I.N. Rig profile: local
+#
+# A laptop or desktop running local inference. Profiles describe intent and
+# alter defaults only; they cannot widen security, autonomy, or bind policy.
+name = "local"
+summary = "Laptop or desktop running local inference."
+privacy = "local"
+always_on = false
+# Local inference providers probed first and recommended by `rain rig setup`.
+preferred_inference = ["llamacpp", "ollama", "lmstudio"]
+# Optional capabilities this profile expects. Missing ones are reported as
+# WARN by `rain rig doctor` instead of SKIP.
+wanted_capabilities = ["research-registry"]

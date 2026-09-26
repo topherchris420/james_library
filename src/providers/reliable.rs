@@ -16,6 +16,14 @@ use std::time::Duration;
 
 /// Check if an error is non-retryable (client errors that won't resolve with retries).
 pub fn is_non_retryable(err: &anyhow::Error) -> bool {
+    // Local-only privacy refusals are policy decisions; retrying cannot help.
+    if err
+        .downcast_ref::<super::locality::LocalInferenceViolation>()
+        .is_some()
+    {
+        return true;
+    }
+
     // Context window errors are NOT non-retryable — they can be recovered
     // by truncating conversation history, so let the retry loop handle them.
     if is_context_window_exceeded(err) {

@@ -40,12 +40,23 @@ Extensions are supported, but they should not be required for the default path:
 - TRIBE v2 and other sidecar services
 - Web dashboard and deployment assets
 - Plugin examples and custom provider integrations
+- R.A.I.N. Rig (`rain rig …`, `[rig]` in `config.toml`): an optional node layer
+  that discovers local inference, transports, and listeners. It adds no
+  listeners and no mandatory dependencies. `python rain_lab.py` never depends
+  on it, and omitting `[rig]` keeps pre-Rig behavior. See [`docs/rig/`](../rig/README.md).
 
 Extension changes should keep their setup isolated, avoid surprising network calls, and preserve the default local-only flow.
 
 ## Experiments And Archive Material
 
 Experimental or archival assets may stay in the repository when they are useful for preservation, demos, or research continuity, but they must be labeled as non-core. Large generated files, benchmark data, prototype scripts, and research snapshots should not become default startup dependencies.
+
+Skybridge (`src/rig/skybridge/`) is experimental: a plaintext frame codec
+and baseband modem with FEC and receive-only receiver input. RF transmit is
+compiled out by default and exists only behind the `rig-rf-transmit` Cargo
+feature, with operator-only confirmation. It is not part of the stable core.
+The Reticulum/LXMF bridge sidecar (`tools/rig_bridge/`) is optional and off
+by default.
 
 If an experiment becomes user-facing, promote it by adding:
 
@@ -73,6 +84,7 @@ Use these names consistently:
 
 - **R.A.I.N. Lab**: the product experience.
 - **James**: the lead assistant in the research meeting.
+- **R.A.I.N. Rig**: the optional node layer (`rain rig`) over the runtime; never a prerequisite for the lab.
 - **James Library**: the repository and Python workflow collection.
 - **rain**: the Rust binary/runtime crate.
 - **ZeroClaw**: legacy/runtime branding used only where existing compatibility requires it.

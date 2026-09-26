@@ -15,6 +15,7 @@ mod channels;
 mod config_impl;
 mod ops;
 mod proxy;
+mod rig;
 mod root_config;
 mod security;
 
@@ -32,6 +33,11 @@ pub(crate) use proxy::{
 pub(crate) use proxy::{
     normalize_no_proxy_list, normalize_proxy_url_option, normalize_service_list,
     parse_proxy_enabled, parse_proxy_scope,
+};
+pub use rig::{
+    RigBridgeConfig, RigConfig, RigMeetingConfig, RigPrivacyMode, RigPrivacySource, RigProfile,
+    RigProfileKind, RigRadioConfig, RigRadioTransmitConfig, builtin_rig_profile,
+    is_amateur_callsign, validate_rig_node_name,
 };
 pub use root_config::{
     Config, DelegateAgentConfig, DelegateToolConfig, ModelProviderConfig, SwarmConfig,

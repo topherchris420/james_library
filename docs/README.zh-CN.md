@@ -17,6 +17,7 @@
 - 入门：[`docs/getting-started/README.md`](getting-started/README.md)
 - 参考：[`docs/reference/README.md`](reference/README.md)
 - 类型化判断：[`docs/typed-judgment.md`](typed-judgment.md)
+- R.A.I.N. Rig（可选本地节点）：[`docs/rig/README.md`](rig/README.md)
 - 运维：[`docs/operations/README.md`](operations/README.md)
 - 安全：[`docs/security/README.md`](security/README.md)
 - 硬件：[`docs/hardware/README.md`](hardware/README.md)

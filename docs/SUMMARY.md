@@ -135,7 +135,16 @@ Last refreshed: **February 18, 2026**.
 - [extension-examples.md](contributing/extension-examples.md)
 - [testing.md](contributing/testing.md)
 
-### 7) Project Status & Snapshot
+### 7) R.A.I.N. Rig (Optional Local Node)
+
+- [rig/README.md](rig/README.md)
+- [rig/getting-started.md](rig/getting-started.md)
+- [rig/architecture.md](rig/architecture.md)
+- [rig/llama-cpp.md](rig/llama-cpp.md)
+- [rig/transports.md](rig/transports.md)
+- [rig/skybridge.md](rig/skybridge.md) (experimental)
+
+### 8) Project Status & Snapshot
 
 - [maintainers/README.md](maintainers/README.md)
 - [project/product-boundary.md](project/product-boundary.md)

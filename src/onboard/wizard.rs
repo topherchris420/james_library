@@ -205,6 +205,7 @@ pub async fn run_wizard(force: bool) -> Result<Config> {
         verifiable_intent: crate::config::VerifiableIntentConfig::default(),
         claude_code: crate::config::ClaudeCodeConfig::default(),
         tribev2: crate::config::TribeV2Config::default(),
+        rig: crate::config::RigConfig::default(),
     };
 
     println!(
@@ -622,6 +623,7 @@ async fn run_quick_setup_with_home(
         verifiable_intent: crate::config::VerifiableIntentConfig::default(),
         claude_code: crate::config::ClaudeCodeConfig::default(),
         tribev2: crate::config::TribeV2Config::default(),
+        rig: crate::config::RigConfig::default(),
     };
 
     config.save().await?;
@@ -1373,7 +1375,7 @@ fn normalize_model_ids(ids: Vec<String>) -> Vec<String> {
     unique.into_values().collect()
 }
 
-fn parse_openai_compatible_model_ids(payload: &Value) -> Vec<String> {
+pub(crate) fn parse_openai_compatible_model_ids(payload: &Value) -> Vec<String> {
     let mut models = Vec::new();
 
     if let Some(data) = payload.get("data").and_then(Value::as_array) {
@@ -1421,7 +1423,7 @@ fn parse_gemini_model_ids(payload: &Value) -> Vec<String> {
     normalize_model_ids(ids)
 }
 
-fn parse_ollama_model_ids(payload: &Value) -> Vec<String> {
+pub(crate) fn parse_ollama_model_ids(payload: &Value) -> Vec<String> {
     let Some(models) = payload.get("models").and_then(Value::as_array) else {
         return Vec::new();
     };
@@ -1575,7 +1577,7 @@ fn ollama_uses_remote_endpoint(provider_api_url: Option<&str>) -> bool {
     !ollama_endpoint_is_local(&normalized)
 }
 
-fn resolve_live_models_endpoint(
+pub(crate) fn resolve_live_models_endpoint(
     provider_name: &str,
     provider_api_url: Option<&str>,
 ) -> Option<String> {

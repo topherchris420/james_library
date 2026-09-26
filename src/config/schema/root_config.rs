@@ -337,6 +337,11 @@ pub struct Config {
     /// TRIBE v2 brain-encoding model sidecar configuration (`[tribev2]`).
     #[serde(default)]
     pub tribev2: TribeV2Config,
+
+    /// Optional R.A.I.N. Rig appliance settings (`[rig]`): profile, node
+    /// identity name, and inference privacy mode. Omitted while unset.
+    #[serde(default, skip_serializing_if = "RigConfig::is_unset")]
+    pub rig: RigConfig,
 }
 
 /// Multi-client workspace isolation configuration.
@@ -624,6 +629,7 @@ impl Default for Config {
             verifiable_intent: VerifiableIntentConfig::default(),
             claude_code: ClaudeCodeConfig::default(),
             tribev2: TribeV2Config::default(),
+            rig: RigConfig::default(),
         }
     }
 }

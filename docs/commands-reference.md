@@ -64,3 +64,41 @@ Remote evaluation requires explicit request consent; chat also requires
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
 See [bounded decisions](bounded-decisions.md) for all settings, diagnostics, calibration,
 privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.
+
+## R.A.I.N. Rig (optional)
+
+Rig is an opt-in node layer in the Rust runtime; `python rain_lab.py` does not
+depend on it. See [`rig/README.md`](rig/README.md).
+
+```bash
+rain rig status [--json]          # node snapshot and readiness (READY/DEGRADED/BLOCKED)
+rain rig doctor [--json]          # PASS/WARN/FAIL/SKIP; exits non-zero on FAIL
+rain rig models [--json]          # models on llama.cpp / Ollama / LM Studio / meeting endpoint
+rain rig capabilities [--json]    # capability registry with current states
+rain rig peers [--json]           # shareable identity, peer transports, LXMF peers via the bridge
+rain rig setup [--profile local|node|field] [--node-name NAME] [--privacy local|hybrid|hosted] [--yes] [--dry-run]
+rain rig up [--dry-run]           # start the daemon (and the bridge when [rig.bridge] is enabled)
+rain rig send --transport lxmf --to ADDR --text TEXT   # LXMF message via the bridge
+rain rig receive [--max N] [--json]                    # drain bridge messages through the inbox
+rain rig radio status|encode|decode|listen   # Skybridge modem, receive-only receiver input
+rain rig radio transmit --frequency-hz HZ --power-w W --text TEXT   # rig-rf-transmit builds only
+rain rig --library PATH <command> # point discovery at a James Library checkout
+```
+
+- Discovery probes only loopback/private-network endpoints and never contacts
+  hosted services.
+- `setup` asks before writing `config.toml` (non-interactive runs need
+  `--yes`) and never installs, downloads, or opens listeners.
+- `up` starts only R.A.I.N.-owned services (the daemon, plus the bridge sidecar
+  when `[rig.bridge] enabled = true`); a BLOCKED node starts nothing.
+- `send`/`receive` require `[rig.bridge] enabled = true` and a running bridge.
+  `send` records its disposition before contacting the bridge; `receive`
+  classifies messages as `PING`, `IDENTITY?` or inert notes.
+- `radio encode` applies Hamming(7,4) FEC unless `--no-fec`; messages over
+  200 B are fragmented (up to 1000 B). `radio listen --seconds N` (1–300) runs
+  the `[rig.radio] receive` command.
+- `radio transmit` is rejected unless the binary was built with
+  `--features rig-rf-transmit` and `[rig.radio]` sets `callsign`,
+  `max_power_w` and `[rig.radio.transmit]`. It requires typing the callsign at
+  an interactive terminal; models can never transmit.
+- Rig commands log at WARN to stderr by default so `--json` stays clean.

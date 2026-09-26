@@ -4,6 +4,16 @@
 
 ### Added
 
+- R.A.I.N. Rig (optional, opt-in): `rain rig status|doctor|models|capabilities|peers|setup|up|send|receive|radio` turns the runtime into a self-contained local research node. Discovery probes only loopback/private-network endpoints and reuses the existing `llamacpp` (`llama.cpp`), `ollama` and `lmstudio` providers; `[rig]` adds built-in `local`/`node`/`field` profiles, a privacy-safe node identity, and `privacy = "local"`, which makes provider construction refuse hosted inference (including fallbacks and model routes) instead of falling back. Includes:
+  - a strict action boundary with a disposition log;
+  - a restricted inbound message layer;
+  - LXMF messaging over Reticulum through an optional R.A.I.N.-owned bridge sidecar (`tools/rig_bridge/`, `[rig.bridge]`, off by default; loopback only, mutual HMAC authentication);
+  - under local privacy, the Python meeting reads `[rig]`/`[rig.meeting]` and refuses hosted endpoints and `:cloud` models;
+  - endpoint locality resolved from DNS rather than hostname patterns;
+  - `rig setup` preserves `config.toml` comments;
+  - the experimental Skybridge modem: Hamming(7,4) FEC, fragmentation up to 1000 B, receive-only receiver/SDR input via `rig radio listen`, and RF transmit compiled out by default. The `rig-rf-transmit` Cargo feature adds operator-only transmit with callsign, band-plan and power checks and a typed-callsign confirmation.
+
+  Omitting `[rig]` keeps prior behavior; `python rain_lab.py` does not depend on it. See `docs/rig/`
 - Godot client agent animation: avatars are now layered procedural pixel-art rigs with distinct characters (octopus James; Jasmine as a Black woman with deep brown skin, a natural afro, goggles and hoops; scarfed Luca; Elena as a woman with long hair, glasses and a skirt), breathing, blinks, gaze that follows the speaker, listener nods and reactions, tone-driven expressions (with text-based tone inference when the backend sends `neutral`), gestures, drop-in entrances, turn-taking hops with squash and stretch, and an end-of-conversation cheer. Mouths are lip-synced to the voice: metered from a dedicated `RainVoice` bus for TTS files, or from the syllable schedule of the new pulse-wave synthetic voice. Includes a headless smoke test (`godot_client/tests/animation_rig_test.gd`)
 - Instant demo (`python rain_lab.py --mode demo`, or Enter in the wizard) is now an offline four-agent research meeting over the citation corpus instead of a canned script: each agent picks evidence through its own lens, every quote is a verbatim span re-verified with `citation_corpus.verify_quote`, and the transcript ends with a verdict, a next move, and a citation audit with a corpus fingerprint. Questions the library does not cover get an explicit "no evidence" meeting and suggested questions instead of unrelated quotes. Presets no longer change the demo's content; `--corpus` and `RAIN_CORPUS_DIR` now apply to the demo as well as chat
 

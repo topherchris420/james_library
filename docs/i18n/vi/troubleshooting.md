@@ -53,3 +53,37 @@ chuyển về R.A.I.N. Đánh giá từ xa cần sự cho phép rõ ràng; hội
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Lỗi cấu hình được thông báo.
 Xem [quyết định có giới hạn](../../bounded-decisions.md) để biết cấu hình, chẩn đoán và cách hoàn tác.
 Chính sách chấp thuận của lệnh `judge` không thay đổi.
+
+## R.A.I.N. Rig
+
+- `rain rig doctor` báo `FAIL default provider … not reachable`: máy chủ cục
+  bộ đã cấu hình chưa chạy. Hãy tự khởi động (ví dụ `llama-server -m model.gguf --port 8080`
+  hoặc `ollama serve`); Rig không bao giờ khởi động máy chủ của bên thứ ba.
+- `privacy mode 'local' refuses inference provider '…'`: có nhà cung cấp lưu
+  trữ bên ngoài trong khi quyền riêng tư là `local`. Dùng máy chủ cục bộ
+  (`rain rig setup` sẽ đề xuất nếu phát hiện) hoặc đặt `[rig] privacy = "hybrid"`.
+- Trạng thái `BLOCKED` với `EXTERNAL BIND`: `[gateway] host` không phải
+  loopback và không được cho phép rõ ràng. Hãy dùng `host = "127.0.0.1"`.
+- `research library not found`: chạy `rain rig` từ thư mục James Library hoặc
+  truyền `--library <đường dẫn>`.
+- Cuộc họp từ chối khởi động (`[rig] privacy = "local" refuses the meeting model`):
+  ở chế độ local, cuộc họp Python từ chối điểm truy cập lưu trữ bên ngoài và mô
+  hình Ollama `:cloud` (mô hình mặc định là một ví dụ). Chạy `rain rig setup`
+  để gắn `[rig.meeting]` vào máy chủ cục bộ, hoặc đặt `[rig.meeting] model` /
+  `RAIN_LLM_MODEL`.
+- `the Reticulum/LXMF bridge is disabled` hoặc `no token at …/bridge.token`:
+  bật `[rig.bridge] enabled = true` và khởi động cầu nối bằng `rain rig up`.
+- `the bridge needs Reticulum and LXMF`: cài
+  `pip install -r tools/rig_bridge/requirements.txt`; `rig up` dừng trước khi
+  khởi động bất cứ thứ gì.
+- `token file … is accessible to other users` hoặc `authentication refused`:
+  token phải có quyền 0600 (khởi động lại cầu nối sẽ ghi lại token).
+  "server failed authentication" nghĩa là một tiến trình khác đang chiếm cổng.
+- `recipient not known yet; path requested`: thử lại sau vài giây, khi nút kia
+  đã phản hồi hoặc quảng bá.
+- `radio transmit` bị từ chối (`not compiled into this build`,
+  `requires an interactive terminal`): cần bản build với
+  `--features rig-rf-transmit`, cấu hình `[rig.radio]` và xác nhận bằng cách gõ
+  hô hiệu trong terminal; đầu vào qua ống dẫn bị từ chối.
+- `radio listen` không thấy tin: kiểm tra lệnh `receive` xuất PCM16 LE mono
+  8000 Hz, tần số, và `--seconds` đủ dài (khoảng 30 s cho một khung 200 B có FEC).

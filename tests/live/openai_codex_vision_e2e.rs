@@ -155,6 +155,7 @@ async fn openai_codex_second_vision_support() -> Result<()> {
         provider_timeout_secs: None,
         extra_headers: std::collections::HashMap::new(),
         api_path: None,
+        local_inference_only: false,
     };
 
     let provider = rain_labs::providers::create_provider_with_options("openai-codex", None, &opts)?;

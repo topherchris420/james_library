@@ -17,6 +17,7 @@
 - Getting Started: [`docs/getting-started/README.md`](getting-started/README.md)
 - Reference: [`docs/reference/README.md`](reference/README.md)
 - 型付き判断: [`docs/typed-judgment.md`](typed-judgment.md)
+- R.A.I.N. Rig（任意のローカルノード）: [`docs/rig/README.md`](rig/README.md)
 - Operations: [`docs/operations/README.md`](operations/README.md)
 - Security: [`docs/security/README.md`](security/README.md)
 - Hardware: [`docs/hardware/README.md`](hardware/README.md)

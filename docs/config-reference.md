@@ -2,7 +2,7 @@
 
 Canonical configuration schema is defined in:
 
-- [`../src/config/schema.rs`](../src/config/schema.rs)
+- [`../src/config/schema/mod.rs`](../src/config/schema/mod.rs)
 
 Configuration loading and merging logic:
 
@@ -51,3 +51,64 @@ Remote evaluation requires explicit request consent; chat also requires
 `RAIN_DECISION_REMOTE_ALLOWED=true`. Invalid configuration is reported.
 See [bounded decisions](bounded-decisions.md) for all settings, diagnostics, calibration,
 privacy, timeouts, and rollback. Existing `judge` promotion policy is unchanged.
+
+## R.A.I.N. Rig section (`[rig]`, added 2026-09)
+
+Optional and omitted from generated configs while unset; omitting it keeps
+pre-Rig behavior. Unknown keys are rejected.
+
+```toml
+[rig]
+profile = "local"        # local | node | field (built-in, human-readable TOML)
+node_name = "rain-local" # shareable name: lowercase letters, digits, '-'; 1-32 chars
+privacy = "local"        # local | hybrid | hosted; default: profile's, else hybrid
+
+[rig.meeting]            # optional; shared with `python rain_lab.py`
+base_url = "http://127.0.0.1:8080/v1"
+model = "Qwen3-4B-Q4_K_M.gguf"
+
+[rig.bridge]             # optional Reticulum/LXMF bridge sidecar
+enabled = false          # default false; `rig up` starts it when true
+port = 42627             # loopback port (1024-65535); it always binds 127.0.0.1
+announce = false         # announce this node's LXMF address
+
+[rig.radio]              # optional Skybridge radio settings
+receive = ["rtl_fm", "-f", "14.1M", "-M", "usb", "-s", "8000", "-"]  # receive-only argv
+callsign = "N0CALL"      # licensed callsign (RF transmit + station id on air)
+max_power_w = 20         # 1-1500 W
+
+[rig.radio.transmit]     # used only by builds with --features rig-rf-transmit
+ptt_on = ["rigctl", "-m", "2", "F", "{frequency_hz}", "T", "1"]
+play = ["aplay", "-q", "{wav}"]
+ptt_off = ["rigctl", "-m", "2", "T", "0"]
+```
+
+- `[rig.meeting]` persists the meeting endpoint/model. Precedence in both the
+  Python meeting and Rig: `RAIN_LLM_*` / `LM_STUDIO_*` env > `[rig.meeting]` >
+  built-in default. Under `local` privacy the Python chat/RLM meeting and the
+  lab-server runtime refuse hosted endpoints and Ollama `:cloud` models.
+
+- `privacy = "local"` makes provider construction refuse any inference
+  endpoint that is not loopback or private-network, including fallback
+  providers, model routes, and delegate agents (typed, non-retryable error;
+  no silent hosted fallback). `hybrid` is the default pre-Rig behavior;
+  `hosted` is informational and enforces like `hybrid`.
+- All built-in profiles default to `local` privacy. Profiles cannot change
+  security, autonomy, or bind policy.
+- Rig reads these environment variables (reporting, plus the meeting precedence above):
+  `RAIN_LLM_BASE_URL`, `RAIN_LLM_MODEL`, `LM_STUDIO_BASE_URL`,
+  `LM_STUDIO_MODEL`, `RAIN_DECISION_MODE`, `RAIN_LAYA_CHECKPOINT`,
+  `RAIN_JUDGMENT_PROVIDER`, `TYPESAFE_API_KEY` (presence only).
+- `[rig.bridge]`: off by default. There is no host key. Unknown keys are
+  rejected. `rain` and the bridge authenticate with a token that the bridge
+  writes to `<workspace>/rig/bridge.token` (mode 0600) at every start.
+- `[rig.radio]`: every command is argv run without a shell. `receive` must
+  write raw PCM16 LE mono at 8000 Hz to stdout. The `transmit` commands may
+  use `{wav}`, `{frequency_hz}` and `{power_w}`. `ptt_off` is required when
+  `ptt_on` is set. In default builds `[rig.radio.transmit]` is ignored and RF
+  transmit stays disabled (`rig doctor` warns).
+- Rig state: `<workspace>/rig/dispositions.jsonl` (action-boundary records;
+  payload digests only), plus `bridge.token`, `bridge_identity` and `lxmf/`
+  when the bridge runs.
+
+Rollback: delete the `[rig]` table. Details: [`rig/getting-started.md`](rig/getting-started.md).

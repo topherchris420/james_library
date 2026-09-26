@@ -68,6 +68,7 @@ pub mod organization;
 pub mod peripherals;
 pub mod providers;
 pub mod rag;
+pub mod rig;
 pub mod routines;
 pub mod runtime;
 pub(crate) mod security;
@@ -538,6 +539,224 @@ Examples:
         /// Chip name (e.g. `STM32F401RETx`). Default: `STM32F401RETx` for Nucleo-F401RE
         #[arg(long, default_value = "STM32F401RETx")]
         chip: String,
+    },
+}
+
+/// R.A.I.N. Rig subcommands
+#[derive(Subcommand, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RigCommands {
+    /// Show node status: inference, research, decision, transports, network
+    #[command(long_about = "\
+Show R.A.I.N. Rig node status.
+
+Probes local inference servers (llama.cpp, Ollama, LM Studio) on loopback \
+or private-network endpoints only, reads the research library, the \
+decision-layer environment, transports and listeners, and reports a \
+readiness verdict. Remote services are never contacted.
+
+Examples:
+  rain rig status
+  rain rig status --json
+  rain rig --library ~/james_library status")]
+    Status {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Diagnose the node (PASS / WARN / FAIL / SKIP); exits non-zero on FAIL
+    Doctor {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// List models discovered on local inference servers
+    Models {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// List every Rig capability and its current state
+    Capabilities {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Show the shareable node identity and peer transports
+    Peers {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Write [rig] configuration after confirmation (never installs or downloads)
+    #[command(long_about = "\
+Discover what exists, explain what is missing, and write [rig] settings.
+
+Setup asks before writing config.toml. It never downloads models, \
+installs software, changes services or firewall rules, or opens \
+network listeners.
+
+Examples:
+  rain rig setup
+  rain rig setup --profile field --node-name field-kit-1
+  rain rig setup --profile local --privacy local --yes
+  rain rig setup --dry-run")]
+    Setup {
+        /// Profile: local, node, or field
+        #[arg(long, value_parser = ["local", "node", "field"])]
+        profile: Option<String>,
+        /// Shareable node name (lowercase letters, digits, '-')
+        #[arg(long)]
+        node_name: Option<String>,
+        /// Privacy mode: local, hybrid, or hosted
+        #[arg(long, value_parser = ["local", "hybrid", "hosted"])]
+        privacy: Option<String>,
+        /// Apply without the interactive confirmation prompt
+        #[arg(long)]
+        yes: bool,
+        /// Show the plan without writing anything
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Preflight, then start the R.A.I.N. daemon on its configured bind
+    #[command(long_about = "\
+Preflight the node, then start the R.A.I.N. daemon in the foreground.
+
+Only services R.A.I.N. owns are started. llama.cpp, Ollama, LM Studio \
+and Reticulum are never started for you. The gateway binds to its \
+configured host (127.0.0.1 by default); a blocked node starts nothing.
+
+Examples:
+  rain rig up --dry-run
+  rain rig up")]
+    Up {
+        /// Print the plan without starting anything
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Send a plaintext message to a peer through the Reticulum/LXMF bridge
+    #[command(long_about = "\
+Send a plaintext message to an LXMF address through the R.A.I.N. bridge.
+
+The message passes the Rig action boundary (size, plaintext, destination \
+checks) and its disposition is recorded (digest only) before the bridge \
+is contacted. Requires [rig.bridge] enabled = true and a running bridge \
+(`rain rig up`).
+
+Examples:
+  rain rig send --transport lxmf --to 0123456789abcdef0123456789abcdef --text PING")]
+    Send {
+        /// Transport to send through
+        #[arg(long, value_parser = ["lxmf"])]
+        transport: String,
+        /// Destination LXMF address (32 lowercase hex characters)
+        #[arg(long)]
+        to: String,
+        /// Plaintext message (up to 4096 bytes)
+        #[arg(long)]
+        text: String,
+    },
+    /// Drain received bridge messages through the restricted inbox
+    #[command(long_about = "\
+Fetch messages the Reticulum/LXMF bridge has queued and classify each one \
+through the restricted inbox. Messages can only become PING, IDENTITY? \
+or an inert note; nothing is executed.
+
+Examples:
+  rain rig receive
+  rain rig receive --max 5 --json")]
+    Receive {
+        /// Maximum number of messages to fetch
+        #[arg(long, default_value_t = 32, value_parser = clap::value_parser!(u16).range(1..=256))]
+        max: u16,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Skybridge software modem (experimental; never transmits RF)
+    Radio {
+        #[command(subcommand)]
+        radio_command: RigRadioCommands,
+    },
+}
+
+/// Skybridge (experimental) subcommands
+#[derive(Subcommand, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum RigRadioCommands {
+    /// Show modem parameters and the RF transmit state
+    Status {
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Encode a plaintext message into a baseband WAV file (no RF)
+    Encode {
+        /// Station identifier (A-Z, 0-9, '/', '-'; up to 9 characters)
+        #[arg(long)]
+        station: String,
+        /// Plaintext message (up to 1000 bytes; over 200 bytes is fragmented)
+        #[arg(long)]
+        text: String,
+        /// Output WAV path
+        #[arg(long)]
+        out: std::path::PathBuf,
+        /// Overwrite an existing output file
+        #[arg(long)]
+        force: bool,
+        /// Disable Hamming(7,4) forward error correction (shorter airtime)
+        #[arg(long)]
+        no_fec: bool,
+    },
+    /// Capture audio from the configured receive-only command and decode it
+    #[command(long_about = "\
+Run the receive-only command from [rig.radio] receive for a bounded time, \
+decode every Skybridge message in the audio, and pass each one through \
+the restricted inbox. The command's stdout must be raw PCM16 little-endian \
+mono at 8000 Hz. Nothing is transmitted.
+
+Examples:
+  rain rig radio listen --seconds 60
+  rain rig radio listen --seconds 30 --json")]
+    Listen {
+        /// Capture duration in seconds (1-300)
+        #[arg(long, default_value_t = 60, value_parser = clap::value_parser!(u64).range(1..=300))]
+        seconds: u64,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
+    /// Transmit a message over RF (requires a `rig-rf-transmit` build)
+    #[command(long_about = "\
+Transmit a plaintext Skybridge message over RF through the configured \
+[rig.radio.transmit] commands.
+
+Only available in binaries built with `--features rig-rf-transmit`, and \
+only with [rig.radio] callsign and max_power_w set. The frequency (USB \
+dial) must keep a 3 kHz channel inside the built-in band plan, and power \
+must not exceed max_power_w. You confirm every transmission by typing \
+your callsign at an interactive terminal; there is no flag to skip this. \
+Models and automation can never transmit. Every decision is recorded.
+
+Examples:
+  rain rig radio transmit --frequency-hz 14100000 --power-w 10 --text \"CQ N0CALL\"")]
+    Transmit {
+        /// Plaintext message (up to 1000 bytes)
+        #[arg(long)]
+        text: String,
+        /// USB dial frequency in Hz
+        #[arg(long)]
+        frequency_hz: u64,
+        /// Transmit power in watts (1..=max_power_w)
+        #[arg(long)]
+        power_w: u16,
+    },
+    /// Decode a baseband WAV file through the restricted inbox
+    Decode {
+        /// Input WAV path (PCM16 mono)
+        #[arg(long)]
+        input: std::path::PathBuf,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
     },
 }
 

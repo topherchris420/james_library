@@ -183,10 +183,16 @@ def _parse_env_csv(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
 
 DEFAULT_LIBRARY_PATH = str(Path(__file__).resolve().parent)
 
-DEFAULT_MODEL_NAME = os.environ.get(
-    "RAIN_LLM_MODEL",
-    os.environ.get("LM_STUDIO_MODEL", "minimax-m2.7:cloud"),
+from james_library.utilities.rig_settings import (  # noqa: E402
+    RigPrivacyError,
+    enforce_meeting_privacy,
+    meeting_base_url,
+    meeting_model,
 )
+
+# Precedence: RAIN_LLM_* / LM_STUDIO_* env > [rig.meeting] in config.toml > built-in.
+DEFAULT_MODEL_NAME = meeting_model("minimax-m2.7:cloud")
+DEFAULT_BASE_URL = meeting_base_url("http://127.0.0.1:11434/v1")
 
 DEFAULT_RECURSIVE_LIBRARY_SCAN = os.environ.get("RAIN_RECURSIVE_LIBRARY_SCAN", "0") == "1"
 
@@ -541,10 +547,7 @@ class Config:
 
     temperature: float = 0.7  # Higher temp for more variety in responses
 
-    base_url: str = os.environ.get(
-        "RAIN_LLM_BASE_URL",
-        os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:11434/v1"),
-    )
+    base_url: str = DEFAULT_BASE_URL
 
     api_key: str = os.environ.get(
         "RAIN_LLM_API_KEY",
@@ -1831,6 +1834,12 @@ class RainLabOrchestrator:
                 print(f"❌ Failed to initialize Rust daemon client: {e}")
                 sys.exit(1)
         else:
+            # [rig] privacy = "local": refuse hosted endpoints/models before any request.
+            try:
+                enforce_meeting_privacy(config.base_url, config.model_name)
+            except RigPrivacyError as e:
+                print(f"❌ {e}")
+                sys.exit(2)
             try:
                 import httpx
 
@@ -3500,11 +3509,8 @@ Examples:
     parser.add_argument(
         "--base-url",
         type=str,
-        default=os.environ.get(
-            "RAIN_LLM_BASE_URL",
-            os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:11434/v1"),
-        ),
-        help="OpenAI-compatible base URL (default: Ollama at http://127.0.0.1:11434/v1)",
+        default=DEFAULT_BASE_URL,
+        help="OpenAI-compatible base URL (default: [rig.meeting] base_url, else Ollama at http://127.0.0.1:11434/v1)",
     )
 
     parser.add_argument(
@@ -3671,6 +3677,13 @@ def main():
         export_tts_audio=export_tts_audio,
         tts_audio_dir=args.tts_audio_dir,
     )
+
+    if not config.use_rust_daemon:
+        try:
+            enforce_meeting_privacy(config.base_url, config.model_name)
+        except RigPrivacyError as e:
+            print(f"❌ {e}")
+            sys.exit(2)
 
     # Get topic
 

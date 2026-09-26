@@ -101,6 +101,13 @@ credential is not reused for fallback providers.
 - Default endpoint: `http://localhost:8080/v1`
 - API key is optional by default; set `LLAMACPP_API_KEY` only when `llama-server` is started with `--api-key`.
 - Model discovery: `R.A.I.N. models refresh --provider llamacpp`
+- Live status and discovered models: `rain rig models` / `rain rig status` (see [`docs/rig/llama-cpp.md`](../../rig/llama-cpp.md))
+
+### Inference Locality and `[rig] privacy = "local"`
+
+- With `[rig] privacy = "local"` (or any built-in Rig profile), provider construction refuses inference endpoints that are not loopback or private-network: hosted APIs, CLI wrappers for hosted services (`claude-code`, `gemini-cli`, `kilocli`), and self-hosted providers pointed at a public host.
+- Fallback providers and model routes fail closed with the same typed error instead of being skipped; there is no silent hosted fallback.
+- `localhost`, `127.0.0.0/8` and `::1` are local; RFC 1918, link-local and ULA addresses are LAN. Other hostnames (including `*.local`) are resolved and accepted only when every resolved address is loopback or private; lookup failure is remote. Hosted providers with fixed public endpoints are never resolved.
 
 ### SGLang Server Notes
 

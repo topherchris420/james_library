@@ -275,6 +275,30 @@ uv run --python .venv\Scripts\python.exe rain_lab.py --mode first-run
 
 ---
 
+## R.A.I.N. Rig
+
+**A research lab you can run on a machine you own.**
+
+Rig turns the existing local-first R.A.I.N. runtime into a self-contained node
+with optional local inference, transports, and hardware extensions. The default
+R.A.I.N. Lab remains unchanged: `python rain_lab.py` does not depend on Rig.
+
+```bash
+rain rig doctor   # PASS / WARN / FAIL / SKIP; missing optional pieces are SKIP
+rain rig setup    # asks before writing [rig] to config.toml; never downloads or installs
+rain rig status   # llama.cpp / Ollama / LM Studio, research library, transports, listeners
+```
+
+Local inference reuses the existing `llamacpp`, `ollama` and `lmstudio`
+providers. With `privacy = "local"`, hosted inference is refused rather than
+used as a silent fallback. Optional LXMF messaging over Reticulum runs through
+a loopback-only bridge sidecar. Skybridge, a plaintext low-bandwidth modem, is
+experimental: receive works with any receiver command, and RF transmit is
+compiled out unless you build with `rig-rf-transmit`. See
+[R.A.I.N. Rig](docs/rig/README.md).
+
+---
+
 ## Who It Is For
 
 R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, not just answers that sound good.
@@ -295,6 +319,7 @@ R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, n
 | **Papers** | [Research Archive](https://topherchris420.github.io/research/) |
 | **Bounded decisions** | [Local Laya, optional Jev escalation, calibration and process hints](docs/bounded-decisions.md) |
 | **Typed judgment** | [Independent bounded evaluation, deterministic policy, and replay](docs/typed-judgment.md) |
+| **R.A.I.N. Rig** | [Optional local node: status, doctor, llama.cpp, privacy modes, transports, Skybridge](docs/rig/README.md) |
 | **Handout** | [<img src="assets/marketing/rain_lab_trifold_preview.png" alt="R.A.I.N. Lab Trifold preview" width="360">](assets/marketing/rain_lab_trifold.html) — [R.A.I.N. Lab Trifold](assets/marketing/rain_lab_trifold.html), printable one-pager overview |
 | **Language** | [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
 

@@ -1016,6 +1016,9 @@ impl Config {
 
         // Proxy (delegate to existing validation)
         self.proxy.validate()?;
+
+        // R.A.I.N. Rig (optional section; unset is always valid)
+        self.rig.validate()?;
         self.cloud_ops.validate()?;
 
         // Notion

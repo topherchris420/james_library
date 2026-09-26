@@ -49,6 +49,7 @@ These areas are part of the product surface, but they can evolve faster than the
 - `src/p2p/`
 - `src/rag/`
 - `src/nodes/`
+- `src/rig/` (R.A.I.N. Rig; opt-in node layer, validated by `cargo test --lib rig::` and `rain rig doctor`), excluding `src/rig/skybridge/`
 - `src/hands/`
 - `src/skillforge/`
 - `src/verifiable_intent/`
@@ -97,6 +98,8 @@ These paths are intentionally non-core. They may be reorganized, renamed, extrac
 - `james_library/`
 - `rlm-main/`
 - `benchmark_data/`
+- `src/rig/skybridge/` (Skybridge: experimental modem; RF transmit only behind the off-by-default `rig-rf-transmit` feature)
+- `tools/rig_bridge/` (optional Reticulum/LXMF bridge sidecar)
 
 Expectations:
 

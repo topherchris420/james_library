@@ -57,3 +57,41 @@ la conversation exige aussi `RAIN_DECISION_REMOTE_ALLOWED=true`.
 Les erreurs de configuration sont signalées. Voir [décisions bornées](bounded-decisions.md)
 pour la configuration complète, les diagnostics et le retour arrière.
 La politique de promotion de `judge` reste inchangée.
+
+## R.A.I.N. Rig
+
+- `rain rig doctor` signale `FAIL default provider … not reachable` : le
+  serveur local configuré ne tourne pas. Démarrez-le vous-même (par exemple
+  `llama-server -m model.gguf --port 8080` ou `ollama serve`) ; Rig ne démarre
+  jamais de serveur tiers.
+- `privacy mode 'local' refuses inference provider '…'` : un fournisseur
+  hébergé est configuré alors que la confidentialité est `local`. Utilisez un
+  serveur local (`rain rig setup` le propose s'il en détecte un) ou définissez
+  `[rig] privacy = "hybrid"`.
+- État `BLOCKED` avec `EXTERNAL BIND` : `[gateway] host` n'est pas loopback et
+  rien ne l'autorise explicitement. Utilisez `host = "127.0.0.1"`.
+- `research library not found` : lancez `rain rig` depuis le dépôt James
+  Library ou passez `--library <chemin>`.
+- La réunion refuse de démarrer (`[rig] privacy = "local" refuses the meeting model`) :
+  en mode local, la réunion Python refuse les points d'accès hébergés et les
+  modèles Ollama `:cloud` (le modèle par défaut en est un). Lancez
+  `rain rig setup` pour fixer `[rig.meeting]` sur un serveur local, ou
+  définissez `[rig.meeting] model` / `RAIN_LLM_MODEL`.
+- `the Reticulum/LXMF bridge is disabled` ou `no token at …/bridge.token` :
+  activez `[rig.bridge] enabled = true` et démarrez le pont avec `rain rig up`.
+- `the bridge needs Reticulum and LXMF` : installez
+  `pip install -r tools/rig_bridge/requirements.txt` ; `rig up` s'arrête avant
+  de démarrer quoi que ce soit.
+- `token file … is accessible to other users` ou `authentication refused` :
+  le jeton doit être en mode 0600 (un redémarrage du pont le réécrit).
+  « server failed authentication » signifie qu'un autre processus occupe le
+  port du pont.
+- `recipient not known yet; path requested` : réessayez après quelques
+  secondes, le temps que le pair réponde ou s'annonce.
+- `radio transmit` refusé (`not compiled into this build`,
+  `requires an interactive terminal`) : il faut un binaire compilé avec
+  `--features rig-rf-transmit`, les réglages `[rig.radio]` et une confirmation
+  en tapant l'indicatif dans un terminal ; une entrée redirigée est refusée.
+- `radio listen` ne trouve rien : vérifiez que la commande `receive` produit
+  du PCM16 LE mono à 8000 Hz, la fréquence, et que `--seconds` couvre toute
+  l'émission (environ 30 s par trame de 200 o avec FEC).

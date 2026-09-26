@@ -16,6 +16,13 @@ from typing import List
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from james_library.utilities.rig_settings import (
+    RigPrivacyError,
+    enforce_meeting_privacy,
+    meeting_base_url,
+    meeting_model,
+)
+
 # --- VOICE ENGINE (edge-tts with silent fallback) ---
 try:
     import edge_tts
@@ -964,12 +971,21 @@ If uncertainty exists, default to exploratory research.
 BEGIN EXECUTION IMMEDIATELY.
 """
 
+        # Precedence: env > [rig.meeting] > built-in; [rig] privacy = "local" fails closed.
+        llm_model = meeting_model("minimax-m2.7:cloud")
+        llm_base_url = meeting_base_url("http://127.0.0.1:11434/v1")
+        try:
+            enforce_meeting_privacy(llm_base_url, llm_model)
+        except RigPrivacyError as e:
+            print(f"❌ {e}")
+            sys.exit(2)
+
         # THE KEY: Pass setup_code to inject read_paper/search_web into the REPL
         self.rlm = RLM(
             backend="openai",
             backend_kwargs={
-                "model_name": os.environ.get("RAIN_LLM_MODEL", os.environ.get("LM_STUDIO_MODEL", "minimax-m2.7:cloud")),
-                "base_url": os.environ.get("RAIN_LLM_BASE_URL", os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:11434/v1")),
+                "model_name": llm_model,
+                "base_url": llm_base_url,
                 "api_key": os.environ.get("RAIN_LLM_API_KEY", os.environ.get("LM_STUDIO_API_KEY", "ollama")),
                 "timeout": 180.0,
             },
@@ -1110,7 +1126,7 @@ Shared sources (use these for quotes during discussion turns):
             self.metrics_tracker = MetricsTracker(
                 session_id=str(uuid.uuid4())[:8],
                 topic=topic,
-                model=os.environ.get("RAIN_LLM_MODEL", os.environ.get("LM_STUDIO_MODEL", "minimax-m2.7:cloud")),
+                model=meeting_model("minimax-m2.7:cloud"),
             )
         # Host-side paper selection (exact filename match first)
         selected_files = _host_select_files(topic, max_files=2)

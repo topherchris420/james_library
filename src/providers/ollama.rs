@@ -140,7 +140,9 @@ impl OllamaProvider {
         });
 
         Self {
-            base_url: Self::normalize_base_url(base_url.unwrap_or("http://localhost:11434")),
+            base_url: Self::normalize_base_url(
+                base_url.unwrap_or(super::locality::OLLAMA_DEFAULT_BASE_URL),
+            ),
             api_key,
             reasoning_enabled,
         }

@@ -1,0 +1,10 @@
+# R.A.I.N. Rig profile: field
+#
+# Local inference plus optional low-bandwidth transports. Transports are
+# discovered, never auto-started, and Skybridge RF transmit stays disabled.
+name = "field"
+summary = "Local inference plus optional Reticulum/LXMF/Skybridge transports."
+privacy = "local"
+always_on = false
+preferred_inference = ["llamacpp", "ollama"]
+wanted_capabilities = ["research-registry", "reticulum", "lxmf", "skybridge"]

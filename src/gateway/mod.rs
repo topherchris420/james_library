@@ -403,6 +403,7 @@ pub async fn run_gateway(host: &str, port: u16, config: Config) -> Result<()> {
             provider_timeout_secs: Some(config.provider_timeout_secs),
             extra_headers: config.extra_headers.clone(),
             api_path: config.api_path.clone(),
+            local_inference_only: config.rig.enforces_local_inference(),
         },
     )?);
     let model = config
