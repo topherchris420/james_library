@@ -86,6 +86,64 @@ def test_invalid_privacy_value_and_malformed_rig_fail_closed(tmp_path):
     assert rs.load_rig_settings({"rain_CONFIG_DIR": str(tmp_path)}).privacy is None
 
 
+GENERATED_STYLE_CONFIG = (
+    'default_provider = "llamacpp"\n'
+    "[cost.prices.\"openai/gpt-4o\"]\n"
+    "input = 2.5\n"
+    "[gateway]\n"
+    "matrix = [\n"
+    "  [1, 2],\n"
+    "]\n"
+    "[rig]\n"
+    'privacy = "local"\n'
+    "[rig.bridge]\n"
+    "enabled = true\n"
+    "port = 42627\n"
+    "[rig.radio]\n"
+    'receive = ["rtl_fm", "-"]\n'
+    "[rig.meeting]\n"
+    "model = 'Qwen3.gguf' # local\n"
+)
+
+
+def test_minimal_parser_reads_generated_style_configs():
+    rig = rs._parse_rig_tables_minimal(GENERATED_STYLE_CONFIG)
+    assert rig == {"privacy": "local", "meeting": {"model": "Qwen3.gguf"}}
+    assert rs.parse_rig_table(GENERATED_STYLE_CONFIG)["privacy"] == "local"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "[rig\nprivacy = \"local\"\n",
+        "[ rig.meeting\nmodel = \"x\"\n",
+        'rig = { privacy = "hosted" }\n',
+        'rig.privacy = "hosted"\n',
+        "[rig]\nprivacy = local\n",
+        '[rig]\nprivacy = """local"""\n',
+    ],
+)
+def test_minimal_parser_fails_closed_on_rig_it_cannot_read(text):
+    with pytest.raises(ValueError):
+        rs._parse_rig_tables_minimal(text)
+
+
+@pytest.mark.parametrize("text", ['rig = { privacy = "hosted" }\n', 'rig.privacy = "hosted"\n'])
+def test_inline_and_dotted_rig_keys_are_honoured_or_refused(tmp_path, monkeypatch, text):
+    _write_config(tmp_path, text)
+    env = {"rain_CONFIG_DIR": str(tmp_path)}
+    try:
+        import tomllib  # noqa: F401
+    except ModuleNotFoundError:
+        with pytest.raises(rs.RigPrivacyError):
+            rs.load_rig_settings(env)
+    else:
+        assert rs.load_rig_settings(env).privacy == "hosted"
+    monkeypatch.setattr(rs, "parse_rig_table", rs._parse_rig_tables_minimal)
+    with pytest.raises(rs.RigPrivacyError):
+        rs.load_rig_settings(env)
+
+
 def test_locality_mirrors_rust_rules():
     resolve = _resolver({
         "rig-node.local": ["192.168.1.40"],

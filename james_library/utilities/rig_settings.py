@@ -91,24 +91,48 @@ def resolve_config_path(env: Optional[Mapping[str, str]] = None) -> Optional[Pat
 # ── Parsing ─────────────────────────────────────────────────────────────────
 
 _TABLE_RE = re.compile(r"^\s*\[\s*([A-Za-z0-9_.\-]+)\s*\]\s*(#.*)?$")
+_ARRAY_TABLE_RE = re.compile(r"^\s*\[\[\s*[A-Za-z0-9_.\-]+\s*\]\]\s*(#.*)?$")
 _KV_RE = re.compile(r"""^\s*([A-Za-z0-9_\-]+)\s*=\s*(?:"((?:[^"\\]|\\.)*)"|'([^']*)')\s*(#.*)?$""")
+# ``rig = {...}`` or ``rig.privacy = ...`` at the top level.
+_TOP_LEVEL_RIG_RE = re.compile(r"^\s*rig\s*[.=]")
+_RIG_HEADER_LIKE_RE = re.compile(r"^\s*\[+\s*[\"']?rig\b")
+_BLANK_OR_COMMENT_RE = re.compile(r"^\s*(#.*)?$")
 
 
 def _parse_rig_tables_minimal(text: str) -> dict:
-    """Extract string keys of ``[rig]`` / ``[rig.meeting]`` (Python < 3.11 fallback)."""
+    """Extract string keys of ``[rig]`` / ``[rig.meeting]`` (Python < 3.11 fallback).
+
+    Strict so that anything it cannot read fails closed instead of silently
+    dropping privacy settings: malformed table headers, top-level ``rig``
+    keys (inline or dotted), and non-string values inside ``[rig]`` or
+    ``[rig.meeting]`` raise ``ValueError``.
+    """
     tables: dict = {"rig": {}, "rig.meeting": {}}
     current = None
-    for line in text.splitlines():
+    for number, line in enumerate(text.splitlines(), start=1):
         header = _TABLE_RE.match(line)
         if header:
             current = header.group(1)
             continue
-        if current not in tables:
+        if _ARRAY_TABLE_RE.match(line):
+            current = None
+            continue
+        if _RIG_HEADER_LIKE_RE.match(line):
+            raise ValueError(f"line {number}: malformed or unsupported [rig] table header")
+        if line.lstrip().startswith("["):
+            # Some other construct (quoted header, nested array line): stop
+            # attributing keys to [rig] rather than guess.
+            current = None
+            continue
+        if current is None and _TOP_LEVEL_RIG_RE.match(line):
+            raise ValueError(f"line {number}: write [rig] as a table (inline/dotted rig keys need Python 3.11+)")
+        if current not in tables or _BLANK_OR_COMMENT_RE.match(line):
             continue
         pair = _KV_RE.match(line)
-        if pair:
-            value = pair.group(2) if pair.group(2) is not None else pair.group(3)
-            tables[current][pair.group(1)] = value.replace('\\"', '"').replace("\\\\", "\\")
+        if not pair:
+            raise ValueError(f"line {number}: [{current}] values must be quoted strings")
+        value = pair.group(2) if pair.group(2) is not None else pair.group(3)
+        tables[current][pair.group(1)] = value.replace('\\"', '"').replace("\\\\", "\\")
     rig = dict(tables["rig"])
     if tables["rig.meeting"]:
         rig["meeting"] = dict(tables["rig.meeting"])
@@ -150,7 +174,7 @@ def load_rig_settings(env: Optional[Mapping[str, str]] = None, path: Optional[Pa
     try:
         rig = parse_rig_table(text)
     except Exception as exc:  # malformed TOML
-        if re.search(r"^\s*\[\s*rig\b", text, re.M):
+        if re.search(r"^\s*(\[\s*rig\b|rig\s*[.=])", text, re.M):
             raise RigPrivacyError(f"cannot parse [rig] in {path}: {exc}") from exc
         return RigSettings(config_path=path)
     meeting = rig.get("meeting") if isinstance(rig.get("meeting"), dict) else {}
