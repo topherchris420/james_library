@@ -43,8 +43,13 @@ pub enum ProposalOrigin {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ActionKind {
-    /// Send a payload through a Rig transport adapter.
-    TransportSend { transport: String },
+    /// Send a payload through a Rig transport adapter. `destination` is the
+    /// peer address for addressed transports (LXMF) and `None` otherwise.
+    TransportSend {
+        transport: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        destination: Option<String>,
+    },
     /// Key a radio or SDR transmitter. Never permitted in this build.
     RadioTransmit,
     /// Modify authoritative configuration state.
@@ -54,7 +59,20 @@ pub enum ActionKind {
 impl ActionKind {
     fn label(&self) -> String {
         match self {
-            Self::TransportSend { transport } => format!("transport_send:{transport}"),
+            Self::TransportSend {
+                transport,
+                destination: None,
+            } => format!("transport_send:{transport}"),
+            // Only a validated address is recorded; anything else is untrusted text.
+            Self::TransportSend {
+                transport,
+                destination: Some(destination),
+            } if is_lxmf_address(destination) => {
+                format!("transport_send:{transport}:{destination}")
+            }
+            Self::TransportSend { transport, .. } => {
+                format!("transport_send:{transport}:(invalid destination)")
+            }
             Self::RadioTransmit => "radio_transmit".into(),
             Self::ConfigWrite { key } => format!("config_write:{key}"),
         }
@@ -63,7 +81,7 @@ impl ActionKind {
     /// Whether the action has effects outside this process.
     fn is_external(&self) -> bool {
         match self {
-            Self::TransportSend { transport } => transport != "local",
+            Self::TransportSend { transport, .. } => transport != "local",
             Self::RadioTransmit | Self::ConfigWrite { .. } => true,
         }
     }
@@ -230,7 +248,15 @@ impl AuthorizedAction {
 
     /// Whether this token authorizes a send on `transport`.
     pub fn targets_transport(&self, transport: &str) -> bool {
-        matches!(&self.kind, ActionKind::TransportSend { transport: target } if target == transport)
+        matches!(&self.kind, ActionKind::TransportSend { transport: target, .. } if target == transport)
+    }
+
+    /// Peer address for addressed transports (validated by the boundary).
+    pub fn destination(&self) -> Option<&str> {
+        match &self.kind {
+            ActionKind::TransportSend { destination, .. } => destination.as_deref(),
+            _ => None,
+        }
     }
 }
 
@@ -300,6 +326,37 @@ pub fn validate_plaintext(payload: &[u8]) -> Result<&str, String> {
     Ok(text)
 }
 
+/// Transports that deliver to an explicit peer address.
+const ADDRESSED_TRANSPORTS: &[&str] = &["lxmf"];
+
+/// LXMF/Reticulum destination hash: 16 bytes as 32 lowercase hex characters.
+pub fn is_lxmf_address(value: &str) -> bool {
+    value.len() == 32
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+}
+
+fn destination_check(transport: &str, destination: Option<&str>) -> CheckOutcome {
+    const CHECK: &str = "validation.destination";
+    match (ADDRESSED_TRANSPORTS.contains(&transport), destination) {
+        (true, Some(address)) if is_lxmf_address(address) => CheckOutcome::pass(CHECK),
+        (true, Some(_)) => CheckOutcome::fail(
+            CHECK,
+            "destination must be a 32-character lowercase hex LXMF address",
+        ),
+        (true, None) => CheckOutcome::fail(
+            CHECK,
+            format!("transport '{transport}' requires a destination"),
+        ),
+        (false, Some(_)) => CheckOutcome::fail(
+            CHECK,
+            format!("transport '{transport}' does not take a destination"),
+        ),
+        (false, None) => CheckOutcome::pass(CHECK),
+    }
+}
+
 impl ActionBoundary {
     pub fn new(policy: ActionPolicy, log: Option<DispositionLog>) -> Self {
         Self { policy, log }
@@ -322,7 +379,7 @@ impl ActionBoundary {
             _ => CheckOutcome::pass("policy.action_permitted"),
         };
         let mut checks = vec![permitted];
-        if let ActionKind::TransportSend { transport } = &proposal.kind {
+        if let ActionKind::TransportSend { transport, .. } = &proposal.kind {
             checks.push(if self.policy.sendable_transports.contains(transport) {
                 CheckOutcome::pass("policy.transport_sendable")
             } else {
@@ -359,7 +416,15 @@ impl ActionBoundary {
         } else {
             CheckOutcome::fail("validation.proposal_id", "proposal id is not a UUID")
         };
-        vec![id, size, text]
+        let mut checks = vec![id, size, text];
+        if let ActionKind::TransportSend {
+            transport,
+            destination,
+        } = &proposal.kind
+        {
+            checks.push(destination_check(transport, destination.as_deref()));
+        }
+        checks
     }
 
     fn requires_human(proposal: &ActionProposal) -> bool {
@@ -451,6 +516,7 @@ mod tests {
     fn send(transport: &str) -> ActionKind {
         ActionKind::TransportSend {
             transport: transport.into(),
+            destination: None,
         }
     }
 
@@ -551,6 +617,52 @@ mod tests {
             );
             assert_eq!(record.disposition, Disposition::Rejected, "{payload:?}");
             assert!(token.is_none());
+        }
+    }
+
+    #[test]
+    fn addressed_sends_require_a_valid_destination() {
+        let boundary = ActionBoundary::new(
+            ActionPolicy::new(64)
+                .allow_transport("lxmf")
+                .allow_transport("local"),
+            None,
+        );
+        let kind = |transport: &str, destination: Option<&str>| ActionKind::TransportSend {
+            transport: transport.into(),
+            destination: destination.map(str::to_string),
+        };
+        let cases = [
+            (kind("lxmf", None), false),
+            (kind("lxmf", Some("not-a-hash")), false),
+            (
+                kind("lxmf", Some("0123456789ABCDEF0123456789ABCDEF")),
+                false,
+            ),
+            (kind("lxmf", Some("0123456789abcdef0123456789abcde")), false),
+            (
+                kind("local", Some("0123456789abcdef0123456789abcdef")),
+                false,
+            ),
+            (kind("lxmf", Some("0123456789abcdef0123456789abcdef")), true),
+        ];
+        for (kind, expected) in cases {
+            let (record, token) = boundary.submit(
+                ActionProposal::new(ProposalOrigin::Operator, kind.clone(), "hi"),
+                None,
+            );
+            assert_eq!(token.is_some(), expected, "{kind:?}: {:?}", record.reason);
+            assert!(!record.action.contains("not-a-hash"), "{}", record.action);
+            if let Some(token) = token {
+                assert_eq!(
+                    token.destination(),
+                    Some("0123456789abcdef0123456789abcdef")
+                );
+                assert_eq!(
+                    record.action,
+                    "transport_send:lxmf:0123456789abcdef0123456789abcdef"
+                );
+            }
         }
     }
 

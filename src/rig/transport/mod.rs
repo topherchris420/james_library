@@ -11,6 +11,7 @@
 //!   only produce inert request kinds.
 //! - All transports are optional; R.A.I.N. behaves normally when none exist.
 
+pub mod bridge;
 pub mod discovery;
 pub mod loopback;
 pub mod reticulum;

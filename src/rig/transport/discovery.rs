@@ -1,6 +1,7 @@
 //! Discovery for optional transports. Read-only: nothing is started,
 //! configured, or installed, and R.A.I.N. behaves normally when none exist.
 
+use super::bridge::{BridgeClient, BridgeStatus};
 use crate::rig::capability::{CapabilityState, CapabilityStatus, TransportDetail};
 use crate::rig::context::RigContext;
 use std::path::PathBuf;
@@ -10,6 +11,9 @@ pub const RETICULUM_SHARED_INSTANCE_PORT: u16 = 37428;
 
 /// Reticulum MTU-bounded payload budget used for the adapter description.
 pub const RETICULUM_MAX_PAYLOAD: usize = 383;
+
+/// LXMF payload limit through the bridge (matches the restricted inbox).
+pub const LXMF_MAX_PAYLOAD: usize = crate::rig::inbox::MAX_INBOUND_BYTES;
 
 fn home_dir() -> Option<PathBuf> {
     directories::UserDirs::new().map(|dirs| dirs.home_dir().to_path_buf())
@@ -80,13 +84,68 @@ async fn reticulum_shared_instance(ctx: &RigContext) -> Option<&'static str> {
     None
 }
 
-fn reticulum_detail() -> TransportDetail {
+pub(crate) fn reticulum_detail() -> TransportDetail {
     TransportDetail {
         bidirectional: true,
         max_payload_bytes: RETICULUM_MAX_PAYLOAD,
         send_supported: false,
         rf_transmit: false,
     }
+}
+
+/// LXMF adapter properties: it can send only when the bridge is enabled.
+pub(crate) fn lxmf_detail(bridge_enabled: bool) -> TransportDetail {
+    if bridge_enabled {
+        TransportDetail {
+            bidirectional: true,
+            max_payload_bytes: LXMF_MAX_PAYLOAD,
+            send_supported: true,
+            rf_transmit: false,
+        }
+    } else {
+        reticulum_detail()
+    }
+}
+
+/// What a bridge probe observed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BridgeObservation {
+    /// `[rig.bridge]` is absent or `enabled = false`; nothing was contacted.
+    Disabled,
+    /// Enabled, but connecting or authenticating failed.
+    Unreachable { endpoint: String, error: String },
+    /// Authenticated session and status reply.
+    Connected {
+        endpoint: String,
+        status: BridgeStatus,
+    },
+}
+
+/// Contact the bridge only when it is enabled.
+pub async fn observe_bridge(bridge: Option<&BridgeClient>) -> BridgeObservation {
+    let Some(bridge) = bridge else {
+        return BridgeObservation::Disabled;
+    };
+    let endpoint = bridge.endpoint();
+    let result = match bridge.connect().await {
+        Ok(mut session) => session.status().await,
+        Err(error) => Err(error),
+    };
+    match result {
+        Ok(status) => BridgeObservation::Connected { endpoint, status },
+        Err(error) => BridgeObservation::Unreachable {
+            endpoint,
+            error: error.to_string(),
+        },
+    }
+}
+
+/// Bridge client for the configured `[rig.bridge]`, if enabled.
+pub fn configured_bridge(ctx: &RigContext) -> Option<BridgeClient> {
+    ctx.config
+        .rig
+        .enabled_bridge()
+        .map(|bridge| BridgeClient::new(bridge.port, &ctx.state_dir()))
 }
 
 /// Map observed Reticulum facts to a status (pure; unit-tested).
@@ -96,7 +155,7 @@ pub fn reticulum_status(facts: InstallFacts, shared_instance: Option<&str>) -> C
             "reticulum",
             CapabilityState::Running,
             format!(
-                "shared instance reachable ({via}) · discovery only; no R.A.I.N. bridge in this build"
+                "shared instance reachable ({via}) · raw packets are not bridged; messaging uses lxmf"
             ),
         ),
         (
@@ -141,7 +200,7 @@ pub fn lxmf_status(facts: InstallFacts) -> CapabilityStatus {
         } => CapabilityStatus::new(
             "lxmf",
             CapabilityState::Configured,
-            "lxmd config found · running state not probed (lxmd has no local endpoint)",
+            "lxmd config found · not probed (enable [rig.bridge] for R.A.I.N. messaging)",
         ),
         InstallFacts {
             binary_on_path: true,
@@ -158,6 +217,37 @@ pub fn lxmf_status(facts: InstallFacts) -> CapabilityStatus {
         ),
     };
     status.with_transport(reticulum_detail())
+}
+
+/// LXMF status including the R.A.I.N. bridge (pure; unit-tested).
+///
+/// `running` requires an authenticated bridge session; install facts alone
+/// never produce it.
+pub fn lxmf_status_with_bridge(
+    facts: InstallFacts,
+    bridge: &BridgeObservation,
+) -> CapabilityStatus {
+    match bridge {
+        BridgeObservation::Disabled => lxmf_status(facts),
+        BridgeObservation::Unreachable { endpoint, error } => CapabilityStatus::new(
+            "lxmf",
+            CapabilityState::Configured,
+            format!("R.A.I.N. bridge enabled · not reachable on {endpoint} ({error}); start it with `rain rig up`"),
+        )
+        .with_transport(lxmf_detail(true)),
+        BridgeObservation::Connected { endpoint, status } => {
+            let address = status.lxmf_address.as_deref().unwrap_or("unknown");
+            CapabilityStatus::new(
+                "lxmf",
+                CapabilityState::Running,
+                format!(
+                    "R.A.I.N. bridge on {endpoint} · address {address} · {} peer(s) seen · {} message(s) queued",
+                    status.peers, status.queued_inbound
+                ),
+            )
+            .with_transport(lxmf_detail(true))
+        }
+    }
 }
 
 /// In-process loopback transport status.
@@ -180,10 +270,11 @@ pub async fn probe_transports(ctx: &RigContext) -> Vec<CapabilityStatus> {
     let reticulum_facts = InstallFacts::detect("rnsd", &reticulum_config_candidates());
     let lxmf_facts = InstallFacts::detect("lxmd", &lxmd_config_candidates());
     let shared = reticulum_shared_instance(ctx).await;
+    let bridge = observe_bridge(configured_bridge(ctx).as_ref()).await;
     vec![
         loopback_status(),
         reticulum_status(reticulum_facts, shared),
-        lxmf_status(lxmf_facts),
+        lxmf_status_with_bridge(lxmf_facts, &bridge),
         crate::rig::skybridge::skybridge_status(),
     ]
 }
@@ -234,6 +325,41 @@ mod tests {
         ] {
             assert_ne!(lxmf_status(facts).state, CapabilityState::Running);
         }
+    }
+
+    #[test]
+    fn lxmf_runs_only_with_an_authenticated_bridge() {
+        let facts = InstallFacts::default();
+        let disabled = lxmf_status_with_bridge(facts, &BridgeObservation::Disabled);
+        assert_eq!(disabled.state, CapabilityState::Unavailable);
+        assert!(!disabled.transport.unwrap().send_supported);
+
+        let unreachable = lxmf_status_with_bridge(
+            facts,
+            &BridgeObservation::Unreachable {
+                endpoint: "127.0.0.1:42627".into(),
+                error: "refused".into(),
+            },
+        );
+        assert_eq!(unreachable.state, CapabilityState::Configured);
+        assert!(unreachable.detail.contains("rain rig up"));
+
+        let connected = lxmf_status_with_bridge(
+            facts,
+            &BridgeObservation::Connected {
+                endpoint: "127.0.0.1:42627".into(),
+                status: BridgeStatus {
+                    backend: "rns".into(),
+                    lxmf_address: Some("0123456789abcdef0123456789abcdef".into()),
+                    peers: 2,
+                    ..BridgeStatus::default()
+                },
+            },
+        );
+        assert_eq!(connected.state, CapabilityState::Running);
+        let detail = connected.transport.unwrap();
+        assert!(detail.send_supported && !detail.rf_transmit);
+        assert_eq!(detail.max_payload_bytes, LXMF_MAX_PAYLOAD);
     }
 
     #[test]

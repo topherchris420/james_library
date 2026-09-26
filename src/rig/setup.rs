@@ -73,6 +73,7 @@ pub fn plan(config: &Config, status: &RigStatus, request: &SetupRequest) -> Resu
         node_name,
         privacy: request.privacy.or(config.rig.privacy),
         meeting: config.rig.meeting.clone(),
+        bridge: config.rig.bridge.clone(),
     };
     let privacy = rig.effective_privacy().0;
 

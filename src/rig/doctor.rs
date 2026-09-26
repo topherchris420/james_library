@@ -689,6 +689,15 @@ fn transport_checks(
         if result == CheckResult::Warn && cap.state == CapabilityState::Unavailable {
             item = with_hint(item, format!("optional: {install}"));
         }
+        if id == "lxmf"
+            && cap.state == CapabilityState::Configured
+            && ctx.config.rig.enabled_bridge().is_some()
+        {
+            item = with_hint(
+                item,
+                "`rain rig up` starts the bridge; it needs `pip install -r tools/rig_bridge/requirements.txt`",
+            );
+        }
         checks.push(item);
     }
     checks.push(match skybridge_self_test() {

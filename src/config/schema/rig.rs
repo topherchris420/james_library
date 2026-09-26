@@ -151,6 +151,44 @@ pub struct RigConfig {
     /// `RAIN_LLM_BASE_URL` / `RAIN_LLM_MODEL` still take precedence.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub meeting: Option<RigMeetingConfig>,
+    /// Optional Reticulum/LXMF bridge sidecar (`[rig.bridge]`). Off by default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bridge: Option<RigBridgeConfig>,
+}
+
+/// Default loopback port of the Reticulum/LXMF bridge sidecar.
+pub const DEFAULT_RIG_BRIDGE_PORT: u16 = 42627;
+
+fn default_rig_bridge_port() -> u16 {
+    DEFAULT_RIG_BRIDGE_PORT
+}
+
+/// Reticulum/LXMF bridge settings. The sidecar always binds `127.0.0.1`;
+/// there is no host setting.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RigBridgeConfig {
+    /// Use the bridge: `rain rig up` starts it, and `rig send`/`rig receive`,
+    /// status and peers talk to it. Default: `false`.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Loopback TCP port (1024–65535). Default: `42627`.
+    #[serde(default = "default_rig_bridge_port")]
+    pub port: u16,
+    /// Announce this node's LXMF address on the Reticulum network so peers
+    /// can reach it. Default: `false` (send-only until a peer is known).
+    #[serde(default)]
+    pub announce: bool,
+}
+
+impl Default for RigBridgeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            port: DEFAULT_RIG_BRIDGE_PORT,
+            announce: false,
+        }
+    }
 }
 
 /// Meeting inference settings shared by `rain rig` and `python rain_lab.py`.
@@ -197,6 +235,11 @@ impl RigConfig {
         (RigPrivacyMode::Hybrid, RigPrivacySource::Default)
     }
 
+    /// Bridge settings when `[rig.bridge] enabled = true`.
+    pub fn enabled_bridge(&self) -> Option<&RigBridgeConfig> {
+        self.bridge.as_ref().filter(|bridge| bridge.enabled)
+    }
+
     /// Whether provider construction must refuse non-local inference endpoints.
     pub fn enforces_local_inference(&self) -> bool {
         self.effective_privacy().0 == RigPrivacyMode::Local
@@ -211,6 +254,11 @@ impl RigConfig {
                 .map_err(|_| anyhow::anyhow!("rig.meeting.base_url is not a valid URL"))?;
             if !matches!(parsed.scheme(), "http" | "https") || parsed.host_str().is_none() {
                 bail!("rig.meeting.base_url must be an http(s) URL with a host");
+            }
+        }
+        if let Some(bridge) = &self.bridge {
+            if bridge.port < 1024 {
+                bail!("rig.bridge.port must be between 1024 and 65535");
             }
         }
         if let Some(kind) = self.profile {
@@ -365,6 +413,18 @@ mod tests {
             (RigPrivacyMode::Hybrid, RigPrivacySource::Explicit)
         );
         assert!(!config.enforces_local_inference());
+    }
+
+    #[test]
+    fn rig_bridge_is_off_by_default_and_has_no_host_setting() {
+        let config: RigConfig = toml::from_str("[bridge]\n").unwrap();
+        let bridge = config.bridge.as_ref().unwrap();
+        assert!(!bridge.enabled && !bridge.announce);
+        assert_eq!(bridge.port, DEFAULT_RIG_BRIDGE_PORT);
+        assert!(config.enabled_bridge().is_none());
+        assert!(toml::from_str::<RigConfig>("[bridge]\nhost = \"0.0.0.0\"\n").is_err());
+        let low: RigConfig = toml::from_str("[bridge]\nenabled = true\nport = 80\n").unwrap();
+        assert!(low.validate().is_err());
     }
 
     #[test]

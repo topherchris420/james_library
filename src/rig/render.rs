@@ -300,7 +300,12 @@ pub fn capabilities(statuses: &[CapabilityStatus]) -> String {
 }
 
 /// `rain rig peers`.
-pub fn peers(status: &RigStatus, identity_json: &str, allowed_peers: usize) -> String {
+pub fn peers(
+    status: &RigStatus,
+    identity_json: &str,
+    allowed_peers: usize,
+    seen: &PeersSeen,
+) -> String {
     let mut out = String::new();
     let _ = writeln!(
         out,
@@ -321,12 +326,47 @@ pub fn peers(status: &RigStatus, identity_json: &str, allowed_peers: usize) -> S
         "  node_transport allowlist    {allowed_peers} peer(s) configured"
     );
     heading(&mut out, "PEERS SEEN");
-    let _ = writeln!(
-        out,
-        "  none · no transport in this build performs live peer discovery\n  \
-         (Reticulum/LXMF are discovery-only; Skybridge decodes frames on demand with `rain rig radio decode`)"
-    );
+    match seen {
+        PeersSeen::BridgeDisabled => {
+            let _ = writeln!(
+                out,
+                "  none · the Reticulum/LXMF bridge is disabled (set [rig.bridge] enabled = true)\n  \
+                 (Skybridge decodes frames on demand with `rain rig radio decode`)"
+            );
+        }
+        PeersSeen::Unreachable(error) => {
+            let _ = writeln!(out, "  unknown · bridge not reachable: {error}");
+        }
+        PeersSeen::Seen(peers) if peers.is_empty() => {
+            let _ = writeln!(
+                out,
+                "  none yet · LXMF peers appear here after they announce on the Reticulum network"
+            );
+        }
+        PeersSeen::Seen(peers) => {
+            for peer in peers {
+                let when = chrono::DateTime::from_timestamp(peer.last_seen, 0).map_or_else(
+                    || "unknown".to_string(),
+                    |t| t.format("%Y-%m-%d %H:%M UTC").to_string(),
+                );
+                let _ = writeln!(
+                    out,
+                    "  {}  {:<32}  last announce {when}",
+                    peer.hash,
+                    peer.name.as_deref().unwrap_or("-")
+                );
+            }
+        }
+    }
     out
+}
+
+/// Peers observed through the bridge, for `rain rig peers`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PeersSeen {
+    BridgeDisabled,
+    Unreachable(String),
+    Seen(Vec<crate::rig::transport::bridge::BridgePeer>),
 }
 
 /// `rain rig doctor`.

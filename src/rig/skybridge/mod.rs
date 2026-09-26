@@ -228,6 +228,7 @@ mod tests {
             origin,
             ActionKind::TransportSend {
                 transport: "skybridge".into(),
+                destination: None,
             },
             text,
         )

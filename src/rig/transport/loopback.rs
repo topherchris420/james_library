@@ -91,6 +91,7 @@ mod tests {
             ProposalOrigin::Operator,
             ActionKind::TransportSend {
                 transport: transport.into(),
+                destination: None,
             },
             payload,
         );

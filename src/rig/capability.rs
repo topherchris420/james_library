@@ -241,7 +241,7 @@ pub const REGISTRY: &[CapabilityDescriptor] = &[
         C::Transport,
         true,
         false,
-        "Reticulum network stack (rnsd); discovery only in this build",
+        "Reticulum network stack (rnsd); raw packets are not bridged (messaging uses LXMF)",
     ),
     cap(
         "lxmf",
@@ -249,7 +249,7 @@ pub const REGISTRY: &[CapabilityDescriptor] = &[
         C::Transport,
         true,
         false,
-        "LXMF messaging over Reticulum (lxmd); discovery only in this build",
+        "LXMF messaging over Reticulum via the optional R.A.I.N. bridge sidecar",
     ),
     cap(
         "skybridge",

@@ -633,6 +633,45 @@ Examples:
         #[arg(long)]
         dry_run: bool,
     },
+    /// Send a plaintext message to a peer through the Reticulum/LXMF bridge
+    #[command(long_about = "\
+Send a plaintext message to an LXMF address through the R.A.I.N. bridge.
+
+The message passes the Rig action boundary (size, plaintext, destination \
+checks) and its disposition is recorded (digest only) before the bridge \
+is contacted. Requires [rig.bridge] enabled = true and a running bridge \
+(`rain rig up`).
+
+Examples:
+  rain rig send --transport lxmf --to 0123456789abcdef0123456789abcdef --text PING")]
+    Send {
+        /// Transport to send through
+        #[arg(long, value_parser = ["lxmf"])]
+        transport: String,
+        /// Destination LXMF address (32 lowercase hex characters)
+        #[arg(long)]
+        to: String,
+        /// Plaintext message (up to 4096 bytes)
+        #[arg(long)]
+        text: String,
+    },
+    /// Drain received bridge messages through the restricted inbox
+    #[command(long_about = "\
+Fetch messages the Reticulum/LXMF bridge has queued and classify each one \
+through the restricted inbox. Messages can only become PING, IDENTITY? \
+or an inert note; nothing is executed.
+
+Examples:
+  rain rig receive
+  rain rig receive --max 5 --json")]
+    Receive {
+        /// Maximum number of messages to fetch
+        #[arg(long, default_value_t = 32, value_parser = clap::value_parser!(u16).range(1..=256))]
+        max: u16,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Skybridge software modem (experimental; never transmits RF)
     Radio {
         #[command(subcommand)]

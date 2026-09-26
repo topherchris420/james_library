@@ -9,6 +9,8 @@ use super::skybridge::frame::{MAX_FRAME_LEN, MAX_PAYLOAD, StationId};
 use super::skybridge::modem::ModemConfig;
 use super::skybridge::{BasebandSink, BasebandSource, SkybridgeTransport, radio};
 use super::transport::RigTransport;
+use super::transport::discovery::{InstallFacts, LXMF_MAX_PAYLOAD, configured_bridge};
+use super::transport::reticulum::LxmfTransport;
 use super::{doctor, render, setup, status, up};
 use crate::config::{Config, RigPrivacyMode, RigProfileKind};
 use crate::{RigCommands, RigRadioCommands};
@@ -83,6 +85,16 @@ pub async fn handle_command(
         RigCommands::Peers { json } => {
             let snapshot = status::collect(&ctx).await;
             let allowed = ctx.config.node_transport.allowed_peers.len();
+            let seen = match configured_bridge(&ctx) {
+                None => render::PeersSeen::BridgeDisabled,
+                Some(bridge) => match bridge.connect().await {
+                    Ok(mut session) => match session.peers().await {
+                        Ok(peers) => render::PeersSeen::Seen(peers),
+                        Err(error) => render::PeersSeen::Unreachable(error.to_string()),
+                    },
+                    Err(error) => render::PeersSeen::Unreachable(error.to_string()),
+                },
+            };
             if json {
                 let transports: Vec<_> = ["reticulum", "lxmf", "skybridge", "local-network"]
                     .iter()
@@ -92,14 +104,28 @@ pub async fn handle_command(
                     "identity": snapshot.identity,
                     "transports": transports,
                     "node_transport_allowed_peers": allowed,
-                    "peers_seen": [],
+                    "bridge": match &seen {
+                        render::PeersSeen::BridgeDisabled => "disabled",
+                        render::PeersSeen::Unreachable(_) => "unreachable",
+                        render::PeersSeen::Seen(_) => "connected",
+                    },
+                    "peers_seen": match &seen {
+                        render::PeersSeen::Seen(peers) => peers.clone(),
+                        _ => Vec::new(),
+                    },
                 }))
             } else {
                 let identity = serde_json::to_string(&snapshot.identity)?;
-                print!("{}", render::peers(&snapshot, &identity, allowed));
+                print!("{}", render::peers(&snapshot, &identity, allowed, &seen));
                 Ok(())
             }
         }
+        RigCommands::Send {
+            transport,
+            to,
+            text,
+        } => send_message(&ctx, &transport, to, text).await,
+        RigCommands::Receive { max, json } => receive_messages(&ctx, max, json).await,
         RigCommands::Setup {
             profile,
             node_name,
@@ -130,6 +156,101 @@ pub async fn handle_command(
         RigCommands::Up { dry_run } => Box::pin(up::run(config, &ctx, dry_run)).await,
         RigCommands::Radio { radio_command } => radio_command_handler(radio_command, &ctx).await,
     }
+}
+
+/// LXMF adapter for the configured bridge; errors when the bridge is disabled.
+fn lxmf_transport(
+    ctx: &RigContext,
+) -> Result<(LxmfTransport, super::transport::bridge::BridgeClient)> {
+    let bridge = configured_bridge(ctx).ok_or_else(|| {
+        anyhow!(
+            "the Reticulum/LXMF bridge is disabled; set [rig.bridge] enabled = true in config.toml, then run `rain rig up`"
+        )
+    })?;
+    Ok((
+        LxmfTransport::from_discovery(InstallFacts::default(), Some(bridge.clone())),
+        bridge,
+    ))
+}
+
+async fn send_message(ctx: &RigContext, transport: &str, to: String, text: String) -> Result<()> {
+    if transport != "lxmf" {
+        bail!("unsupported transport '{transport}'");
+    }
+    let (lxmf, bridge) = lxmf_transport(ctx)?;
+    // Fail before recording an authorization for a bridge that is down.
+    bridge
+        .connect()
+        .await
+        .map_err(|error| anyhow!("{error}"))
+        .context("the Reticulum/LXMF bridge is not usable")?;
+    let boundary = ActionBoundary::new(
+        ActionPolicy::new(LXMF_MAX_PAYLOAD).allow_transport("lxmf"),
+        Some(disposition_log(ctx)),
+    );
+    let proposal = ActionProposal::new(
+        ProposalOrigin::Operator,
+        ActionKind::TransportSend {
+            transport: "lxmf".into(),
+            destination: Some(to.clone()),
+        },
+        text.into_bytes(),
+    );
+    let (record, token) = boundary.submit(proposal, None);
+    let Some(token) = token else {
+        bail!(
+            "not authorized: {}",
+            record.reason.unwrap_or_else(|| "rejected".into())
+        );
+    };
+    let receipt = lxmf
+        .send(&token)
+        .await
+        .map_err(|error| anyhow!("{error}"))?;
+    println!(
+        "Queued {} B for LXMF address {to} (proposal {}).",
+        receipt.bytes, receipt.proposal_id
+    );
+    println!("Delivery is asynchronous; the bridge retries while the peer is reachable.");
+    println!(
+        "Disposition recorded in {}.",
+        disposition_log(ctx).path().display()
+    );
+    Ok(())
+}
+
+async fn receive_messages(ctx: &RigContext, max: u16, json: bool) -> Result<()> {
+    let (lxmf, _) = lxmf_transport(ctx)?;
+    let mut dispositions = Vec::new();
+    for _ in 0..max {
+        match lxmf.receive().await.map_err(|error| anyhow!("{error}"))? {
+            Some(message) => dispositions.push(inbox::admit(&message)),
+            None => break,
+        }
+    }
+    if json {
+        return print_json(&dispositions);
+    }
+    if dispositions.is_empty() {
+        println!("No messages waiting.");
+        return Ok(());
+    }
+    for disposition in &dispositions {
+        match disposition {
+            InboxDisposition::Admitted {
+                source, request, ..
+            } => match request {
+                inbox::InboundRequest::Ping => println!("{source}  PING"),
+                inbox::InboundRequest::IdentityQuery => println!("{source}  IDENTITY?"),
+                inbox::InboundRequest::Note { text } => println!("{source}  note: {text}"),
+            },
+            InboxDisposition::Rejected { reason, .. } => {
+                println!("(rejected by the restricted inbox: {reason:?})");
+            }
+        }
+    }
+    println!("\nInbound messages are inert data; nothing was executed and no reply was sent.");
+    Ok(())
 }
 
 async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> Result<()> {
@@ -196,6 +317,7 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
                 ProposalOrigin::Operator,
                 ActionKind::TransportSend {
                     transport: "skybridge".into(),
+                    destination: None,
                 },
                 text.into_bytes(),
             );

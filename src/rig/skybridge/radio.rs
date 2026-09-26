@@ -99,6 +99,7 @@ mod tests {
             ProposalOrigin::Operator,
             ActionKind::TransportSend {
                 transport: "skybridge".into(),
+                destination: None,
             },
             "hello",
         );
