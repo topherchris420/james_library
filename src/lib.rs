@@ -693,7 +693,7 @@ pub enum RigRadioCommands {
         /// Station identifier (A-Z, 0-9, '/', '-'; up to 9 characters)
         #[arg(long)]
         station: String,
-        /// Plaintext message (up to 200 bytes)
+        /// Plaintext message (up to 1000 bytes; over 200 bytes is fragmented)
         #[arg(long)]
         text: String,
         /// Output WAV path
@@ -702,6 +702,9 @@ pub enum RigRadioCommands {
         /// Overwrite an existing output file
         #[arg(long)]
         force: bool,
+        /// Disable Hamming(7,4) forward error correction (shorter airtime)
+        #[arg(long)]
+        no_fec: bool,
     },
     /// Decode a baseband WAV file through the restricted inbox
     Decode {

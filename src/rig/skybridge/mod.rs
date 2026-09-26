@@ -4,15 +4,19 @@
 //! build supports software operation only:
 //!
 //! - [`frame`]: frame codec and CRC-16/X.25 integrity check
+//! - [`fec`]: Hamming(7,4) forward error correction with interleaving
+//! - [`fragment`]: split messages over several frames and reassemble them
 //! - [`modem`]: continuous-phase BFSK baseband modem (in-memory samples)
 //! - [`wav`]: PCM16 WAV files for development and testing
 //! - [`radio`]: RF transmit backend interface, permanently disabled here
 //! - [`SkybridgeTransport`]: transport adapter writing/reading baseband
 //!   audio to files or memory — never to a radio
 //!
-//! Receive pipeline: samples → demodulate → frame decode + CRC →
-//! [`InboundMessage`] → [`inbox::admit`](crate::rig::inbox::admit).
+//! Receive pipeline: samples → demodulate (FEC) → frame decode + CRC →
+//! reassembly → [`InboundMessage`] → [`inbox::admit`](crate::rig::inbox::admit).
 
+pub mod fec;
+pub mod fragment;
 pub mod frame;
 pub mod modem;
 pub mod radio;
@@ -23,7 +27,8 @@ use crate::rig::capability::{CapabilityState, CapabilityStatus, TransportDetail}
 use crate::rig::inbox::InboundMessage;
 use crate::rig::transport::{RigTransport, SendReceipt, TransportError, check_send};
 use async_trait::async_trait;
-use frame::{Frame, MAX_PAYLOAD, StationId};
+use fragment::MAX_MESSAGE_BYTES;
+use frame::{Frame, StationId};
 use modem::{ModemConfig, ModemError};
 use std::collections::VecDeque;
 use std::path::PathBuf;
@@ -33,7 +38,7 @@ use std::sync::{Arc, Mutex};
 pub fn skybridge_detail() -> TransportDetail {
     TransportDetail {
         bidirectional: true,
-        max_payload_bytes: MAX_PAYLOAD,
+        max_payload_bytes: MAX_MESSAGE_BYTES,
         send_supported: true,
         rf_transmit: radio::active_backend().can_transmit(),
     }
@@ -71,6 +76,8 @@ pub struct SkybridgeTransport {
     sequence: Mutex<u16>,
     sink: Option<BasebandSink>,
     source: Mutex<Option<BasebandSource>>,
+    /// Messages decoded from a recording but not yet returned.
+    pending: Mutex<VecDeque<InboundMessage>>,
 }
 
 impl SkybridgeTransport {
@@ -81,6 +88,7 @@ impl SkybridgeTransport {
             sequence: Mutex::new(0),
             sink: None,
             source: Mutex::new(None),
+            pending: Mutex::new(VecDeque::new()),
         }
     }
 
@@ -102,14 +110,34 @@ impl SkybridgeTransport {
         &self.modem
     }
 
-    fn next_sequence(&self) -> Result<u16, TransportError> {
+    /// Reserve `count` consecutive sequence numbers.
+    fn reserve_sequence(&self, count: usize) -> Result<u16, TransportError> {
         let mut sequence = self
             .sequence
             .lock()
             .map_err(|_| TransportError::Io("sequence lock poisoned".into()))?;
         let current = *sequence;
-        *sequence = sequence.wrapping_add(1);
+        *sequence = sequence.wrapping_add(u16::try_from(count).unwrap_or(u16::MAX));
         Ok(current)
+    }
+
+    /// Frames and baseband samples for one message (fragments back to back).
+    pub fn render(&self, payload: &[u8]) -> Result<(Vec<Frame>, Vec<f32>), TransportError> {
+        let malformed =
+            |error: &dyn std::fmt::Display| TransportError::Malformed(error.to_string());
+        let parts = fragment::split(
+            std::str::from_utf8(payload).map_err(|_| malformed(&"payload is not UTF-8 text"))?,
+        )
+        .len();
+        let frames = fragment::fragment(&self.station, self.reserve_sequence(parts)?, payload)
+            .map_err(|error| malformed(&error))?;
+        let mut samples = Vec::new();
+        for frame in &frames {
+            let bytes = frame.encode().map_err(|error| malformed(&error))?;
+            samples
+                .extend(modem::modulate(&self.modem, &bytes).map_err(|error| malformed(&error))?);
+        }
+        Ok((frames, samples))
     }
 
     fn next_samples(&self) -> Result<Option<Vec<f32>>, TransportError> {
@@ -166,17 +194,7 @@ impl RigTransport for SkybridgeTransport {
                 "skybridge: no baseband sink configured".into(),
             ));
         };
-        let frame = Frame::new(
-            self.station.clone(),
-            self.next_sequence()?,
-            action.payload(),
-        )
-        .map_err(|error| TransportError::Malformed(error.to_string()))?;
-        let bytes = frame
-            .encode()
-            .map_err(|error| TransportError::Malformed(error.to_string()))?;
-        let samples = modem::modulate(&self.modem, &bytes)
-            .map_err(|error| TransportError::Malformed(error.to_string()))?;
+        let (_, samples) = self.render(action.payload())?;
         match sink {
             BasebandSink::WavFile(path) => wav::write_file(path, &samples, self.modem.sample_rate)
                 .map_err(|error| TransportError::Io(error.to_string()))?,
@@ -193,19 +211,47 @@ impl RigTransport for SkybridgeTransport {
     }
 
     async fn receive(&self) -> Result<Option<InboundMessage>, TransportError> {
+        let pending_lock = || TransportError::Io("skybridge pending queue poisoned".into());
+        if let Some(message) = self.pending.lock().map_err(|_| pending_lock())?.pop_front() {
+            return Ok(Some(message));
+        }
         let Some(samples) = self.next_samples()? else {
             return Ok(None);
         };
-        match modem::demodulate(&self.modem, &samples) {
-            Ok(frame) => Ok(Some(InboundMessage {
-                transport: "skybridge".into(),
-                source: frame.station.as_str().to_string(),
-                payload: frame.payload,
-            })),
-            Err(ModemError::NoFrame) => Ok(None),
-            Err(error) => Err(TransportError::Malformed(error.to_string())),
-        }
+        let messages = decode_messages(&self.modem, &samples)?;
+        let mut pending = self.pending.lock().map_err(|_| pending_lock())?;
+        pending.extend(messages);
+        Ok(pending.pop_front())
     }
+}
+
+/// Demodulate a recording and reassemble complete messages, in order.
+/// Incomplete multi-frame messages are dropped.
+pub fn decode_messages(
+    modem: &ModemConfig,
+    samples: &[f32],
+) -> Result<Vec<InboundMessage>, TransportError> {
+    let frames: Vec<Frame> = match modem::demodulate_all(modem, samples) {
+        Ok(found) => found.into_iter().map(|d| d.frame).collect(),
+        Err(ModemError::NoFrame) => return Ok(Vec::new()),
+        Err(error) => return Err(TransportError::Malformed(error.to_string())),
+    };
+    let reassembly = fragment::reassemble(&frames);
+    if reassembly.dropped_frames > 0 {
+        tracing::warn!(
+            dropped = reassembly.dropped_frames,
+            "skybridge: dropped frames of incomplete messages"
+        );
+    }
+    Ok(reassembly
+        .messages
+        .into_iter()
+        .map(|message| InboundMessage {
+            transport: "skybridge".into(),
+            source: message.station.as_str().to_string(),
+            payload: message.payload,
+        })
+        .collect())
 }
 
 #[cfg(test)]
@@ -218,7 +264,7 @@ mod tests {
 
     fn boundary() -> ActionBoundary {
         ActionBoundary::new(
-            ActionPolicy::new(MAX_PAYLOAD).allow_transport("skybridge"),
+            ActionPolicy::new(MAX_MESSAGE_BYTES).allow_transport("skybridge"),
             None,
         )
     }
@@ -298,14 +344,42 @@ mod tests {
         assert!(status.experimental);
         let detail = status.transport.unwrap();
         assert!(!detail.rf_transmit);
-        assert_eq!(detail.max_payload_bytes, MAX_PAYLOAD);
+        assert_eq!(detail.max_payload_bytes, MAX_MESSAGE_BYTES);
+    }
+
+    #[tokio::test]
+    async fn long_message_is_fragmented_and_reassembled_from_one_recording() {
+        let buffer = Arc::new(Mutex::new(Vec::new()));
+        let station = StationId::parse("N0CALL").unwrap();
+        let sender = SkybridgeTransport::new(station.clone(), ModemConfig::default())
+            .with_sink(BasebandSink::Memory(buffer.clone()));
+        let long = "coherence log entry; ".repeat(30);
+        assert!(long.len() > frame::MAX_PAYLOAD * 3);
+        let short = "PING";
+        for text in [long.as_str(), short] {
+            let token = boundary()
+                .submit(proposal(ProposalOrigin::Operator, text), None)
+                .1
+                .unwrap();
+            sender.send(&token).await.unwrap();
+        }
+        // Both messages in a single recording.
+        let recording: Vec<f32> = buffer.lock().unwrap().concat();
+        let receiver = SkybridgeTransport::new(station, ModemConfig::default()).with_source(
+            BasebandSource::Memory(Arc::new(Mutex::new(VecDeque::from([recording])))),
+        );
+        let first = receiver.receive().await.unwrap().unwrap();
+        assert_eq!(first.payload, long.as_bytes());
+        let second = receiver.receive().await.unwrap().unwrap();
+        assert_eq!(second.payload, short.as_bytes());
+        assert!(receiver.receive().await.unwrap().is_none());
     }
 
     #[tokio::test]
     async fn oversized_payload_is_refused_before_modulation() {
-        let big = "x".repeat(MAX_PAYLOAD + 1);
+        let big = "x".repeat(MAX_MESSAGE_BYTES + 1);
         let (record, token) = ActionBoundary::new(
-            ActionPolicy::new(MAX_PAYLOAD).allow_transport("skybridge"),
+            ActionPolicy::new(MAX_MESSAGE_BYTES).allow_transport("skybridge"),
             None,
         )
         .submit(proposal(ProposalOrigin::Operator, &big), None);

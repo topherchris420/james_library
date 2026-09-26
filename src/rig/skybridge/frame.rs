@@ -6,7 +6,8 @@
 //! offset  size  field
 //! 0       2     magic "SB" (0x53 0x42)
 //! 2       1     version (1)
-//! 3       1     flags: bit 0 = final fragment; bits 1-7 reserved, must be 0
+//! 3       1     flags: bit 0 = final fragment, bit 1 = continuation (not the
+//!               first fragment); bits 2-7 reserved, must be 0
 //! 4       1     station id length N (1..=9)
 //! 5       N     station id, ASCII [A-Z0-9/-]
 //! 5+N     2     sequence number
@@ -24,6 +25,7 @@ use crate::rig::action::validate_plaintext;
 pub const MAGIC: [u8; 2] = *b"SB";
 pub const VERSION: u8 = 1;
 pub const FLAG_FINAL: u8 = 0b0000_0001;
+pub const FLAG_CONTINUATION: u8 = 0b0000_0010;
 pub const MAX_STATION_LEN: usize = 9;
 pub const MAX_PAYLOAD: usize = 200;
 const HEADER_FIXED: usize = 8; // magic, version, flags, station len, seq, payload len
@@ -99,6 +101,8 @@ pub struct Frame {
     pub station: StationId,
     pub sequence: u16,
     pub final_fragment: bool,
+    /// Continues a message begun by the frame with the previous sequence number.
+    pub continuation: bool,
     pub payload: Vec<u8>,
 }
 
@@ -110,6 +114,7 @@ impl Frame {
             station,
             sequence,
             final_fragment: true,
+            continuation: false,
             payload: payload.to_vec(),
         })
     }
@@ -125,7 +130,14 @@ impl Frame {
             Vec::with_capacity(HEADER_FIXED + station.len() + self.payload.len() + CRC_LEN);
         out.extend_from_slice(&MAGIC);
         out.push(VERSION);
-        out.push(if self.final_fragment { FLAG_FINAL } else { 0 });
+        let mut flags = 0;
+        if self.final_fragment {
+            flags |= FLAG_FINAL;
+        }
+        if self.continuation {
+            flags |= FLAG_CONTINUATION;
+        }
+        out.push(flags);
         out.push(u8::try_from(station.len()).map_err(|_| FrameError::InvalidStation)?);
         out.extend_from_slice(station);
         out.extend_from_slice(&self.sequence.to_be_bytes());
@@ -169,7 +181,7 @@ impl Frame {
             return Err(FrameError::UnsupportedVersion(bytes[2]));
         }
         let flags = bytes[3];
-        if flags & !FLAG_FINAL != 0 {
+        if flags & !(FLAG_FINAL | FLAG_CONTINUATION) != 0 {
             return Err(FrameError::ReservedFlags);
         }
         let station_len = usize::from(bytes[4]);
@@ -205,6 +217,7 @@ impl Frame {
                 station,
                 sequence,
                 final_fragment: flags & FLAG_FINAL != 0,
+                continuation: flags & FLAG_CONTINUATION != 0,
                 payload,
             },
             total,

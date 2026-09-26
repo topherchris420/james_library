@@ -4,7 +4,8 @@ use super::action::{
     ActionBoundary, ActionKind, ActionPolicy, ActionProposal, DispositionLog, ProposalOrigin,
 };
 use super::context::RigContext;
-use super::inbox::{self, InboxDisposition};
+use super::inbox::{self, InboundMessage, InboxDisposition};
+use super::skybridge::fragment::MAX_MESSAGE_BYTES;
 use super::skybridge::frame::{MAX_FRAME_LEN, MAX_PAYLOAD, StationId};
 use super::skybridge::modem::ModemConfig;
 use super::skybridge::{BasebandSink, BasebandSource, SkybridgeTransport, radio};
@@ -267,8 +268,10 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
                 "mark_hz": modem.mark_hz,
                 "space_hz": modem.space_hz,
                 "max_payload_bytes": MAX_PAYLOAD,
+                "max_message_bytes": MAX_MESSAGE_BYTES,
                 "max_frame_bytes": MAX_FRAME_LEN,
                 "max_frame_airtime_secs": modem.airtime_secs(MAX_FRAME_LEN),
+                "fec": modem.coding,
                 "integrity": "CRC-16/X.25 (error detection, not authentication)",
                 "payload": "UTF-8 plaintext only (no encryption)",
                 "rf_backend": backend.name(),
@@ -290,6 +293,13 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
                 "  frames         ≤ {MAX_PAYLOAD} B plaintext payload · ≤ {MAX_FRAME_LEN} B frame · ≤ {:.1} s airtime",
                 modem.airtime_secs(MAX_FRAME_LEN)
             );
+            println!(
+                "  messages       ≤ {MAX_MESSAGE_BYTES} B, fragmented over consecutive frames"
+            );
+            println!(
+                "  FEC            {} (decoder accepts coded and plain frames)",
+                modem.coding.label()
+            );
             println!("  integrity      CRC-16/X.25 (detects corruption; not authentication)");
             println!("  RF transmit    DISABLED · backend '{}'", backend.name());
             println!("\n  This build renders and decodes baseband audio files only. It cannot");
@@ -301,7 +311,16 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
             text,
             out,
             force,
+            no_fec,
         } => {
+            let modem = ModemConfig {
+                coding: if no_fec {
+                    super::skybridge::modem::Coding::Plain
+                } else {
+                    super::skybridge::modem::Coding::Hamming74
+                },
+                ..modem
+            };
             let station = StationId::parse(&station).map_err(|error| anyhow!("{error}"))?;
             if out.exists() && !force {
                 bail!(
@@ -310,7 +329,7 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
                 );
             }
             let boundary = ActionBoundary::new(
-                ActionPolicy::new(MAX_PAYLOAD).allow_transport("skybridge"),
+                ActionPolicy::new(MAX_MESSAGE_BYTES).allow_transport("skybridge"),
                 Some(disposition_log(ctx)),
             );
             let proposal = ActionProposal::new(
@@ -358,28 +377,37 @@ async fn decode(input: &Path, json: bool, modem: ModemConfig) -> Result<()> {
     let station = StationId::parse("RX").map_err(|error| anyhow!("{error}"))?;
     let transport = SkybridgeTransport::new(station, modem)
         .with_source(BasebandSource::WavFile(input.to_path_buf()));
-    let message = transport
+    let mut messages = Vec::new();
+    while let Some(message) = transport
         .receive()
         .await
         .map_err(|error| anyhow!("{error}"))
-        .with_context(|| format!("decoding {}", input.display()))?;
-    let Some(message) = message else {
-        bail!("no Skybridge frame found in {}", input.display());
-    };
-    let disposition = inbox::admit(&message);
+        .with_context(|| format!("decoding {}", input.display()))?
+    {
+        messages.push(message);
+    }
+    if messages.is_empty() {
+        bail!("no complete Skybridge message found in {}", input.display());
+    }
+    report_skybridge_messages(&messages, json)
+}
+
+/// Admit decoded Skybridge messages through the restricted inbox and report.
+fn report_skybridge_messages(messages: &[InboundMessage], json: bool) -> Result<()> {
+    let dispositions: Vec<InboxDisposition> = messages.iter().map(inbox::admit).collect();
     if json {
-        return print_json(&disposition);
+        return print_json(&dispositions);
     }
-    match &disposition {
-        InboxDisposition::Admitted {
-            source, request, ..
-        } => {
-            println!("Frame from station {source} admitted as {request:?}.");
-            println!("Inbound messages are inert data; nothing was executed.");
-        }
-        InboxDisposition::Rejected { reason, .. } => {
-            println!("Frame rejected by the restricted inbox: {reason:?}");
+    for disposition in &dispositions {
+        match disposition {
+            InboxDisposition::Admitted {
+                source, request, ..
+            } => println!("Message from station {source} admitted as {request:?}."),
+            InboxDisposition::Rejected { reason, .. } => {
+                println!("Message rejected by the restricted inbox: {reason:?}");
+            }
         }
     }
+    println!("Inbound messages are inert data; nothing was executed.");
     Ok(())
 }
