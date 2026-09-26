@@ -18,8 +18,9 @@ Rig capability bus   (src/rig/capability.rs + status/doctor)
       ▼                     ▼                        ▼
 inference providers    research registry      transports / hardware
 (src/providers/*)      (papers, personas)     loopback · Reticulum · LXMF
-llama.cpp · Ollama                             Skybridge (experimental)
-LM Studio · others                             RF transmit: disabled
+llama.cpp · Ollama                             │  └─ bridge sidecar (127.0.0.1, HMAC)
+LM Studio · others                             Skybridge (experimental)
+                                               RF transmit: compiled out by default
 ```
 
 ## Module map
@@ -38,8 +39,9 @@ LM Studio · others                             RF transmit: disabled
 | `rig/status.rs`, `rig/doctor.rs`, `rig/render.rs` | Snapshot, readiness, checks, human output |
 | `rig/action.rs` | Action boundary and disposition log |
 | `rig/inbox.rs` | Restricted inbound message layer |
-| `rig/transport/` | `RigTransport` trait, loopback, Reticulum/LXMF adapters, discovery |
-| `rig/skybridge/` | Experimental frame codec, modem, WAV, disabled RF backend |
+| `rig/transport/` | `RigTransport` trait, loopback, Reticulum/LXMF adapters, bridge client, discovery |
+| `rig/skybridge/` | Experimental frame codec, FEC, fragmentation, modem, WAV, receiver input, RF backends |
+| `tools/rig_bridge/` | Optional Python sidecar owning Reticulum/LXMF (loopback only) |
 | `rig/setup.rs`, `rig/up.rs`, `rig/cli.rs` | `rain rig` commands |
 
 ## Capability states
@@ -56,8 +58,10 @@ from its observed state:
 | `disabled` | Turned off by configuration or policy |
 | `unavailable` | Missing or not reachable |
 
-Discovery never infers `running` from an installed binary. LXMF can never
-report `running`, because `lxmd` exposes no local endpoint to probe.
+Discovery never infers `running` from an installed binary. `lxmd` exposes no
+local endpoint to probe, so LXMF reports `running` only after an authenticated
+session with the R.A.I.N. bridge. The bridge is contacted only when
+`[rig.bridge] enabled = true`.
 
 ## Discovery safety
 
@@ -97,15 +101,20 @@ visible.
 ```text
 model / operator / system proposes
         ↓
-policy checks        RF transmit → always rejected
+policy checks        RF transmit → rejected unless built with rig-rf-transmit,
+                       and never from a model or host code
                      model-originated config write → rejected
                      transport must be able to send in this build
         ↓
 deterministic        payload size, UTF-8 plaintext (no control or
-validation           bidirectional-override characters), proposal id
+validation           bidirectional-override characters), proposal id,
+                     destination (LXMF address for lxmf, none elsewhere),
+                     RF: licensed callsign, 3 kHz channel inside the band
+                     plan, 1 ≤ power ≤ max_power_w
         ↓
 human authorization  required when a model or host code proposes an
-                     external action; approval is bound to the proposal id
+                     external action, and for every RF transmit (typed
+                     callsign); approval is bound to the proposal id
         ↓
 disposition record   JSONL (payload digest + length, never the payload);
                      if it cannot be written, the action is rejected
@@ -140,7 +149,8 @@ paths or serial numbers.
 
 ## Network safety
 
-Rig opens no listeners. The only R.A.I.N. listener it reports is the gateway
-(`127.0.0.1` by default). A non-loopback bind appears as `EXTERNAL BIND` in
+Rig itself opens no listeners. `rig up` starts the gateway (`127.0.0.1` by
+default) and, only when `[rig.bridge] enabled = true`, the bridge sidecar,
+which binds `127.0.0.1` and has no setting to bind elsewhere. A non-loopback bind appears as `EXTERNAL BIND` in
 status and doctor. It BLOCKS the node unless `[gateway] allow_public_bind` or
 a tunnel explicitly allows it, and the gateway itself still enforces that rule.

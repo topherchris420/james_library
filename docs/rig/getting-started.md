@@ -92,8 +92,11 @@ rain rig up --dry-run    # print the plan
 rain rig up              # start the R.A.I.N. daemon (Ctrl-C to stop)
 ```
 
-`rig up` starts only the R.A.I.N. daemon, on `[gateway] host`/`port`
-(`127.0.0.1:42617` by default). A BLOCKED node starts nothing.
+`rig up` starts only R.A.I.N.-owned services: the daemon on `[gateway]
+host`/`port` (`127.0.0.1:42617` by default) and, when `[rig.bridge] enabled =
+true`, the Reticulum/LXMF bridge on `127.0.0.1`. A BLOCKED node starts
+nothing. See [Transports](transports.md) for LXMF messaging and
+[Skybridge](skybridge.md) for radio receive and (feature-gated) transmit.
 
 ## Profiles
 

@@ -72,14 +72,27 @@ rain rig status [--json]          # trạng thái nút (READY/DEGRADED/BLOCKED)
 rain rig doctor [--json]          # PASS/WARN/FAIL/SKIP; mã thoát khác 0 khi có FAIL
 rain rig models [--json]          # mô hình trên llama.cpp / Ollama / LM Studio / cuộc họp
 rain rig capabilities [--json]    # danh sách khả năng và trạng thái hiện tại
-rain rig peers [--json]           # danh tính có thể chia sẻ và các transport
+rain rig peers [--json]           # danh tính có thể chia sẻ, transport, các nút LXMF thấy qua cầu nối
 rain rig setup [--profile local|node|field] [--node-name TEN] [--privacy local|hybrid|hosted] [--yes] [--dry-run]
-rain rig up [--dry-run]           # khởi động daemon R.A.I.N. trên địa chỉ đã cấu hình
-rain rig radio status|encode|decode   # modem phần mềm Skybridge (thử nghiệm, không phát RF)
+rain rig up [--dry-run]           # khởi động daemon (và cầu nối khi bật [rig.bridge])
+rain rig send --transport lxmf --to DIA_CHI --text NOI_DUNG   # gửi tin LXMF qua cầu nối
+rain rig receive [--max N] [--json]                           # nhận tin từ cầu nối qua hộp thư hạn chế
+rain rig radio status|encode|decode|listen   # modem Skybridge, đầu vào chỉ thu
+rain rig radio transmit --frequency-hz HZ --power-w W --text NOI_DUNG   # chỉ với bản build rig-rf-transmit
 ```
 
 - Việc dò tìm chỉ kiểm tra địa chỉ cục bộ (loopback hoặc mạng riêng) và không
   bao giờ liên hệ dịch vụ lưu trữ bên ngoài.
 - `setup` hỏi xác nhận trước khi ghi `config.toml` (cần `--yes` khi không
   tương tác) và không cài đặt hay tải xuống gì.
-- `up` chỉ khởi động daemon R.A.I.N.; nút ở trạng thái BLOCKED không khởi động gì.
+- `up` chỉ khởi động các dịch vụ của R.A.I.N. (daemon, và cầu nối khi
+  `[rig.bridge] enabled = true`); nút ở trạng thái BLOCKED không khởi động gì.
+- `send`/`receive` cần `[rig.bridge] enabled = true` và cầu nối đang chạy.
+  `send` ghi lại quyết định trước khi liên hệ cầu nối; `receive` chỉ phân loại
+  tin thành `PING`, `IDENTITY?` hoặc ghi chú trơ.
+- `radio encode` dùng mã sửa lỗi Hamming(7,4) trừ khi có `--no-fec`; tin dài
+  hơn 200 B được chia mảnh (tối đa 1000 B). `radio listen --seconds N` (1–300)
+  chạy lệnh `[rig.radio] receive`.
+- `radio transmit` bị từ chối trừ khi bản build có `--features rig-rf-transmit`
+  và `[rig.radio]` đặt `callsign`, `max_power_w` cùng `[rig.radio.transmit]`.
+  Phải gõ hô hiệu trong terminal tương tác; mô hình không bao giờ được phát.

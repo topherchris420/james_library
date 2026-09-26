@@ -291,8 +291,10 @@ rain rig status   # llama.cpp / Ollama / LM Studio, research library, transports
 
 Local inference reuses the existing `llamacpp`, `ollama` and `lmstudio`
 providers. With `privacy = "local"`, hosted inference is refused rather than
-used as a silent fallback. Skybridge, a plaintext low-bandwidth modem, is
-experimental and software-only: RF transmit is disabled. See
+used as a silent fallback. Optional LXMF messaging over Reticulum runs through
+a loopback-only bridge sidecar. Skybridge, a plaintext low-bandwidth modem, is
+experimental: receive works with any receiver command, and RF transmit is
+compiled out unless you build with `rig-rf-transmit`. See
 [R.A.I.N. Rig](docs/rig/README.md).
 
 ---

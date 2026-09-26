@@ -71,3 +71,19 @@ Chính sách chấp thuận của lệnh `judge` không thay đổi.
   hình Ollama `:cloud` (mô hình mặc định là một ví dụ). Chạy `rain rig setup`
   để gắn `[rig.meeting]` vào máy chủ cục bộ, hoặc đặt `[rig.meeting] model` /
   `RAIN_LLM_MODEL`.
+- `the Reticulum/LXMF bridge is disabled` hoặc `no token at …/bridge.token`:
+  bật `[rig.bridge] enabled = true` và khởi động cầu nối bằng `rain rig up`.
+- `the bridge needs Reticulum and LXMF`: cài
+  `pip install -r tools/rig_bridge/requirements.txt`; `rig up` dừng trước khi
+  khởi động bất cứ thứ gì.
+- `token file … is accessible to other users` hoặc `authentication refused`:
+  token phải có quyền 0600 (khởi động lại cầu nối sẽ ghi lại token).
+  "server failed authentication" nghĩa là một tiến trình khác đang chiếm cổng.
+- `recipient not known yet; path requested`: thử lại sau vài giây, khi nút kia
+  đã phản hồi hoặc quảng bá.
+- `radio transmit` bị từ chối (`not compiled into this build`,
+  `requires an interactive terminal`): cần bản build với
+  `--features rig-rf-transmit`, cấu hình `[rig.radio]` và xác nhận bằng cách gõ
+  hô hiệu trong terminal; đầu vào qua ống dẫn bị từ chối.
+- `radio listen` không thấy tin: kiểm tra lệnh `receive` xuất PCM16 LE mono
+  8000 Hz, tần số, và `--seconds` đủ dài (khoảng 30 s cho một khung 200 B có FEC).

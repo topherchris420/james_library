@@ -51,9 +51,12 @@ Extension changes should keep their setup isolated, avoid surprising network cal
 
 Experimental or archival assets may stay in the repository when they are useful for preservation, demos, or research continuity, but they must be labeled as non-core. Large generated files, benchmark data, prototype scripts, and research snapshots should not become default startup dependencies.
 
-Skybridge (`src/rig/skybridge/`) is experimental: a software-only plaintext
-frame codec and baseband modem with RF transmit disabled. It is not part of the
-stable core.
+Skybridge (`src/rig/skybridge/`) is experimental: a plaintext frame codec
+and baseband modem with FEC and receive-only receiver input. RF transmit is
+compiled out by default and exists only behind the `rig-rf-transmit` Cargo
+feature, with operator-only confirmation. It is not part of the stable core.
+The Reticulum/LXMF bridge sidecar (`tools/rig_bridge/`) is optional and off
+by default.
 
 If an experiment becomes user-facing, promote it by adding:
 

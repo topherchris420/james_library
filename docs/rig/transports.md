@@ -22,15 +22,19 @@ pub trait RigTransport: Send + Sync {
   A token for another transport returns `WrongTarget`.
 - `receive` returns raw bytes. Callers pass them through `inbox::admit`, which
   can only produce `Ping`, `IdentityQuery`, or an inert `Note`.
+- Addressed transports (LXMF) carry the destination in the proposal. The
+  boundary requires a 32-character lowercase hex address for `lxmf` and
+  refuses a destination for every other transport. Only a validated address
+  appears in the disposition record.
 
 ## Available transports
 
 | Transport | State in this build | Send / receive |
 | --- | --- | --- |
 | `local` | In-process loopback queue; no sockets or listeners | Yes (bounded queue, 64 messages) |
-| `reticulum` | Discovery only | Explicit `Unsupported` error |
-| `lxmf` | Discovery only | Explicit `Unsupported` error |
-| `skybridge` | Experimental software baseband ([Skybridge](skybridge.md)) | To/from WAV files or memory; never RF |
+| `reticulum` | Discovery (shared instance, install facts) | Explicit `Unsupported` error: raw packets are not bridged; use `lxmf` |
+| `lxmf` | Messaging through the [R.A.I.N. bridge](#reticulumlxmf-bridge) when `[rig.bridge]` is enabled; discovery otherwise | `rain rig send --transport lxmf` / `rain rig receive` |
+| `skybridge` | Experimental software baseband ([Skybridge](skybridge.md)) | WAV files, memory, receive-only receiver command; RF only in `rig-rf-transmit` builds |
 
 ### Reticulum discovery
 
@@ -51,7 +55,50 @@ instance is `configured`.
 
 `lxmd` on `PATH`, a config file (`/etc/lxmd/config`, `~/.config/lxmd/config`,
 `~/.lxmd/config`), and in `rig doctor` the Python module `LXMF`. `lxmd` has no
-local endpoint, so Rig never reports it as running.
+local endpoint, so install facts alone never report LXMF as `running`. Only an
+authenticated session with the R.A.I.N. bridge does.
+
+## Reticulum/LXMF bridge
+
+Reticulum is never linked into `rain`. The optional sidecar
+[`tools/rig_bridge/bridge.py`](../../tools/rig_bridge/README.md) owns RNS and
+LXMF and talks to `rain` over line-delimited JSON:
+
+- It binds `127.0.0.1` only; there is no host setting.
+- Both ends authenticate with a mutual HMAC-SHA256 challenge keyed by a random
+  token that the bridge rewrites at every start in `<workspace>/rig/bridge.token`
+  (mode 0600). The token never crosses the socket. `rain` refuses a token
+  file that other users can read, and it refuses a server that cannot prove
+  the token (for example, a process squatting the port).
+- `rain` treats every reply as untrusted: addresses are re-validated, peer
+  names are stripped of control and bidi characters and capped, lines are
+  bounded to 16 KiB, and requests time out.
+- Outbound: only boundary-authorized plaintext (at most 4096 B), which the
+  bridge validates again. Inbound: queued as inert text (256 messages at
+  most) until `rain rig receive` passes each one through `inbox::admit`.
+- The LXMF address is announced only with `announce = true`. Senders that do
+  not know a recipient yet get "path requested, retry".
+
+```toml
+[rig.bridge]
+enabled = true     # default false
+port = 42627       # loopback port
+announce = false   # announce this node's LXMF address
+```
+
+```bash
+pip install -r tools/rig_bridge/requirements.txt   # rns, lxmf (optional)
+rain rig up                                        # starts the bridge, then the daemon
+rain rig peers                                     # LXMF peers seen via announces
+rain rig send --transport lxmf --to <32-hex address> --text "PING"
+rain rig receive                                   # PING / IDENTITY? / inert notes
+```
+
+`rig up` starts the bridge with the library's `.venv` Python (or `python3`),
+passes only argv (no shell), and waits for an authenticated session before
+it starts the daemon. When Reticulum/LXMF are missing, `rig up` stops before
+starting anything. The bridge stops with `rig up`. If it exits early, `rig up`
+logs it and keeps the daemon running without restarting the bridge.
 
 ## Inbound handling
 
@@ -66,23 +113,18 @@ local endpoint, so Rig never reports it as running.
 
 The `field` profile expects Reticulum, LXMF and Skybridge. When they are
 missing, `rig doctor` reports `WARN` instead of `SKIP` and `rig status`
-reports `DEGRADED`. Transports are never installed or started for you:
+reports `DEGRADED`. Third-party software is never installed for you, and
+`rnsd` is never started for you:
 
 ```bash
-pip install rns lxmf     # optional, your choice
-rnsd                     # start the shared instance yourself
+pip install -r tools/rig_bridge/requirements.txt   # optional, your choice
+rnsd                                               # optional shared instance
 ```
 
-## Next steps for Reticulum/LXMF
+## Tests
 
-The adapter boundary is where a future bridge plugs in:
-
-1. A Python sidecar owned by R.A.I.N. that links against `RNS`/`LXMF` and
-   exposes a loopback-only, authenticated local socket. It must never listen
-   on `0.0.0.0`.
-2. `ReticulumTransport::send` forwards an `AuthorizedAction` payload to that
-   socket. `receive` reads raw frames from it into `inbox::admit`.
-3. LXMF destinations and identities stay in the sidecar. Only the Rig node
-   identity descriptor is exchanged.
-4. Mocked-socket tests in the style of `transport/loopback.rs`. No real RNS
-   in CI.
+Bridge tests never need Reticulum. The Rust client and adapters run against
+an in-process fake bridge that speaks the protocol (handshake, impostor,
+world-readable token, untrusted replies). The Python protocol core runs
+against a fake backend over a real loopback socket
+(`tests/test_rig_bridge.py`).

@@ -75,14 +75,28 @@ rain rig status [--json]          # état du nœud (READY/DEGRADED/BLOCKED)
 rain rig doctor [--json]          # PASS/WARN/FAIL/SKIP ; code de sortie non nul si FAIL
 rain rig models [--json]          # modèles sur llama.cpp / Ollama / LM Studio / réunion
 rain rig capabilities [--json]    # registre des capacités et état courant
-rain rig peers [--json]           # identité partageable et transports pairs
+rain rig peers [--json]           # identité partageable, transports, pairs LXMF vus via le pont
 rain rig setup [--profile local|node|field] [--node-name NOM] [--privacy local|hybrid|hosted] [--yes] [--dry-run]
-rain rig up [--dry-run]           # démarre le démon R.A.I.N. sur son adresse configurée
-rain rig radio status|encode|decode   # modem logiciel Skybridge (expérimental, aucune émission RF)
+rain rig up [--dry-run]           # démarre le démon (et le pont si [rig.bridge] est activé)
+rain rig send --transport lxmf --to ADRESSE --text TEXTE   # message LXMF via le pont
+rain rig receive [--max N] [--json]                        # messages du pont via la boîte restreinte
+rain rig radio status|encode|decode|listen   # modem Skybridge, réception seule
+rain rig radio transmit --frequency-hz HZ --power-w W --text TEXTE   # builds rig-rf-transmit uniquement
 ```
 
 - La découverte ne sonde que des adresses locales (loopback ou réseau privé) et
   ne contacte jamais de service hébergé.
 - `setup` demande confirmation avant d'écrire `config.toml` (`--yes` requis en
   mode non interactif) et n'installe ni ne télécharge rien.
-- `up` ne démarre que le démon R.A.I.N. ; un nœud BLOCKED ne démarre rien.
+- `up` ne démarre que les services de R.A.I.N. (le démon, et le pont si
+  `[rig.bridge] enabled = true`) ; un nœud BLOCKED ne démarre rien.
+- `send`/`receive` exigent `[rig.bridge] enabled = true` et un pont actif.
+  `send` enregistre sa décision avant de contacter le pont ; `receive` classe
+  les messages en `PING`, `IDENTITY?` ou notes inertes.
+- `radio encode` applique la correction d'erreurs Hamming(7,4) sauf avec
+  `--no-fec` ; au-delà de 200 o, le message est fragmenté (1000 o au plus).
+  `radio listen --seconds N` (1–300) lance la commande `[rig.radio] receive`.
+- `radio transmit` est refusé sauf si le binaire est compilé avec
+  `--features rig-rf-transmit` et que `[rig.radio]` définit `callsign`,
+  `max_power_w` et `[rig.radio.transmit]`. Il faut taper l'indicatif dans un
+  terminal interactif ; un modèle ne peut jamais émettre.

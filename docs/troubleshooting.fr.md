@@ -77,3 +77,21 @@ La politique de promotion de `judge` reste inchangée.
   modèles Ollama `:cloud` (le modèle par défaut en est un). Lancez
   `rain rig setup` pour fixer `[rig.meeting]` sur un serveur local, ou
   définissez `[rig.meeting] model` / `RAIN_LLM_MODEL`.
+- `the Reticulum/LXMF bridge is disabled` ou `no token at …/bridge.token` :
+  activez `[rig.bridge] enabled = true` et démarrez le pont avec `rain rig up`.
+- `the bridge needs Reticulum and LXMF` : installez
+  `pip install -r tools/rig_bridge/requirements.txt` ; `rig up` s'arrête avant
+  de démarrer quoi que ce soit.
+- `token file … is accessible to other users` ou `authentication refused` :
+  le jeton doit être en mode 0600 (un redémarrage du pont le réécrit).
+  « server failed authentication » signifie qu'un autre processus occupe le
+  port du pont.
+- `recipient not known yet; path requested` : réessayez après quelques
+  secondes, le temps que le pair réponde ou s'annonce.
+- `radio transmit` refusé (`not compiled into this build`,
+  `requires an interactive terminal`) : il faut un binaire compilé avec
+  `--features rig-rf-transmit`, les réglages `[rig.radio]` et une confirmation
+  en tapant l'indicatif dans un terminal ; une entrée redirigée est refusée.
+- `radio listen` ne trouve rien : vérifiez que la commande `receive` produit
+  du PCM16 LE mono à 8000 Hz, la fréquence, et que `--seconds` couvre toute
+  l'émission (environ 30 s par trame de 200 o avec FEC).

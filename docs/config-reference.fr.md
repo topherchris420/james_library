@@ -68,6 +68,21 @@ privacy = "local"        # local | hybrid | hosted ; défaut : celui du profil, 
 [rig.meeting]            # facultatif ; partagé avec `python rain_lab.py`
 base_url = "http://127.0.0.1:8080/v1"
 model = "Qwen3-4B-Q4_K_M.gguf"
+
+[rig.bridge]             # pont Reticulum/LXMF facultatif
+enabled = false          # false par défaut ; `rig up` le démarre si true
+port = 42627             # port local (1024-65535) ; écoute toujours sur 127.0.0.1
+announce = false         # annonce l'adresse LXMF du nœud
+
+[rig.radio]              # réglages radio Skybridge facultatifs
+receive = ["rtl_fm", "-f", "14.1M", "-M", "usb", "-s", "8000", "-"]  # argv, réception seule
+callsign = "N0CALL"      # indicatif attribué (émission RF + identifiant de station)
+max_power_w = 20         # 1-1500 W
+
+[rig.radio.transmit]     # utilisé seulement avec --features rig-rf-transmit
+ptt_on = ["rigctl", "-m", "2", "F", "{frequency_hz}", "T", "1"]
+play = ["aplay", "-q", "{wav}"]
+ptt_off = ["rigctl", "-m", "2", "T", "0"]
 ```
 
 - `[rig.meeting]` fixe le point d'accès et le modèle de la réunion.
@@ -81,5 +96,14 @@ model = "Qwen3-4B-Q4_K_M.gguf"
   (erreur typée, sans nouvelle tentative ; aucun repli hébergé silencieux).
 - Tous les profils intégrés utilisent `local` par défaut et ne peuvent pas
   modifier la sécurité, l'autonomie ni la politique d'écoute réseau.
+
+- `[rig.bridge]` : désactivé par défaut, sans clé d'hôte. `rain` et le pont
+  s'authentifient avec un jeton que le pont écrit dans
+  `<workspace>/rig/bridge.token` (mode 0600) à chaque démarrage.
+- `[rig.radio]` : chaque commande est un argv lancé sans shell. `receive`
+  doit écrire du PCM16 LE mono à 8000 Hz sur stdout. Les commandes
+  `transmit` acceptent `{wav}`, `{frequency_hz}` et `{power_w}`. `ptt_off` est
+  obligatoire si `ptt_on` est défini. Dans les builds par défaut,
+  `[rig.radio.transmit]` est ignoré et l'émission RF reste désactivée.
 
 Retour arrière : supprimer la table `[rig]`. Détails : [`rig/getting-started.md`](rig/getting-started.md).

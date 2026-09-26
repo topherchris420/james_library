@@ -177,6 +177,48 @@ Under local privacy the Python meeting refuses hosted endpoints and Ollama
 `rain rig setup`, which pins `[rig.meeting]` to a running local server, or set
 `[rig.meeting] model` / `RAIN_LLM_MODEL` to a model listed by `rain rig models`.
 
+### `the Reticulum/LXMF bridge is disabled` / `no token at …/bridge.token`
+
+`rig send`, `rig receive` and bridge peers need `[rig.bridge] enabled = true`
+and a running bridge. Start it with `rain rig up`, or run
+`python tools/rig_bridge/bridge.py --state-dir <workspace>/rig` yourself.
+
+### `rig up`: `the bridge needs Reticulum and LXMF`
+
+Install the optional dependencies with
+`pip install -r tools/rig_bridge/requirements.txt`, using the library's `.venv`
+if one exists. `rig up` stops before starting anything else.
+
+### `token file … is accessible to other users` / `authentication refused`
+
+The token must be mode 0600. Restarting the bridge rewrites it. "Server
+failed authentication" means something other than the R.A.I.N. bridge is
+listening on the bridge port. Stop that process, or change `[rig.bridge] port`.
+
+### `rig send`: `recipient not known yet; path requested`
+
+The bridge has not learned the peer's identity yet. Retry after a few
+seconds. Once the peer answers the path request or announces, the send goes
+through. To be reachable yourself, set `announce = true`.
+
+### `radio transmit`: `not compiled into this build` / `requires an interactive terminal`
+
+RF transmit needs a binary built with `--features rig-rf-transmit`, plus
+`[rig.radio]` `callsign`, `max_power_w` and `[rig.radio.transmit]`. It must be
+confirmed by typing the callsign at a terminal; piped input is refused by
+design. Frequencies are USB dial frequencies whose 3 kHz channel must fit
+inside the built-in band plan (see `rain rig radio status`).
+
+### `radio listen` finds no message
+
+Check the following:
+
+- `[rig.radio] receive` writes raw PCM16 LE mono at 8000 Hz (for `rtl_fm`,
+  use `-s 8000`).
+- The receiver is tuned to the sender's USB dial frequency.
+- `--seconds` covers the whole transmission. A 200 B frame with FEC takes
+  about 30 s.
+
 ### `--json` output mixed with log lines
 
 Rig logs go to stderr; redirect with `2>/dev/null` or set `RUST_LOG=error`.

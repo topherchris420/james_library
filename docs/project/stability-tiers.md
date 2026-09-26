@@ -98,7 +98,8 @@ These paths are intentionally non-core. They may be reorganized, renamed, extrac
 - `james_library/`
 - `rlm-main/`
 - `benchmark_data/`
-- `src/rig/skybridge/` (Skybridge: experimental software modem; RF transmit disabled)
+- `src/rig/skybridge/` (Skybridge: experimental modem; RF transmit only behind the off-by-default `rig-rf-transmit` feature)
+- `tools/rig_bridge/` (optional Reticulum/LXMF bridge sidecar)
 
 Expectations:
 
