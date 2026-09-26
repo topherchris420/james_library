@@ -724,6 +724,31 @@ Examples:
         #[arg(long)]
         json: bool,
     },
+    /// Transmit a message over RF (requires a `rig-rf-transmit` build)
+    #[command(long_about = "\
+Transmit a plaintext Skybridge message over RF through the configured \
+[rig.radio.transmit] commands.
+
+Only available in binaries built with `--features rig-rf-transmit`, and \
+only with [rig.radio] callsign and max_power_w set. The frequency (USB \
+dial) must keep a 3 kHz channel inside the built-in band plan, and power \
+must not exceed max_power_w. You confirm every transmission by typing \
+your callsign at an interactive terminal; there is no flag to skip this. \
+Models and automation can never transmit. Every decision is recorded.
+
+Examples:
+  rain rig radio transmit --frequency-hz 14100000 --power-w 10 --text \"CQ N0CALL\"")]
+    Transmit {
+        /// Plaintext message (up to 1000 bytes)
+        #[arg(long)]
+        text: String,
+        /// USB dial frequency in Hz
+        #[arg(long)]
+        frequency_hz: u64,
+        /// Transmit power in watts (1..=max_power_w)
+        #[arg(long)]
+        power_w: u16,
+    },
     /// Decode a baseband WAV file through the restricted inbox
     Decode {
         /// Input WAV path (PCM16 mono)

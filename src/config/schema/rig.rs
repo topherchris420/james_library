@@ -170,6 +170,34 @@ pub struct RigRadioConfig {
     /// Run without a shell. Unset: listening is unavailable.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub receive: Vec<String>,
+    /// Licensed amateur callsign (for example `N0CALL`). Required for RF
+    /// transmit; also the Skybridge station id on air.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub callsign: Option<String>,
+    /// Maximum transmit power in watts (1–1500). Required for RF transmit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_power_w: Option<u16>,
+    /// External transmit commands. Only used by builds with the
+    /// `rig-rf-transmit` Cargo feature; ignored (transmit stays disabled)
+    /// otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub transmit: Option<RigRadioTransmitConfig>,
+}
+
+/// Argv commands (no shell) that drive a transmitter. Each argument may use
+/// the placeholders `{wav}`, `{frequency_hz}` and `{power_w}`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RigRadioTransmitConfig {
+    /// Key the transmitter (set frequency/power here if needed). Optional
+    /// for VOX setups; when set, `ptt_off` is required.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ptt_on: Vec<String>,
+    /// Play the rendered baseband WAV into the transmitter audio input.
+    pub play: Vec<String>,
+    /// Unkey the transmitter. Always run after `ptt_on`, even on failure.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ptt_off: Vec<String>,
 }
 
 /// Default loopback port of the Reticulum/LXMF bridge sidecar.
@@ -274,6 +302,27 @@ impl RigConfig {
         }
         if let Some(radio) = &self.radio {
             validate_argv("rig.radio.receive", &radio.receive)?;
+            if let Some(callsign) = radio.callsign.as_deref() {
+                if !is_amateur_callsign(callsign) {
+                    bail!(
+                        "rig.radio.callsign must be 3-9 uppercase letters, digits or '/', with a letter and a digit"
+                    );
+                }
+            }
+            if radio.max_power_w.is_some_and(|w| w == 0 || w > 1500) {
+                bail!("rig.radio.max_power_w must be between 1 and 1500");
+            }
+            if let Some(transmit) = &radio.transmit {
+                validate_argv("rig.radio.transmit.ptt_on", &transmit.ptt_on)?;
+                validate_argv("rig.radio.transmit.play", &transmit.play)?;
+                validate_argv("rig.radio.transmit.ptt_off", &transmit.ptt_off)?;
+                if transmit.play.is_empty() {
+                    bail!("rig.radio.transmit.play is required");
+                }
+                if !transmit.ptt_on.is_empty() && transmit.ptt_off.is_empty() {
+                    bail!("rig.radio.transmit.ptt_off is required when ptt_on is set");
+                }
+            }
         }
         if let Some(bridge) = &self.bridge {
             if bridge.port < 1024 {
@@ -285,6 +334,17 @@ impl RigConfig {
         }
         Ok(())
     }
+}
+
+/// Callsign shape: 3–9 characters of `A-Z`, `0-9`, `/`, with at least one
+/// letter and one digit (also a valid Skybridge station id).
+pub fn is_amateur_callsign(value: &str) -> bool {
+    (3..=9).contains(&value.len())
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b == b'/')
+        && value.bytes().any(|b| b.is_ascii_digit())
+        && value.bytes().any(|b| b.is_ascii_uppercase())
 }
 
 /// An optional argv: empty, or a non-empty program with no NUL bytes.
@@ -457,6 +517,20 @@ mod tests {
         assert!(toml::from_str::<RigConfig>("[bridge]\nhost = \"0.0.0.0\"\n").is_err());
         let low: RigConfig = toml::from_str("[bridge]\nenabled = true\nport = 80\n").unwrap();
         assert!(low.validate().is_err());
+    }
+
+    #[test]
+    fn rig_radio_transmit_settings_are_validated() {
+        let parse = |raw: &str| toml::from_str::<RigConfig>(raw).unwrap().validate();
+        parse("[radio]\ncallsign = \"N0CALL\"\nmax_power_w = 50\n[radio.transmit]\nplay = [\"aplay\", \"{wav}\"]\n").unwrap();
+        assert!(parse("[radio]\ncallsign = \"n0call\"\n").is_err());
+        assert!(parse("[radio]\nmax_power_w = 0\n").is_err());
+        assert!(parse("[radio]\nmax_power_w = 5000\n").is_err());
+        assert!(parse("[radio.transmit]\nplay = []\n").is_err());
+        assert!(
+            parse("[radio.transmit]\nptt_on = [\"rigctl\", \"T\", \"1\"]\nplay = [\"aplay\"]\n")
+                .is_err()
+        );
     }
 
     #[test]

@@ -36,24 +36,36 @@ use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-/// Transport capabilities of Skybridge.
+/// Transport capabilities of the Skybridge adapter. The adapter itself
+/// writes baseband to files or memory only; RF goes through [`radio`].
 pub fn skybridge_detail() -> TransportDetail {
     TransportDetail {
         bidirectional: true,
         max_payload_bytes: MAX_MESSAGE_BYTES,
         send_supported: true,
-        rf_transmit: radio::active_backend().can_transmit(),
+        rf_transmit: false,
     }
 }
 
-/// Capability status: software baseband is always present; RF never is.
-pub fn skybridge_status() -> CapabilityStatus {
+/// Capability status: software baseband is always present; RF transmit
+/// only with the `rig-rf-transmit` build and complete `[rig.radio]` settings.
+pub fn skybridge_status(radio: Option<&crate::config::RigRadioConfig>) -> CapabilityStatus {
+    let (rf, detail) = match radio::transmit_unavailable(radio) {
+        Some(reason) => (false, format!("RF transmit disabled: {reason}")),
+        None => (
+            true,
+            "RF transmit enabled: operator-confirmed per transmission".to_string(),
+        ),
+    };
     CapabilityStatus::new(
         "skybridge",
         CapabilityState::Available,
-        "experimental · software baseband to WAV/memory only · RF transmit disabled",
+        format!("experimental · software baseband (WAV, memory, receiver input) · {detail}"),
     )
-    .with_transport(skybridge_detail())
+    .with_transport(TransportDetail {
+        rf_transmit: rf,
+        ..skybridge_detail()
+    })
 }
 
 /// Where modulated samples go. There is no RF variant.
@@ -209,7 +221,7 @@ impl RigTransport for SkybridgeTransport {
     }
 
     async fn status(&self) -> CapabilityStatus {
-        skybridge_status()
+        skybridge_status(None)
     }
 
     async fn send(&self, action: &AuthorizedAction) -> Result<SendReceipt, TransportError> {
@@ -365,7 +377,7 @@ mod tests {
 
     #[test]
     fn status_reports_experimental_software_only() {
-        let status = skybridge_status();
+        let status = skybridge_status(None);
         assert!(status.experimental);
         let detail = status.transport.unwrap();
         assert!(!detail.rf_transmit);

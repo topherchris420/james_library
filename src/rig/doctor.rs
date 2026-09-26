@@ -714,17 +714,31 @@ fn transport_checks(
             error,
         ),
     });
-    let rf = super::skybridge::radio::active_backend();
-    checks.push(check(
-        "transports",
-        "RF transmit",
-        if rf.can_transmit() {
-            CheckResult::Fail
-        } else {
-            CheckResult::Pass
-        },
-        format!("backend '{}' · transmit disabled", rf.name()),
-    ));
+    let radio = ctx.config.rig.radio.as_ref();
+    let transmit_configured = radio.is_some_and(|radio| radio.transmit.is_some());
+    checks.push(match super::skybridge::radio::transmit_unavailable(radio) {
+        None => check(
+            "transports",
+            "RF transmit",
+            CheckResult::Warn,
+            "ENABLED · each transmission needs the operator's typed callsign; licence and band privileges are the operator's responsibility",
+        ),
+        Some(reason) if transmit_configured => with_hint(
+            check(
+                "transports",
+                "RF transmit",
+                CheckResult::Warn,
+                format!("[rig.radio.transmit] is configured but transmit stays disabled: {reason}"),
+            ),
+            "RF transmit needs a build with `--features rig-rf-transmit` plus callsign and max_power_w",
+        ),
+        Some(reason) => check(
+            "transports",
+            "RF transmit",
+            CheckResult::Pass,
+            format!("disabled ({reason})"),
+        ),
+    });
     checks
 }
 

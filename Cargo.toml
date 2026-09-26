@@ -288,6 +288,10 @@ voice-wake = ["dep:cpal"]
 plugins-wasm = []
 # WebAuthn / FIDO2 hardware key authentication
 webauthn = []
+# Skybridge RF transmit through operator-configured external commands.
+# Off by default; transmit still requires [rig.radio] settings and an
+# interactive typed-callsign confirmation per transmission. No dependencies.
+rig-rf-transmit = []
 # Meta-feature for CI: all features except those requiring system C libraries
 # not available on standard CI runners (e.g., voice-wake needs libasound2-dev).
 ci-all = [
@@ -306,6 +310,7 @@ ci-all = [
     "skill-creation",
     "whatsapp-web",
     "plugins-wasm",
+    "rig-rf-transmit",
 ]
 
 [profile.dev]

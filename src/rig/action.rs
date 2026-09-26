@@ -8,6 +8,13 @@
 //!          (when required) ─▶ AuthorizedAction ─▶ transport adapter ─▶ execution
 //! ```
 //!
+//! RF transmit (`RadioTransmit`) is rejected unless the binary was built
+//! with the off-by-default `rig-rf-transmit` Cargo feature. Even then it must
+//! come from a human operator (never a model or host code, not even with an
+//! approval), use the configured licensed callsign, keep its 3 kHz USB
+//! channel inside [`RF_BAND_PLAN`], stay within the configured power limit,
+//! and carry an interactive human confirmation for that exact proposal.
+//!
 //! Rules (fail closed):
 //! - No proposal reaches a transport until every deterministic check passes.
 //! - A model's assessment is recorded but never read by a check, so model
@@ -50,8 +57,15 @@ pub enum ActionKind {
         #[serde(skip_serializing_if = "Option::is_none")]
         destination: Option<String>,
     },
-    /// Key a radio or SDR transmitter. Never permitted in this build.
-    RadioTransmit,
+    /// Key a radio transmitter. Parameters are set by a human operator.
+    RadioTransmit {
+        /// Licensed callsign; also the Skybridge station id on air.
+        callsign: String,
+        /// USB dial (suppressed-carrier) frequency in Hz.
+        frequency_hz: u64,
+        /// Transmit power in watts.
+        power_w: u16,
+    },
     /// Modify authoritative configuration state.
     ConfigWrite { key: String },
 }
@@ -73,7 +87,18 @@ impl ActionKind {
             Self::TransportSend { transport, .. } => {
                 format!("transport_send:{transport}:(invalid destination)")
             }
-            Self::RadioTransmit => "radio_transmit".into(),
+            Self::RadioTransmit {
+                callsign,
+                frequency_hz,
+                power_w,
+            } => {
+                let callsign = if is_callsign(callsign) {
+                    callsign.as_str()
+                } else {
+                    "(invalid callsign)"
+                };
+                format!("radio_transmit:{callsign}@{frequency_hz}Hz/{power_w}W")
+            }
             Self::ConfigWrite { key } => format!("config_write:{key}"),
         }
     }
@@ -82,7 +107,7 @@ impl ActionKind {
     fn is_external(&self) -> bool {
         match self {
             Self::TransportSend { transport, .. } => transport != "local",
-            Self::RadioTransmit | Self::ConfigWrite { .. } => true,
+            Self::RadioTransmit { .. } | Self::ConfigWrite { .. } => true,
         }
     }
 }
@@ -125,12 +150,21 @@ impl ActionProposal {
     }
 }
 
+/// Operator-configured radio limits (`[rig.radio]` callsign and power).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RadioPolicy {
+    pub licensed_callsign: String,
+    pub max_power_w: u16,
+}
+
 /// Host policy for the boundary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionPolicy {
     pub max_payload_bytes: usize,
     /// Transport ids whose adapters can send in this build.
     pub sendable_transports: BTreeSet<String>,
+    /// Radio limits; without them every RF transmit is rejected.
+    pub radio: Option<RadioPolicy>,
 }
 
 impl ActionPolicy {
@@ -138,7 +172,14 @@ impl ActionPolicy {
         Self {
             max_payload_bytes,
             sendable_transports: BTreeSet::new(),
+            radio: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_radio(mut self, radio: RadioPolicy) -> Self {
+        self.radio = Some(radio);
+        self
     }
 
     #[must_use]
@@ -246,6 +287,18 @@ impl AuthorizedAction {
         &self.payload
     }
 
+    /// Radio parameters when this token authorizes an RF transmission.
+    pub fn radio_transmit(&self) -> Option<(&str, u64, u16)> {
+        match &self.kind {
+            ActionKind::RadioTransmit {
+                callsign,
+                frequency_hz,
+                power_w,
+            } => Some((callsign.as_str(), *frequency_hz, *power_w)),
+            _ => None,
+        }
+    }
+
     /// Whether this token authorizes a send on `transport`.
     pub fn targets_transport(&self, transport: &str) -> bool {
         matches!(&self.kind, ActionKind::TransportSend { transport: target, .. } if target == transport)
@@ -326,6 +379,89 @@ pub fn validate_plaintext(payload: &[u8]) -> Result<&str, String> {
     Ok(text)
 }
 
+/// Whether RF transmit is compiled into this binary.
+pub const RF_TRANSMIT_COMPILED: bool = cfg!(feature = "rig-rf-transmit");
+
+/// Width of the USB channel that must fit inside a band (Hz).
+pub const RF_CHANNEL_WIDTH_HZ: u64 = 3_000;
+
+/// Amateur HF allocation used as an outer bound for RF transmit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Band {
+    pub name: &'static str,
+    pub low_hz: u64,
+    pub high_hz: u64,
+}
+
+/// Conservative HF band plan: the parts of each amateur allocation that are
+/// common to ITU Regions 1, 2 and 3. 60 m is excluded (channelized and
+/// nationally variable). This is an outer bound, not a grant: the operator's
+/// licence class and national rules may be narrower.
+#[rustfmt::skip]
+pub const RF_BAND_PLAN: &[Band] = &[
+    Band { name: "160m", low_hz: 1_810_000, high_hz: 1_850_000 },
+    Band { name: "80m", low_hz: 3_500_000, high_hz: 3_800_000 },
+    Band { name: "40m", low_hz: 7_000_000, high_hz: 7_200_000 },
+    Band { name: "30m", low_hz: 10_100_000, high_hz: 10_150_000 },
+    Band { name: "20m", low_hz: 14_000_000, high_hz: 14_350_000 },
+    Band { name: "17m", low_hz: 18_068_000, high_hz: 18_168_000 },
+    Band { name: "15m", low_hz: 21_000_000, high_hz: 21_450_000 },
+    Band { name: "12m", low_hz: 24_890_000, high_hz: 24_990_000 },
+    Band { name: "10m", low_hz: 28_000_000, high_hz: 29_700_000 },
+];
+
+/// Band whose limits contain the whole USB channel at `dial_hz`.
+pub fn band_for(dial_hz: u64) -> Option<&'static Band> {
+    RF_BAND_PLAN.iter().find(|band| {
+        dial_hz >= band.low_hz && dial_hz.saturating_add(RF_CHANNEL_WIDTH_HZ) <= band.high_hz
+    })
+}
+
+/// Callsign shape check shared with config validation.
+pub use crate::config::is_amateur_callsign as is_callsign;
+
+fn radio_checks(
+    policy: Option<&RadioPolicy>,
+    callsign: &str,
+    frequency_hz: u64,
+    power_w: u16,
+) -> Vec<CheckOutcome> {
+    let Some(policy) = policy else {
+        return vec![CheckOutcome::fail(
+            "validation.radio_configured",
+            "no licensed callsign and power limit configured ([rig.radio] callsign, max_power_w)",
+        )];
+    };
+    let callsign_check = if !is_callsign(callsign) {
+        CheckOutcome::fail("validation.callsign", "callsign is malformed")
+    } else if callsign != policy.licensed_callsign {
+        CheckOutcome::fail(
+            "validation.callsign",
+            "callsign does not match the configured licensed callsign",
+        )
+    } else {
+        CheckOutcome::pass("validation.callsign")
+    };
+    let frequency = match band_for(frequency_hz) {
+        Some(_) => CheckOutcome::pass("validation.frequency"),
+        None => CheckOutcome::fail(
+            "validation.frequency",
+            format!(
+                "{frequency_hz} Hz: the {RF_CHANNEL_WIDTH_HZ} Hz USB channel is not inside the permitted band plan"
+            ),
+        ),
+    };
+    let power = if power_w == 0 || power_w > policy.max_power_w {
+        CheckOutcome::fail(
+            "validation.power",
+            format!("{power_w} W is outside 1-{} W", policy.max_power_w),
+        )
+    } else {
+        CheckOutcome::pass("validation.power")
+    };
+    vec![callsign_check, frequency, power]
+}
+
 /// Transports that deliver to an explicit peer address.
 const ADDRESSED_TRANSPORTS: &[&str] = &["lxmf"];
 
@@ -368,10 +504,16 @@ impl ActionBoundary {
 
     fn policy_checks(&self, proposal: &ActionProposal) -> Vec<CheckOutcome> {
         let permitted = match (&proposal.kind, proposal.origin) {
-            (ActionKind::RadioTransmit, _) => CheckOutcome::fail(
+            (ActionKind::RadioTransmit { .. }, _) if !RF_TRANSMIT_COMPILED => CheckOutcome::fail(
                 "policy.action_permitted",
-                "RF transmit is not supported in this build",
+                "RF transmit is not compiled into this build (Cargo feature rig-rf-transmit)",
             ),
+            (ActionKind::RadioTransmit { .. }, ProposalOrigin::Model | ProposalOrigin::System) => {
+                CheckOutcome::fail(
+                    "policy.action_permitted",
+                    "RF transmit parameters must come from a human operator, never a model or host code",
+                )
+            }
             (ActionKind::ConfigWrite { .. }, ProposalOrigin::Model) => CheckOutcome::fail(
                 "policy.action_permitted",
                 "models may not modify authoritative configuration",
@@ -417,18 +559,31 @@ impl ActionBoundary {
             CheckOutcome::fail("validation.proposal_id", "proposal id is not a UUID")
         };
         let mut checks = vec![id, size, text];
-        if let ActionKind::TransportSend {
-            transport,
-            destination,
-        } = &proposal.kind
-        {
-            checks.push(destination_check(transport, destination.as_deref()));
+        match &proposal.kind {
+            ActionKind::TransportSend {
+                transport,
+                destination,
+            } => checks.push(destination_check(transport, destination.as_deref())),
+            ActionKind::RadioTransmit {
+                callsign,
+                frequency_hz,
+                power_w,
+            } => checks.extend(radio_checks(
+                self.policy.radio.as_ref(),
+                callsign,
+                *frequency_hz,
+                *power_w,
+            )),
+            ActionKind::ConfigWrite { .. } => {}
         }
         checks
     }
 
+    /// External actions from a non-operator need a human; RF transmit
+    /// always does, whoever proposed it.
     fn requires_human(proposal: &ActionProposal) -> bool {
-        proposal.origin != ProposalOrigin::Operator && proposal.kind.is_external()
+        matches!(proposal.kind, ActionKind::RadioTransmit { .. })
+            || (proposal.origin != ProposalOrigin::Operator && proposal.kind.is_external())
     }
 
     /// Evaluate a proposal. Returns the recorded disposition and, only when
@@ -457,8 +612,12 @@ impl ActionBoundary {
             (None, true, false) => (
                 Disposition::AwaitingHumanAuthorization,
                 Some(
-                    "external action proposed by a non-operator requires human authorization"
-                        .into(),
+                    if matches!(proposal.kind, ActionKind::RadioTransmit { .. }) {
+                        "RF transmit requires the operator's interactive confirmation"
+                    } else {
+                        "external action proposed by a non-operator requires human authorization"
+                    }
+                    .into(),
                 ),
             ),
             (None, _, _) => (Disposition::Authorized, None),
@@ -566,16 +725,153 @@ mod tests {
         );
     }
 
+    fn radio(callsign: &str, frequency_hz: u64, power_w: u16) -> ActionKind {
+        ActionKind::RadioTransmit {
+            callsign: callsign.into(),
+            frequency_hz,
+            power_w,
+        }
+    }
+
+    fn radio_boundary() -> ActionBoundary {
+        ActionBoundary::new(
+            ActionPolicy::new(64).with_radio(RadioPolicy {
+                licensed_callsign: "N0CALL".into(),
+                max_power_w: 50,
+            }),
+            None,
+        )
+    }
+
+    #[cfg(not(feature = "rig-rf-transmit"))]
     #[test]
-    fn radio_transmit_is_always_rejected() {
+    fn radio_transmit_is_rejected_when_not_compiled_in() {
         for origin in [
             ProposalOrigin::Operator,
             ProposalOrigin::Model,
             ProposalOrigin::System,
         ] {
-            let proposal = ActionProposal::new(origin, ActionKind::RadioTransmit, "CQ CQ");
+            let proposal = ActionProposal::new(origin, radio("N0CALL", 14_100_000, 10), "CQ CQ");
             let approval = HumanApproval::confirmed_by_operator(&proposal.id);
-            let (record, token) = boundary().submit(proposal, Some(&approval));
+            let (record, token) = radio_boundary().submit(proposal, Some(&approval));
+            assert_eq!(record.disposition, Disposition::Rejected);
+            assert!(token.is_none());
+            assert!(record.reason.unwrap().contains("not compiled"));
+        }
+    }
+
+    #[test]
+    fn band_plan_keeps_the_whole_channel_inside_a_band() {
+        assert_eq!(band_for(14_100_000).map(|b| b.name), Some("20m"));
+        assert_eq!(band_for(14_000_000).map(|b| b.name), Some("20m"));
+        assert!(
+            band_for(14_348_000).is_none(),
+            "channel would cross the band edge"
+        );
+        assert!(band_for(13_999_999).is_none());
+        assert!(band_for(5_357_000).is_none(), "60 m is excluded");
+        assert!(band_for(7_250_000).is_none(), "region 2 only");
+        assert!(band_for(0).is_none() && band_for(u64::MAX).is_none());
+        for band in RF_BAND_PLAN {
+            assert!(band.low_hz + RF_CHANNEL_WIDTH_HZ <= band.high_hz);
+        }
+    }
+
+    #[test]
+    fn callsign_shape_is_strict() {
+        for good in ["N0CALL", "K1ABC", "N0CALL/P", "2E0XYZ"] {
+            assert!(is_callsign(good), "{good}");
+        }
+        for bad in [
+            "",
+            "AB",
+            "n0call",
+            "NOCALL",
+            "12345",
+            "N0CALL-10X",
+            "N0 CALL",
+        ] {
+            assert!(!is_callsign(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn radio_parameters_are_checked_deterministically() {
+        let bad = [
+            radio("K1ABC", 14_100_000, 10),
+            radio("N0CALL", 14_349_000, 10),
+            radio("N0CALL", 5_357_000, 10),
+            radio("N0CALL", 14_100_000, 0),
+            radio("N0CALL", 14_100_000, 51),
+        ];
+        for kind in bad {
+            let proposal = ActionProposal::new(ProposalOrigin::Operator, kind.clone(), "CQ");
+            let approval = HumanApproval::confirmed_by_operator(&proposal.id);
+            let (record, token) = radio_boundary().submit(proposal, Some(&approval));
+            assert_eq!(record.disposition, Disposition::Rejected, "{kind:?}");
+            assert!(token.is_none());
+            assert!(
+                record
+                    .checks
+                    .iter()
+                    .any(|c| !c.passed && c.check.starts_with("validation.")),
+                "{kind:?}: {:?}",
+                record.checks
+            );
+        }
+        // Without configured limits nothing can be authorized.
+        let proposal = ActionProposal::new(
+            ProposalOrigin::Operator,
+            radio("N0CALL", 14_100_000, 10),
+            "CQ",
+        );
+        let approval = HumanApproval::confirmed_by_operator(&proposal.id);
+        let (record, _) = boundary().submit(proposal, Some(&approval));
+        assert_eq!(record.disposition, Disposition::Rejected);
+        assert!(
+            record
+                .checks
+                .iter()
+                .any(|c| c.check == "validation.radio_configured")
+        );
+    }
+
+    #[cfg(feature = "rig-rf-transmit")]
+    #[test]
+    fn operator_rf_transmit_needs_a_matching_confirmation() {
+        let proposal = ActionProposal::new(
+            ProposalOrigin::Operator,
+            radio("N0CALL", 14_100_000, 10),
+            "CQ",
+        );
+        let (record, token) = radio_boundary().submit(proposal.clone(), None);
+        assert_eq!(record.disposition, Disposition::AwaitingHumanAuthorization);
+        assert!(token.is_none());
+        let wrong = HumanApproval::confirmed_by_operator("other");
+        assert!(
+            radio_boundary()
+                .submit(proposal.clone(), Some(&wrong))
+                .1
+                .is_none()
+        );
+        let approval = HumanApproval::confirmed_by_operator(&proposal.id);
+        let (record, token) = radio_boundary().submit(proposal, Some(&approval));
+        assert_eq!(record.disposition, Disposition::Authorized);
+        assert_eq!(record.action, "radio_transmit:N0CALL@14100000Hz/10W");
+        assert_eq!(
+            token.unwrap().radio_transmit(),
+            Some(("N0CALL", 14_100_000, 10))
+        );
+    }
+
+    #[cfg(feature = "rig-rf-transmit")]
+    #[test]
+    fn models_and_host_code_can_never_transmit() {
+        for origin in [ProposalOrigin::Model, ProposalOrigin::System] {
+            let proposal = ActionProposal::new(origin, radio("N0CALL", 14_100_000, 10), "CQ")
+                .with_model_assessment("transmit now", 1.0);
+            let approval = HumanApproval::confirmed_by_operator(&proposal.id);
+            let (record, token) = radio_boundary().submit(proposal, Some(&approval));
             assert_eq!(record.disposition, Disposition::Rejected);
             assert!(token.is_none());
         }
@@ -689,7 +985,7 @@ mod tests {
             None,
         );
         boundary.submit(
-            ActionProposal::new(ProposalOrigin::Model, ActionKind::RadioTransmit, "x"),
+            ActionProposal::new(ProposalOrigin::Model, radio("N0CALL", 14_100_000, 5), "x"),
             None,
         );
         let contents = std::fs::read_to_string(log.path()).unwrap();

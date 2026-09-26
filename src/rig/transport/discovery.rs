@@ -275,7 +275,7 @@ pub async fn probe_transports(ctx: &RigContext) -> Vec<CapabilityStatus> {
         loopback_status(),
         reticulum_status(reticulum_facts, shared),
         lxmf_status_with_bridge(lxmf_facts, &bridge),
-        crate::rig::skybridge::skybridge_status(),
+        crate::rig::skybridge::skybridge_status(ctx.config.rig.radio.as_ref()),
     ]
 }
 

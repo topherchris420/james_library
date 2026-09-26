@@ -258,7 +258,12 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
     let modem = ModemConfig::default();
     match command {
         RigRadioCommands::Status { json } => {
-            let backend = radio::active_backend();
+            let radio_config = ctx.config.rig.radio.as_ref();
+            let backend = radio::transmit_backend(radio_config, &ctx.state_dir());
+            let unavailable = radio::transmit_unavailable(radio_config);
+            let receive = radio_config
+                .and_then(|r| r.receive.first().cloned())
+                .unwrap_or_default();
             let summary = serde_json::json!({
                 "extension": "skybridge",
                 "experimental": true,
@@ -274,8 +279,15 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
                 "fec": modem.coding,
                 "integrity": "CRC-16/X.25 (error detection, not authentication)",
                 "payload": "UTF-8 plaintext only (no encryption)",
+                "receive_command": if receive.is_empty() { None } else { Some(&receive) },
+                "rf_transmit_compiled": crate::rig::action::RF_TRANSMIT_COMPILED,
                 "rf_backend": backend.name(),
                 "rf_transmit": backend.can_transmit(),
+                "rf_transmit_disabled_reason": unavailable,
+                "band_plan": crate::rig::action::RF_BAND_PLAN
+                    .iter()
+                    .map(|b| serde_json::json!({"band": b.name, "low_hz": b.low_hz, "high_hz": b.high_hz}))
+                    .collect::<Vec<_>>(),
             });
             if json {
                 return print_json(&summary);
@@ -301,9 +313,35 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
                 modem.coding.label()
             );
             println!("  integrity      CRC-16/X.25 (detects corruption; not authentication)");
-            println!("  RF transmit    DISABLED · backend '{}'", backend.name());
-            println!("\n  This build renders and decodes baseband audio files only. It cannot");
-            println!("  key a transmitter, select a frequency, or control an SDR.");
+            if receive.is_empty() {
+                println!("  receive        not configured ([rig.radio] receive)");
+            } else {
+                println!("  receive        `{receive}` (receive only)");
+            }
+            match unavailable {
+                Some(reason) => println!("  RF transmit    DISABLED · {reason}"),
+                None => {
+                    println!(
+                        "  RF transmit    ENABLED · backend '{}' · callsign {} · ≤ {} W",
+                        backend.name(),
+                        radio_config
+                            .and_then(|r| r.callsign.as_deref())
+                            .unwrap_or("?"),
+                        radio_config.and_then(|r| r.max_power_w).unwrap_or(0)
+                    );
+                    println!(
+                        "                 every transmission needs the operator's typed callsign"
+                    );
+                }
+            }
+            let bands: Vec<&str> = crate::rig::action::RF_BAND_PLAN
+                .iter()
+                .map(|b| b.name)
+                .collect();
+            println!(
+                "  band plan      {} (common to ITU regions 1-3; an outer bound, not a licence)",
+                bands.join(" ")
+            );
             Ok(())
         }
         RigRadioCommands::Encode {
@@ -370,6 +408,11 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
         }
         RigRadioCommands::Decode { input, json } => decode(&input, json, modem).await,
         RigRadioCommands::Listen { seconds, json } => listen(ctx, seconds, json, modem).await,
+        RigRadioCommands::Transmit {
+            text,
+            frequency_hz,
+            power_w,
+        } => transmit(ctx, text, frequency_hz, power_w, modem).await,
     }
 }
 
@@ -391,6 +434,113 @@ async fn decode(input: &Path, json: bool, modem: ModemConfig) -> Result<()> {
         bail!("no complete Skybridge message found in {}", input.display());
     }
     report_skybridge_messages(&messages, json)
+}
+
+/// Operator-only RF transmit: boundary checks, typed-callsign confirmation,
+/// recorded disposition, then the configured backend.
+async fn transmit(
+    ctx: &RigContext,
+    text: String,
+    frequency_hz: u64,
+    power_w: u16,
+    modem: ModemConfig,
+) -> Result<()> {
+    use super::action::{HumanApproval, RadioPolicy, band_for};
+    use std::io::{BufRead, IsTerminal, Write};
+
+    let radio_config = ctx.config.rig.radio.as_ref();
+    let callsign = radio_config
+        .and_then(|r| r.callsign.clone())
+        .unwrap_or_default();
+    let mut policy = ActionPolicy::new(MAX_MESSAGE_BYTES);
+    if let (Some(radio), Some(max_power_w)) =
+        (radio_config, radio_config.and_then(|r| r.max_power_w))
+    {
+        if let Some(licensed_callsign) = radio.callsign.clone() {
+            policy = policy.with_radio(RadioPolicy {
+                licensed_callsign,
+                max_power_w,
+            });
+        }
+    }
+    let boundary = ActionBoundary::new(policy, Some(disposition_log(ctx)));
+    let proposal = ActionProposal::new(
+        ProposalOrigin::Operator,
+        ActionKind::RadioTransmit {
+            callsign: callsign.clone(),
+            frequency_hz,
+            power_w,
+        },
+        text.into_bytes(),
+    );
+    // First pass: every deterministic check, no approval yet.
+    let (record, _) = boundary.submit(proposal.clone(), None);
+    if record.disposition != super::action::Disposition::AwaitingHumanAuthorization {
+        bail!(
+            "not authorized: {}",
+            record.reason.unwrap_or_else(|| "rejected".into())
+        );
+    }
+    let backend = radio::transmit_backend(radio_config, &ctx.state_dir().join("tx"));
+    if !backend.can_transmit() {
+        bail!(
+            "RF transmit is disabled: {}",
+            radio::transmit_unavailable(radio_config).unwrap_or("no backend")
+        );
+    }
+    let station = StationId::parse(&callsign).map_err(|error| anyhow!("{error}"))?;
+    let transport = SkybridgeTransport::new(station, modem);
+    let (frames, samples) = transport
+        .render(&proposal.payload)
+        .map_err(|error| anyhow!("{error}"))?;
+    let airtime = samples.len() as f32 / modem.sample_rate as f32;
+
+    if !std::io::stdin().is_terminal() {
+        bail!("RF transmit requires an interactive terminal confirmation; nothing was transmitted");
+    }
+    let band = band_for(frequency_hz).map_or("?", |b| b.name);
+    println!("RF TRANSMIT — review before confirming\n");
+    println!("  callsign   {callsign} (station id on air)");
+    println!(
+        "  frequency  {:.3} kHz USB dial · {band} band",
+        frequency_hz as f64 / 1000.0
+    );
+    println!("  power      {power_w} W");
+    println!(
+        "  message    {} B plaintext · {} frame(s) · {:.1} s airtime · {}",
+        proposal.payload.len(),
+        frames.len(),
+        airtime,
+        modem.coding.label()
+    );
+    println!("  backend    {}\n", backend.name());
+    println!("You are responsible for holding a licence that covers this band, mode and power.");
+    print!("Type your callsign to transmit (anything else cancels): ");
+    std::io::stdout().flush()?;
+    let mut typed = String::new();
+    std::io::stdin().lock().read_line(&mut typed)?;
+    if typed.trim().to_ascii_uppercase() != callsign {
+        bail!("cancelled; nothing was transmitted");
+    }
+    let approval = HumanApproval::confirmed_by_operator(&proposal.id);
+    let (record, token) = boundary.submit(proposal, Some(&approval));
+    let Some(token) = token else {
+        bail!(
+            "not authorized: {}",
+            record.reason.unwrap_or_else(|| "rejected".into())
+        );
+    };
+    let result = tokio::task::spawn_blocking(move || backend.transmit(&samples, &token))
+        .await
+        .map_err(|error| anyhow!("transmit task failed: {error}"))?;
+    result.map_err(|error| anyhow!("{error}"))?;
+    println!(
+        "Transmitted {} frame(s) ({:.1} s). Disposition recorded in {}.",
+        frames.len(),
+        airtime,
+        disposition_log(ctx).path().display()
+    );
+    Ok(())
 }
 
 async fn listen(ctx: &RigContext, seconds: u64, json: bool, modem: ModemConfig) -> Result<()> {
@@ -417,12 +567,18 @@ async fn listen(ctx: &RigContext, seconds: u64, json: bool, modem: ModemConfig) 
     let transport = SkybridgeTransport::new(station, modem)
         .with_source(BasebandSource::Command { argv, seconds });
     let mut messages = Vec::new();
-    while let Some(message) = transport
-        .receive()
-        .await
-        .map_err(|error| anyhow!("{error}"))?
-    {
-        messages.push(message);
+    loop {
+        match transport.receive().await {
+            Ok(Some(message)) => messages.push(message),
+            Ok(None) => break,
+            // A capture window that cuts a frame, or noise that fails the CRC,
+            // is normal on a live receiver: report it, keep what decoded.
+            Err(super::transport::TransportError::Malformed(detail)) => {
+                eprintln!("No further complete frame ({detail}).");
+                break;
+            }
+            Err(error) => return Err(anyhow!("{error}")),
+        }
     }
     if messages.is_empty() && !json {
         println!("No complete Skybridge message received.");
