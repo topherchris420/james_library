@@ -369,6 +369,7 @@ async fn radio_command_handler(command: RigRadioCommands, ctx: &RigContext) -> R
             Ok(())
         }
         RigRadioCommands::Decode { input, json } => decode(&input, json, modem).await,
+        RigRadioCommands::Listen { seconds, json } => listen(ctx, seconds, json, modem).await,
     }
 }
 
@@ -388,6 +389,44 @@ async fn decode(input: &Path, json: bool, modem: ModemConfig) -> Result<()> {
     }
     if messages.is_empty() {
         bail!("no complete Skybridge message found in {}", input.display());
+    }
+    report_skybridge_messages(&messages, json)
+}
+
+async fn listen(ctx: &RigContext, seconds: u64, json: bool, modem: ModemConfig) -> Result<()> {
+    let argv = ctx
+        .config
+        .rig
+        .radio
+        .as_ref()
+        .map(|radio| radio.receive.clone())
+        .filter(|argv| !argv.is_empty())
+        .ok_or_else(|| {
+            anyhow!(
+                "no receive command configured; set [rig.radio] receive, for example\n  \
+                 receive = [\"rtl_fm\", \"-f\", \"14.1M\", \"-M\", \"usb\", \"-s\", \"8000\", \"-\"]"
+            )
+        })?;
+    if !json {
+        eprintln!(
+            "Listening for {seconds} s with `{}` (receive only; nothing is transmitted)…",
+            argv[0]
+        );
+    }
+    let station = StationId::parse("RX").map_err(|error| anyhow!("{error}"))?;
+    let transport = SkybridgeTransport::new(station, modem)
+        .with_source(BasebandSource::Command { argv, seconds });
+    let mut messages = Vec::new();
+    while let Some(message) = transport
+        .receive()
+        .await
+        .map_err(|error| anyhow!("{error}"))?
+    {
+        messages.push(message);
+    }
+    if messages.is_empty() && !json {
+        println!("No complete Skybridge message received.");
+        return Ok(());
     }
     report_skybridge_messages(&messages, json)
 }

@@ -706,6 +706,24 @@ pub enum RigRadioCommands {
         #[arg(long)]
         no_fec: bool,
     },
+    /// Capture audio from the configured receive-only command and decode it
+    #[command(long_about = "\
+Run the receive-only command from [rig.radio] receive for a bounded time, \
+decode every Skybridge message in the audio, and pass each one through \
+the restricted inbox. The command's stdout must be raw PCM16 little-endian \
+mono at 8000 Hz. Nothing is transmitted.
+
+Examples:
+  rain rig radio listen --seconds 60
+  rain rig radio listen --seconds 30 --json")]
+    Listen {
+        /// Capture duration in seconds (1-300)
+        #[arg(long, default_value_t = 60, value_parser = clap::value_parser!(u64).range(1..=300))]
+        seconds: u64,
+        /// Emit machine-readable JSON
+        #[arg(long)]
+        json: bool,
+    },
     /// Decode a baseband WAV file through the restricted inbox
     Decode {
         /// Input WAV path (PCM16 mono)

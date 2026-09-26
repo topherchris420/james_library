@@ -8,6 +8,7 @@
 //! - [`fragment`]: split messages over several frames and reassemble them
 //! - [`modem`]: continuous-phase BFSK baseband modem (in-memory samples)
 //! - [`wav`]: PCM16 WAV files for development and testing
+//! - [`receiver`]: receive-only audio from an external receiver/SDR command
 //! - [`radio`]: RF transmit backend interface, permanently disabled here
 //! - [`SkybridgeTransport`]: transport adapter writing/reading baseband
 //!   audio to files or memory — never to a radio
@@ -20,6 +21,7 @@ pub mod fragment;
 pub mod frame;
 pub mod modem;
 pub mod radio;
+pub mod receiver;
 pub mod wav;
 
 use crate::rig::action::AuthorizedAction;
@@ -61,11 +63,17 @@ pub enum BasebandSink {
     Memory(Arc<Mutex<Vec<Vec<f32>>>>),
 }
 
-/// Where received samples come from.
+/// Where received samples come from. Every variant is receive-only.
 #[derive(Debug, Clone)]
 pub enum BasebandSource {
     WavFile(PathBuf),
     Memory(Arc<Mutex<VecDeque<Vec<f32>>>>),
+    /// Operator-configured receiver/SDR command (argv, no shell) producing
+    /// PCM16 LE mono at the modem rate; captured once for `seconds`.
+    Command {
+        argv: Vec<String>,
+        seconds: u64,
+    },
 }
 
 /// Skybridge transport adapter (software baseband only).
@@ -140,37 +148,54 @@ impl SkybridgeTransport {
         Ok((frames, samples))
     }
 
-    fn next_samples(&self) -> Result<Option<Vec<f32>>, TransportError> {
-        let mut slot = self
-            .source
-            .lock()
-            .map_err(|_| TransportError::Io("source lock poisoned".into()))?;
-        match slot.as_ref() {
-            None => Err(TransportError::Unsupported(
-                "skybridge: no baseband source configured".into(),
-            )),
-            Some(BasebandSource::Memory(queue)) => Ok(queue
+    async fn next_samples(&self) -> Result<Option<Vec<f32>>, TransportError> {
+        let (argv, seconds) = {
+            let mut slot = self
+                .source
                 .lock()
-                .map_err(|_| TransportError::Io("baseband queue poisoned".into()))?
-                .pop_front()),
-            Some(BasebandSource::WavFile(path)) => {
-                let (samples, rate) =
-                    wav::read_file(path).map_err(|error| TransportError::Io(error.to_string()))?;
-                if rate != self.modem.sample_rate {
-                    return Err(TransportError::Malformed(format!(
-                        "WAV sample rate {rate} Hz does not match modem rate {} Hz",
-                        self.modem.sample_rate
-                    )));
+                .map_err(|_| TransportError::Io("source lock poisoned".into()))?;
+            match slot.as_ref() {
+                None => {
+                    return Err(TransportError::Unsupported(
+                        "skybridge: no baseband source configured".into(),
+                    ));
                 }
-                // A file holds one recording: after it is read, the source
-                // becomes an empty in-memory queue (drained, not missing).
-                *slot = Some(BasebandSource::Memory(Arc::new(
-                    Mutex::new(VecDeque::new()),
-                )));
-                Ok(Some(samples))
+                Some(BasebandSource::Memory(queue)) => {
+                    return Ok(queue
+                        .lock()
+                        .map_err(|_| TransportError::Io("baseband queue poisoned".into()))?
+                        .pop_front());
+                }
+                Some(BasebandSource::WavFile(path)) => {
+                    let (samples, rate) = wav::read_file(path)
+                        .map_err(|error| TransportError::Io(error.to_string()))?;
+                    if rate != self.modem.sample_rate {
+                        return Err(TransportError::Malformed(format!(
+                            "WAV sample rate {rate} Hz does not match modem rate {} Hz",
+                            self.modem.sample_rate
+                        )));
+                    }
+                    // A file holds one recording: after it is read, the source
+                    // becomes an empty in-memory queue (drained, not missing).
+                    *slot = Some(drained());
+                    return Ok(Some(samples));
+                }
+                Some(BasebandSource::Command { argv, seconds }) => {
+                    let capture = (argv.clone(), *seconds);
+                    // One capture per configured source, like a file.
+                    *slot = Some(drained());
+                    capture
+                }
             }
-        }
+        };
+        receiver::capture(&argv, seconds, self.modem.sample_rate)
+            .await
+            .map(Some)
     }
+}
+
+fn drained() -> BasebandSource {
+    BasebandSource::Memory(Arc::new(Mutex::new(VecDeque::new())))
 }
 
 #[async_trait]
@@ -215,7 +240,7 @@ impl RigTransport for SkybridgeTransport {
         if let Some(message) = self.pending.lock().map_err(|_| pending_lock())?.pop_front() {
             return Ok(Some(message));
         }
-        let Some(samples) = self.next_samples()? else {
+        let Some(samples) = self.next_samples().await? else {
             return Ok(None);
         };
         let messages = decode_messages(&self.modem, &samples)?;
@@ -373,6 +398,27 @@ mod tests {
         let second = receiver.receive().await.unwrap().unwrap();
         assert_eq!(second.payload, short.as_bytes());
         assert!(receiver.receive().await.unwrap().is_none());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn receiver_command_feeds_the_restricted_inbox() {
+        let station = StationId::parse("N0CALL").unwrap();
+        let sender = SkybridgeTransport::new(station.clone(), ModemConfig::default());
+        let (_, samples) = sender.render(b"PING").unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let raw = dir.path().join("capture.raw");
+        // Raw PCM16 LE: a WAV image without its 44-byte header.
+        std::fs::write(&raw, &wav::encode_pcm16(&samples, 8_000)[44..]).unwrap();
+        let argv = vec!["cat".to_string(), raw.display().to_string()];
+        let receiver = SkybridgeTransport::new(station, ModemConfig::default())
+            .with_source(BasebandSource::Command { argv, seconds: 5 });
+        let message = receiver.receive().await.unwrap().unwrap();
+        match admit(&message) {
+            InboxDisposition::Admitted { request, .. } => assert_eq!(request, InboundRequest::Ping),
+            other @ InboxDisposition::Rejected { .. } => panic!("{other:?}"),
+        }
+        assert!(receiver.receive().await.unwrap().is_none(), "captured once");
     }
 
     #[tokio::test]

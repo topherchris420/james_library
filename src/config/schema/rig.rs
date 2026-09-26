@@ -154,6 +154,22 @@ pub struct RigConfig {
     /// Optional Reticulum/LXMF bridge sidecar (`[rig.bridge]`). Off by default.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bridge: Option<RigBridgeConfig>,
+    /// Skybridge radio settings (`[rig.radio]`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub radio: Option<RigRadioConfig>,
+}
+
+/// Skybridge radio settings.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct RigRadioConfig {
+    /// Receive-only audio source for `rain rig radio listen`: the argv of a
+    /// receiver/SDR command that writes raw PCM16 little-endian mono at
+    /// 8000 Hz to stdout, for example
+    /// `["rtl_fm", "-f", "14.1M", "-M", "usb", "-s", "8000", "-"]`.
+    /// Run without a shell. Unset: listening is unavailable.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub receive: Vec<String>,
 }
 
 /// Default loopback port of the Reticulum/LXMF bridge sidecar.
@@ -256,6 +272,9 @@ impl RigConfig {
                 bail!("rig.meeting.base_url must be an http(s) URL with a host");
             }
         }
+        if let Some(radio) = &self.radio {
+            validate_argv("rig.radio.receive", &radio.receive)?;
+        }
         if let Some(bridge) = &self.bridge {
             if bridge.port < 1024 {
                 bail!("rig.bridge.port must be between 1024 and 65535");
@@ -266,6 +285,19 @@ impl RigConfig {
         }
         Ok(())
     }
+}
+
+/// An optional argv: empty, or a non-empty program with no NUL bytes.
+fn validate_argv(key: &str, argv: &[String]) -> Result<()> {
+    if let Some(program) = argv.first() {
+        if program.trim().is_empty() {
+            bail!("{key} must start with a program name");
+        }
+    }
+    if argv.iter().any(|arg| arg.contains('\0')) {
+        bail!("{key} arguments may not contain NUL bytes");
+    }
+    Ok(())
 }
 
 /// Validate a shareable node name: DNS-label style, 1–32 chars.
@@ -425,6 +457,15 @@ mod tests {
         assert!(toml::from_str::<RigConfig>("[bridge]\nhost = \"0.0.0.0\"\n").is_err());
         let low: RigConfig = toml::from_str("[bridge]\nenabled = true\nport = 80\n").unwrap();
         assert!(low.validate().is_err());
+    }
+
+    #[test]
+    fn rig_radio_receive_argv_is_validated() {
+        let ok: RigConfig = toml::from_str("[radio]\nreceive = [\"rtl_fm\", \"-\"]\n").unwrap();
+        ok.validate().unwrap();
+        let blank: RigConfig = toml::from_str("[radio]\nreceive = [\" \"]\n").unwrap();
+        assert!(blank.validate().is_err());
+        assert!(toml::from_str::<RigConfig>("[radio]\nshell = \"rtl_fm | sox\"\n").is_err());
     }
 
     #[test]

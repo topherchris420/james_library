@@ -36,7 +36,7 @@ pub(crate) use proxy::{
 };
 pub use rig::{
     RigBridgeConfig, RigConfig, RigMeetingConfig, RigPrivacyMode, RigPrivacySource, RigProfile,
-    RigProfileKind, builtin_rig_profile, validate_rig_node_name,
+    RigProfileKind, RigRadioConfig, builtin_rig_profile, validate_rig_node_name,
 };
 pub use root_config::{
     Config, DelegateAgentConfig, DelegateToolConfig, ModelProviderConfig, SwarmConfig,
