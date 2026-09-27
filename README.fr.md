@@ -9,6 +9,12 @@
 
 > Cette page est le point d'entrée français, aligné sur le README principal et l'architecture docs.
 
+## Produit et limites (en anglais)
+
+[Essai local](README.md#try-rain-lab) · [Exemple](README.md#see-it-work) · [Autorité et validation](README.md#how-authority-works) · [Confidentialité et réseau](README.md#privacy-and-network-boundaries)
+
+La démo hors ligne ne nécessite aucun modèle ; les réunions en direct nécessitent un modèle configuré. Laya, Jev, Rig et TRIBE v2 sont des extensions facultatives.
+
 ## Navigation
 
 - README principal : [`README.md`](README.md)
@@ -25,7 +31,7 @@ Flux d'exécution : `Utilisateur -> interface R.A.I.N. Lab -> runtime R.A.I.N. -
 
 ## Vue d'ensemble des fonctionnalités
 
-James n'est pas un simple chat multi-agents — c'est un véritable système d'exploitation pour la recherche : 10+ fournisseurs de modèles, 25+ plateformes de messagerie, 60+ outils intégrés, contrôle matériel (Arduino, STM32, Raspberry Pi), modèle neuroscientifique d'encodage cérébral (TRIBE v2), graphe de connaissances, mémoire sémantique, et plus encore. Liste complète dans le [`README.md` anglais - What It Does](README.md#what-it-does).
+James n'est pas un simple chat multi-agents — c'est un véritable système d'exploitation pour la recherche : 10+ fournisseurs de modèles, 25+ plateformes de messagerie, 60+ outils intégrés, contrôle matériel (Arduino, STM32, Raspberry Pi), modèle neuroscientifique d'encodage cérébral (TRIBE v2), graphe de connaissances, mémoire sémantique, et plus encore. Liste complète dans le [`README.md` anglais - Research workflow](README.md#what-happens-when-you-ask-a-question).
 
 ## À qui s'adresse R.A.I.N. Lab
 
@@ -81,7 +87,7 @@ Pour les détails des commandes et de la configuration, consultez le hub docs et
 
 ## Pour les développeurs
 
-Pour l'architecture, les points d'extension et la contribution, consultez le [`README.md` anglais - For Developers](README.md#for-developers), [ARCHITECTURE.md](ARCHITECTURE.md) et [CLAUDE.md](CLAUDE.md).
+Pour l'architecture, les points d'extension et la contribution, consultez le [`README.md` anglais - Documentation and development](README.md#documentation-and-development), [ARCHITECTURE.md](ARCHITECTURE.md) et [CLAUDE.md](CLAUDE.md).
 
 ## Remerciements
 

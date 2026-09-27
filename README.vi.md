@@ -9,6 +9,12 @@
 
 > Trang này là điểm vào tiếng Việt, đồng bộ với README chính và cấu trúc docs.
 
+## Sản phẩm và giới hạn (tiếng Anh)
+
+[Chạy cục bộ](README.md#try-rain-lab) · [Ví dụ](README.md#see-it-work) · [Phân định thẩm quyền](README.md#how-authority-works) · [Quyền riêng tư và mạng](README.md#privacy-and-network-boundaries)
+
+Bản demo ngoại tuyến không cần mô hình; cuộc họp trực tiếp cần cấu hình mô hình. Laya, Jev, Rig và TRIBE v2 là các phần mở rộng tùy chọn.
+
 ## Điều hướng
 
 - README chính: [`README.md`](README.md)
@@ -25,7 +31,7 @@ Luồng chạy: `Người dùng -> giao diện R.A.I.N. Lab -> runtime R.A.I.N. 
 
 ## Tổng quan tính năng
 
-James không chỉ là một hệ thống chat đa agent — đó là một hệ điều hành nghiên cứu hoàn chỉnh: 10+ nhà cung cấp mô hình, 25+ nền tảng nhắn tin, 60+ công cụ tích hợp, điều khiển phần cứng (Arduino, STM32, Raspberry Pi), mô hình mã hóa não thần kinh học (TRIBE v2), đồ thị tri thức, bộ nhớ ngữ nghĩa, và nhiều hơn nữa. Danh sách đầy đủ tại [`README.md` tiếng Anh - What It Does](README.md#what-it-does).
+James không chỉ là một hệ thống chat đa agent — đó là một hệ điều hành nghiên cứu hoàn chỉnh: 10+ nhà cung cấp mô hình, 25+ nền tảng nhắn tin, 60+ công cụ tích hợp, điều khiển phần cứng (Arduino, STM32, Raspberry Pi), mô hình mã hóa não thần kinh học (TRIBE v2), đồ thị tri thức, bộ nhớ ngữ nghĩa, và nhiều hơn nữa. Danh sách đầy đủ tại [`README.md` tiếng Anh - Research workflow](README.md#what-happens-when-you-ask-a-question).
 
 ## Dành cho ai
 
@@ -81,7 +87,7 @@ Xem thêm tài liệu lệnh và cấu hình trong docs hub và các trang tham 
 
 ## Dành cho nhà phát triển
 
-Kiến trúc, điểm mở rộng và hướng dẫn đóng góp có tại [`README.md` tiếng Anh - For Developers](README.md#for-developers), [ARCHITECTURE.md](ARCHITECTURE.md) và [CLAUDE.md](CLAUDE.md).
+Kiến trúc, điểm mở rộng và hướng dẫn đóng góp có tại [`README.md` tiếng Anh - Documentation and development](README.md#documentation-and-development), [ARCHITECTURE.md](ARCHITECTURE.md) và [CLAUDE.md](CLAUDE.md).
 
 ## Lời cảm ơn
 

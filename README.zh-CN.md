@@ -9,6 +9,12 @@
 
 > 本页是仓库的中文入口页，对齐主 README 与文档中心的信息架构。
 
+## 产品与边界（英文）
+
+[本地试用](README.md#try-rain-lab) · [实际示例](README.md#see-it-work) · [权限边界](README.md#how-authority-works) · [隐私与网络](README.md#privacy-and-network-boundaries)
+
+离线演示无需模型；实时会议需要配置模型。Laya、Jev、Rig 和 TRIBE v2 均为可选扩展。
+
 ## 导航
 
 - 英文主入口：[`README.md`](README.md)
@@ -25,7 +31,7 @@
 
 ## 功能概要
 
-James 不仅仅是多代理聊天 — 它是一个完整的研究操作系统：10+ 模型提供商、25+ 消息平台、60+ 内置工具、硬件外设控制（Arduino、STM32、树莓派）、神经科学脑编码模型（TRIBE v2）、知识图谱、语义记忆等。完整列表请参阅英文主页 [`README.md` - What It Does](README.md#what-it-does)。
+James 不仅仅是多代理聊天 — 它是一个完整的研究操作系统：10+ 模型提供商、25+ 消息平台、60+ 内置工具、硬件外设控制（Arduino、STM32、树莓派）、神经科学脑编码模型（TRIBE v2）、知识图谱、语义记忆等。完整列表请参阅英文主页 [`README.md` - Research workflow](README.md#what-happens-when-you-ask-a-question)。
 
 ## 适用人群
 
@@ -81,7 +87,7 @@ macOS/Linux 用户：运行 `./install.sh`。
 
 ## 开发者
 
-架构、扩展点及贡献说明请参阅英文 [`README.md` - For Developers](README.md#for-developers)，以及 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [CLAUDE.md](CLAUDE.md)。
+架构、扩展点及贡献说明请参阅英文 [`README.md` - Documentation and development](README.md#documentation-and-development)，以及 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [CLAUDE.md](CLAUDE.md)。
 
 ## 致谢
 

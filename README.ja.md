@@ -9,6 +9,12 @@
 
 > このページは日本語向けのリポジトリ入口です。README と docs ハブ構成に合わせています。
 
+## 製品と境界（英語）
+
+[ローカルで試す](README.md#try-rain-lab) · [実行例](README.md#see-it-work) · [権限の境界](README.md#how-authority-works) · [プライバシーと通信](README.md#privacy-and-network-boundaries)
+
+オフラインデモにモデルは不要です。ライブ会議にはモデル設定が必要です。Laya、Jev、Rig、TRIBE v2 は任意の拡張です。
+
 ## ナビゲーション
 
 - 英語メイン：[`README.md`](README.md)
@@ -25,7 +31,7 @@
 
 ## 機能概要
 
-James は単なるマルチエージェントチャットではなく、完全な研究オペレーティングシステムです：10以上のモデルプロバイダ、25以上のメッセージングプラットフォーム、60以上の組み込みツール、ハードウェア制御（Arduino、STM32、Raspberry Pi）、神経科学の脳エンコーディングモデル（TRIBE v2）、ナレッジグラフ、セマンティックメモリなど。詳細は英語版 [`README.md` - What It Does](README.md#what-it-does) をご覧ください。
+James は単なるマルチエージェントチャットではなく、完全な研究オペレーティングシステムです：10以上のモデルプロバイダ、25以上のメッセージングプラットフォーム、60以上の組み込みツール、ハードウェア制御（Arduino、STM32、Raspberry Pi）、神経科学の脳エンコーディングモデル（TRIBE v2）、ナレッジグラフ、セマンティックメモリなど。詳細は英語版 [`README.md` - Research workflow](README.md#what-happens-when-you-ask-a-question) をご覧ください。
 
 ## 対象ユーザー
 
@@ -81,7 +87,7 @@ macOS/Linux の場合：`./install.sh` を実行。
 
 ## 開発者向け
 
-アーキテクチャ、拡張ポイント、コントリビューションについては、英語版 [`README.md` - For Developers](README.md#for-developers)、[ARCHITECTURE.md](ARCHITECTURE.md)、[CLAUDE.md](CLAUDE.md) を参照してください。
+アーキテクチャ、拡張ポイント、コントリビューションについては、英語版 [`README.md` - Documentation and development](README.md#documentation-and-development)、[ARCHITECTURE.md](ARCHITECTURE.md)、[CLAUDE.md](CLAUDE.md) を参照してください。
 
 ## 謝辞
 

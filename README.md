@@ -1,399 +1,373 @@
 # R.A.I.N. Lab
 
-**A private-by-default expert panel in a box for researchers, independent thinkers, and R&D teams.**
+**A local-first research environment where four constrained AI perspectives investigate a question, challenge one another, and leave an inspectable record.**
+
+Think with a room that is allowed to disagree.
+
+Bring a hypothesis, a difficult paper, or an idea that needs pressure-testing.
+James, Jasmine, Luca, and Elena approach it through evidence, feasibility,
+geometry, and formal reasoning. The useful outcome is a clearer account of
+what is supported, what remains contested, and what to investigate next.
+
+**[Try the browser interface](https://rainlabteam.vercel.app/)** · **[Run locally](#try-rain-lab)** · [See an example](#see-it-work) · [Documentation](docs/README.md)
+
+[![Tests](https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/topherchris420/james_library/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 <p align="center">
-  <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-  <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>
-  <a href="https://github.com/topherchris420/james_library/actions/workflows/deploy-docs.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/deploy-docs.yml/badge.svg?branch=main" alt="Docs" /></a>
-  <a href="https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml/badge.svg?branch=main" alt="Security Audit" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab — the octopus scientist holding a tuning fork" width="420">
 </p>
 
-<p align="center">
-  <img src="assets/rain_lab.png" alt="R.A.I.N. Lab" width="600">
-</p>
+The offline demo runs with Python alone. Live meetings need a configured model.
+Laya, Jev, hardware, and neuroscience sidecars are optional. For private work,
+use the local path and check the [network boundaries](#privacy-and-network-boundaries).
 
-Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
-perspectives, grounds strong claims in papers or explicit evidence, and returns
-the strongest explanations, disagreements, and next moves.
+<a id="default-path"></a>
+<a id="try-it-now"></a>
 
-Most tools help you find papers. R.A.I.N. Lab helps you think with a room full of experts.
+## Try R.A.I.N. Lab
 
-James is the assistant inside the R.A.I.N. Lab.
+### Local: the first meeting
 
-We separate generation, evidence, judgment, and authorization. James, Jasmine,
-Luca, and Elena investigate; optional Laya and Jev providers propose bounded
-decisions; host code checks policy and retains authority. Recorded artifacts
-make decisions inspectable and replayable.
+With Git and Python 3.12+ installed:
 
----
-
-## Default Path
-
-No setup: [rainlabteam.vercel.app](https://rainlabteam.vercel.app/)
-
-Local start:
-
-```bash
-python rain_lab.py
-```
-
-That launcher is the stable product path. Hardware, messaging channels, web
-deployment, TRIBE v2 sidecars, archive tooling, and provider-specific adapters
-are opt-in extensions, not prerequisites for a first successful run.
-
-For the maintainer boundary between core, extension, and experimental work, see
-[`docs/project/product-boundary.md`](docs/project/product-boundary.md).
-
----
-
-## What It Does
-
-- Turns one research question into a four-agent meeting with distinct constraints
-- Grounds strong claims in papers or explicit evidence instead of smooth talk
-- Forces the strongest counter-argument onto the page before you commit to an idea
-- Ends with concrete next moves, not just a stack of links
-
----
-
-## Why It Is Different
-
-| You need to... | Typical research tool | R.A.I.N. Lab |
-|----------------|-----------------------|---------------|
-| Pressure-test a claim | Surfaces papers that seem relevant and stops there | Has four agents attack the claim from evidence, hardware, geometry, and formal logic |
-| Understand a new field | Gives you a search result page | Maps agreements, open questions, and where the literature still fights itself |
-| Decide what to read next | Hands you a pile of citations | Ends with the paper, experiment, or measurement most likely to validate or kill the current idea |
-| Validate a stimulus against brain science | Sends you into a separate neuroscience workflow | Runs TRIBE v2 on video, audio, or text inside the same research meeting |
-| Keep the work private | Assumes a hosted stack | Supports local model inference with [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/); hosted providers, web tools and Jev have separate network boundaries |
-
----
-
-## Technical Architecture
-
-The Python research meeting is the default entry point. The Rust runtime and
-model-backed decision layers are optional extensions with separate boundaries.
-
-```mermaid
-flowchart TD
-    Q["Research question"] --> M["Python meeting: James, Jasmine, Luca, Elena"]
-    P["Papers and tool evidence"] --> M
-    M --> A["Session artifacts and offline replay"]
-    M -. "Opt-in process counters" .-> R["Bounded decision router: host precheck"]
-    R --> L["Local Laya: calibrated proposal"]
-    L -. "Escalation with remote consent" .-> J["TypeSafe Jev: bounded evaluation"]
-    L --> V["Host validator"]
-    J --> V
-    R --> H["R.A.I.N. handoff or human review"]
-    V --> H
-    V --> D["Proposal record: no action execution"]
-    D --> A
-    D -. "Chat maps eligible proposals to fixed hints" .-> M
-    H -. "Chat retains normal research loop" .-> M
-```
-
-| Layer | Implementation | Responsibility and boundary |
-| --- | --- | --- |
-| Research orchestration | [`rain_lab.py`](rain_lab.py), [`james_library/`](james_library/) | Launch meetings, gather evidence, preserve critique and session artifacts |
-| Local judgment | [`laya.py`](james_library/judgment/laya.py), [`laya_worker.py`](james_library/judgment/laya_worker.py) | Evaluate explicit choices using a provisioned local checkpoint in a timeout-bounded worker |
-| Independent remote judgment | [`typesafe.py`](james_library/judgment/typesafe.py) | Evaluate bounded state with Jev; external requests require opt-in configuration |
-| Decision policy | [`routing.py`](james_library/judgment/routing.py), [`calibration.py`](james_library/judgment/calibration.py) | Check policy, calibration, uncertainty and consent; validate proposals or return a handoff |
-| Claim promotion | [`gate.py`](james_library/judgment/gate.py) | Apply the separate fixed promotion policy to local validation and typed evidence |
-| Runtime extensions | [`src/`](src/), [`crates/`](crates/) | Rust providers, channels, tools, security and satellite crates; not required for the Python meeting |
-
-**Workflow proposals and claim promotion are separate paths.** The `decide`
-command returns a proposal or handoff. The `judge` command accepts a curated
-claim/evidence packet, checks formal and numerical validation status, obtains
-optional independent Jev judgment, and records a deterministic disposition:
-`PASS`, `REVISE`, `HUMAN_REVIEW`, or `UNAVAILABLE`. A peer score below the
-threshold skips judgment. Laya routing does not replace that promotion gate.
-A policy pass is not scientific proof or permission to execute arbitrary actions.
-
-### Try the bounded decision interfaces
-
-```bash
-# Inspect a bounded request; routing remains off unless explicitly configured.
-python rain_lab.py decide --request examples/bounded-decision.json
-
-# Inspect a recorded decision without loading a model.
-python rain_lab.py decide --replay path/to/session_decision.json
-
-# Evaluate a caller-curated claim/evidence packet using the separate promotion path.
-python rain_lab.py judge --evidence cycle.json
-```
-
-`cycle.json` is caller-supplied; its schema is in the
-[typed judgment guide](docs/typed-judgment.md). The replay path is a placeholder
-for a previously recorded artifact.
-
-- Routing defaults to `RAIN_DECISION_MODE=off`; claim judgment defaults to
-  `RAIN_JUDGMENT_PROVIDER=off`. Enabling one does not enable the other.
-- Local Laya requires optional dependencies, an explicitly provisioned checkpoint,
-  and matching calibration. No weights or production calibration profiles ship.
-- Cascade routing calls Jev only with explicit remote consent. Missing calibration,
-  invalid output, disagreement, or unresolved uncertainty produces a handoff.
-- Chat process hints require `RAIN_METACOGNITIVE_CONTROL=true`; only curated
-  counters enter that router. Models cannot change tools, permissions or budgets.
-- Replay verifies recorded digests without inference. These digests are integrity
-  checks, not digital signatures. Real-model accuracy and speed remain unmeasured.
-
-See [calibrated bounded decisions](docs/bounded-decisions.md) for installation,
-configuration, calibration, benchmarks and limitations.
-
----
-
-## Meet the Agents
-
-Each agent has a distinct voice, expertise, and set of constraints they bring to every question.
-
-| Agent | Role | How They Think |
-|-------|------|----------------|
-| **James** | Lead Scientist | Draws from your research papers directly. Cites metrics. Says when data is missing. |
-| **Jasmine** | Hardware Architect | Reality-checks everything against real material constraints. If it can't be built, she knows why. |
-| **Luca** | Field Topographer | Sees geometric patterns others miss. Makes intuitive leaps, then looks for the math to ground them. |
-| **Elena** | Quantum Information Theorist | Demands formal rigor. Runs logical verification. Catches errors everyone else misses. |
-
-Each agent's full personality, reasoning principles, and conversation style are defined in their **SOUL** file:
-
-- [JAMES_SOUL.md](JAMES_SOUL.md) — Lead Scientist
-- [JASMINE_SOUL.md](JASMINE_SOUL.md) — Hardware Architect
-- [LUCA_SOUL.md](LUCA_SOUL.md) — Field Topographer
-- [ELENA_SOUL.md](ELENA_SOUL.md) — Quantum Information Theorist
-
-The SOUL files are part of the product. They're what make the agents feel like colleagues, not search results.
-
----
-
-## TRIBE v2 Brain Encoding
-
-R.A.I.N. Lab includes a **TRIBE v2 integration** that predicts fMRI brain activation patterns from video, audio, or text. Feed a stimulus to the model and James returns predicted cortical response maps — letting you run basic neuroscience experiments from inside a research meeting.
-
-| Capability | Detail |
-|------------|--------|
-| Input | video file, audio file, or raw text |
-| Output | predicted fMRI activation patterns across 20,484 cortical vertices |
-| Use case | explore model-predicted responses to a stimulus; predictions do not establish measured brain activation |
-| Runtime | sidecar service in [`tools/tribev2_sidecar/`](tools/tribev2_sidecar/) wrapping Facebook Research's TRIBE v2 model |
-
-Want to wire it into your own workflow? Read the [TRIBE v2 sidecar README](tools/tribev2_sidecar/README.md).
-
-> **License: CC-BY-NC 4.0** — non-commercial use only.
-
----
-
-## See It In Action
-
-<p align="center">
-  <img src="assets/rain_lab_screenshot.jpg" alt="R.A.I.N. Lab in action — James kicks off a research meeting on Phononic Morphogenetic Fields" width="800">
-</p>
-
-> **TOPIC: Could acoustic interference patterns guide molecular assembly the way DNA guides cell growth?**
-
-**James:** The frequency comb geometry you're describing — those spectral spacings match what I saw in the DRR paper. If the phononic field creates a standing wave at the right wavelength, you could theoretically anchor molecular complexes at node points. But that's a big "theoretically."
-
-**Jasmine:** I love the ambition, but let's reality-check. Piezo actuators hit degradation limits around 100 kHz under continuous load. And thermal drift at sub-micron precision? Where's the energy budget?
-
-**Luca:** The coherence depth function C_α(u) describes how deep pattern information persists in an oscillatory field. If the field is structured well enough, you don't need continuous high-frequency drive. The shape encodes the instructions.
-
-**Elena:** Elegance doesn't satisfy Landauer's bound. The energy density required for your coherence depth at that spatial resolution is roughly 10⁴⁵ joules — a dozen orders of magnitude beyond what you're describing. verify_logic() on the combined constraints returns satisfiable, but satisfiable isn't plausible.
-
-**James:** Next step is a targeted literature search on low-energy coherent phonon generation. Jasmine, pull real actuator specs and run the thermal numbers against Luca's geometry. I want a paper that either validates or kills this at the 10 µm scale.
-
-<details>
-<summary><b>Read the full exchange</b></summary>
-
-**James:** Luca, the frequency comb geometry you're describing — those spectral spacings match what I saw in the DRR paper. If the phononic field creates a standing wave at the right wavelength, you could theoretically anchor molecular complexes at node points. But that's a big "theoretically."
-
-**Jasmine:** Okay, pause. I love the ambition, but let's reality-check. Piezo actuators hit degradation limits around 100 kHz under continuous load. And thermal drift at sub-micron precision? We'd need active cooling loops that consume more power than the assembly process produces. Where's the energy budget?
-
-**Luca:** Jasmine, you're right about the constraints — but watch the geometry. The coherence depth function C_α(u) describes how deep pattern information persists in an oscillatory field. If the field is structured well enough, you don't need continuous high-frequency drive. The self-organizing phase could do the work. The shape encodes the instructions.
-
-**Elena:** Luca, I appreciate the elegance, but elegance doesn't satisfy Landauer's bound. The energy density required for your coherence depth at that spatial resolution is roughly 10⁴⁵ joules. That's a dozen orders of magnitude beyond what you're describing. James, the DRR paper — did it actually claim feasible energy scales, or was that extrapolation?
-
-**James:** ...it was an extrapolation. The paper showed the scaling relationship, not the absolute numbers. Elena's right to flag that. The thermal management question is also open — the DRR model assumes heat dissipates linearly, but at those frequencies it doesn't.
-
-**Jasmine:** So we're looking at a mechanism that might work in principle but needs experimental validation at scales we can't reach yet. That's not a technology. That's a hypothesis.
-
-**Luca:** I disagree with the framing. A hypothesis with a clear geometry is further along than a vague intuition. We've narrowed the design space. The question now is whether the self-organizing phase can compensate for the power constraints Jasmine raised.
-
-**Elena:** And the answer to that is: we don't know. verify_logic() on the combined constraints returns satisfiable — so it's not ruled out. But satisfiable isn't plausible.
-
-**James:** Next step is probably a targeted literature search on low-energy coherent phonon generation. Jasmine, can you pull real actuator specs and run the thermal numbers against Luca's geometry? I want a paper that either validates or kills this at the 10 µm scale.
-
-**Jasmine:** I can do that. Luca, send me the geometry parameters.
-
-**Luca:** Will do.
-
-</details>
-
----
-
-## Try It Now
-
-**Live demo:** [rainlabteam.vercel.app](https://rainlabteam.vercel.app/) — no setup required
-
-**Requires:** Python 3.12+, [uv](https://docs.astral.sh/uv/) (recommended) or pip, and optionally a local model via [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/). Rust is optional and only needed for the ZeroClaw runtime layer.
-
-**On your machine:**
-
-```bash
-python rain_lab.py
-```
-
-Press Enter for the instant demo, or connect to LM Studio / Ollama for full local operation.
-
-The instant demo is an offline research meeting over the papers in `papers/`. No
-model runs. James, Jasmine, Luca and Elena argue from verbatim quotes, each
-re-verified against the library with the same citation verifier the live
-meeting uses. The meeting ends with a verdict, a next move and a citation audit.
-When the library does not cover a question, the room says so instead of quoting
-unrelated passages. Ask your own question with
-`python rain_lab.py --mode demo --topic "..."`.
-
-On Windows: double-click `INSTALL_RAIN.cmd` to create shortcuts.
-On macOS/Linux: run `./install.sh`.
-
-**From source (macOS / Linux):**
 ```bash
 git clone https://github.com/topherchris420/james_library.git
 cd james_library
+python rain_lab.py --mode demo
+```
+
+No model, API key, Rust build, or third-party Python packages are needed for
+this demo. It retrieves passages from `papers/`, verifies each quote against
+its source, and presents a **scripted** four-perspective discussion with a
+verdict, disagreement, next move, and citation audit. It saves a transcript
+and an HTML share card under `meeting_archives/`.
+
+Ask your own question, or add `.md` and `.txt` papers to the corpus:
+
+```bash
+python rain_lab.py --mode demo --topic "Could acoustic interference patterns guide molecular assembly?"
+```
+
+Retrieval can be incomplete or irrelevant. A verified quote means the text
+occurs in a source; it does not establish that the source is correct or that
+it supports the proposed conclusion.
+
+### Browser
+
+Open [rainlabteam.vercel.app](https://rainlabteam.vercel.app/) to explore the
+hosted interface. Hosted meetings depend on its backend and provider
+availability; the offline local demo is the reproducible starting point.
+Do not assume the hosted interface has the local workflow's privacy boundary.
+
+### Live: connect a model
+
+Use [one-click setup](docs/one-click-bootstrap.md): `INSTALL_RAIN.cmd` on
+Windows or `./install.sh` on macOS/Linux. These installers download dependencies
+and the prebuilt runtime. Then use the installed Python environment:
+
+```bash
+python rain_lab.py --mode first-run
+python rain_lab.py --mode validate
+python rain_lab.py --mode chat --topic "What evidence would falsify this hypothesis?"
+```
+
+`python rain_lab.py` opens the interactive launcher. Configure the endpoint
+and model before live chat; for local-only work, also disable web search as
+shown [below](#privacy-and-network-boundaries).
+
+<details>
+<summary>Manual Python setup (without the optional Rust runtime)</summary>
+
+From the cloned repository, using [uv](https://docs.astral.sh/uv/):
+
+```bash
 uv python install 3.12
 uv venv .venv --python 3.12
 uv pip sync --python .venv/bin/python requirements-dev-pinned.txt
-uv run --python .venv/bin/python rain_lab.py --mode first-run
+.venv/bin/python rain_lab.py --mode first-run
 ```
 
-**From source (Windows):**
-```powershell
-git clone https://github.com/topherchris420/james_library.git
-cd james_library
-uv python install 3.12
-uv venv .venv --python 3.12
-uv pip sync --python .venv\Scripts\python.exe requirements-dev-pinned.txt
-uv run --python .venv\Scripts\python.exe rain_lab.py --mode first-run
-```
-
----
-
-## R.A.I.N. Rig
-
-**A research lab you can run on a machine you own.**
-
-Rig turns the existing local-first R.A.I.N. runtime into a self-contained node
-with optional local inference, transports, and hardware extensions. The default
-R.A.I.N. Lab remains unchanged: `python rain_lab.py` does not depend on Rig.
-
-```bash
-rain rig doctor   # PASS / WARN / FAIL / SKIP; missing optional pieces are SKIP
-rain rig setup    # asks before writing [rig] to config.toml; never downloads or installs
-rain rig status   # llama.cpp / Ollama / LM Studio, research library, transports, listeners
-```
-
-Local inference reuses the existing `llamacpp`, `ollama` and `lmstudio`
-providers. With `privacy = "local"`, hosted inference is refused rather than
-used as a silent fallback. Optional LXMF messaging over Reticulum runs through
-a loopback-only bridge sidecar. Skybridge, a plaintext low-bandwidth modem, is
-experimental: receive works with any receiver command, and RF transmit is
-compiled out unless you build with `rig-rf-transmit`. See
-[R.A.I.N. Rig](docs/rig/README.md).
-
----
-
-## Who It Is For
-
-R.A.I.N. Lab is built for people who need answers that hold up under scrutiny, not just answers that sound good.
-
-| Role | What you can do with R.A.I.N. Lab |
-|------|-----------------------------------|
-| Researchers and analysts | Compare competing hypotheses, preserve disagreement, and keep auditable reasoning trails |
-| Founders and product leads | Stress-test strategic decisions through structured debate before committing roadmap or budget |
-| Operators and technical teams | Turn messy discussions into verifiable outputs that can be reviewed, shared, and replayed |
-
----
-
-## Documentation
-
-| | |
-|---|---|
-| **Docs** | [Start Here](START_HERE.md) -- [Beginner Guide](docs/getting-started/README.md) -- [One-Click Install](docs/one-click-bootstrap.md) -- [Troubleshooting](docs/troubleshooting.md) |
-| **Papers** | [Research Archive](https://topherchris420.github.io/research/) |
-| **Bounded decisions** | [Local Laya, optional Jev escalation, calibration and process hints](docs/bounded-decisions.md) |
-| **Typed judgment** | [Independent bounded evaluation, deterministic policy, and replay](docs/typed-judgment.md) |
-| **R.A.I.N. Rig** | [Optional local node: status, doctor, llama.cpp, privacy modes, transports, Skybridge](docs/rig/README.md) |
-| **Handout** | [<img src="assets/marketing/rain_lab_trifold_preview.png" alt="R.A.I.N. Lab Trifold preview" width="360">](assets/marketing/rain_lab_trifold.html) — [R.A.I.N. Lab Trifold](assets/marketing/rain_lab_trifold.html), printable one-pager overview |
-| **Language** | [简体中文](README.zh-CN.md) -- [日本語](README.ja.md) -- [Русский](README.ru.md) -- [Français](README.fr.md) -- [Tiếng Việt](README.vi.md) |
-
----
-
-## For Developers
-
-<details>
-<summary><b>Architecture, extension points, contribution</b></summary>
-
-### Architecture
-
-R.A.I.N. Lab is a Rust-first autonomous agent runtime with a Python orchestration layer.
-
-- `rain_lab.py` — launcher. Chat meetings run `rain_lab_meeting_chat_version.py`; tool-exec meetings run `rain_lab_meeting.py`
-- `james_library/` — Python package for session artifacts, eval, recovery, and the experiment protocol
-- `agents.py` and `*_SOUL.md` — persona files. The chat meeting defines its own `Agent` class and does not import `agents.py`
-- `src/` — Rust `rain` binary (package `rain-labs`): providers, channels, tools, security
-- `crates/` — satellite crates (`logic_prover`, `rain-bench`, `robot-kit`, `buzz-agent`, `aardvark-sys`), not the meeting runtime
-- `python/` — optional LangGraph tool package (`R.A.I.N.-tools`), not the meeting loop
-
-### Extension Points
-
-Extend by implementing traits and registering in factory modules:
-
-- `src/providers/traits.rs` — Add a new model provider
-- `src/channels/traits.rs` — Add a new messaging channel
-- `src/tools/traits.rs` — Add a new tool
-- `src/memory/traits.rs` — Add a memory backend
-- `src/peripherals/traits.rs` — Add hardware board support
-- `tools/tribev2_sidecar/server.py` — Extend TRIBE v2 sidecar serving and stimulus adapters
-
-### Quality Checks
-
-```bash
-ruff check .
-pytest -q
-cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
-cargo test
-```
-
-### Security audit scope
-
-[Sec Audit](https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml)
-runs Rust dependency auditing and license/source checks on relevant pushes and
-pull requests, weekly, and manually. Changes to the audit workflow and its
-configuration also trigger these checks.
-
-A green check means the configured policy passed, including documented exceptions
-in [`.cargo/audit.toml`](.cargo/audit.toml) and [`deny.toml`](deny.toml). It does
-not mean every dependency is vulnerability-free. In particular,
-`RUSTSEC-2026-0292` remains excepted for the optional Matrix dependency chain;
-the vulnerable dependency has not been patched by that exception. See the
-configuration comments for the upgrade constraint and removal condition.
-
-### Design Principles
-
-The codebase follows KISS, YAGNI, DRY (rule of three), SRP/ISP, fail-fast, secure-by-default, and reversible changes. See [ARCHITECTURE.md](ARCHITECTURE.md) and [CLAUDE.md](CLAUDE.md) for the full contract.
-
-### Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch/PR workflow and [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
+On Windows, replace `.venv/bin/python` with `.venv\Scripts\python.exe`.
+Use that interpreter for subsequent commands, or activate `.venv` first.
+The pinned development requirements include the core packages and test tools.
 
 </details>
 
----
+<a id="what-it-does"></a>
 
-## Acknowledgments
+## What happens when you ask a question?
 
-The Rust runtime in `src/` (binary `rain`) descends from ZeroClaw. `crates/` holds satellite crates, not that runtime.
+1. **Frame it.** Choose the question and the local papers to examine.
+2. **Investigate from different constraints.** The four personas look for evidence, practical limits, structure, and logical objections.
+3. **Ground and challenge.** Chat checks quoted spans against the citation corpus and marks turns without verified spans as ungrounded by default. Disagreement remains in the transcript.
+4. **Choose the next investigation.** Look for a paper to read, an assumption to revise, or a measurement that could distinguish competing explanations. Review these proposals yourself.
+5. **Keep the record.** Inspect the transcript and, for chat, structured session artifacts. Use separate optional gates when bounded judgment is needed.
 
----
+```mermaid
+flowchart TD
+    Q["Your research question"] --> M["Four constrained perspectives"]
+    P["Local papers"] --> C["Quote checks"]
+    M --> C
+    C --> D["Evidence gaps and disagreement"]
+    D --> N["Human review and next investigation"]
+    N -. "New evidence or revised question" .-> Q
+    M --> A["Session record"]
+    C --> A
+    D --> A
+```
 
-## License
+This is a research process to inspect, not a guarantee that a generated answer
+has been scientifically validated. Formal checks and typed claim promotion
+are separate from ordinary chat.
 
-**License:** MIT -- [Vers3Dynamics](https://vers3dynamics.com/)
+<a id="see-it-in-action"></a>
+
+## See it work
+
+**Question:** “Could acoustic interference patterns guide molecular assembly?”
+
+These short excerpts come from an offline demo run against the bundled corpus.
+The surrounding dialogue is scripted; no model ran and no experiment was performed.
+
+| Perspective | Excerpt from the run |
+| --- | --- |
+| **James — evidence** | “Nothing in the library touches 'guide', 'molecular' and 'assembly', so I'm scoping to what it covers.” |
+| **Jasmine — feasibility** | “What none of these passages gives me is a cost and a tolerance, and without those I can't spec or price a build.” |
+| **Luca — connection** | “Two papers, two framings, one shared idea: 'intelligence'.” |
+| **Elena — challenge** | “Until something outside this library reproduces James's anchor, this is a well-instrumented hypothesis, not a result.” |
+
+**Next move proposed by the demo:** investigate the test described in
+`Integrated Plasma Confinement.md`, write down a failure condition first,
+and quantify a cost before building. A human still needs to assess whether
+that retrieved test addresses molecular assembly at all.
+
+The run verified **6/6 quotes verbatim** and reported only partial topic coverage.
+That is a citation audit, not six validated scientific claims. Run the command
+above to read the complete exchange; results can change when the corpus changes.
+
+<a id="why-it-is-different"></a>
+<a id="who-it-is-for"></a>
+
+## Why R.A.I.N.?
+
+| Research need | What the Lab makes explicit |
+| --- | --- |
+| Examine a claim from more than one angle | Four personas with different constraints, rather than four interchangeable summaries. |
+| Follow a citation back to its source | Verified quote spans and loaded-corpus file hashes in chat artifacts. Semantic support still needs review. |
+| Preserve a useful objection | A transcript that retains disagreements instead of treating consensus as truth. |
+| Decide what to investigate next | A discussion oriented toward missing evidence, counterarguments, and concrete follow-up work. |
+| Inspect a decision later | Recorded turns, grounding metadata, and optional judgment/decision envelopes. |
+| Control where context goes | Local model support, explicit remote-provider configuration, and separate bounded judgment inputs. |
+
+<a id="meet-the-agents"></a>
+
+## Meet the research panel
+
+These are **prompt-defined perspectives**, not independent scientific authorities.
+Their value is constraint diversity; sharing a model or corpus can still produce
+shared blind spots.
+
+| Agent | Constraint brought to the discussion | Definition |
+| --- | --- | --- |
+| **James** — lead assistant | Synthesize the research, identify supporting passages, and acknowledge missing evidence. | [James's SOUL](JAMES_SOUL.md) |
+| **Jasmine** — hardware architect | Ask about materials, thermal limits, power, tolerances, and buildability. | [Jasmine's SOUL](JASMINE_SOUL.md) |
+| **Luca** — field topographer | Explore geometry, topology, and cross-domain patterns that need testing. | [Luca's SOUL](LUCA_SOUL.md) |
+| **Elena** — quantum information theorist | Challenge derivations, consistency, and information-theoretic assumptions. | [Elena's SOUL](ELENA_SOUL.md) |
+
+SOUL files shape behavior. They do not establish the truth of their scientific
+assertions or grant tools permissions beyond the selected runtime.
+
+## How authority works
+
+**Models propose. Host code checks. Humans decide what deserves to happen next.**
+
+| Boundary | What it establishes |
+| --- | --- |
+| Generation | A hypothesis, critique, or proposed next step. Agent prose is not measured evidence. |
+| Evidence | A source passage, tool result, simulation, or measurement, with its origin and limitations kept distinct. |
+| Deterministic validation | Whether a specific schema, quote, formal constraint, numerical condition, or host policy passes its checks. |
+| Bounded judgment | A model's typed assessment of curated input. It cannot override failed host validation. |
+| Authorization | The host's action policy and required human approval, separate from model confidence. |
+
+`decide` produces a proposal or handoff, never an executed action. Rig actions
+have their own policy, validation, and authorization boundary. The optional
+`rlm` tool-execution mode can execute Python; do not treat the judgment gate as
+a universal sandbox or an approval wrapper around every runtime tool.
+
+### Optional typed claim judgment
+
+Package one claim with **caller-curated evidence and trusted validation results**.
+With judgment enabled, Jev answers a fixed set of typed questions about support,
+evidence quality, contradiction, scope, and human review. Ordinary host code
+applies the disposition policy: `PASS`, `REVISE`, `HUMAN_REVIEW`, or `UNAVAILABLE`.
+
+**PASS means the configured bounded policy was satisfied. It does not mean the scientific claim is true.**
+
+The command consumes supplied validation results; it does not independently
+repeat the experiment. Ordinary `chat` and `rlm` sessions do not automatically
+produce this strict promotion record. With judgment disabled, the command
+reports `DISABLED` and retains the existing peer-score gate; that is not a
+successful Jev evaluation. See [typed judgment](docs/typed-judgment.md).
+
+<a id="technical-architecture"></a>
+
+## How R.A.I.N. is structured
+
+**R.A.I.N. Lab** is the product. **James** is its lead assistant.
+**James Library** is this repository and its Python workflow collection.
+
+| Layer | Entry point and scope |
+| --- | --- |
+| Core research experience | [`rain_lab.py`](rain_lab.py) launches the offline demo or model-backed meetings. [`rain_lab_meeting_chat_version.py`](rain_lab_meeting_chat_version.py) implements chat, grounding, and session recording. |
+| Optional workflow proposals | [`james_library/judgment/`](james_library/judgment/) routes bounded choices through local Laya and, with consent, remote Jev. Host prechecks and final validation retain authority. |
+| Separate claim promotion | `judge --evidence` evaluates a curated packet under the fixed promotion policy. It is distinct from Laya workflow routing. |
+| Runtime and extensions | [`src/`](src/) contains the Rust `rain` runtime: providers, tools, channels, security, and Rig. [`crates/`](crates/) contains satellite crates. No Rust build is needed for the offline demo or Python chat. |
+
+### Optional Laya / Jev routing
+
+Laya proposes locally from explicit choices; it needs optional dependencies,
+a provisioned checkpoint, and matching calibration. In cascade mode, unresolved
+cases can escalate to TypeSafe's remote Jev only with explicit consent.
+Missing calibration, uncertainty, engine disagreement, or failed validation
+produces a rejection or handoff rather than permission to act.
+
+Routing defaults to `RAIN_DECISION_MODE=off`; claim judgment separately defaults
+to `RAIN_JUDGMENT_PROVIDER=off`. Chat process hints additionally require
+`RAIN_METACOGNITIVE_CONTROL=true`. No model weights or production calibration
+profiles ship; real-model accuracy and speed are not established here.
+
+<details>
+<summary>Advanced commands — after Python dependency setup</summary>
+
+```bash
+python rain_lab.py decide --request examples/bounded-decision.json
+```
+
+With routing off, expect a `DISABLED` handoff and exit code 1, not an action.
+
+```bash
+python rain_lab.py judge --evidence cycle.json
+```
+
+`cycle.json` is a file you create using the
+[evidence packet schema](docs/typed-judgment.md#evidence-packet).
+Enable the provider intentionally before expecting typed evaluation.
+
+```bash
+python rain_lab.py decide --replay path/to/session_decision.json
+python rain_lab.py judge --replay path/to/session_judgment.json
+```
+
+Replace those paths with recorded artifacts. Replay reads and checks the saved
+record without loading a model. Setup, calibration, consent, and failure modes
+are documented in [bounded decisions](docs/bounded-decisions.md).
+
+</details>
+
+## Recorded sessions and replay
+
+The record is part of the result. Chat writes JSON artifacts under
+`meeting_archives/session_artifacts/`: turns, verified evidence spans,
+loaded-corpus hashes, grounding metadata, and session summaries. Optional
+decisions and judgments occupy separate arrays, preserving their policy,
+provider/model, disposition, and reason codes.
+
+Use records to inspect sources, compare sessions, review unresolved objections,
+and revisit a decision. [Recorded judgment/decision replay](docs/typed-judgment.md#flight-recorder-and-replay)
+verifies saved digests without inference. The separate
+[gold-session replay runner](james_library/utilities/session_replay.py)
+can launch new chat runs for evaluation; it is not identical to offline record inspection.
+
+Digests detect accidental or partial changes. They are **not digital signatures**,
+proof of scientific correctness, or protection against someone rewriting both
+the data and its digest. Re-running a generative meeting need not reproduce its words.
+
+<a id="rain-rig"></a>
+<a id="tribe-v2-brain-encoding"></a>
+
+## Optional extensions
+
+| Extension | What it adds | Boundary and setup |
+| --- | --- | --- |
+| **R.A.I.N. Rig** | A local node view of inference, transports, listeners, and hardware; `rain rig status`, `doctor`, and `setup`. | Optional runtime layer. No model downloads or new listeners merely from enabling the configuration. [Rig guide](docs/rig/README.md). |
+| **TRIBE v2** | A neuroscience sidecar for video, audio, or text, returning summaries of model-predicted fMRI activation across 20,484 cortical vertices. | Predictions are not measured human brain activity. Separate weights/dependencies; TRIBE v2 is **CC-BY-NC 4.0**, non-commercial only. [Sidecar setup](tools/tribev2_sidecar/README.md). |
+| **Channels and interfaces** | Messaging adapters, a web dashboard, and hosted meeting entry points. | Separate services, credentials, and network boundaries. [Channels](docs/channels-reference.md), [`web/`](web/), [`lab_server/`](lab_server/). |
+| **Hardware and Skybridge** | Hardware interfaces and experimental low-bandwidth transport work. | Optional devices/builds. Skybridge is plaintext and RF transmit is compiled out by default. [Hardware](docs/hardware/README.md), [Skybridge](docs/rig/skybridge.md). |
+
+## Privacy and network boundaries
+
+The **offline demo** uses local files and no model calls. Live privacy depends
+on configuration: the current chat defaults target a loopback Ollama endpoint
+but select `minimax-m2.7:cloud`, and web search is enabled. A localhost address
+alone does not make inference local.
+
+For local inference, install dependencies, load a local model in Ollama or
+LM Studio, and explicitly select it. This direct chat entry point also exposes
+the search switch:
+
+```bash
+python rain_lab_meeting_chat_version.py --base-url http://127.0.0.1:11434/v1 --model YOUR_LOCAL_MODEL --no-web --topic "What evidence would falsify this hypothesis?"
+```
+
+Replace `YOUR_LOCAL_MODEL` with the actual loaded model ID; for LM Studio use
+its configured endpoint. For an enforced hosted-inference refusal, see
+[Rig privacy modes](docs/rig/README.md) and configure `[rig] privacy = "local"`
+in the active runtime configuration. Disable web search separately.
+
+Live meetings send selected research context to the configured model. Optional
+remote **claim judgment** sends only allowlisted fields from the curated packet;
+its builder does not read the library, transcript, or private memory. Optional
+chat **process routing** uses curated counters rather than paper content.
+Review packets before permitting remote processing. Local transcripts can also
+contain private material; inspect them before sharing.
+
+## What R.A.I.N. does not claim
+
+- Agreement among personas establishes truth or independence.
+- A citation match proves that a source supports a conclusion.
+- A model judgment, `PASS`, or a satisfiable formula verifies a scientific theory.
+- A simulation or predicted brain response is a physical measurement.
+- Every mode passes through the same validation and human-approval gate.
+
+These distinctions let you decide which parts of a result deserve further work.
+
+<a id="documentation"></a>
+<a id="for-developers"></a>
+
+## Documentation and development
+
+| Start here | Go deeper |
+| --- | --- |
+| [Documentation hub](docs/README.md) · [Full contents](docs/SUMMARY.md) | [Architecture](ARCHITECTURE.md) · [Core / extension boundary](docs/project/product-boundary.md) |
+| [Beginner guide](docs/getting-started/README.md) · [Install](docs/one-click-bootstrap.md) | [Configuration](docs/config-reference.md) · [Providers](docs/providers-reference.md) · [Troubleshooting](docs/troubleshooting.md) |
+| [Bounded decisions](docs/bounded-decisions.md) · [Typed judgment](docs/typed-judgment.md) | [Meeting recovery](docs/meeting-recovery.md) · [Rig architecture](docs/rig/architecture.md) |
+| [Contributing](CONTRIBUTING.md) · [Security reporting](SECURITY.md) | [CI workflows](.github/workflows/README.md) · [Security documentation](docs/security/README.md) |
+
+[简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Русский](README.ru.md) · [Français](README.fr.md) · [Tiếng Việt](README.vi.md)
+
+<details>
+<summary>Developer checks and security audit scope</summary>
+
+After installing development dependencies, Python checks are `ruff check .`
+and `pytest -q`. Rust changes use `cargo fmt --all -- --check`,
+`cargo clippy --all-targets -- -D warnings`, and `cargo test` with the repository's
+pinned toolchain. See the contribution guide for checks appropriate to your change.
+
+[Security audit](https://github.com/topherchris420/james_library/actions/workflows/sec-audit.yml)
+checks configured Rust dependency and license policies. A green result includes
+the documented exceptions in [`.cargo/audit.toml`](.cargo/audit.toml) and
+[`deny.toml`](deny.toml); it does not mean every dependency is vulnerability-free.
+`RUSTSEC-2026-0292` remains excepted for the optional Matrix dependency chain.
+That exception does not patch the vulnerability.
+
+</details>
+
+<a id="license"></a>
+<a id="acknowledgments"></a>
+
+## License and acknowledgments
+
+[MIT](LICENSE) · [Vers3Dynamics](https://vers3dynamics.com/).
+The Rust runtime descends from ZeroClaw. Optional third-party components retain
+their own licenses, including TRIBE v2's non-commercial restriction.
