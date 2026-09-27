@@ -100,7 +100,7 @@ Think with a room that is allowed to disagree.
 
 {README_EXPERT_SUMMARY}
 
-James is the assistant inside the R.A.I.N. Lab.
+**R.A.I.N. Lab** is the product. **James** is its lead assistant.
 
 <p align="center">
   <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
@@ -112,7 +112,7 @@ James is the assistant inside the R.A.I.N. Lab.
   <a href="README.zh-CN.md">简体中文</a>
 </p>
 
-## What It Does
+## Try R.A.I.N. Lab
 """
 
     assert _find_readme_chrome_index(text) == text.index("assets/rain_lab.png")
@@ -127,13 +127,13 @@ Think with a room that is allowed to disagree.
 
 {README_EXPERT_SUMMARY}
 
-James is the assistant inside the R.A.I.N. Lab.
+**R.A.I.N. Lab** is the product. **James** is its lead assistant.
 
 <p align="center">
   <img alt="R.A.I.N. Lab logo" src="assets/rain_lab.png" class="hero" />
 </p>
 
-## What It Does
+## Try R.A.I.N. Lab
 """
 
     assert _lead_story_indexes(text) == sorted(_lead_story_indexes(text))
