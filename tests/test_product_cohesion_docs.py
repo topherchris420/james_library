@@ -16,24 +16,21 @@ PRIMARY_DOC_EXPECTATIONS = {
 
 PRIMARY_DOCS = tuple(PRIMARY_DOC_EXPECTATIONS)
 README_TAGLINE = (
-    "A private-by-default expert panel in a box for researchers, independent "
-    "thinkers, and R&D teams."
+    "A local-first research environment where four constrained AI perspectives "
+    "investigate a question, challenge one another, and leave an inspectable record."
 )
 README_PRODUCT_SUMMARY_PATTERN = re.compile(
-    (
-        r"Ask a raw research question\.\s+"
-        r"(?:The\s+)?R\.A\.I\.N\. Lab\s+assembles multiple expert "
-        r"perspectives,\s+grounds strong claims in papers or explicit "
-        r"evidence,\s+and returns the strongest explanations,\s+"
-        r"disagreements,\s+and next moves\."
-    )
+    r"Think with a room that is allowed to disagree\."
 )
 README_EXPERT_SUMMARY = (
-    "Most tools help you find papers. R.A.I.N. Lab helps you think with a room "
-    "full of experts."
+    "Bring a hypothesis, a difficult paper, or an idea that needs pressure-testing. "
+    "James, Jasmine, Luca, and Elena approach it through evidence, feasibility, "
+    "geometry, and formal reasoning. The useful outcome is a clearer account of "
+    "what is supported, what remains contested, and what to investigate next."
 )
 README_ASSISTANT_LINE_PATTERN = re.compile(
-    r"James is the assistant inside (?:the )?R\.A\.I\.N\. Lab\."
+    r"\*\*R\.A\.I\.N\. Lab\*\* is the product\. "
+    r"\*\*James\*\* is its lead assistant\."
 )
 README_HOSTED_URL = "https://rainlabteam.vercel.app"
 
@@ -99,9 +96,7 @@ def test_readme_chrome_detection_ignores_incidental_markup() -> None:
 
 **{README_TAGLINE}**
 
-Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
-perspectives, grounds strong claims in papers or explicit evidence, and returns
-the strongest explanations, disagreements, and next moves.
+Think with a room that is allowed to disagree.
 
 {README_EXPERT_SUMMARY}
 
@@ -128,9 +123,7 @@ def test_readme_lead_story_order_detection() -> None:
 
 **{README_TAGLINE}**
 
-Ask a raw research question. The R.A.I.N. Lab assembles multiple expert
-perspectives, grounds strong claims in papers or explicit evidence, and returns
-the strongest explanations, disagreements, and next moves.
+Think with a room that is allowed to disagree.
 
 {README_EXPERT_SUMMARY}
 
@@ -156,19 +149,21 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
     assistant_line = README_ASSISTANT_LINE_PATTERN
     hosted_url = README_HOSTED_URL
     local_runner = "python rain_lab.py"
-    first_section = "## What It Does"
+    first_section = "## Try R.A.I.N. Lab"
     expected_sections = (
-        "## What It Does",
-        "## Why It Is Different",
-        "## Meet the Agents",
-        "## TRIBE v2 Brain Encoding",
-        "## See It In Action",
-        "## Try It Now",
-        "## Who It Is For",
-        "## Documentation",
-        "## For Developers",
-        "## Acknowledgments",
-        "## License",
+        "## Try R.A.I.N. Lab",
+        "## What happens when you ask a question?",
+        "## See it work",
+        "## Why R.A.I.N.?",
+        "## Meet the research panel",
+        "## How authority works",
+        "## How R.A.I.N. is structured",
+        "## Recorded sessions and replay",
+        "## Optional extensions",
+        "## Privacy and network boundaries",
+        "## What R.A.I.N. does not claim",
+        "## Documentation and development",
+        "## License and acknowledgments",
     )
 
     lead_story_indexes = _lead_story_indexes(text)
@@ -185,10 +180,10 @@ def test_readme_leads_with_research_panel_positioning(repo_root: Path) -> None:
 
     assert lead_story_indexes == sorted(lead_story_indexes)
     assert heading_index < tagline_index
-    assert chrome_index < product_summary_index
     assert product_summary_index < expert_summary_index
+    assert expert_summary_index < chrome_index
     assert chrome_index < first_section_index
-    assert chrome_index < first_section_index
+    assert first_section_index < assistant_line_index
     assert hosted_url_index < local_runner_index
     assert "### Public Web Experience (Coming Soon)" not in text
 
