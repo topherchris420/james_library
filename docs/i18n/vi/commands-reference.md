@@ -96,3 +96,11 @@ rain rig radio transmit --frequency-hz HZ --power-w W --text NOI_DUNG   # chỉ 
 - `radio transmit` bị từ chối trừ khi bản build có `--features rig-rf-transmit`
   và `[rig.radio]` đặt `callsign`, `max_power_w` cùng `[rig.radio.transmit]`.
   Phải gõ hô hiệu trong terminal tương tác; mô hình không bao giờ được phát.
+
+## Thí nghiệm được xem xét và bằng chứng (mô phỏng đã triển khai; lộ trình sổ đăng ký, tiếng Anh)
+
+[Thí nghiệm được xem xét và bằng chứng (mô phỏng đã triển khai; lộ trình sổ đăng ký, tiếng Anh)](../../research-workflow.md).
+
+```bash
+python -m james_library.services.experiment_protocol.research --help
+```

@@ -335,7 +335,7 @@ def assemble_experiment_analysis(
         "initial_analysis": initial_analysis,
         "adversarial_critique": adversarial_critique,
         "recommended_next_experiment": next_experiment,
-        "model_identity": "R.A.I.N.-Reasoning-Engine",
+        "model_identity": "R.A.I.N.-Deterministic-Templates",
         "model_version": "1.0.0",
         "analysis_timestamp": now_iso,
     }

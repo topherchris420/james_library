@@ -2,6 +2,21 @@
 
 This document describes how the top-level `rain_lab.py` launcher and the chat backend (`rain_lab_meeting_chat_version.py`) execute a meeting.
 
+## Research and evidence boundary
+
+The Research Panel is the deliberation interface; experiments are a separate
+Python workflow in `james_library/services/experiment_protocol/`. Existing
+manifest, result and analysis contracts remain canonical. `research.py` adds
+review of an exact plan, a local human authorization attestation, simulated
+execution and a companion research record. `ingestion.py` validates external
+v1 simulated results without executing or fetching their references.
+
+Laya/Jev routing produces bounded proposals. It does not authorize experiments
+or bypass the deterministic host checks. Session artifacts and experiment bundles
+are separate file records; a unified Research Registry is planned. See the
+[research workflow](docs/research-workflow.md) for implemented boundaries,
+reproduction commands and the evidence-versus-authority distinction.
+
 ## High-level flow
 
 ```mermaid

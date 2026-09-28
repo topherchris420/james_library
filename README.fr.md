@@ -1,5 +1,7 @@
 # Point d'entrée de la documentation R.A.I.N. Lab (FR)
 
+[Expériences examinées et preuves (simulation disponible et feuille de route du registre, en anglais)](docs/research-workflow.md)
+
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>

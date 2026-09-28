@@ -158,6 +158,8 @@ def run_experiment_workflow(
         expected_direction="decrease",
     )
 
+    manifest["randomization"]["seed"] = seed
+
     # 2. Deterministic serialization & SHA-256 calculation
     manifest_sha = calculate_sha256(manifest)
 
@@ -261,7 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         res = verify_bundle_integrity(target)
         if res["valid"]:
             count = len(res["checked_files"])
-            msg = f"{ANSI_GREEN}[OK] Bundle is valid and untampered ({count} files checked).{ANSI_RESET}"
+            msg = f"{ANSI_GREEN}[OK] Bundle checksums match ({count} files checked).{ANSI_RESET}"
             print(_console_safe(msg))
             return 0
         else:

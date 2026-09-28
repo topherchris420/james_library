@@ -1,5 +1,7 @@
 # Documentation Hub (EN)
 
+[Reviewed experiments and evidence (implemented simulation; registry roadmap)](research-workflow.md)
+
 This hub is the canonical entry point for task-oriented documentation.
 
 ## Locale Hubs

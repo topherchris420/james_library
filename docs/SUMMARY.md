@@ -4,6 +4,10 @@ This file is the canonical table of contents for the documentation system.
 
 Last refreshed: **February 18, 2026**.
 
+## Research workflow
+
+- [Reviewed experiments, external result admission and evidence replay](research-workflow.md)
+
 ## Language Entry
 
 - Docs Structure Map (language/part/function): [structure/README.md](maintainers/structure-README.md)

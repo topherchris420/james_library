@@ -1,5 +1,11 @@
 # R.A.I.N. Lab
 
+**Most AI systems stop at the answer. R.A.I.N. begins there.**
+
+What happens after a model proposes an answer? A researcher still needs to
+separate a claim from an observation, test it, decide what may happen, and keep
+the evidence. R.A.I.N. is building that research and decision layer.
+
 **A local-first research environment where four constrained AI perspectives investigate a question, challenge one another, and leave an inspectable record.**
 
 Think with a room that is allowed to disagree.
@@ -8,6 +14,14 @@ Bring a hypothesis, a difficult paper, or an idea that needs pressure-testing.
 James, Jasmine, Luca, and Elena approach it through evidence, feasibility,
 geometry, and formal reasoning. The useful outcome is a clearer account of
 what is supported, what remains contested, and what to investigate next.
+
+**Inference is not evidence. Evidence is not permission. Confidence is not authority.**
+
+The Research Panel helps frame an investigation. A separate
+[reviewed experiment workflow](docs/research-workflow.md) now carries a simulated
+claim through deterministic checks, explicit local authorization, execution,
+observations and a reproducible evidence bundle. A unified Research Registry
+and executable papers remain goals, not completed capabilities.
 
 **[Try the browser interface](https://rainlabteam.vercel.app/)** · **[Run locally](#try-rain-lab)** · [See an example](#see-it-work) · [Documentation](docs/README.md)
 
@@ -125,6 +139,40 @@ are separate from ordinary chat.
 
 ## See it work
 
+### From proposal to observed evidence
+
+After [Python dependency setup](#try-rain-lab), create an offline experiment plan:
+
+```bash
+python -m james_library.services.experiment_protocol.research plan research-plan.json
+```
+
+Review the JSON, copy its printed digest, and obtain the full code revision with
+`git rev-parse HEAD`. Replace the placeholders to authorize that exact plan:
+
+```bash
+python -m james_library.services.experiment_protocol.research run research-plan.json --approve REVIEWED_PLAN_SHA256 --code-revision FULL_COMMIT_SHA --out-dir research-output
+```
+
+Inspect the printed bundle path (replace the example experiment ID):
+
+```bash
+python -m james_library.services.experiment_protocol.research inspect research-output/experiments/EXP-XXXXXXXX
+```
+
+| Proposed | Observed | What the record establishes |
+| --- | --- | --- |
+| A scripted model stand-in predicts **-20 ohms**. | The seeded simulator produces a difference of approximately **-16 ohms**. | The saved simulated observations determine the result; the prediction never replaces them. |
+
+No model or physical instrument runs. Inspection recomputes statistics and
+reproduces measurement arrays from the seed and scenario. Missing approval,
+a changed plan, failed validation or malformed evidence is rejected. The local
+operator attestation is explicit but is not authenticated identity.
+
+Read the [full workflow, external result interface and limitations](docs/research-workflow.md).
+
+### Research Panel: deciding what to investigate
+
 **Question:** “Could acoustic interference patterns guide molecular assembly?”
 
 These short excerpts come from an offline demo run against the bundled corpus.
@@ -190,6 +238,11 @@ assertions or grant tools permissions beyond the selected runtime.
 | Bounded judgment | A model's typed assessment of curated input. It cannot override failed host validation. |
 | Authorization | The host's action policy and required human approval, separate from model confidence. |
 
+The reviewed simulation binds authorization to the complete plan digest and
+records it separately from validation and observation. Approval cannot override
+failed checks. The older experiment CLI remains an unapproved simulation tool;
+this is not a universal gate around every mode.
+
 `decide` produces a proposal or handoff, never an executed action. Rig actions
 have their own policy, validation, and authorization boundary. The optional
 `rlm` tool-execution mode can execute Python; do not treat the judgment gate as
@@ -222,7 +275,19 @@ successful Jev evaluation. See [typed judgment](docs/typed-judgment.md).
 | Core research experience | [`rain_lab.py`](rain_lab.py) launches the offline demo or model-backed meetings. [`rain_lab_meeting_chat_version.py`](rain_lab_meeting_chat_version.py) implements chat, grounding, and session recording. |
 | Optional workflow proposals | [`james_library/judgment/`](james_library/judgment/) routes bounded choices through local Laya and, with consent, remote Jev. Host prechecks and final validation retain authority. |
 | Separate claim promotion | `judge --evidence` evaluates a curated packet under the fixed promotion policy. It is distinct from Laya workflow routing. |
+| Experiments and evidence | [`experiment_protocol/`](james_library/services/experiment_protocol/) keeps the existing manifest, result, analysis and provenance contracts. The reviewed workflow adds explicit plan approval and strict simulated result ingestion. |
 | Runtime and extensions | [`src/`](src/) contains the Rust `rain` runtime: providers, tools, channels, security, and Rig. [`crates/`](crates/) contains satellite crates. No Rust build is needed for the offline demo or Python chat. |
+
+### What is implemented today
+
+| Capability | Current state |
+| --- | --- |
+| Question → discussion → grounded session record | Implemented in the Research Panel. |
+| Claim → proposal → validation → authorization → simulation → observation → evidence | Implemented in the separate reviewed experiment workflow. |
+| External experiment admission | Strict existing v1 simulated manifest/result contracts; no general environment adapters. |
+| Evidence queries and reproduction | One bundle at a time through `research inspect`; measurements and deterministic statistics, not physical replication. |
+| Research Registry | Partial: linked files and provenance bundles, without a unified claim index. |
+| Executable papers / research-query MCP | Planned. |
 
 ### Optional Laya / Jev routing
 
@@ -266,6 +331,13 @@ are documented in [bounded decisions](docs/bounded-decisions.md).
 </details>
 
 ## Recorded sessions and replay
+
+Research bundles preserve the question, hypothesis, preregistered method,
+proposal, approval, observations, code revision, seed, limitations and conclusion.
+The file-based registry is deliberately small: external systems exchange the
+existing JSON contracts; they do not need to import the runtime. The current
+interface supports only simulated CIRCLE-style data. See the
+[record format and trust boundary](docs/research-workflow.md#external-experiment-interface).
 
 The record is part of the result. Chat writes JSON artifacts under
 `meeting_archives/session_artifacts/`: turns, verified evidence spans,
@@ -336,6 +408,15 @@ These distinctions let you decide which parts of a result deserve further work.
 <a id="for-developers"></a>
 
 ## Documentation and development
+
+The next steps are a unified claim/evidence index, authenticated host approval,
+additional independently useful experimental environments, and executable paper
+queries. Each needs a working example and explicit validation before it is
+advertised as implemented.
+
+Developers can dogfood the [reviewed simulation](docs/research-workflow.md#use-it-during-development)
+when changing the experiment pipeline: register the hypothesis, run against a
+recorded code revision, inspect observations, then decide keep / revise / revert.
 
 | Start here | Go deeper |
 | --- | --- |

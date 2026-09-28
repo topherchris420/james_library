@@ -1,6 +1,6 @@
 """Deterministic Provenance Bundle Manager.
 
-Creates and verifies the complete immutable experiment bundle:
+Creates and verifies a write-once experiment bundle:
 experiments/
   EXP-XXXXXXXX/
     manifest.json
@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -50,7 +51,10 @@ def build_provenance_trace(
             "manifest": "PREREGISTERED_PLAN",
             "circle_evidence": result.get("provenance", "SIMULATED"),
             "statistical_analysis": analysis.get("provenance", "DERIVED"),
-            "rain_interpretation": "MODEL_INFERRED",
+            "rain_interpretation": (
+                "DERIVED" if analysis.get("model_identity") == "R.A.I.N.-Deterministic-Templates"
+                else "MODEL_INFERRED"
+            ),
         },
         "safety_status": "ENGINEERING_REVIEW_ONLY",
     }
@@ -62,11 +66,15 @@ def save_experiment_bundle(
     result: dict[str, Any],
     analysis: dict[str, Any],
     logs: list[str] | None = None,
+    *,
+    research_record: dict[str, Any] | None = None,
 ) -> Path:
-    """Save an immutable, self-describing experiment bundle with complete checksums."""
+    """Save a new self-describing bundle; refuse to overwrite an existing experiment."""
     exp_id = manifest["experiment_id"]
+    if not isinstance(exp_id, str) or not re.fullmatch(r"EXP-[0-9A-Fa-f]{8,}", exp_id):
+        raise ValueError("Invalid experiment ID")
     bundle_dir = base_dir / "experiments" / exp_id
-    bundle_dir.mkdir(parents=True, exist_ok=True)
+    bundle_dir.mkdir(parents=True, exist_ok=False)
     logs_dir = bundle_dir / "logs"
     logs_dir.mkdir(exist_ok=True)
     data_dir = bundle_dir / "data"
@@ -109,6 +117,9 @@ def save_experiment_bundle(
         log_path = logs_dir / "session.log"
         log_path.write_text("\n".join(logs) + "\n", encoding="utf-8")
 
+    if research_record is not None:
+        (bundle_dir / "research.json").write_text(canonical_json_str(research_record), encoding="utf-8")
+
     # 7. checksums.json (compute sha256 for all files in bundle except checksums.json)
     checksums: dict[str, str] = {}
     for file_path in sorted(bundle_dir.rglob("*")):
@@ -124,37 +135,46 @@ def save_experiment_bundle(
 
 
 def verify_bundle_integrity(bundle_dir: Path) -> dict[str, Any]:
-    """Verify that all files in a bundle match their recorded checksums and manifest sha256."""
-    checksum_file = bundle_dir / "checksums.json"
-    if not checksum_file.exists():
-        return {"valid": False, "error": "checksums.json missing"}
+    """Check complete local inventory without following caller-supplied paths or symlinks.
 
+    This detects missing/modified files, not authenticity or scientific correctness.
+    """
+    required = {"manifest.json", "manifest.sha256", "result.json", "analysis.json", "provenance.json"}
     try:
+        if bundle_dir.is_symlink() or not bundle_dir.is_dir():
+            raise ValueError("Expected a real bundle directory")
+        checksum_file = bundle_dir / "checksums.json"
+        if checksum_file.is_symlink():
+            raise ValueError("Symlinked checksum inventory")
         recorded_checksums = json.loads(checksum_file.read_text(encoding="utf-8"))
-    except Exception as e:
-        return {"valid": False, "error": f"Failed to parse checksums.json: {e}"}
-
-    mismatches = []
-    for rel_path, expected_hash in recorded_checksums.items():
-        target = bundle_dir / rel_path
-        if not target.exists():
-            mismatches.append(f"Missing file: {rel_path}")
-            continue
-        actual_hash = hashlib.sha256(target.read_bytes()).hexdigest()
-        if actual_hash.lower() != expected_hash.lower():
-            mismatches.append(f"Checksum mismatch for {rel_path}: expected {expected_hash}, got {actual_hash}")
-
-    manifest_sha_file = bundle_dir / "manifest.sha256"
-    if manifest_sha_file.exists():
-        expected_manifest_sha = manifest_sha_file.read_text(encoding="utf-8").strip()
+        if not isinstance(recorded_checksums, dict) or not required.issubset(recorded_checksums):
+            raise ValueError("Incomplete checksum inventory")
+        actual_files = set()
+        for path in bundle_dir.rglob("*"):
+            if path.is_symlink():
+                raise ValueError("Symlinks are not allowed inside a bundle")
+            if path.is_file() and path != checksum_file:
+                actual_files.add(path.relative_to(bundle_dir).as_posix())
+        mismatches = []
+        for rel_path, expected_hash in recorded_checksums.items():
+            parts = rel_path.split("/")
+            if (not rel_path or "\\" in rel_path or ":" in rel_path
+                    or any(part in {"", ".", ".."} for part in parts)):
+                raise ValueError("Unsafe checksum path")
+            if not isinstance(expected_hash, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", expected_hash):
+                raise ValueError("Invalid checksum digest")
+            if rel_path not in actual_files:
+                mismatches.append(f"Missing file: {rel_path}")
+                continue
+            actual_hash = hashlib.sha256((bundle_dir / rel_path).read_bytes()).hexdigest()
+            if actual_hash != expected_hash.lower():
+                mismatches.append(f"Checksum mismatch for {rel_path}")
+        for extra in sorted(actual_files - set(recorded_checksums)):
+            mismatches.append(f"Untracked file: {extra}")
         manifest_file = bundle_dir / "manifest.json"
-        if manifest_file.exists():
-            actual_manifest_sha = calculate_sha256(manifest_file.read_text(encoding="utf-8"))
-            if actual_manifest_sha.lower() != expected_manifest_sha.lower():
-                mismatches.append(f"manifest.sha256 mismatch with manifest.json")
-
-    return {
-        "valid": len(mismatches) == 0,
-        "mismatches": mismatches,
-        "checked_files": list(recorded_checksums.keys()),
-    }
+        expected_manifest_sha = (bundle_dir / "manifest.sha256").read_text(encoding="utf-8").strip()
+        if calculate_sha256(manifest_file.read_bytes()) != expected_manifest_sha.lower():
+            mismatches.append("manifest.sha256 mismatch with manifest.json")
+        return {"valid": not mismatches, "mismatches": mismatches, "checked_files": list(recorded_checksums)}
+    except (OSError, ValueError, TypeError) as exc:
+        return {"valid": False, "error": str(exc)}
