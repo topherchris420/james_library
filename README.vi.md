@@ -1,5 +1,7 @@
 # Điểm vào tài liệu R.A.I.N. Lab (VI)
 
+[Thí nghiệm được xem xét và bằng chứng (mô phỏng đã triển khai; lộ trình sổ đăng ký, tiếng Anh)](docs/research-workflow.md)
+
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>

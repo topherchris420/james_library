@@ -1,5 +1,7 @@
 # Hub tài liệu (VI)
 
+[Thí nghiệm được xem xét và bằng chứng (mô phỏng đã triển khai; lộ trình sổ đăng ký, tiếng Anh)](../../research-workflow.md)
+
 Điểm vào tiếng Việt cho hệ thống tài liệu theo tác vụ.
 
 ## Hub ngôn ngữ

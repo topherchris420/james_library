@@ -1,5 +1,7 @@
 # R.A.I.N. Lab ドキュメント入口（日本語）
 
+[レビュー済み実験と証拠（シミュレーション実装・研究レジストリ計画、英語）](docs/research-workflow.md)
+
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>

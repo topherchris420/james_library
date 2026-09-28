@@ -100,3 +100,11 @@ rain rig radio transmit --frequency-hz HZ --power-w W --text TEXTE   # builds ri
   `--features rig-rf-transmit` et que `[rig.radio]` définit `callsign`,
   `max_power_w` et `[rig.radio.transmit]`. Il faut taper l'indicatif dans un
   terminal interactif ; un modèle ne peut jamais émettre.
+
+## Expériences examinées et preuves (simulation disponible et feuille de route du registre, en anglais)
+
+[Expériences examinées et preuves (simulation disponible et feuille de route du registre, en anglais)](research-workflow.md).
+
+```bash
+python -m james_library.services.experiment_protocol.research --help
+```

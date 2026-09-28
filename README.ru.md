@@ -1,5 +1,7 @@
 # Точка входа в документацию R.A.I.N. Lab (RU)
 
+[Эксперименты после проверки и доказательства (симуляция и план реестра, на английском)](docs/research-workflow.md)
+
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>

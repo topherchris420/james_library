@@ -4,6 +4,12 @@
 
 The **RAIN ↔ CIRCLE Experiment Protocol** establishes a reproducible, deterministic scientific workflow connecting the reasoning capabilities of **R.A.I.N. Lab** (`james_library`) with the provenance and sensing semantics of **CIRCLE** (`circle`).
 
+The existing simulation CLI remains available. For explicit local approval of an
+exact plan, strict external result admission, prediction-versus-observation records
+and seed replay, use the [reviewed research workflow](../../docs/research-workflow.md).
+The default interpretation and critique are deterministic templates, not live
+model calls. A checksum match establishes consistency, not authenticity.
+
 ---
 
 ## 1. Architectural Philosophy
@@ -38,7 +44,7 @@ sequenceDiagram
     RAIN->>Analysis: Initial Interpretation & Adversarial Critique Pass
     Analysis->>Analysis: Assign SUPPORTS / REFUTES / INCONCLUSIVE
     RAIN->>Analysis: Propose Next Experiment (requires_human_review=True)
-    Analysis->>Bundle: Write Immutable Directory + SHA-256 Checksums
+    Analysis->>Bundle: Write Write-once Directory + SHA-256 Checksums
 ```
 
 ---
@@ -71,7 +77,7 @@ The protocol reuses CIRCLE's native provenance vocabulary without modification:
 7. **Adversarial Critique**: A secondary pass challenges the initial interpretation against alternative explanations, phantom artifacts, and uncontrolled confounders. Both the initial analysis and adversarial critique are preserved.
 8. **Conclusion Assignment**: The tri-state conclusion (`SUPPORTS`, `REFUTES`, `INCONCLUSIVE`) is recorded.
 9. **Next-Experiment Proposal**: A structured next-step proposal is generated with `requires_human_review: true` (never auto-executed).
-10. **Provenance Bundle**: An immutable directory `experiments/EXP-XXXXXXXX/` is created with verified SHA-256 checksums.
+10. **Provenance Bundle**: An write-once directory `experiments/EXP-XXXXXXXX/` is created with verified SHA-256 checksums.
 
 ---
 

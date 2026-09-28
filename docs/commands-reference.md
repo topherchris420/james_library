@@ -102,3 +102,11 @@ rain rig --library PATH <command> # point discovery at a James Library checkout
   `max_power_w` and `[rig.radio.transmit]`. It requires typing the callsign at
   an interactive terminal; models can never transmit.
 - Rig commands log at WARN to stderr by default so `--json` stays clean.
+
+## Reviewed experiments and evidence (implemented simulation; registry roadmap)
+
+[Reviewed experiments and evidence (implemented simulation; registry roadmap)](research-workflow.md).
+
+```bash
+python -m james_library.services.experiment_protocol.research --help
+```

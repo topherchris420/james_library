@@ -17,3 +17,6 @@ fastmcp>=3.2.0,<4.0.0
 # Root test runs import lab_server.app, so CI needs the web server deps too.
 fastapi>=0.111.0,<1.0.0
 uvicorn[standard]>=0.29.0,<1.0.0
+
+# Explicit experiment contract validation (also used by the MCP dependency stack).
+jsonschema>=4.26.0,<5.0.0
