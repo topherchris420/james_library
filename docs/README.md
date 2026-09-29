@@ -2,6 +2,8 @@
 
 [Reviewed experiments and evidence (implemented simulation; registry roadmap)](research-workflow.md)
 
+[R.A.I.N. Experiments: registry, runs and recorded results](../EXPERIMENTS.md) · [results](../RESULTS.md)
+
 This hub is the canonical entry point for task-oriented documentation.
 
 ## Locale Hubs

@@ -2,6 +2,8 @@
 
 [Thí nghiệm được xem xét và bằng chứng (mô phỏng đã triển khai; lộ trình sổ đăng ký, tiếng Anh)](../../research-workflow.md)
 
+[Thí nghiệm R.A.I.N.: sổ đăng ký, lần chạy và kết quả đã ghi (tiếng Anh)](../../../EXPERIMENTS.md) · [kết quả](../../../RESULTS.md)
+
 Điểm vào tiếng Việt cho hệ thống tài liệu theo tác vụ.
 
 ## Hub ngôn ngữ

@@ -104,3 +104,23 @@ rain rig radio transmit --frequency-hz HZ --power-w W --text NOI_DUNG   # chỉ 
 ```bash
 python -m james_library.services.experiment_protocol.research --help
 ```
+
+## Thí nghiệm R.A.I.N.: sổ đăng ký, lần chạy và kết quả đã ghi (tiếng Anh)
+
+[Thí nghiệm R.A.I.N.: sổ đăng ký, lần chạy và kết quả đã ghi (tiếng Anh)](../../../EXPERIMENTS.md) · [kết quả](../../../RESULTS.md).
+
+```bash
+python rain_lab.py experiment list
+python rain_lab.py experiment run V3D-EXP-0001
+python rain_lab.py experiment show V3D-EXP-0001
+python rain_lab.py experiment reproduce V3D-EXP-0001
+python rain_lab.py experiment compare V3D-EXP-0001
+python rain_lab.py experiment verify
+python rain_lab.py experiment results --check
+python rain_lab.py experiment create --help
+python rain_lab.py experiment record V3D-EXP-0004 submission.json
+```
+
+- Không có động từ, `python rain_lab.py experiment` vẫn chạy CLI mô phỏng CIRCLE cũ.
+- Mã thoát: `0` đã ghi kết quả (kể cả thất bại/không kết luận), `1` lỗi xác minh hoặc
+  `RESULTS.md` lỗi thời, `2` yêu cầu bị từ chối, `3` lần chạy được ghi với trạng thái `error`.

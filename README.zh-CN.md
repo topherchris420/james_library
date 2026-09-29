@@ -2,6 +2,8 @@
 
 [经审核的实验与证据（已实现模拟；研究注册表路线图，英文）](docs/research-workflow.md)
 
+[R.A.I.N. 实验：注册表、运行与已记录结果（英文）](EXPERIMENTS.md) · [结果](RESULTS.md)
+
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>
