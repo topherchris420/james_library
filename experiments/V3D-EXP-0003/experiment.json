@@ -1,0 +1,144 @@
+{
+  "created_at": "2026-09-29T01:58:44.366Z",
+  "created_by": "R.A.I.N.Operator",
+  "criteria": {
+    "failure": [
+      {
+        "id": "F1",
+        "metric": "detection_rate",
+        "op": "<",
+        "value": 0.5
+      },
+      {
+        "id": "F2",
+        "metric": "false_supports_rate",
+        "op": ">",
+        "value": 0.1
+      }
+    ],
+    "guards": [
+      {
+        "id": "G1",
+        "metric": "trials_per_condition",
+        "op": ">=",
+        "value": 100
+      }
+    ],
+    "success": [
+      {
+        "id": "S1",
+        "metric": "detection_rate",
+        "op": ">=",
+        "value": 0.8
+      },
+      {
+        "id": "S2",
+        "metric": "false_supports_rate",
+        "op": "<=",
+        "value": 0.05
+      }
+    ]
+  },
+  "data_policy": {
+    "classification": "public",
+    "store_artifacts": true
+  },
+  "dependencies": [],
+  "evidence_class": "simulated",
+  "experiment_id": "V3D-EXP-0003",
+  "experiment_version": 1,
+  "hypothesis": "Across 200 seeded simulated trials per condition (n=30 per arm, noise SD 1.2 ohms, minimum effect 5 ohms), the analysis concludes SUPPORTS in at least 80% of trials with a true -6.5 ohm effect and in at most 5% of null trials.",
+  "limitations": [
+    "Simulated Gaussian data: this characterizes the analysis pipeline, not any physical, acoustic or biological effect.",
+    "One effect size, one noise level and one sample size; error rates at other operating points are unmeasured.",
+    "Seeds are consecutive integers; the simulator's RNG quality bounds independence between trials."
+  ],
+  "metrics": [
+    {
+      "description": "Simulated trials per condition.",
+      "deterministic": true,
+      "name": "trials_per_condition",
+      "unit": "count"
+    },
+    {
+      "description": "SUPPORTS rate with a true -6.5 ohm effect.",
+      "deterministic": true,
+      "name": "detection_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "INCONCLUSIVE rate with the true effect.",
+      "deterministic": true,
+      "name": "effect_inconclusive_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "REFUTES rate with the true effect.",
+      "deterministic": true,
+      "name": "effect_refutes_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "SUPPORTS rate with no effect (false support).",
+      "deterministic": true,
+      "name": "false_supports_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "REFUTES rate with no effect.",
+      "deterministic": true,
+      "name": "null_refutes_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "INCONCLUSIVE rate with no effect.",
+      "deterministic": true,
+      "name": "null_inconclusive_rate",
+      "unit": "ratio"
+    }
+  ],
+  "parameters": {
+    "baseline_mean": 100.0,
+    "minimum_effect_ohms": 5.0,
+    "noise_std": 1.2,
+    "phantom_effect": 0.1,
+    "sample_count": 30,
+    "trials_per_condition": 200,
+    "true_effect_ohms": -6.5
+  },
+  "procedure": [
+    "Design one CIRCLE manifest (alpha 0.05, min n 20, effect-size threshold 0.5, minimum effect 5 ohms, expected decrease).",
+    "For 200 seeds (seed + i) simulate a trial with a -6.5 ohm active effect; for 200 disjoint seeds (seed + 1,000,000 + i) simulate a null trial.",
+    "Analyse every trial with the unchanged run_deterministic_analysis and count conclusions per condition."
+  ],
+  "question": "How often does the pre-registered CIRCLE analysis conclude SUPPORTS when a simulated effect beyond the minimum is present, versus when there is no effect at all?",
+  "rationale": "The reviewed simulation workflow reports SUPPORTS/REFUTES/INCONCLUSIVE from one trial. The analysis's detection rate and false-support rate under known ground truth have not been measured; this calibrates it.",
+  "runner": {
+    "kind": "builtin",
+    "name": "circle-error-rates"
+  },
+  "schema_version": "rain-experiment/v1",
+  "seed": 7000,
+  "subsystem": {
+    "component": "experiment_protocol analysis",
+    "paths": [
+      "james_library/services/experiment_protocol/analysis.py",
+      "james_library/services/experiment_protocol/executor.py"
+    ],
+    "repository": "topherchris420/james_library"
+  },
+  "title": "CIRCLE analysis error rates on seeded simulated controls",
+  "variables": {
+    "controls": [
+      "same manifest for all trials",
+      "disjoint seeds per condition",
+      "fixed noise and phantom"
+    ],
+    "dependent": [
+      "analysis conclusion"
+    ],
+    "independent": [
+      "true simulated effect (-6.5 ohm vs 0)"
+    ]
+  }
+}
