@@ -137,9 +137,8 @@ def _store_artifacts(run_dir: Path, definition: dict[str, Any], artifacts: list[
         if stored and len(content) > MAX_STORED_ARTIFACT_BYTES:
             stored, note = False, f"larger than {MAX_STORED_ARTIFACT_BYTES} bytes; hash only"
         if stored:
-            secrets = provenance.find_secrets(content.decode("utf-8", errors="ignore"))
-            if secrets:
-                stored, note = False, f"secret pattern detected ({', '.join(secrets)}); content withheld"
+            if provenance.credential_formats_in(content.decode("utf-8", errors="ignore")):
+                stored, note = False, "credential-like content detected; content withheld"
         if not allow_store:
             note = f"data policy ({policy['classification']}) keeps hashes only"
         if stored:

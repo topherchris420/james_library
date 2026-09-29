@@ -19,11 +19,11 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REDACTED = "[REDACTED]"
 
-_SECRET_KEY = re.compile(
+_CREDENTIAL_FIELD = re.compile(
     r"(secret|token|passw|api[_-]?key|apikey|authorization|cookie|credential|private[_-]?key|access[_-]?key)",
     re.IGNORECASE,
 )
-_SECRET_VALUES = {
+_CREDENTIAL_FORMATS = {
     "api_key": re.compile(r"\bsk-[A-Za-z0-9_-]{16,}"),
     "github_token": re.compile(r"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})"),
     "slack_token": re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}"),
@@ -36,9 +36,9 @@ _SECRET_VALUES = {
 }
 
 
-def find_secrets(text: str) -> list[str]:
-    """Names of secret patterns present in ``text`` (never the matched values)."""
-    return sorted(name for name, pattern in _SECRET_VALUES.items() if pattern.search(text))
+def credential_formats_in(text: str) -> bool:
+    """True when ``text`` contains something shaped like a known credential format."""
+    return any(pattern.search(text) for pattern in _CREDENTIAL_FORMATS.values())
 
 
 def redact(value: Any, _key: str | None = None) -> Any:
@@ -53,9 +53,9 @@ def redact(value: Any, _key: str | None = None) -> Any:
     if isinstance(value, (list, tuple)):
         return [redact(v, _key) for v in value]
     if isinstance(value, str):
-        if _key is not None and _SECRET_KEY.search(_key) and value:
+        if _key is not None and _CREDENTIAL_FIELD.search(_key) and value:
             return REDACTED
-        for pattern in _SECRET_VALUES.values():
+        for pattern in _CREDENTIAL_FORMATS.values():
             value = pattern.sub(REDACTED, value)
         return value
     return value

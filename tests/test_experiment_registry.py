@@ -12,7 +12,7 @@ import pytest
 
 from james_library.experiments import cli
 from james_library.experiments.evaluate import evaluate
-from james_library.experiments.provenance import REDACTED, find_secrets, redact
+from james_library.experiments.provenance import REDACTED, credential_formats_in, redact
 from james_library.experiments.registry import Registry
 from james_library.experiments.results import compare_data, render_compare, render_results, render_show
 from james_library.experiments.runner import (
@@ -26,7 +26,7 @@ from james_library.experiments.schema import ExperimentError, definition_errors,
 from james_library.experiments.stats import percent_change, summarize
 from james_library.experiments.verify import verify
 
-FAKE_TOKEN = "sk-" + "A1b2C3d4E5f6G7h8I9j0K1l2"  # assembled so the literal never appears in the repo
+PLANTED_VALUE = "sk-" + "A1b2C3d4E5f6G7h8I9j0K1l2"  # assembled so the literal never appears in the repo
 
 
 def draft(**overrides):
@@ -64,20 +64,20 @@ def draft(**overrides):
 def fake_runner(ctx):
     params = ctx.parameters
     if params.get("raise"):
-        raise RuntimeError(f"probe crashed with key {FAKE_TOKEN}")
+        raise RuntimeError(f"probe crashed with key {PLANTED_VALUE}")
     measurements = {"accuracy": params.get("accuracy"), "trials": params.get("trials"), "latency_ms": 1.5}
     if params.get("drop_accuracy"):
         measurements.pop("accuracy")
     if params.get("nan"):
         measurements["accuracy"] = math.nan
     if params.get("secret_artifact"):
-        ctx.add_artifact("log.txt", f"key={FAKE_TOKEN}", "log")
+        ctx.add_artifact("log.txt", f"key={PLANTED_VALUE}", "log")
     for artifact in params.get("artifacts", []):
         ctx.add_artifact(artifact["name"], artifact["content"], "fixture")
     return RunOutput(
         measurements=measurements,
         series={"latency_ms": [1.0, 2.0, 1.5]},
-        inputs={"note": "fixture", "api_key": FAKE_TOKEN},
+        inputs={"note": "fixture", "api_key": PLANTED_VALUE},
         observations=["seed was %s" % ctx.seed],
         models=[{"role": "agent", "name": "fixture-model", "latency_ms": [10.0, 20.0],
                  "request_config": {"max_tokens": 64, "authorization": "Bearer abcdefghijklmnopqrstuv"}}],
@@ -253,7 +253,7 @@ def test_execution_error_is_recorded_redacted_and_distinct(registry):
     assert (record["status"], record["hypothesis_verdict"]) == ("error", "not_evaluated")
     assert record["evaluation"] is None
     assert record["error"]["type"] == "RuntimeError" and record["error"]["stage"] == "execute"
-    assert FAKE_TOKEN not in json.dumps(record) and REDACTED in record["error"]["message"]
+    assert PLANTED_VALUE not in json.dumps(record) and REDACTED in record["error"]["message"]
     assert "not a failed hypothesis" in record["interpretation"]["deterministic"]
 
 
@@ -359,7 +359,7 @@ def test_sensitive_data_policy_keeps_hashes_only(registry):
 def test_artifact_containing_a_secret_is_withheld(registry):
     create(registry, parameters={"accuracy": 0.95, "trials": 30, "secret_artifact": True})
     record = run_experiment(registry, "V3D-EXP-0001", RUNNERS)
-    assert record["artifacts"][0]["stored"] is False and "secret pattern" in record["artifacts"][0]["note"]
+    assert record["artifacts"][0]["stored"] is False and "credential-like" in record["artifacts"][0]["note"]
     assert not (registry.experiment_dir("V3D-EXP-0001") / "runs/RUN-0001/artifacts").exists()
 
 
@@ -372,7 +372,7 @@ def test_unsafe_artifact_names_become_execution_errors(registry, name):
 
 
 def test_definitions_holding_secrets_are_refused(registry):
-    for parameters in ({"api_key": "anything"}, {"note": f"use {FAKE_TOKEN}"}):
+    for parameters in ({"api_key": "anything"}, {"note": f"use {PLANTED_VALUE}"}):
         with pytest.raises(ExperimentError, match="credential"):
             create(registry, parameters=parameters)
     assert registry.experiment_ids() == []
@@ -382,18 +382,18 @@ def test_secrets_are_redacted_from_records(registry):
     create(registry)
     record = run_experiment(registry, "V3D-EXP-0001", RUNNERS)
     text = json.dumps(record)
-    assert FAKE_TOKEN not in text and "abcdefghijklmnopqrstuv" not in text
+    assert PLANTED_VALUE not in text and "abcdefghijklmnopqrstuv" not in text
     assert record["inputs"]["api_key"] == REDACTED
     assert record["models"][0]["request_config"] == {"max_tokens": 64, "authorization": REDACTED}
 
 
-def test_redact_and_find_secrets():
-    value = {"token": "abc", "max_tokens": 5, "nested": [{"password": "p"}, f"use {FAKE_TOKEN} now"],
+def test_redact_and_credential_formats_in():
+    value = {"token": "abc", "max_tokens": 5, "nested": [{"password": "p"}, f"use {PLANTED_VALUE} now"],
              "Authorization": "Bearer abcdefghijklmnopqrstuvwxyz"}
     assert redact(value) == {"token": REDACTED, "max_tokens": 5, "nested": [{"password": REDACTED},
                              f"use {REDACTED} now"], "Authorization": REDACTED}
-    assert find_secrets("-----BEGIN RSA PRIVATE KEY-----") == ["private_key"]
-    assert find_secrets("ordinary text about tokens") == []
+    assert credential_formats_in("-----BEGIN RSA PRIVATE KEY-----") is True
+    assert credential_formats_in("ordinary text about tokens") is False
 
 
 def test_provenance_captures_reproducibility_metadata(registry):
@@ -444,7 +444,7 @@ def verified(registry):
     (lambda r: r["definition"]["criteria"]["success"][0].update(value=0.1), "definition snapshot"),
     (lambda r: r.update(run_id="V3D-EXP-0002-RUN-0001"), "run_id"),
     (lambda r: r.update(status="error"), "error"),
-    (lambda r: r["observations"].append(FAKE_TOKEN), "credential"),
+    (lambda r: r["observations"].append(PLANTED_VALUE), "credential"),
 ])
 def test_verify_detects_tampered_records(verified, change, message):
     _tamper(verified, change)
@@ -555,9 +555,9 @@ def test_external_error_and_model_interpretation_stay_separate(registry):
     assert failed["status"] == "failed"  # the model's opinion does not move the status
     assert failed["interpretation"]["model"]["origin"] == "MODEL_INFERRED"
     crashed = record_submission(registry, "V3D-EXP-0001", submission(
-        error={"stage": "launch", "type": "Timeout", "message": f"auth {FAKE_TOKEN} failed"}))
+        error={"stage": "launch", "type": "Timeout", "message": f"auth {PLANTED_VALUE} failed"}))
     assert (crashed["status"], crashed["hypothesis_verdict"]) == ("error", "not_evaluated")
-    assert FAKE_TOKEN not in json.dumps(crashed)
+    assert PLANTED_VALUE not in json.dumps(crashed)
     assert verify(registry)["valid"]
 
 

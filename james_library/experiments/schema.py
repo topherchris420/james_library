@@ -15,7 +15,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any
 
-from .provenance import find_secrets, redact
+from .provenance import credential_formats_in, redact
 
 DEFINITION_SCHEMA = "rain-experiment/v1"
 RUN_SCHEMA = "rain-experiment-run/v1"
@@ -92,7 +92,7 @@ def definition_errors(definition: Any) -> list[str]:
                 errors.append(f"criteria/{group}/{criterion['id']}: threshold must be finite")
     if len(set(ids)) != len(ids):
         errors.append("criteria: duplicate criterion ids")
-    if redact(definition) != definition or find_secrets(json.dumps(definition)):
+    if redact(definition) != definition or credential_formats_in(json.dumps(definition)):
         errors.append("(root): contains a credential-like value; definitions are committed and must not hold "
                       "secrets (pass credentials through the environment at run time)")
     runner = definition["runner"]

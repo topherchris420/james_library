@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from .evaluate import evaluate
-from .provenance import find_secrets
+from .provenance import credential_formats_in
 from .registry import Registry, read_json
 from .schema import ExperimentError, definition_errors, run_record_errors, sha256_bytes, sha256_json
 from .stats import summarize
@@ -27,9 +27,8 @@ def _verify_run(registry: Registry, experiment_id: str, definition: dict, run_di
     if not path.is_file():
         return [f"{label}: missing result.json"], warnings
     raw = path.read_text(encoding="utf-8")
-    secrets = find_secrets(raw)
-    if secrets:
-        problems.append(f"{label}: credential pattern(s) present in record: {', '.join(secrets)}")
+    if credential_formats_in(raw):
+        problems.append(f"{label}: credential-like pattern present in record")
     try:
         record = read_json(path)
     except ExperimentError as exc:
