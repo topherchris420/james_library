@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/experiments/run.schema.json",
+  "title": "R.A.I.N. Experiment Run Record v1",
+  "description": "The durable, machine-readable record of one run. Status and verdict are computed by the host from the recorded measurements and the embedded definition snapshot; `verify` recomputes them.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "run_id",
+    "kind",
+    "reproduces",
+    "status",
+    "hypothesis_verdict",
+    "evidence_class",
+    "started_at",
+    "finished_at",
+    "duration_ms",
+    "seed",
+    "parameters",
+    "definition",
+    "definition_sha256",
+    "inputs",
+    "measurements",
+    "series",
+    "statistics",
+    "evaluation",
+    "observations",
+    "interpretation",
+    "limitations",
+    "artifacts",
+    "models",
+    "provenance",
+    "reproduction",
+    "error"
+  ],
+  "properties": {
+    "schema_version": {"const": "rain-experiment-run/v1"},
+    "experiment_id": {"type": "string", "pattern": "^V3D-EXP-[0-9]{4,}$"},
+    "run_id": {"type": "string", "pattern": "^V3D-EXP-[0-9]{4,}-RUN-[0-9]{4,}$"},
+    "kind": {"enum": ["run", "reproduce", "external"]},
+    "reproduces": {"type": ["string", "null"], "pattern": "^V3D-EXP-[0-9]{4,}-RUN-[0-9]{4,}$"},
+    "status": {"enum": ["running", "passed", "failed", "inconclusive", "error"]},
+    "hypothesis_verdict": {"enum": ["supported", "not_supported", "insufficient_evidence", "not_evaluated"]},
+    "evidence_class": {"enum": ["measured", "simulated", "model_inferred"]},
+    "started_at": {"type": "string"},
+    "finished_at": {"type": ["string", "null"]},
+    "duration_ms": {"type": ["number", "null"], "minimum": 0},
+    "seed": {"type": ["integer", "null"]},
+    "parameters": {"type": "object"},
+    "definition": {"type": "object"},
+    "definition_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "inputs": {"type": "object"},
+    "measurements": {"type": "object", "additionalProperties": {"type": ["number", "null"]}},
+    "series": {"type": "object", "additionalProperties": {"type": "array", "items": {"type": "number"}}},
+    "statistics": {"type": "object"},
+    "evaluation": {"type": ["object", "null"]},
+    "observations": {"type": "array", "items": {"type": "string"}},
+    "interpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deterministic", "model"],
+      "properties": {
+        "deterministic": {"type": "string"},
+        "model": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["origin", "model", "text"],
+          "properties": {
+            "origin": {"const": "MODEL_INFERRED"},
+            "model": {"type": "string"},
+            "text": {"type": "string"}
+          }
+        }
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "sha256", "bytes", "kind", "stored", "note"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "kind": {"type": "string"},
+          "stored": {"type": "boolean"},
+          "note": {"type": ["string", "null"]},
+          "uri": {"type": "string"}
+        }
+      }
+    },
+    "models": {"type": "array", "items": {"type": "object"}},
+    "provenance": {"type": "object"},
+    "reproduction": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["source_run", "outcome_matches", "deterministic_metrics_match", "mismatches"],
+      "properties": {
+        "source_run": {"type": "string"},
+        "outcome_matches": {"type": "boolean"},
+        "deterministic_metrics_match": {"type": "boolean"},
+        "mismatches": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "error": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["stage", "type", "message"],
+      "properties": {
+        "stage": {"type": "string"},
+        "type": {"type": "string"},
+        "message": {"type": "string"}
+      }
+    }
+  }
+}

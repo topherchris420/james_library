@@ -199,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="rain_lab.py experiment",
         description="R.A.I.N. <-> CIRCLE Reproducible Experiment Protocol (V1)",
+        epilog="Experiment registry: python rain_lab.py experiment {list,show,run,reproduce,compare,verify,"
+               "create,record,results} --help (see EXPERIMENTS.md).",
     )
     parser.add_argument(
         "--question", "-q",
