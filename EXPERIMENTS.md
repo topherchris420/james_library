@@ -42,7 +42,7 @@ Without a command, `python rain_lab.py experiment` still runs the older CIRCLE s
 | `inferred` | Values came from model output (`model_inferred`). This is not empirical evidence. |
 | `simulated` | Values came from a simulator. They describe the simulator and pipeline, not the world. |
 | `measured` | Measured on real code, data, or instruments. |
-| `reproduced` | Measured, and every `reproduce` matched the source run's outcome and deterministic metrics. For external runs: two or more independent runs agree. |
+| `reproduced` | Measured, and every `reproduce` matched the source run's outcome and deterministic metrics. For external runs: two or more separately reported executions (distinct start times, distinct submissions) agree; their independence is attested by the producer, not verified by the host. |
 
 The evidence class is declared by the experiment and checked against the runner. A simulated
 runner can never be relabelled as producing measured evidence.

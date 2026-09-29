@@ -15,6 +15,7 @@ from typing import Any
 from .evaluate import evaluate
 from .provenance import credential_formats_in
 from .registry import Registry, read_json
+from .runner import reproduction_report
 from .schema import ExperimentError, definition_errors, run_record_errors, sha256_bytes, sha256_json
 from .stats import summarize
 
@@ -70,6 +71,8 @@ def _verify_run(registry: Registry, experiment_id: str, definition: dict, run_di
             if structured != {k: v for k, v in record["evaluation"].items() if k != "summary"}:
                 problems.append(f"{label}: stored evaluation detail differs from recomputation")
 
+    problems.extend(_verify_reproduction(registry, experiment_id, label, record))
+
     artifact_dir = run_dir / "artifacts"
     stored_names = set()
     for artifact in record["artifacts"]:
@@ -85,6 +88,33 @@ def _verify_run(registry: Registry, experiment_id: str, definition: dict, run_di
         for extra in sorted(p.name for p in artifact_dir.iterdir() if p.name not in stored_names):
             problems.append(f"{label}: untracked file in artifacts/: {extra}")
     return problems, warnings
+
+
+def _verify_reproduction(registry: Registry, experiment_id: str, label: str, record: dict) -> list[str]:
+    """Recompute the reproduction claim from the source run; never trust the stored comparison."""
+    kind, source_id, stored = record["kind"], record["reproduces"], record["reproduction"]
+    if kind != "reproduce":
+        if source_id is not None or stored is not None:
+            return [f"{label}: only a reproduce run may carry reproduction data"]
+        return []
+    if source_id is None:
+        return [f"{label}: reproduce run does not name its source run"]
+    if record["status"] == "error":
+        return [] if stored is None else [f"{label}: an error run must not carry a reproduction claim"]
+    if stored is None or stored["source_run"] != source_id:
+        return [f"{label}: reproduction claim is missing or names a different source run"]
+    try:
+        _, source = registry.resolve_run(source_id)
+    except ExperimentError as exc:
+        return [f"{label}: reproduction source unavailable: {exc}"]
+    if source["experiment_id"] != experiment_id or \
+            int(source_id.rsplit("-", 1)[1]) >= int(record["run_id"].rsplit("-", 1)[1]):
+        return [f"{label}: reproduction source must be an earlier run of the same experiment"]
+    if source["status"] not in ("passed", "failed", "inconclusive"):
+        return [f"{label}: reproduction source {source_id} has no completed result"]
+    if reproduction_report(record["definition"], source, record) != stored:
+        return [f"{label}: stored reproduction claim differs from recomputation against {source_id}"]
+    return []
 
 
 def verify(registry: Registry, experiment_ids: list[str] | None = None) -> dict[str, Any]:

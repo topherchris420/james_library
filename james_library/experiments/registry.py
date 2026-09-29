@@ -23,6 +23,9 @@ import json
 import os
 import re
 import tempfile
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -100,8 +103,32 @@ class Registry:
             return []
         return sorted(p.name for p in self.root.iterdir() if p.is_dir() and EXPERIMENT_ID.match(p.name))
 
+    @contextmanager
+    def _ledger_lock(self, timeout_s: float = 10.0) -> Iterator[None]:
+        """Serialize ledger read-claim-write so concurrent creates cannot drop an allocation."""
+        lock = self.root / ".registry.lock"
+        deadline = time.monotonic() + timeout_s
+        while True:
+            try:
+                os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                break
+            except FileExistsError:
+                if time.monotonic() >= deadline:
+                    raise ExperimentError(
+                        f"Registry is locked by another process ({lock}); if none is running, delete the lock file"
+                    ) from None
+                time.sleep(0.02)
+        try:
+            yield
+        finally:
+            lock.unlink(missing_ok=True)
+
     def _allocate(self, created_at: str) -> str:
         self.root.mkdir(parents=True, exist_ok=True)
+        with self._ledger_lock():
+            return self._allocate_locked(created_at)
+
+    def _allocate_locked(self, created_at: str) -> str:
         ledger = self.ledger()
         seen = [entry.get("id", "") for entry in ledger["allocated"]] + self.experiment_ids()
         numbers = [int(m.group(1)) for m in (EXPERIMENT_ID.match(i) for i in seen) if m]

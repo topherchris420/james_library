@@ -25,7 +25,9 @@ from .schema import ExperimentError
 from .verify import verify
 
 COMMANDS = ("create", "list", "show", "run", "reproduce", "verify", "compare", "record", "results")
-_CRITERION = re.compile(r"^\s*([a-z][a-z0-9_]{0,63})\s*(>=|<=|>|<)\s*(-?[0-9.]+(?:[eE][-+]?[0-9]+)?)\s*$")
+_CRITERION = re.compile(
+    r"^\s*([a-z][a-z0-9_]{0,63})\s*(>=|<=|>|<)\s*(-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)\s*$"
+)
 
 
 def _out(text: str) -> None:

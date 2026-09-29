@@ -150,7 +150,8 @@ def _store_artifacts(run_dir: Path, definition: dict[str, Any], artifacts: list[
     return rows
 
 
-def _reproduction(definition: dict, source: dict, record: dict) -> dict[str, Any]:
+def reproduction_report(definition: dict, source: dict, record: dict) -> dict[str, Any]:
+    """Compare a replay with its source run; ``verify`` recomputes this from the stored records."""
     mismatches = []
     outcome_matches = source["status"] == record["status"]
     if not outcome_matches:
@@ -288,7 +289,7 @@ def run_experiment(registry: Registry, experiment_id: str, runners: dict[str, Ru
             output, error = None, _error("validate_output", exc)
     record = _complete(record, definition, output, error, started)
     if source is not None and record["status"] != "error":
-        record["reproduction"] = _reproduction(definition, source, record)
+        record["reproduction"] = reproduction_report(definition, source, record)
     registry.write_run(run_dir, record)
     return record
 
@@ -322,6 +323,10 @@ def record_submission(registry: Registry, experiment_id: str, submission: Any) -
         )
     if submission["evidence_class"] != definition["evidence_class"]:
         raise ExperimentError("Submission evidence class does not match the registered experiment")
+    submission_sha256 = sha256_json(submission)
+    for existing in registry.runs(experiment_id):
+        if existing["provenance"].get("submission_sha256") == submission_sha256:
+            raise ExperimentError(f"This submission is already recorded as {existing['run_id']}")
     started, finished = _parse_time(submission["started_at"]), _parse_time(submission["finished_at"])
     if finished < started:
         raise ExperimentError("finished_at precedes started_at")
@@ -351,7 +356,7 @@ def record_submission(registry: Registry, experiment_id: str, submission: Any) -
         "models": [], "reproduction": None, "error": None,
         "provenance": {
             "source": "external_submission",
-            "submission_sha256": sha256_json(submission),
+            "submission_sha256": submission_sha256,
             "producer": source_provenance,
             "recorded_by": {"git": provenance.git_state(excluded=[registry.root, registry.results_path]),
                             "environment": provenance.environment()},

@@ -481,6 +481,70 @@ def test_verify_reports_unledgered_experiment_and_running_runs(verified):
     assert any("still marked running" in w for w in verify(verified)["warnings"])
 
 
+def test_verify_recomputes_reproduction_claims(registry):
+    create(registry, runner={"kind": "builtin", "name": "drifting"})
+    source = run_experiment(registry, "V3D-EXP-0001", RUNNERS)
+    run_experiment(registry, "V3D-EXP-0001", RUNNERS, reproduces=source["run_id"])
+    assert verify(registry)["valid"]
+    path = _run_path(registry, "RUN-0002")
+    record = json.loads(path.read_text())
+    record["reproduction"].update(deterministic_metrics_match=True, mismatches=[])
+    path.write_text(json.dumps(record))
+    assert any("differs from recomputation" in p for p in verify(registry)["problems"])
+    record["reproduction"] = None
+    path.write_text(json.dumps(record))
+    assert any("missing or names a different source" in p for p in verify(registry)["problems"])
+    record.update(kind="run", reproduces=None)
+    record["reproduction"] = {"source_run": source["run_id"], "outcome_matches": True,
+                              "deterministic_metrics_match": True, "mismatches": []}
+    path.write_text(json.dumps(record))
+    assert any("only a reproduce run" in p for p in verify(registry)["problems"])
+
+
+def test_verify_rejects_reproduction_of_a_later_or_missing_run(registry):
+    create(registry)
+    source = run_experiment(registry, "V3D-EXP-0001", RUNNERS)
+    run_experiment(registry, "V3D-EXP-0001", RUNNERS, reproduces=source["run_id"])
+    path = _run_path(registry, "RUN-0002")
+    record = json.loads(path.read_text())
+    record["reproduces"] = record["reproduction"]["source_run"] = "V3D-EXP-0001-RUN-0009"
+    path.write_text(json.dumps(record))
+    assert any("source unavailable" in p for p in verify(registry)["problems"])
+
+
+def test_concurrent_creates_keep_every_allocation(registry):
+    import threading
+    create(registry)  # the registry directory exists before the race
+    errors = []
+
+    def worker():
+        try:
+            create(registry)
+        except Exception as exc:  # pragma: no cover - reported below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=worker) for _ in range(12)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert errors == []
+    allocated = [e["id"] for e in json.loads(registry.ledger_path.read_text())["allocated"]]
+    assert len(allocated) == len(set(allocated)) == 13
+    assert sorted(allocated) == registry.experiment_ids()
+    assert not (registry.root / ".registry.lock").exists()
+    assert verify(registry)["valid"]
+
+
+def test_stale_registry_lock_is_reported_not_ignored(registry):
+    create(registry)
+    (registry.root / ".registry.lock").touch()
+    with pytest.raises(ExperimentError, match="locked"):
+        with registry._ledger_lock(timeout_s=0.05):
+            pass
+    assert registry.experiment_ids() == ["V3D-EXP-0001"]
+
+
 # ── external submissions ───────────────────────────────────────────────
 
 def external(registry):
@@ -539,6 +603,29 @@ def test_invalid_submissions_are_rejected(registry, overrides, message):
     external(registry)
     with pytest.raises(ExperimentError, match=message):
         record_submission(registry, "V3D-EXP-0001", submission(**overrides))
+
+
+def test_duplicate_submission_is_refused(registry):
+    external(registry)
+    first = record_submission(registry, "V3D-EXP-0001", submission())
+    with pytest.raises(ExperimentError, match=f"already recorded as {first['run_id']}"):
+        record_submission(registry, "V3D-EXP-0001", submission())
+    assert len(registry.runs("V3D-EXP-0001")) == 1
+
+
+def test_resubmitting_one_execution_is_not_a_replication(registry):
+    from james_library.experiments.results import experiment_summary
+    external(registry)
+    level = lambda: experiment_summary(registry.load_definition("V3D-EXP-0001"),  # noqa: E731
+                                       registry.runs("V3D-EXP-0001"))
+    record_submission(registry, "V3D-EXP-0001", submission())
+    record_submission(registry, "V3D-EXP-0001", submission(observations=["resubmitted"]))
+    assert level()["evidence_level"] == "measured"
+    record_submission(registry, "V3D-EXP-0001", submission(started_at="2026-09-30T10:00:00Z",
+                                                            finished_at="2026-09-30T10:05:00Z"))
+    summary = level()
+    assert summary["evidence_level"] == "reproduced"
+    assert summary["reproduction"].startswith("2 separately reported external executions agree")
 
 
 def test_builtin_experiments_refuse_submissions(registry):
@@ -656,8 +743,9 @@ def test_cli_workflow(tmp_path, monkeypatch, capsys):
     assert cli.main(["verify", *reg]) == 1
     assert cli.main(["show", "V3D-EXP-9999", *reg]) == 2
     assert cli.main(["compare", "V3D-EXP-0001-RUN-0001", *reg]) == 2
-    assert cli.main(["create", "--title", "x", "--question", "q", "--hypothesis", "h",
-                     "--success", "accuracy >= high", *reg]) == 2
+    for bad in ("accuracy >= high", "accuracy>=.", "accuracy>=1.2.3", "accuracy>=-", "accuracy>=1e"):
+        assert cli.main(["create", "--title", "x", "--question", "q", "--hypothesis", "h",
+                         "--success", bad, "--failure", "accuracy<0", *reg]) == 2, bad
 
 
 def test_cli_run_error_exit_code(tmp_path, monkeypatch):

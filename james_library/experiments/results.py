@@ -56,7 +56,10 @@ def experiment_summary(definition: dict[str, Any], runs: list[dict[str, Any]]) -
     reproductions = [r for r in completed if r["kind"] == "reproduce" and r["reproduction"]]
     matched = [r for r in reproductions
                if r["reproduction"]["outcome_matches"] and r["reproduction"]["deterministic_metrics_match"]]
-    external_agree = (definition["runner"]["kind"] == "external" and len(completed) >= 2
+    # External executions count once each: a resubmission of the same execution (same start time)
+    # is not a replication. Independence beyond that is producer-attested, not host-verified.
+    executions = {r["started_at"] for r in completed}
+    external_agree = (definition["runner"]["kind"] == "external" and len(executions) >= 2
                       and len({r["status"] for r in completed}) == 1)
     evidence_class = definition["evidence_class"]
     if not completed:
@@ -72,7 +75,8 @@ def experiment_summary(definition: dict[str, Any], runs: list[dict[str, Any]]) -
     if reproductions:
         reproduction = f"{len(matched)} of {len(reproductions)} reproduction(s) matched the source run"
     elif external_agree:
-        reproduction = f"{len(completed)} independent external runs agree"
+        reproduction = (f"{len(executions)} separately reported external executions agree "
+                        "(independence is producer-attested)")
     else:
         reproduction = "not yet reproduced" if completed else "not run"
     counts = {s: sum(1 for r in runs if r["status"] == s) for s in ("passed", "failed", "inconclusive", "error")}
