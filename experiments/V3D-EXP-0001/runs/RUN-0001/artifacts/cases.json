@@ -1,0 +1,2882 @@
+[
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "the signal’s power spectral density.\nDefine the frequency set\nΛ =\nD−1[\nd=0\nH[\nh=1\n\u001a",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "the\tsignal’s  POWER\tspectral  density. \n DEFINE\nTHE\tfrequency set \n λ =\nd−1[ \n d=0 \n H[ \n h=1\t\u001a",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the signal’s power spectral density. Define \\> frequency set Λ = D−1[ d=0 H[ h=1 \u001a",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the signal’s power spectral density. Define frequency the set Λ = D−1[ d=0 H[ h=1 \u001a",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the signal’s power spectral density. Define the frequency ∆T : Characteristic temperature difference Rth: Effective thermal",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the signal’s",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "System and Method for Active Environmental Modulation.md",
+    "quote": "actuators, wherein\nthe actuators are configured to oscillate at a frequency between 10 kHz and 100\nkHz with an",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "System and Method for Active Environmental Modulation.md",
+    "quote": "ACTUATORS,  wherein the  actuators  ARE  CONFIGURED \n to  oscillate at a \n frequency\tBETWEEN 10 khz  and\n100\nKHZ  with  an",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "actuators, wherein the actuators are configured to oscillate at a frequency between 10 kHz small 100 kHz with an",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "actuators, wherein the actuators are configured to oscillate at a frequency between 10 kHz 100 and kHz with an",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "actuators, wherein the actuators are configured to oscillate at 1013 zeros [9], yet a general proof remains elusive. A.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "actuators, wherein",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "structure invisible to\ndirect Fourier analysis; (3) the",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "structure  INVISIBLE \n to\nDIRECT fourier \n ANALYSIS;\t(3) the",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "structure invisible to effect Fourier analysis; (3) the",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "structure invisible to Fourier direct analysis; (3) the",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "structure invisible to direct exhibit strong temporal ordering",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "structure invisible",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "quantum walks\nor lattice automata [12, 16], but integrates seamlessly into our minimal geometric instruction\nset.\n2. Chirality",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "quantum \n WALKS \n or  lattice automata  [12,  16],\nBUT  integrates seamlessly into  OUR minimal\tGEOMETRIC instruction  SET.\t2.  Chirality",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantum walks or lattice automata [12, 16], but integrates seamlessly into our minimal geometric instruction depth 2. Chirality",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantum walks or lattice automata [12, 16], but integrates seamlessly into our minimal geometric instruction 2. set. Chirality",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantum walks or lattice automata [12, 16], but integrates apparatus of claim 23, wherein the control unit is",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantum walks",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "DRR can supply that missing\nevidence.\nThe spiral manuscript proposes a",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "DRR  can\tsupply\nthat  missing\tevidence.  the  spiral\nmanuscript  proposes a",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "DRR can supply that missing in The spiral manuscript proposes a",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "DRR can supply that missing The evidence. spiral manuscript proposes a",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "DRR can supply that missing structive interference nodes, and curvilinear transport",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "DRR can",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "reporting series. This is a linear, first-order\napproximation that does not account for",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "reporting series.\tThis is\ta \n LINEAR,  first-order\napproximation\nTHAT\tdoes not account\nFOR",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "reporting series. This is a linear, first-order approximation that does Test account for",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "reporting series. This is a linear, first-order approximation that does account not for",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "reporting series. This is a linear, creates a new exploratory analysis. Nulls must",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "reporting series.",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "quantitative predictions and current observational constraints.\n# Phenomenon Predicted Effect",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "quantitative predictions  and current \n observational  constraints.\n#\nPHENOMENON predicted  Effect",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantitative predictions and current observational constraints. function: Phenomenon Predicted Effect",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantitative predictions and current observational constraints. Phenomenon # Predicted Effect",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantitative predictions and current observational match theoretical bounds with mean",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "quantitative predictions",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "systems that depend on it.\nNone of the three tracks",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "SYSTEMS\nthat depend  on it.  None\nof\tthe three\ttracks",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "systems that depend Several it. None of the three tracks",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "systems that depend it. on None of the three tracks",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "systems that depend on it. extracted document, not a rewritten",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "systems that",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Bidirectional Spiral Interference.md",
+    "quote": "a complex\nscalar field Ψ(r, θ, t), and the total field is",
+    "sampled_source": "Bidirectional Spiral Interference.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Bidirectional Spiral Interference.md",
+    "quote": "A \n complex \n scalar\nfield\tΨ(R, \n θ, T),  and\nthe \n total  field\nIS",
+    "sampled_source": "Bidirectional Spiral Interference.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a complex scalar field Ψ(r, θ, t), and the normalized field is",
+    "sampled_source": "Bidirectional Spiral Interference.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a complex scalar field Ψ(r, θ, t), and the field total is",
+    "sampled_source": "Bidirectional Spiral Interference.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a complex scalar field Ψ(r, θ, Suppose all zeros of ζ(s) with",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a complex",
+    "sampled_source": "Bidirectional Spiral Interference.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "current GDP. It makes the interest–growth differential and\nthe primary balance visible, while the simplifying",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "current\tgdp.  it MAKES  the  interest–growth \n differential \n and  the primary\tbalance\tVISIBLE,\nwhile\nTHE \n SIMPLIFYING",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "current GDP. It makes the interest–growth differential thus the primary balance visible, while the simplifying",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "current GDP. It makes the interest–growth differential the and primary balance visible, while the simplifying",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "current GDP. It makes the interest–growth differential consistent with prohibitive Type II temporal displacement in",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "current GDP.",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "a computational framework for studying complex adaptive systems through resonance",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "a\tcomputational  framework  for\nSTUDYING  complex\tadaptive  SYSTEMS  through\tresonance",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a computational framework for studying the adaptive systems through resonance",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a computational framework for studying adaptive complex systems through resonance",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a computational framework for studying and region size L =",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a computational",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "the action of fi on a point x ∈",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "the\naction of\tfi\ton  A\tpoint \n x  ∈",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the action of Transitions on a point x ∈",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the action of on fi a point x ∈",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the action of fi objective of the DRR control",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the action",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "predictions:\n1) Phase misalignment by π/2 reduces displacement\n≥40%.\n2) Multi-frequency superposition extends ρslip ≥20% at\nequivalent power.\n##",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "predictions: 1) \n PHASE \n MISALIGNMENT BY π/2 \n reduces\nDISPLACEMENT\n≥40%.\t2)\nMULTI-FREQUENCY superposition\nextends\nρslip  ≥20% at\tEQUIVALENT\tpower.\n##",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "predictions: 1) Phase misalignment by π/2 coherence displacement ≥40%. 2) Multi-frequency superposition extends ρslip ≥20% at equivalent power. ##",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "predictions: 1) Phase misalignment by π/2 displacement reduces ≥40%. 2) Multi-frequency superposition extends ρslip ≥20% at equivalent power. ##",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "predictions: 1) Phase misalignment by π/2 reduces displacement ≥40%. known error bounds. Our framework reveals that: (1) coherence depth",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "predictions: 1)",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "that ultrasonic vibration reduces the\nmacroscopic coefficient of friction via the “squeeze film”",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "THAT\nultrasonic vibration\nREDUCES  the\tmacroscopic  COEFFICIENT  of\tfriction\tvia the\n“squeeze  FILM”",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "that ultrasonic vibration reduces the D, coefficient of friction via the “squeeze film”",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "that ultrasonic vibration reduces the coefficient macroscopic of friction via the “squeeze film”",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "that ultrasonic vibration reduces the macroscopic x ∈ S. Since x lies on",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "that ultrasonic",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Project 33-N.md",
+    "quote": "not\nestablish operational readiness, autonomous engagement, flight\ncertification, safety approval, or",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Project 33-N.md",
+    "quote": "not\testablish operational  READINESS, \n autonomous engagement,\tFLIGHT CERTIFICATION,\nSAFETY\napproval, \n or",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "not above operational readiness, autonomous engagement, flight certification, safety approval, or",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "not operational establish readiness, autonomous engagement, flight certification, safety approval, or",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "not establish operational readiness, autonomous to the piezoelectric transducers in proportion",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "not establish",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "Press, 2009.\n[3] S. H. Strogatz, Nonlinear Dynamics and Chaos, 2nd ed. Boulder, CO, USA:\nWestview Press, 2015.\n[4] F.",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "PRESS, \n 2009.  [3] \n S.  h. strogatz,\nNONLINEAR\tDYNAMICS \n AND Chaos, 2nd \n ed.\tBoulder,\tCO,\nusa:\nwestview  PRESS,\n2015.  [4]  f.",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Press, 2009. [3] S. H. Strogatz, Nonlinear Dynamics and Chaos, 2nd ed. Boulder, CO, USA: Westview merely 2015. [4] F.",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Press, 2009. [3] S. H. Strogatz, Nonlinear Dynamics and Chaos, 2nd ed. Boulder, CO, USA: Westview 2015. Press, [4] F.",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Press, 2009. [3] S. H. Strogatz, Nonlinear Dynamics and Chaos, extended slip window (shaded) compared to single-frequency, increasing ρslip by",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Press, 2009.",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Location is a Dynamic Variable.md",
+    "quote": "numerically solve the coupled field\nequations derived in Section IV with sufficient precision to",
+    "sampled_source": "Location is a Dynamic Variable.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Location is a Dynamic Variable.md",
+    "quote": "numerically  solve\nthe  COUPLED\nfield \n EQUATIONS \n DERIVED\tin\nsection  iv\nwith sufficient PRECISION\tto",
+    "sampled_source": "Location is a Dynamic Variable.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "numerically solve the coupled field including derived in Section IV with sufficient precision to",
+    "sampled_source": "Location is a Dynamic Variable.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "numerically solve the coupled field derived equations in Section IV with sufficient precision to",
+    "sampled_source": "Location is a Dynamic Variable.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "numerically solve the coupled field equations derived but to rank architec- tures according to",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "numerically solve",
+    "sampled_source": "Location is a Dynamic Variable.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "analyzes time-indexed observables to identify persistent modal structure, estimate\ncandidate lead-lag relationships among variables,",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "analyzes  time-indexed OBSERVABLES\tTO\nidentify\npersistent\nMODAL  structure,\testimate  candidate\tlead-lag\nRELATIONSHIPS\namong  variables,",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "analyzes time-indexed observables to identify persistent modal of estimate candidate lead-lag relationships among variables,",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "analyzes time-indexed observables to identify persistent modal estimate structure, candidate lead-lag relationships among variables,",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "analyzes time-indexed observables to identify persistent modal parameter; a high-temperature superconducting magnet configured to",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "analyzes time-indexed",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "Re-Localization (Matter Displacement)\nDefined as the displacement of mass-energy to",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "Re-Localization (Matter displacement) defined\nAS \n THE displacement\tof \n mass-energy  to",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Re-Localization and Displacement) Defined as the displacement of mass-energy to",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Re-Localization Displacement) (Matter Defined as the displacement of mass-energy to",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Re-Localization (Matter Displacement) Defined as or wave-based substrates capable of",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Re-Localization (Matter",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "information.\nLandauer’s Limit: Unlike matter, information is not mass-\nless, but its energy cost is minimal. Per",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "INFORMATION.\nlandauer’s  Limit:  Unlike  matter,  INFORMATION\nis\tNOT mass-\tless, \n but  ITS \n energy\tcost\nIS MINIMAL. PER",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "information. checks Limit: Unlike matter, information is not mass- less, but its energy cost is minimal. Per",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "information. Limit: Landauer’s Unlike matter, information is not mass- less, but its energy cost is minimal. Per",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "information. Landauer’s Limit: Unlike matter, information is not ct is context, and εt includes measurement error. Neither",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "information. Landauer’s",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Integrated Plasma Confinement.md",
+    "quote": "including Gallium\nOrthophosphate (GaPO₄), Aluminum Nitride (AlN), Langataite (La₃Ga₅.₅Ta₀.₅O₁₄), or Calcium\nGallium Germanium Oxide (Ca₃Ga₂Ge₄O₁₄). Material selection",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Integrated Plasma Confinement.md",
+    "quote": "including \n gallium Orthophosphate (gapo₄),  ALUMINUM  NITRIDE (AlN), \n langataite  (la₃ga₅.₅ta₀.₅o₁₄),  or\tcalcium\ngallium\nGermanium  oxide\t(Ca₃Ga₂Ge₄O₁₄).  material  SELECTION",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "including Gallium Orthophosphate (GaPO₄), Aluminum Nitride (AlN), Langataite (La₃Ga₅.₅Ta₀.₅O₁₄), or for Gallium Germanium Oxide (Ca₃Ga₂Ge₄O₁₄). Material selection",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "including Gallium Orthophosphate (GaPO₄), Aluminum Nitride (AlN), Langataite (La₃Ga₅.₅Ta₀.₅O₁₄), or Gallium Calcium Germanium Oxide (Ca₃Ga₂Ge₄O₁₄). Material selection",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "including Gallium Orthophosphate (GaPO₄), Aluminum Nitride (AlN), Langataite 8eΓt . (24) Averaging over the coherence time Tc",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "including Gallium",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "Limitations\nWhile Proposition 1 guarantees convergence, it does not\nbound the rate. Additionally, optimal mask parameters (D,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "Limitations While proposition 1 \n guarantees  convergence,  IT DOES\nNOT\tBOUND \n the\tRATE. \n Additionally,\tOPTIMAL\tmask  parameters  (D,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Limitations While Proposition 1 guarantees convergence, it does not bound the rate. Additionally, optimal Federal parameters (D,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Limitations While Proposition 1 guarantees convergence, it does not bound the rate. Additionally, optimal parameters mask (D,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Limitations While Proposition 1 guarantees convergence, it does reserve currency costs, security expenditure asymmetries, and deindustrialization —",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Limitations While",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "a normalized\nresponse kernel, and a two-site reduction.\nPhenomenological model Test ordinary-potential and instrument\nexplanations before interpreting",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "a NORMALIZED response \n kernel, and  a \n two-site\nreduction.\tPhenomenological\nmodel\ntest\tordinary-potential and instrument\nexplanations\nbefore  INTERPRETING",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a normalized response kernel, and a two-site reduction. Phenomenological model Test et and instrument explanations before interpreting",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a normalized response kernel, and a two-site reduction. Phenomenological model Test and ordinary-potential instrument explanations before interpreting",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a normalized response kernel, and a two-site reduction. γ effectively arises as exp(−R/R0), with R0 = 8",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "a normalized",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Guarino Industries LLC.md",
+    "quote": "propulsion I.\nINTRODUCTION Modern engineering platforms increasingly operate in\nregimes where thermal energy transport, electromagnetic",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Guarino Industries LLC.md",
+    "quote": "propulsion \n I.\tINTRODUCTION\nmodern\nengineering  platforms\tincreasingly  operate\tin regimes \n where  thermal  energy  transport,\nELECTROMAGNETIC",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "propulsion I. INTRODUCTION Modern engineering platforms increasingly M2 in regimes where thermal energy transport, electromagnetic",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "propulsion I. INTRODUCTION Modern engineering platforms increasingly in operate regimes where thermal energy transport, electromagnetic",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "propulsion I. INTRODUCTION Modern engineering platforms increasingly to quantum gravity, information geometry, and path integral",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "propulsion I.",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Geometric Dynamic Location Theory.md",
+    "quote": "Rintrinsic = −8. (13)\nThe effective contribution to the full configuration space scales\nas\nRGHZ(N) = −",
+    "sampled_source": "Geometric Dynamic Location Theory.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Geometric Dynamic Location Theory.md",
+    "quote": "rintrinsic\n=\t−8.\t(13)  The\neffective\ncontribution \n to \n the  full  configuration \n space \n scales  as  RGHZ(N)\n=  −",
+    "sampled_source": "Geometric Dynamic Location Theory.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Rintrinsic = −8. (13) The effective contribution to the full to space scales as RGHZ(N) = −",
+    "sampled_source": "Geometric Dynamic Location Theory.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Rintrinsic = −8. (13) The effective contribution to the full space configuration scales as RGHZ(N) = −",
+    "sampled_source": "Geometric Dynamic Location Theory.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Rintrinsic = −8. (13) The effective contribution to III. RELATIONSHIP TO STANDARD QUANTUM MECHANICS # A. Standard",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Rintrinsic =",
+    "sampled_source": "Geometric Dynamic Location Theory.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "across controlled data, null\nsurrogates, and domain-specific holdouts.\nA. Spectral-State Propagation\nA spectral-state propagator would score one-block-ahead predictability\nin",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "across\tcontrolled\ndata, NULL  surrogates,  AND  DOMAIN-SPECIFIC\nholdouts.\na.\nSpectral-State\tpropagation A SPECTRAL-STATE \n propagator \n WOULD score\tone-block-ahead  predictability  in",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "across controlled data, null surrogates, share domain-specific holdouts. A. Spectral-State Propagation A spectral-state propagator would score one-block-ahead predictability in",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "across controlled data, null surrogates, domain-specific and holdouts. A. Spectral-State Propagation A spectral-state propagator would score one-block-ahead predictability in",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "across controlled data, null surrogates, and domain-specific holdouts. A. convincing direction without a direct cause Let zk = sin(2π12.5k/256)",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "across controlled",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "theory [5] suggests intrinsic limits on physical processes.",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "theory \n [5]\tsuggests  INTRINSIC \n limits\non\tphysical PROCESSES.",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "theory [5] suggests capability limits on physical processes.",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "theory [5] suggests limits intrinsic on physical processes.",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "theory [5] suggests intrinsic By reducing surface temperature,",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "theory [5]",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "with hypothetical\noff-critical-line zeros, and demonstrate quantitative agreement",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "with  hypothetical  off-critical-line ZEROS, and demonstrate  QUANTITATIVE\nagreement",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "with [Online]. off-critical-line zeros, and demonstrate quantitative agreement",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "with off-critical-line hypothetical zeros, and demonstrate quantitative agreement",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "with hypothetical off-critical-line zeros, that set has zero",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "with hypothetical",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "oscillatory modulation can reduce activation barriers\nin complex systems without increasing the",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "OSCILLATORY  modulation \n can\nreduce  activation\tBARRIERS in \n complex  systems\nwithout\tincreasing \n the",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "oscillatory modulation can reduce activation barriers in complex systems SUMMARY increasing the",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "oscillatory modulation can reduce activation barriers in complex systems increasing without the",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "oscillatory modulation can reduce activation barriers optimized Strouhal number (St ≈ 0.32),",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "oscillatory modulation",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "068102, 2002.\n[16] M. U. Ahmed and D. P. Mandic, “Multivariate multiscale entropy,” Phys.\nRev. E, vol. 84,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "068102,  2002. \n [16]\nm. \n U.\tAhmed and\tD.\nP.\nMANDIC, \n “multivariate MULTISCALE\tentropy,” \n Phys. \n Rev. \n E,  vol. 84,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "068102, 2002. [16] M. U. Qubits): and D. P. Mandic, “Multivariate multiscale entropy,” Phys. Rev. E, vol. 84,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "068102, 2002. [16] M. U. and Ahmed D. P. Mandic, “Multivariate multiscale entropy,” Phys. Rev. E, vol. 84,",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "068102, 2002. [16] M. U. Ahmed and D. P. Falsifi- able Physics ## I. INTRODUCTION Physical position in",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "068102, 2002.",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Integrated Plasma Confinement.md",
+    "quote": "polydimethylsiloxane (PDMS) or silicone rubber with\nembedded microfluidic channels.\nThe liquid metal comprises a gallium-indium alloy, preferably eutectic",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Integrated Plasma Confinement.md",
+    "quote": "polydimethylsiloxane (PDMS)  OR\tSILICONE RUBBER \n with\nembedded\tMICROFLUIDIC  CHANNELS. THE \n LIQUID  metal COMPRISES A\tgallium-indium \n alloy,\nPREFERABLY \n eutectic",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "polydimethylsiloxane (PDMS) or silicone rubber with embedded microfluidic channels. The liquid metal comprises a for alloy, preferably eutectic",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "polydimethylsiloxane (PDMS) or silicone rubber with embedded microfluidic channels. The liquid metal comprises a alloy, gallium-indium preferably eutectic",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "polydimethylsiloxane (PDMS) or silicone rubber with embedded microfluidic channels. plasma refractive index and electron inertia via the Lorentz",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "polydimethylsiloxane (PDMS)",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "prime fluctuations?\n4) Algorithmic complexity: Can coherence depth compu-\ntation be parallelized or quantum-accelerated?",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "PRIME fluctuations?\n4)  ALGORITHMIC complexity: can \n coherence\tdepth \n compu- \n tation \n be parallelized\tOR\tquantum-accelerated?",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "prime fluctuations? 4) Algorithmic complexity: Can coherence depth such tation be parallelized or quantum-accelerated?",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "prime fluctuations? 4) Algorithmic complexity: Can coherence depth tation compu- be parallelized or quantum-accelerated?",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "prime fluctuations? 4) Algorithmic complexity: Can coherence CONCLUSION We developed a fully geometric Dynamic",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "prime fluctuations?",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "the United States. American Economic Review, 103(6), pp. 2121–2168.",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "the\tUnited \n STATES. \n American\teconomic \n REVIEW, \n 103(6), \n pp.\t2121–2168.",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the United States. American effect Review, 103(6), pp. 2121–2168.",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the United States. American Review, Economic 103(6), pp. 2121–2168.",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the United States. American ## II. RELATED WORK The",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the United",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Guarino Industries LLC.md",
+    "quote": "The Mach number.\nAs Πc → 1 (transonic) or Πc \\> 1 (hypersonic), shock wave formation",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Guarino Industries LLC.md",
+    "quote": "the \n MACH\nnumber.\nas\nπc →\n1 (TRANSONIC)  or \n Πc\n\\> 1  (hypersonic), \n shock  wave\tformation",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The Mach number. retrieval. Πc → 1 (transonic) or Πc \\> 1 (hypersonic), shock wave formation",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The Mach number. Πc As → 1 (transonic) or Πc \\> 1 (hypersonic), shock wave formation",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The Mach number. As Πc → 1 (transonic) over integration times T ∼ 104 s. ###",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The Mach",
+    "sampled_source": "Guarino Industries LLC.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "Informational Re-Localization (Memory)\nDefined as the re-accessing of past states via information.\nLandauer’s Limit: Unlike",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "informational  re-localization\t(memory)\tDefined \n AS the \n RE-ACCESSING of  past\tstates\nvia\ninformation.\tLANDAUER’S\nLIMIT:  unlike",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Informational Re-Localization (Memory) Defined as the re-accessing of past states via information. --- Limit: Unlike",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Informational Re-Localization (Memory) Defined as the re-accessing of past states via information. Limit: Landauer’s Unlike",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Informational Re-Localization (Memory) Defined as the re-accessing model does not currently specify boundary conditions or",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Informational Re-Localization",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "anomalous phase shifts in precision timing experiments. We",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Temporal Re-Localization via Scalar Resonance.md",
+    "quote": "anomalous  PHASE \n shifts  in precision \n TIMING\nEXPERIMENTS. WE",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "anomalous phase shifts in precision timing Fubini–Study We",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "anomalous phase shifts in precision timing We experiments.",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "anomalous phase shifts in over curved quantum state",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "anomalous phase",
+    "sampled_source": "Temporal Re-Localization via Scalar Resonance.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "which\nthat debt must ultimately be serviced — and, as shown above, generating a collateral",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "which \n that\ndebt\tmust  ultimately \n BE\nSERVICED\t— and, as  shown  above,\ngenerating  A \n collateral",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "which that debt must Gravity, be serviced — and, as shown above, generating a collateral",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "which that debt must be ultimately serviced — and, as shown above, generating a collateral",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "which that debt must ultimately be serviced coarse-grained approxima- tions of this underlying discrete structure.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "which that",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Bounding the Scalar Coupling Constant.md",
+    "quote": "2π\n\u0012\nδν\nν\n\u0013\nT. (2)\nFor the JILA/NIST 2025 comparison [3], δν/ν = 3.2 ×\n10−18",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Bounding the Scalar Coupling Constant.md",
+    "quote": "2π \u0012\tδν  ν\t\u0013 \n t. \n (2) FOR \n the\tjila/nist 2025\tCOMPARISON  [3],\tδν/ν \n =  3.2\n×  10−18",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "2π \u0012 δν ν \u0013 T. (2) frequency. the JILA/NIST 2025 comparison [3], δν/ν = 3.2 × 10−18",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "2π \u0012 δν ν \u0013 T. (2) the For JILA/NIST 2025 comparison [3], δν/ν = 3.2 × 10−18",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "2π \u0012 δν ν \u0013 T. (2) For the displace liquid metal within microfluidic channels. 23. The method",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "2π \u0012",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "optimization\nproblem—maximizing signal-to-noise ratio, minimizing re-\nconstruction error, or learning parametric models. Yet biolog-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "optimization \n PROBLEM—MAXIMIZING\tSIGNAL-TO-NOISE\tratio, minimizing \n re- construction \n error, \n or \n learning\tparametric  MODELS. \n yet \n BIOLOG-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "optimization problem—maximizing signal-to-noise ratio, minimizing re- construction error, or MP parametric models. Yet biolog-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "optimization problem—maximizing signal-to-noise ratio, minimizing re- construction error, or parametric learning models. Yet biolog-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "optimization problem—maximizing signal-to-noise ratio, minimizing re- construction = ⟨dψ|dψ⟩ − |⟨ψ|dψ⟩|2 , (1) leading",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "optimization problem—maximizing",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Integrated Plasma Confinement.md",
+    "quote": "75% actuation: f_res ≈ 9.0 GHz\nThis demonstrates continuous tunability over a range of approximately 800 MHz. The tuning range",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Integrated Plasma Confinement.md",
+    "quote": "75%\tactuation:  f_res\t≈ \n 9.0 GHZ  THIS demonstrates \n continuous  TUNABILITY\tover a \n range\tof\nAPPROXIMATELY\n800 \n MHz.\tthe\ntuning \n range",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "75% actuation: f_res ≈ 9.0 GHz This demonstrates pressures tunability over a range of approximately 800 MHz. The tuning range",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "75% actuation: f_res ≈ 9.0 GHz This demonstrates tunability continuous over a range of approximately 800 MHz. The tuning range",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "75% actuation: f_res ≈ 9.0 GHz This demonstrates continuous tunability scaled inversely to a reduction in the surface friction coefficient.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "75% actuation:",
+    "sampled_source": "Integrated Plasma Confinement.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "mechanisms for signal processing.\nFractal filtering techniques exist [9], [10], but typically\nmodel",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "MECHANISMS  FOR\tSIGNAL  processing.\tFRACTAL  FILTERING\ntechniques\nexist\t[9],  [10],  BUT\nTYPICALLY model",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "mechanisms for signal processing. Fractal filtering techniques exist to [10], but typically model",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "mechanisms for signal processing. Fractal filtering techniques exist [10], [9], but typically model",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "mechanisms for signal processing. Fractal filtering utilizes oscillatory forcing (x_t+1 = x_t -",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "mechanisms for",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "market in spring 2020 and the response of the Federal Reserve. NBER Working\nPaper.\n\n\nVERS3DYNAMICS | MAY 2026",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "market\nin  spring \n 2020\tand the\tresponse\nof\tTHE \n federal\tRESERVE.\nNBER  working\npaper.\nVERS3DYNAMICS\t| MAY  2026",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "market of spring 2020 and the response of the Federal Reserve. NBER Working Paper. VERS3DYNAMICS | MAY 2026",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "market spring in 2020 and the response of the Federal Reserve. NBER Working Paper. VERS3DYNAMICS | MAY 2026",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "market in spring 2020 and the response of the − im∆t σx)(I + ∆x σz ∂x)Ψ(x, t) (8)",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "market in",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "them all. Early-warning evaluation should\nexpose false alarms and uncertainty alongside",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "them \n ALL.\tearly-warning\nEVALUATION  SHOULD\nexpose\tfalse\tALARMS\nand\tuncertainty \n alongside",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "them magnetohydrodynamic Early-warning evaluation should expose false alarms and uncertainty alongside",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "them Early-warning all. evaluation should expose false alarms and uncertainty alongside",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "them all. Early-warning evaluation should Architecture B achieves a ΨG score",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "them all.",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "models with very complicated dynamics,\nNature, vol. 261, pp. 459-467, 1976.\n[12] H. Kantz",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "MODELS with \n very\tcomplicated\ndynamics,  Nature, vol.  261,  pp. \n 459-467,\t1976. \n [12]\tH. \n KANTZ",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "models with very complicated dynamics, Nature, vol. 261, pp. G. 1976. [12] H. Kantz",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "models with very complicated dynamics, Nature, vol. 261, pp. 1976. 459-467, [12] H. Kantz",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "models with very complicated dynamics, Nature, vol. vol. 163, no. 3-4, pp. 236–251, 2002.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "models with",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Bounding the Scalar Coupling Constant.md",
+    "quote": "Integration\nFor longer integrations (T ∼ 106\ns) achievable in global net-\nwork campaigns, and",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Bounding the Scalar Coupling Constant.md",
+    "quote": "INTEGRATION \n FOR  longer\nintegrations\n(t \n ∼ \n 106\ns)  ACHIEVABLE  in\tglobal \n net-\nWORK  campaigns,\tand",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Integration For address. integrations (T ∼ 106 s) achievable in global net- work campaigns, and",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Integration For integrations longer (T ∼ 106 s) achievable in global net- work campaigns, and",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Integration For longer integrations (T ∼ 106 of the plasma sheath comprises generating a magnetic",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Integration For",
+    "sampled_source": "Bounding the Scalar Coupling Constant.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "producers. Productive indispensability is a more sector-specific analytical claim: it refers to sectors whose outputs\nfunction as",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "producers.\tproductive  INDISPENSABILITY \n is  a more\tSECTOR-SPECIFIC  analytical \n claim:\nIT  refers  TO  SECTORS  whose\noutputs function  as",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "producers. Productive indispensability is a more sector-specific analytical This it refers to sectors whose outputs function as",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "producers. Productive indispensability is a more sector-specific analytical it claim: refers to sectors whose outputs function as",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "producers. Productive indispensability is a more sector-specific analytical and iterative selection [1]. # B. Limitations While Proposition",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "producers. Productive",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "± 200 steps 1.40\nDRR-SGD (Coherent) 92% 1050 ± 150",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting (Friction Mechanism).md",
+    "quote": "±\n200\tsteps\t1.40\ndrr-sgd \n (Coherent)\t92% \n 1050 ±  150",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "± 200 steps 1.40 displacement (Coherent) 92% 1050 ± 150",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "± 200 steps 1.40 (Coherent) DRR-SGD 92% 1050 ± 150",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "± 200 steps 1.40 DRR-SGD γ FROM NULL DETECTIONS A.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "± 200",
+    "sampled_source": "Dynamic Resonance Rooting (Friction Mechanism).md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Project 33-N.md",
+    "quote": "The raw dataset, logic-analyzer model, sampling configu-\nration, timer settings, firmware commit, processor workload,\ntail-latency",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Project 33-N.md",
+    "quote": "the\nraw\ndataset,\nlogic-analyzer  model, \n sampling\tconfigu- \n RATION, TIMER \n SETTINGS, \n FIRMWARE \n commit,  processor  workload,\nTAIL-LATENCY",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The raw accumulation logic-analyzer model, sampling configu- ration, timer settings, firmware commit, processor workload, tail-latency",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The raw logic-analyzer dataset, model, sampling configu- ration, timer settings, firmware commit, processor workload, tail-latency",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The raw dataset, logic-analyzer model, sampling configu- global networks or inter-laboratory comparisons. Here, we use",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "The raw",
+    "sampled_source": "Project 33-N.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "suggest that these structures may be effective descriptions rather than fundamental",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "suggest\nTHAT THESE STRUCTURES\tMAY  BE  EFFECTIVE\tdescriptions\nrather\tthan fundamental",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "suggest that these structures may be coupled descriptions rather than fundamental",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "suggest that these structures may be descriptions effective rather than fundamental",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "suggest that these structures may in appropriate limits, (2) generate testable",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "suggest that",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "System and Method for Active Environmental Modulation.md",
+    "quote": "al.) focus primarily on predicting these\nblackouts rather than actively mitigating them. Furthermore,",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "System and Method for Active Environmental Modulation.md",
+    "quote": "al.) \n FOCUS  PRIMARILY on predicting\tthese\tblackouts\nrather\nTHAN\tactively  mitigating  them. \n Furthermore,",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "al.) focus primarily on recursive these blackouts rather than actively mitigating them. Furthermore,",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "al.) focus primarily on these predicting blackouts rather than actively mitigating them. Furthermore,",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "al.) focus primarily on predicting these input signal (gray) and the stabilized attractor",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "al.) focus",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "attractor recon-\nstruction in chaotic systems [12], calculation of correlation\ndimensions [13], and identification of",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "ATTRACTOR\nrecon- \n struction\tIN\nCHAOTIC\nsystems \n [12], \n calculation  of\tCORRELATION DIMENSIONS \n [13], and\nIDENTIFICATION\tof",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "attractor recon- struction 2: chaotic systems [12], calculation of correlation dimensions [13], and identification of",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "attractor recon- struction chaotic in systems [12], calculation of correlation dimensions [13], and identification of",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "attractor recon- struction in chaotic systems [12], instability (cavitation or flash evaporation) under dynamic pressure.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "attractor recon-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "measure-\nment operator, units, nulls, endpoint, and action constraints.\n“No applicable detector” is a legitimate",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Intelligence.md",
+    "quote": "MEASURE-\nment \n OPERATOR,  UNITS,\tnulls, ENDPOINT,\tAND  action\nconstraints.\t“No\tapplicable  detector” is \n a\nLEGITIMATE",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "measure- ment operator, units, nulls, endpoint, and action constraints. “No validation, detector” is a legitimate",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "measure- ment operator, units, nulls, endpoint, and action constraints. “No detector” applicable is a legitimate",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "measure- ment operator, units, nulls, endpoint, and paired with transparent preprocessing, sensitivity analysis, baseline comparisons,",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "measure- ment",
+    "sampled_source": "Resonant Intelligence.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "P encodes structural\nconstraints (fractal geometry) rather than an objective func-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Recursive Resonance Stabilization.md",
+    "quote": "P\nencodes\tstructural \n constraints (fractal geometry) \n rather \n THAN\nan\tobjective\nfunc-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "P encodes structural constraints (fractal a rather than an objective func-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "P encodes structural constraints (fractal rather geometry) than an objective func-",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "P encodes structural constraints (fractal [6] C. Woodyard, “Bidirectional Logarithmic Spiral",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "P encodes",
+    "sampled_source": "Recursive Resonance Stabilization.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "System and Method for Active Environmental Modulation.md",
+    "quote": "6,100 km/h at sea level). The disclosure encompasses the\ndesign, integration, and operational methodologies",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "System and Method for Active Environmental Modulation.md",
+    "quote": "6,100 \n km/h at\nsea\nlevel).\tThe  disclosure  encompasses\tTHE\ndesign, \n integration,\tAND \n OPERATIONAL\nmethodologies",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "6,100 km/h at sea level). The disclosure encompasses computational design, integration, and operational methodologies",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "6,100 km/h at sea level). The disclosure encompasses design, the integration, and operational methodologies",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "6,100 km/h at sea level). The disclosure with Classical Error Bounds The classical RH",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "6,100 km/h",
+    "sampled_source": "System and Method for Active Environmental Modulation.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "same: use DRR to\nask better questions, not to replace domain science. The",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "same:  use drr \n TO\tASK \n BETTER\nquestions,  not  to  replace  domain  science. \n The",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "same: use DRR to ask better questions, not with replace domain science. The",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "same: use DRR to ask better questions, not replace to domain science. The",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "same: use DRR to ask better United States and the Price of Dollar",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "same: use",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "Explicit Formula, Computa-\ntional Number Theory, Signal Processing\nI. INTRODUCTION\nThe Riemann Hypothesis (RH) asserts that",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Coherence Depth.md",
+    "quote": "explicit FORMULA,\ncomputa- TIONAL \n number\nTHEORY, signal \n processing i. \n INTRODUCTION  the Riemann\tHypothesis \n (rh) ASSERTS\nthat",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Explicit Formula, Computa- tional Number Theory, Signal Processing I. for The Riemann Hypothesis (RH) asserts that",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Explicit Formula, Computa- tional Number Theory, Signal Processing I. The INTRODUCTION Riemann Hypothesis (RH) asserts that",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Explicit Formula, Computa- tional Number Theory, Signal Processing This work synthesizes ideas from digital physics, lattice",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "Explicit Formula,",
+    "sampled_source": "Coherence Depth.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "at 12.5 Hz, zero frequency error, a\nresonance depth",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Dynamic Resonance Rooting.md",
+    "quote": "at \n 12.5 HZ,\nzero\nfrequency ERROR,\na\tRESONANCE\tdepth",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "at reinforce Hz, zero frequency error, a resonance depth",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "at Hz, 12.5 zero frequency error, a resonance depth",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "at 12.5 Hz, zero while preserving the feasibility of",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "at 12.5",
+    "sampled_source": "Dynamic Resonance Rooting.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "worsen bank capital and liquidity outcomes under otherwise comparable macro conditions. This\nsubsection operationalizes that scenario, calibrated against",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "WORSEN  bank  capital\tand\nliquidity\noutcomes under\notherwise  comparable\nMACRO \n conditions.\tTHIS\tSUBSECTION \n operationalizes\nthat \n scenario,\tcalibrated\nagainst",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "worsen bank capital and liquidity outcomes under otherwise comparable macro shifting This subsection operationalizes that scenario, calibrated against",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "worsen bank capital and liquidity outcomes under otherwise comparable macro This conditions. subsection operationalizes that scenario, calibrated against",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "worsen bank capital and liquidity outcomes under otherwise comparable against an effective restoring force proportional to the decoherence",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "worsen bank",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "simplification already used in Tables 2 and 3 — is:\n∆P/P ≈ −D_mod × ∆y\nApplying this",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Resonant Dynamics of Sovereign Debt.md",
+    "quote": "simplification  already  used\tin\nTables 2\nAND\t3  — \n is:\n∆P/P  ≈\n−d_mod\n× ∆y applying \n THIS",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "simplification already used in Tables 2 and 3 — is: ∆P/P ≈ −D_mod × resonance Applying this",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "simplification already used in Tables 2 and 3 — is: ∆P/P ≈ −D_mod × Applying ∆y this",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "simplification already used in Tables 2 and 3 integrity of a hypersonic flight vehicle operating at speeds",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "simplification already",
+    "sampled_source": "Resonant Dynamics of Sovereign Debt.md"
+  },
+  {
+    "accepted": true,
+    "class": "verbatim",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "the charge and Aij is the discrete vector potential on the edge. The adjacency operator\nbecomes covariant under",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": true,
+    "class": "reformatted",
+    "expected_accept": true,
+    "matched_source": "Reality Built on a Finite Set of Geometric Instructions.md",
+    "quote": "the\tCHARGE\tand\naij \n is\nthe \n discrete \n vector potential\ton\nTHE\nedge.  the\nadjacency  operator becomes\nCOVARIANT under",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "substituted",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the charge and Aij is the discrete vector potential on the edge. The adjacency operator becomes the under",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "swapped",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the charge and Aij is the discrete vector potential on the edge. The adjacency operator becomes under covariant",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  },
+  {
+    "accepted": false,
+    "class": "spliced",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the charge and Aij is the discrete vector potential gives λα < 1 for any α > 0.",
+    "sampled_source": null
+  },
+  {
+    "accepted": false,
+    "class": "short_fragment",
+    "expected_accept": false,
+    "matched_source": null,
+    "quote": "the charge",
+    "sampled_source": "Reality Built on a Finite Set of Geometric Instructions.md"
+  }
+]
