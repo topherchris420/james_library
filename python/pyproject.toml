@@ -34,7 +34,7 @@ classifiers = [
 dependencies = [
     "langgraph>=0.2.0",
     "langchain-core>=0.3.0",
-    "langchain-openai>=0.2.0",
+    "langchain-openai>=1.1.14",
     "httpx>=0.25.0",
 ]
 
