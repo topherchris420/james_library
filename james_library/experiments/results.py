@@ -88,6 +88,40 @@ def experiment_summary(definition: dict[str, Any], runs: list[dict[str, Any]]) -
     }
 
 
+def _criterion_result(c: dict[str, Any]) -> str:
+    return f"{criterion_text(c)} (observed {fmt(c['observed'])})"
+
+
+def outcome_reason(run: dict[str, Any]) -> str:
+    """Why a run ended where it did, built from the structured evaluation."""
+    if run["error"]:
+        return f"Execution error at {run['error']['stage']} ({run['error']['type']}); hypothesis not evaluated."
+    evaluation = run["evaluation"]
+    if run["status"] == "failed":
+        hits = [c for c in evaluation["failure"] if c["holds"] is True]
+        return "Failure criterion met: " + "; ".join(_criterion_result(c) for c in hits) + "."
+    if run["status"] == "inconclusive":
+        guards = [c for c in evaluation["guards"] if c["holds"] is not True]
+        if guards:
+            return "Evidence guard not met: " + "; ".join(_criterion_result(c) for c in guards) + "."
+        unmet = [c for c in evaluation["success"] if c["holds"] is not True]
+        return "Success criteria not met: " + "; ".join(_criterion_result(c) for c in unmet) + "."
+    return evaluation["summary"]
+
+
+def key_measurement(definition: dict[str, Any], run: dict[str, Any] | None) -> str:
+    """The first success criterion's metric: what was observed against what was required."""
+    criterion = definition["criteria"]["success"][0]
+    if run is None or run["evaluation"] is None:
+        return f"{criterion['metric']}: — (needs {_OP_TEXT[criterion['op']]} {fmt(criterion['value'])})"
+    observed = run["measurements"].get(criterion["metric"])
+    return f"{criterion['metric']} = {fmt(observed)} (needs {_OP_TEXT[criterion['op']]} {fmt(criterion['value'])})"
+
+
+def _unit(metric: dict[str, Any]) -> str:
+    return f" {metric['unit']}" if metric["unit"] not in ("", "ratio", "count") else ""
+
+
 def _run_counts(summary: dict[str, Any]) -> str:
     parts = [f"{n} {s}" for s, n in summary["counts"].items() if n]
     return ", ".join(parts) if parts else "none completed"
@@ -126,23 +160,21 @@ def render_results(registry: Registry) -> str:
         "",
         "Evidence: " + " · ".join(f"{n} {lv}" for lv, n in levels.items() if n) if rows else "Evidence: none yet",
         "",
-        "| ID | Experiment | Result | Evidence | Runs |",
-        "| --- | --- | --- | --- | --- |",
+        "| ID | Experiment | Result | Key measurement | Evidence | Runs |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for definition, _, summary in rows:
         eid = definition["experiment_id"]
+        key = key_measurement(definition, summary["latest_completed"])
         out.append(f"| [{eid}](#{eid.lower()}) | {definition['title']} | **{summary['status'].upper()}** "
-                   f"| {summary['evidence_level']} | {summary['runs']} |")
+                   f"| {key} | {summary['evidence_level']} | {summary['runs']} |")
     out += ["", "## Negative and inconclusive results", ""]
     negatives = [(d, s) for d, _, s in rows if s["status"] in ("failed", "inconclusive", "error")]
     if not negatives:
         out.append("None recorded yet.")
     for definition, summary in negatives:
-        latest = summary["latest"]
-        reason = (latest["evaluation"]["summary"] if latest["evaluation"]
-                  else latest["interpretation"]["deterministic"])
         out.append(f"- **{definition['experiment_id']} — {summary['status'].upper()}**: "
-                   f"{definition['title']}. {reason}")
+                   f"{definition['title']}. {outcome_reason(summary['latest'])}")
 
     for definition, runs, summary in rows:
         out += ["", *_render_experiment(definition, runs, summary, base)]
@@ -194,11 +226,11 @@ def _render_experiment(definition: dict, runs: list[dict], summary: dict, base: 
             cid = text.split(":", 1)[0]
             state = {True: "holds", False: "does not hold"}.get(held.get(cid), "n/a")
             marks.append(f"{text} ({state})")
-        unit = f" {metric['unit']}" if metric["unit"] else ""
+        unit = _unit(metric)
         timing = "" if metric["deterministic"] else " *(timing; varies)*"
         value = fmt(reference["measurements"].get(name))
         out.append(f"| `{name}`{timing} | {value}{unit} | {'; '.join(marks) or '—'} |")
-    out += ["", f"**Evaluation:** {reference['evaluation']['summary']}", "",
+    out += ["", f"**Evaluation:** {outcome_reason(reference)}", "",
             f"**Reproduction:** {summary['reproduction']}.", ""]
     out += ["| Run | Kind | Status | Commit | Seed | Finished |", "| --- | --- | --- | --- | --- | --- |"]
     for run in runs:

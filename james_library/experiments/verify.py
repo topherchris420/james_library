@@ -65,8 +65,11 @@ def _verify_run(registry: Registry, experiment_id: str, definition: dict, run_di
                 f"{label}: recorded {record['status']}/{record['hypothesis_verdict']} but the stored "
                 f"measurements evaluate to {status}/{verdict}"
             )
-        elif evaluation != record["evaluation"]:
-            problems.append(f"{label}: stored evaluation detail differs from recomputation")
+        else:
+            # Compare the structured evaluation; the summary sentence is presentation and may be reworded.
+            structured = {k: v for k, v in evaluation.items() if k != "summary"}
+            if structured != {k: v for k, v in record["evaluation"].items() if k != "summary"}:
+                problems.append(f"{label}: stored evaluation detail differs from recomputation")
 
     artifact_dir = run_dir / "artifacts"
     stored_names = set()
