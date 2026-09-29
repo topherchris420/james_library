@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/experiments/experiment.schema.json",
+  "title": "R.A.I.N. Experiment Definition v1",
+  "description": "A pre-registered, bounded experiment: the claim, how it is measured, and which recorded values count as success or failure. Written before any run; runs embed a snapshot of it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "experiment_version",
+    "title",
+    "question",
+    "hypothesis",
+    "rationale",
+    "subsystem",
+    "created_at",
+    "created_by",
+    "evidence_class",
+    "runner",
+    "seed",
+    "parameters",
+    "procedure",
+    "variables",
+    "metrics",
+    "criteria",
+    "dependencies",
+    "data_policy",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": "rain-experiment/v1"},
+    "experiment_id": {"$ref": "#/$defs/experiment_id"},
+    "experiment_version": {"type": "integer", "minimum": 1},
+    "title": {"$ref": "#/$defs/short_text"},
+    "question": {"$ref": "#/$defs/text"},
+    "hypothesis": {"$ref": "#/$defs/text"},
+    "rationale": {"$ref": "#/$defs/text"},
+    "subsystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "component", "paths"],
+      "properties": {
+        "repository": {"$ref": "#/$defs/short_text"},
+        "component": {"$ref": "#/$defs/short_text"},
+        "paths": {
+          "description": "Repository-relative files whose bytes are hashed into every local run's provenance.",
+          "type": "array",
+          "maxItems": 32,
+          "items": {"$ref": "#/$defs/relative_path"}
+        }
+      }
+    },
+    "created_at": {"$ref": "#/$defs/timestamp"},
+    "created_by": {"$ref": "#/$defs/actor"},
+    "evidence_class": {"$ref": "#/$defs/evidence_class"},
+    "runner": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name"],
+          "properties": {
+            "kind": {"const": "builtin"},
+            "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "repository"],
+          "properties": {
+            "kind": {"const": "external"},
+            "repository": {"$ref": "#/$defs/short_text"},
+            "adapter": {"$ref": "#/$defs/short_text"}
+          }
+        }
+      ]
+    },
+    "seed": {"type": ["integer", "null"], "minimum": 0, "maximum": 4294967295},
+    "parameters": {"type": "object"},
+    "procedure": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}},
+    "variables": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["independent", "dependent", "controls"],
+      "properties": {
+        "independent": {"type": "array", "items": {"$ref": "#/$defs/text"}},
+        "dependent": {"type": "array", "items": {"$ref": "#/$defs/text"}},
+        "controls": {"type": "array", "items": {"$ref": "#/$defs/text"}}
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "unit", "description", "deterministic"],
+        "properties": {
+          "name": {"$ref": "#/$defs/metric_name"},
+          "unit": {"type": "string", "maxLength": 32},
+          "description": {"$ref": "#/$defs/text"},
+          "deterministic": {
+            "description": "True when a replay with the same seed, parameters and code must reproduce the value exactly (timings are false).",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["guards", "success", "failure"],
+      "properties": {
+        "guards": {
+          "description": "Evidence-sufficiency preconditions. Any unmet guard makes the run inconclusive.",
+          "type": "array",
+          "items": {"$ref": "#/$defs/criterion"}
+        },
+        "success": {
+          "description": "All must hold for the hypothesis to be supported.",
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/criterion"}
+        },
+        "failure": {
+          "description": "Any one holding means the hypothesis is not supported. Failure dominates success.",
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/criterion"}
+        }
+      }
+    },
+    "dependencies": {
+      "description": "Python distribution names whose installed versions are recorded with each local run.",
+      "type": "array",
+      "maxItems": 64,
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"}
+    },
+    "data_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification", "store_artifacts"],
+      "properties": {
+        "classification": {"enum": ["public", "internal", "sensitive"]},
+        "store_artifacts": {
+          "description": "False (or classification 'sensitive') keeps only artifact hashes and sizes; contents are never written into the registry.",
+          "type": "boolean"
+        }
+      }
+    },
+    "limitations": {"type": "array", "items": {"$ref": "#/$defs/text"}}
+  },
+  "$defs": {
+    "experiment_id": {"type": "string", "pattern": "^V3D-EXP-[0-9]{4,}$"},
+    "short_text": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
+    "text": {"type": "string", "minLength": 1, "maxLength": 4000, "pattern": "\\S"},
+    "timestamp": {"type": "string", "minLength": 20, "maxLength": 40},
+    "actor": {
+      "description": "A role label such as R.A.I.N.Operator; no spaces or email addresses.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+    },
+    "relative_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[A-Za-z0-9 _.()/-]+$"
+    },
+    "evidence_class": {"enum": ["measured", "simulated", "model_inferred"]},
+    "metric_name": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "metric", "op", "value"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[GSF][0-9]{1,3}$"},
+        "metric": {"$ref": "#/$defs/metric_name"},
+        "op": {"enum": [">=", ">", "<=", "<"]},
+        "value": {"type": "number"},
+        "note": {"type": "string", "maxLength": 400}
+      }
+    }
+  }
+}

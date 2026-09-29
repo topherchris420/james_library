@@ -1,0 +1,21 @@
+{
+  "allocated": [
+    {
+      "created_at": "2026-09-29T01:58:44.029Z",
+      "id": "V3D-EXP-0001"
+    },
+    {
+      "created_at": "2026-09-29T01:58:44.190Z",
+      "id": "V3D-EXP-0002"
+    },
+    {
+      "created_at": "2026-09-29T01:58:44.366Z",
+      "id": "V3D-EXP-0003"
+    },
+    {
+      "created_at": "2026-09-29T01:58:44.556Z",
+      "id": "V3D-EXP-0004"
+    }
+  ],
+  "schema_version": "rain-experiment-registry/v1"
+}

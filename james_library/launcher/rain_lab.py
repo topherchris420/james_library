@@ -2688,8 +2688,12 @@ async def run_rain_lab(
 def main(argv: list[str] | None = None) -> int:
     argv = list(argv) if argv is not None else sys.argv[1:]
 
-    # Handle direct 'experiment' subcommand
+    # Handle direct 'experiment' subcommand: registry verbs, else the legacy CIRCLE flags.
     if argv and argv[0] == "experiment":
+        from james_library.experiments.cli import COMMANDS as registry_commands
+        if len(argv) > 1 and argv[1] in registry_commands:
+            from james_library.experiments.cli import main as registry_main
+            return registry_main(argv[1:])
         from james_library.services.experiment_protocol.cli import main as exp_main
         return exp_main(argv[1:])
 

@@ -86,3 +86,6 @@ target/
 
 # Godot editor/import cache
 godot_client/.godot/
+
+# Transient experiment registry allocation lock
+experiments/.registry.lock

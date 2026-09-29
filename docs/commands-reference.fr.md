@@ -108,3 +108,23 @@ rain rig radio transmit --frequency-hz HZ --power-w W --text TEXTE   # builds ri
 ```bash
 python -m james_library.services.experiment_protocol.research --help
 ```
+
+## Expériences R.A.I.N. : registre, exécutions et résultats enregistrés (en anglais)
+
+[Expériences R.A.I.N. : registre, exécutions et résultats enregistrés (en anglais)](../EXPERIMENTS.md) · [résultats](../RESULTS.md).
+
+```bash
+python rain_lab.py experiment list
+python rain_lab.py experiment run V3D-EXP-0001
+python rain_lab.py experiment show V3D-EXP-0001
+python rain_lab.py experiment reproduce V3D-EXP-0001
+python rain_lab.py experiment compare V3D-EXP-0001
+python rain_lab.py experiment verify
+python rain_lab.py experiment results --check
+python rain_lab.py experiment create --help
+python rain_lab.py experiment record V3D-EXP-0004 submission.json
+```
+
+- Sans verbe, `python rain_lab.py experiment` conserve l'ancienne CLI de simulation CIRCLE.
+- Codes de sortie : `0` résultat enregistré (y compris échec/non concluant), `1` problème de
+  vérification ou `RESULTS.md` obsolète, `2` requête refusée, `3` exécution enregistrée en `error`.

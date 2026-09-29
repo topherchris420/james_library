@@ -17,13 +17,17 @@ what is supported, what remains contested, and what to investigate next.
 
 **Inference is not evidence. Evidence is not permission. Confidence is not authority.**
 
-The Research Panel helps frame an investigation. A separate
-[reviewed experiment workflow](docs/research-workflow.md) now carries a simulated
-claim through deterministic checks, explicit local authorization, execution,
-observations and a reproducible evidence bundle. A unified Research Registry
-and executable papers remain goals, not completed capabilities.
+**R.A.I.N. turns a research claim into a pre-registered experiment, runs it, and keeps what actually happened, including when the claim fails.**
 
-**[Try the browser interface](https://rainlabteam.vercel.app/)** · **[Run locally](#try-rain-lab)** · [See an example](#see-it-work) · [Documentation](docs/README.md)
+The Research Panel helps frame an investigation. [R.A.I.N. Experiments](EXPERIMENTS.md)
+make the claim answerable. Success and failure criteria are registered before
+the run. Host code measures, evaluates and records provenance. Every outcome,
+whether passed, failed, inconclusive or error, is published to
+[RESULTS.md](RESULTS.md). A model never decides the status. A separate
+[reviewed experiment workflow](docs/research-workflow.md) adds explicit human
+authorization for simulated CIRCLE trials. Executable papers remain a goal.
+
+**[Try the browser interface](https://rainlabteam.vercel.app/)** · **[Run locally](#try-rain-lab)** · **[Experimental results](RESULTS.md)** · [See an example](#see-it-work) · [Documentation](docs/README.md)
 
 [![Tests](https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/topherchris420/james_library/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -138,6 +142,33 @@ are separate from ordinary chat.
 <a id="see-it-in-action"></a>
 
 ## See it work
+
+### Run an experiment and keep the evidence
+
+After [Python dependency setup](#try-rain-lab):
+
+```bash
+python rain_lab.py experiment list
+python rain_lab.py experiment run V3D-EXP-0002
+python rain_lab.py experiment show V3D-EXP-0002
+python rain_lab.py experiment reproduce V3D-EXP-0002
+```
+
+The first recorded runs (2026-09-29) measured the quote-grounding gate that
+chat, the offline demo and the MCP server share. These values come from the
+recorded run records:
+
+| Experiment | Pre-registered claim | Observed | Result |
+| --- | --- | --- | --- |
+| V3D-EXP-0001 | Verbatim quotes verify; fabricated variants do not | 60/60 verbatim accepted, 0/180 fabricated accepted | PASSED, reproduced |
+| V3D-EXP-0002 | Quotes still verify after curly quotes and dashes become ASCII | 0/50 accepted; all 50 unmodified controls accepted | **FAILED**, reproduced |
+| V3D-EXP-0003 | CIRCLE analysis detects a real simulated effect and rarely supports a null one | Detection 0.99; false support 0.00 (200 trials each) | PASSED, simulated |
+
+V3D-EXP-0002 is a negative result. A faithful quote whose typography was
+normalized is currently marked ungrounded. It stays on the record. The
+current state of every experiment is in [RESULTS.md](RESULTS.md), and
+[EXPERIMENTS.md](EXPERIMENTS.md) shows how to add one or report runs from
+another repository.
 
 ### From proposal to observed evidence
 
@@ -275,7 +306,8 @@ successful Jev evaluation. See [typed judgment](docs/typed-judgment.md).
 | Core research experience | [`rain_lab.py`](rain_lab.py) launches the offline demo or model-backed meetings. [`rain_lab_meeting_chat_version.py`](rain_lab_meeting_chat_version.py) implements chat, grounding, and session recording. |
 | Optional workflow proposals | [`james_library/judgment/`](james_library/judgment/) routes bounded choices through local Laya and, with consent, remote Jev. Host prechecks and final validation retain authority. |
 | Separate claim promotion | `judge --evidence` evaluates a curated packet under the fixed promotion policy. It is distinct from Laya workflow routing. |
-| Experiments and evidence | [`experiment_protocol/`](james_library/services/experiment_protocol/) keeps the existing manifest, result, analysis and provenance contracts. The reviewed workflow adds explicit plan approval and strict simulated result ingestion. |
+| Experiment registry | [`james_library/experiments/`](james_library/experiments/) pre-registers `V3D-EXP-NNNN` experiments in [`experiments/`](experiments/), runs builtin runners, admits external submissions, evaluates criteria deterministically, and generates [RESULTS.md](RESULTS.md). See [EXPERIMENTS.md](EXPERIMENTS.md). |
+| CIRCLE experiments and evidence | [`experiment_protocol/`](james_library/services/experiment_protocol/) keeps the existing manifest, result, analysis and provenance contracts. The reviewed workflow adds explicit plan approval and strict simulated result ingestion. |
 | Runtime and extensions | [`src/`](src/) contains the Rust `rain` runtime: providers, tools, channels, security, and Rig. [`crates/`](crates/) contains satellite crates. No Rust build is needed for the offline demo or Python chat. |
 
 ### What is implemented today
@@ -284,9 +316,10 @@ successful Jev evaluation. See [typed judgment](docs/typed-judgment.md).
 | --- | --- |
 | Question → discussion → grounded session record | Implemented in the Research Panel. |
 | Claim → proposal → validation → authorization → simulation → observation → evidence | Implemented in the separate reviewed experiment workflow. |
-| External experiment admission | Strict existing v1 simulated manifest/result contracts; no general environment adapters. |
-| Evidence queries and reproduction | One bundle at a time through `research inspect`; measurements and deterministic statistics, not physical replication. |
-| Research Registry | Partial: linked files and provenance bundles, without a unified claim index. |
+| Claim → pre-registered criteria → run → measurement → evaluation → record → RESULTS.md | Implemented in the experiment registry (`python rain_lab.py experiment`). |
+| External experiment admission | Generic `rain-experiment-submission/v1` JSON for registered external experiments; the host evaluates, never the producer. The CIRCLE workflow keeps its strict v1 simulated contracts. |
+| Evidence queries and reproduction | `experiment show`, `compare`, `reproduce` and `verify` over the registry; `research inspect` for CIRCLE bundles. Seeded replay, not physical replication. |
+| Research Registry | Experiments and runs are indexed in `experiments/`. Chat session artifacts and CIRCLE bundles remain separate files, with no unified claim index. |
 | Executable papers / research-query MCP | Planned. |
 
 ### Optional Laya / Jev routing
@@ -334,10 +367,12 @@ are documented in [bounded decisions](docs/bounded-decisions.md).
 
 Research bundles preserve the question, hypothesis, preregistered method,
 proposal, approval, observations, code revision, seed, limitations and conclusion.
-The file-based registry is deliberately small: external systems exchange the
-existing JSON contracts; they do not need to import the runtime. The current
-interface supports only simulated CIRCLE-style data. See the
+CIRCLE bundles use the existing JSON contracts and admit only simulated
+CIRCLE-style data. See the
 [record format and trust boundary](docs/research-workflow.md#external-experiment-interface).
+The general [experiment registry](EXPERIMENTS.md) keeps one JSON record per run,
+covering definition snapshot, measurements, evaluation, provenance and artifact
+hashes. It never overwrites a run.
 
 The record is part of the result. Chat writes JSON artifacts under
 `meeting_archives/session_artifacts/`: turns, verified evidence spans,
@@ -400,6 +435,7 @@ contain private material; inspect them before sharing.
 - A citation match proves that a source supports a conclusion.
 - A model judgment, `PASS`, or a satisfiable formula verifies a scientific theory.
 - A simulation or predicted brain response is a physical measurement.
+- A `PASSED` experiment proves more than its pre-registered criteria under its recorded conditions.
 - Every mode passes through the same validation and human-approval gate.
 
 These distinctions let you decide which parts of a result deserve further work.

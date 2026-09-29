@@ -2,6 +2,8 @@
 
 [Эксперименты после проверки и доказательства (симуляция и план реестра, на английском)](docs/research-workflow.md)
 
+[Эксперименты R.A.I.N.: реестр, запуски и записанные результаты (на английском)](EXPERIMENTS.md) · [результаты](RESULTS.md)
+
 <p align="center">
   <a href="https://github.com/topherchris420/james_library/actions/workflows/ci.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/topherchris420/james_library/actions/workflows/tests.yml"><img src="https://github.com/topherchris420/james_library/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests" /></a>

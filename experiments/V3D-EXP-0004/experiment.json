@@ -1,0 +1,178 @@
+{
+  "created_at": "2026-09-29T01:58:44.556Z",
+  "created_by": "R.A.I.N.Operator",
+  "criteria": {
+    "failure": [
+      {
+        "id": "F1",
+        "metric": "calibration_accuracy_gain_pp",
+        "op": "<",
+        "value": 2
+      },
+      {
+        "id": "F2",
+        "metric": "deaths_per_run_change",
+        "op": ">",
+        "value": 0.5
+      }
+    ],
+    "guards": [
+      {
+        "id": "G1",
+        "metric": "runs_per_group_min",
+        "op": ">=",
+        "value": 20
+      }
+    ],
+    "success": [
+      {
+        "id": "S1",
+        "metric": "calibration_accuracy_gain_pp",
+        "op": ">=",
+        "value": 10
+      },
+      {
+        "id": "S2",
+        "metric": "deaths_per_run_change",
+        "op": "<=",
+        "value": 0
+      }
+    ]
+  },
+  "data_policy": {
+    "classification": "internal",
+    "store_artifacts": false
+  },
+  "dependencies": [],
+  "evidence_class": "measured",
+  "experiment_id": "V3D-EXP-0004",
+  "experiment_version": 1,
+  "hypothesis": "Across at least 20 runs per group, calibrated Jev improves shot accuracy over the Jev baseline by at least 10 percentage points without increasing deaths per run.",
+  "limitations": [
+    "Planned: nothing has been measured. Thresholds are a draft pre-registration.",
+    "Human-baseline runs may contain behavioural data; only aggregate metrics and artifact hashes are admitted.",
+    "Game-engine parity between human and agent inputs must be verified in the producing repository; the host cannot check it."
+  ],
+  "metrics": [
+    {
+      "description": "Smallest number of completed runs in any group.",
+      "deterministic": true,
+      "name": "runs_per_group_min",
+      "unit": "count"
+    },
+    {
+      "description": "Shot accuracy, human baseline.",
+      "deterministic": true,
+      "name": "human_baseline_accuracy",
+      "unit": "ratio"
+    },
+    {
+      "description": "Shot accuracy, Jev baseline.",
+      "deterministic": true,
+      "name": "jev_baseline_accuracy",
+      "unit": "ratio"
+    },
+    {
+      "description": "Shot accuracy, calibrated Jev.",
+      "deterministic": true,
+      "name": "jev_calibrated_accuracy",
+      "unit": "ratio"
+    },
+    {
+      "description": "Shot accuracy, human-assisted Jev.",
+      "deterministic": true,
+      "name": "jev_assisted_accuracy",
+      "unit": "ratio"
+    },
+    {
+      "description": "Calibrated minus baseline Jev accuracy, in percentage points.",
+      "deterministic": true,
+      "name": "calibration_accuracy_gain_pp",
+      "unit": "pp"
+    },
+    {
+      "description": "Mean deaths per run, Jev baseline.",
+      "deterministic": true,
+      "name": "jev_baseline_deaths_per_run",
+      "unit": "count"
+    },
+    {
+      "description": "Mean deaths per run, calibrated Jev.",
+      "deterministic": true,
+      "name": "jev_calibrated_deaths_per_run",
+      "unit": "count"
+    },
+    {
+      "description": "Calibrated minus baseline deaths per run.",
+      "deterministic": true,
+      "name": "deaths_per_run_change",
+      "unit": "count"
+    },
+    {
+      "description": "Median Jev decision latency, calibrated.",
+      "deterministic": false,
+      "name": "jev_calibrated_median_decision_latency_ms",
+      "unit": "ms"
+    },
+    {
+      "description": "Median human reaction latency.",
+      "deterministic": false,
+      "name": "human_median_reaction_latency_ms",
+      "unit": "ms"
+    }
+  ],
+  "parameters": {
+    "groups": [
+      "human_baseline",
+      "jev_baseline",
+      "jev_calibrated",
+      "jev_human_assisted"
+    ],
+    "min_runs_per_group": 20
+  },
+  "procedure": [
+    "In satellite-vision-scape, run each comparison group under identical controls, physics, perception limits and weapon mechanics.",
+    "Record per-run metrics and per-shot/per-decision series; store replays and decision traces locally and report only their SHA-256.",
+    "Emit one rain-experiment-submission/v1 JSON per calibration cycle with aggregate measurements and Jev model identity/latency/validation.",
+    "Admit it with `python rain_lab.py experiment record V3D-EXP-0004 submission.json`; the host evaluates the criteria."
+  ],
+  "question": "Can an AI agent operating under the same controls, physics, perception constraints and weapon mechanics as a human improve measurable performance through repeated calibrated runs?",
+  "rationale": "Flagship external experiment. Draft pre-registration: thresholds must be reviewed (and experiment_version bumped if changed) before the first run is recorded. Comparison groups: human baseline, Jev baseline, calibrated Jev, human-assisted Jev.",
+  "runner": {
+    "adapter": "rain experiment submission (rain-experiment-submission/v1)",
+    "kind": "external",
+    "repository": "topherchris420/satellite-vision-scape"
+  },
+  "schema_version": "rain-experiment/v1",
+  "seed": null,
+  "subsystem": {
+    "component": "Jev agent under game controls",
+    "paths": [],
+    "repository": "topherchris420/satellite-vision-scape"
+  },
+  "title": "Satellite Vision Scape: does calibration improve Jev under human-equivalent constraints?",
+  "variables": {
+    "controls": [
+      "same build and map seed across groups",
+      "same input rate limits and perception constraints for agent and human"
+    ],
+    "dependent": [
+      "shot accuracy",
+      "hits",
+      "misses",
+      "reaction latency",
+      "target acquisition time",
+      "mission completion time",
+      "deaths",
+      "damage taken",
+      "path efficiency",
+      "control corrections",
+      "decision latency",
+      "run-to-run variance"
+    ],
+    "independent": [
+      "agent group (human, Jev baseline, calibrated Jev, human-assisted Jev)",
+      "calibration cycle"
+    ]
+  }
+}

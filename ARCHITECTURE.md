@@ -12,10 +12,19 @@ execution and a companion research record. `ingestion.py` validates external
 v1 simulated results without executing or fetching their references.
 
 Laya/Jev routing produces bounded proposals. It does not authorize experiments
-or bypass the deterministic host checks. Session artifacts and experiment bundles
-are separate file records; a unified Research Registry is planned. See the
+or bypass the deterministic host checks. See the
 [research workflow](docs/research-workflow.md) for implemented boundaries,
 reproduction commands and the evidence-versus-authority distinction.
+
+The experiment registry (`james_library/experiments/`, data in `experiments/`)
+is the general claim-to-evidence loop. An experiment definition pre-registers
+its metrics and criteria. A builtin runner from the `runners` factory, or an
+external repository's submission, supplies measurements only. `evaluate.py`
+alone assigns `passed`/`failed`/`inconclusive`. An execution error is recorded
+as `error`. `verify` re-derives every stored result, and `RESULTS.md` is
+generated from the records. Session artifacts, CIRCLE bundles and registry runs
+remain separate file records, with no unified claim index. See
+[EXPERIMENTS.md](EXPERIMENTS.md).
 
 ## High-level flow
 

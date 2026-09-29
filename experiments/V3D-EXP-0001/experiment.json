@@ -1,0 +1,198 @@
+{
+  "created_at": "2026-09-29T01:58:44.029Z",
+  "created_by": "R.A.I.N.Operator",
+  "criteria": {
+    "failure": [
+      {
+        "id": "F1",
+        "metric": "fabricated_acceptance_rate",
+        "op": ">",
+        "value": 0.05
+      },
+      {
+        "id": "F2",
+        "metric": "verbatim_acceptance_rate",
+        "op": "<",
+        "value": 0.95
+      },
+      {
+        "id": "F3",
+        "metric": "short_fragment_acceptance_rate",
+        "op": ">",
+        "value": 0
+      }
+    ],
+    "guards": [
+      {
+        "id": "G1",
+        "metric": "verbatim_cases",
+        "op": ">=",
+        "value": 50
+      },
+      {
+        "id": "G2",
+        "metric": "fabricated_cases",
+        "op": ">=",
+        "value": 150
+      }
+    ],
+    "success": [
+      {
+        "id": "S1",
+        "metric": "verbatim_acceptance_rate",
+        "op": ">=",
+        "value": 0.99
+      },
+      {
+        "id": "S2",
+        "metric": "reformatted_acceptance_rate",
+        "op": ">=",
+        "value": 0.99
+      },
+      {
+        "id": "S3",
+        "metric": "fabricated_acceptance_rate",
+        "op": "<=",
+        "value": 0.01
+      }
+    ]
+  },
+  "data_policy": {
+    "classification": "public",
+    "store_artifacts": true
+  },
+  "dependencies": [],
+  "evidence_class": "measured",
+  "experiment_id": "V3D-EXP-0001",
+  "experiment_version": 1,
+  "hypothesis": "On seeded 8-20 word windows from papers/, verify_quote accepts at least 99% of verbatim and case/whitespace-reformatted quotes and at most 1% of fabricated variants (one word substituted, two adjacent words swapped, or halves spliced from two papers); fragments shorter than three words are never accepted.",
+  "limitations": [
+    "Measures exact-span grounding only. Semantic support (whether the passage supports the claim) is not tested.",
+    "Fabrications are minimal synthetic perturbations of real text, not quotes written by a model.",
+    "The corpus is the repository's papers/ snapshot; results may differ on other corpora.",
+    "The oracle encodes the documented contract; agreement shows conformance to that contract, not that the contract is the right one."
+  ],
+  "metrics": [
+    {
+      "description": "Number of verbatim windows tested.",
+      "deterministic": true,
+      "name": "verbatim_cases",
+      "unit": "count"
+    },
+    {
+      "description": "Share of verbatim windows accepted.",
+      "deterministic": true,
+      "name": "verbatim_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Share of case/whitespace-reformatted windows accepted (contract says they should be).",
+      "deterministic": true,
+      "name": "reformatted_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Substituted + swapped + spliced cases the oracle confirms are absent from the corpus.",
+      "deterministic": true,
+      "name": "fabricated_cases",
+      "unit": "count"
+    },
+    {
+      "description": "False-accept rate over all fabricated cases.",
+      "deterministic": true,
+      "name": "fabricated_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "False-accept rate for one-word substitutions.",
+      "deterministic": true,
+      "name": "substituted_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "False-accept rate for adjacent-word swaps.",
+      "deterministic": true,
+      "name": "swapped_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "False-accept rate for cross-paper splices.",
+      "deterministic": true,
+      "name": "spliced_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Acceptance of two-word fragments (contract: never).",
+      "deterministic": true,
+      "name": "short_fragment_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Perturbed cases that the oracle found verbatim in the corpus.",
+      "deterministic": true,
+      "name": "relabeled_cases",
+      "unit": "count"
+    },
+    {
+      "description": "Cases where verify_quote disagreed with the contract oracle.",
+      "deterministic": true,
+      "name": "oracle_disagreements",
+      "unit": "count"
+    },
+    {
+      "description": "Share of accepted verbatim quotes attributed to the paper they were sampled from.",
+      "deterministic": true,
+      "name": "source_attribution_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Median wall time of one verify_quote call.",
+      "deterministic": false,
+      "name": "median_verify_latency_ms",
+      "unit": "ms"
+    }
+  ],
+  "parameters": {
+    "corpus_dir": "papers",
+    "max_words": 20,
+    "min_words": 8,
+    "quotes": 60
+  },
+  "procedure": [
+    "Load the non-recursive citation corpus from papers/ with discover_corpus_files and hash every file.",
+    "With the seed, sample 60 windows of 8-20 whitespace tokens from papers longer than 22 tokens.",
+    "For each window build: verbatim text; random case + mixed whitespace reformatting; one interior word replaced by a word from another paper; two adjacent differing words swapped; first half spliced to a window from another paper; the first two words alone.",
+    "Label each case with an independent oracle implementing the documented contract (collapsed-whitespace, lowercased substring of one file; <3 words never). Perturbed cases the oracle finds in the corpus are relabelled genuine and excluded from the fabricated set.",
+    "Call verify_quote on every case, timing each call, and store the full case table as an artifact."
+  ],
+  "question": "Does verify_quote, the quote-grounding gate used by chat, the offline demo and the MCP server, accept verbatim corpus quotes and reject minimally corrupted ones?",
+  "rationale": "README states that a verified quote means the text occurs in a source. Every grounded/ungrounded label shown to users depends on this gate, so its false-accept and false-reject rates should be measured rather than assumed.",
+  "runner": {
+    "kind": "builtin",
+    "name": "citation-discrimination"
+  },
+  "schema_version": "rain-experiment/v1",
+  "seed": 20260929,
+  "subsystem": {
+    "component": "citation gate (verify_quote)",
+    "paths": [
+      "james_library/utilities/citation_corpus.py"
+    ],
+    "repository": "topherchris420/james_library"
+  },
+  "title": "Citation gate rejects fabricated quotes and accepts verbatim ones",
+  "variables": {
+    "controls": [
+      "fixed corpus snapshot (hashed)",
+      "fixed seed",
+      "oracle-labelled ground truth"
+    ],
+    "dependent": [
+      "acceptance by verify_quote",
+      "call latency"
+    ],
+    "independent": [
+      "quote construction class"
+    ]
+  }
+}

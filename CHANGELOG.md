@@ -4,6 +4,7 @@
 
 ### Added
 
+- R.A.I.N. Experiments: `python rain_lab.py experiment {create,list,show,run,reproduce,compare,verify,record,results}` pre-registers `V3D-EXP-NNNN` experiments (IDs never reused), runs builtin runners or admits external `rain-experiment-submission/v1` runs, evaluates pre-registered criteria deterministically (`passed`/`failed`/`inconclusive`, with `error` kept distinct), preserves every run with provenance and artifact hashes, and generates `RESULTS.md`. Contracts live in `james_library/contracts/experiments/`. First recorded results: V3D-EXP-0001 passed, V3D-EXP-0002 failed (the quote gate rejects typographically normalized genuine quotes) and V3D-EXP-0003 passed (simulated). V3D-EXP-0004 (Satellite Vision Scape + Jev) is planned. `experiment` with no verb keeps the legacy CIRCLE CLI. See `EXPERIMENTS.md`
 - R.A.I.N. Rig (optional, opt-in): `rain rig status|doctor|models|capabilities|peers|setup|up|send|receive|radio` turns the runtime into a self-contained local research node. Discovery probes only loopback/private-network endpoints and reuses the existing `llamacpp` (`llama.cpp`), `ollama` and `lmstudio` providers; `[rig]` adds built-in `local`/`node`/`field` profiles, a privacy-safe node identity, and `privacy = "local"`, which makes provider construction refuse hosted inference (including fallbacks and model routes) instead of falling back. Includes:
   - a strict action boundary with a disposition log;
   - a restricted inbound message layer;

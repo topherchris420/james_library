@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/contracts/experiments/submission.schema.json",
+  "title": "R.A.I.N. External Experiment Run Submission v1",
+  "description": "What another repository reports for one run of a registered external experiment. There is deliberately no status or verdict field: the host evaluates the pre-registered criteria against these measurements. Artifacts are referenced by hash; nothing is fetched.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "experiment_version",
+    "evidence_class",
+    "started_at",
+    "finished_at",
+    "seed",
+    "parameters",
+    "inputs",
+    "measurements",
+    "series",
+    "observations",
+    "limitations",
+    "artifacts",
+    "models",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {"const": "rain-experiment-submission/v1"},
+    "experiment_id": {"type": "string", "pattern": "^V3D-EXP-[0-9]{4,}$"},
+    "experiment_version": {"type": "integer", "minimum": 1},
+    "evidence_class": {"enum": ["measured", "simulated", "model_inferred"]},
+    "started_at": {"type": "string", "minLength": 20, "maxLength": 40},
+    "finished_at": {"type": "string", "minLength": 20, "maxLength": 40},
+    "seed": {"type": ["integer", "null"], "minimum": 0, "maximum": 4294967295},
+    "parameters": {"type": "object"},
+    "inputs": {"type": "object"},
+    "measurements": {
+      "type": "object",
+      "maxProperties": 256,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,63}$"},
+      "additionalProperties": {"type": ["number", "null"]}
+    },
+    "series": {
+      "description": "Repeated observations (for example per-attempt latency). The host computes summary statistics.",
+      "type": "object",
+      "maxProperties": 64,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9_]{0,63}$"},
+      "additionalProperties": {"type": "array", "maxItems": 100000, "items": {"type": "number"}}
+    },
+    "observations": {"type": "array", "maxItems": 100, "items": {"type": "string", "maxLength": 2000}},
+    "limitations": {"type": "array", "maxItems": 100, "items": {"type": "string", "minLength": 1, "maxLength": 2000}},
+    "artifacts": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "sha256", "bytes", "kind"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "kind": {"type": "string", "maxLength": 64},
+          "uri": {"description": "Opaque locator kept for humans; never opened by the host.", "type": "string", "maxLength": 500}
+        }
+      }
+    },
+    "models": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/model"}},
+    "provenance": {
+      "type": "object",
+      "required": ["producer", "repository", "commit"],
+      "properties": {
+        "producer": {"type": "string", "maxLength": 200},
+        "repository": {"type": "string", "maxLength": 200},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{7,64}$"},
+        "branch": {"type": "string", "maxLength": 200},
+        "dirty": {"type": "boolean"},
+        "environment": {"type": "object"}
+      }
+    },
+    "model_interpretation": {
+      "description": "Optional model-written reading of the results. Stored separately and never used in evaluation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "text"],
+      "properties": {
+        "model": {"type": "string", "maxLength": 200},
+        "text": {"type": "string", "minLength": 1, "maxLength": 8000}
+      }
+    },
+    "error": {
+      "description": "Present when the external run could not execute. The host records status 'error', which is distinct from a failed hypothesis.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stage", "type", "message"],
+      "properties": {
+        "stage": {"type": "string", "maxLength": 64},
+        "type": {"type": "string", "maxLength": 128},
+        "message": {"type": "string", "maxLength": 2000}
+      }
+    }
+  },
+  "$defs": {
+    "model": {
+      "description": "Identity and behavior of a model-backed component (for example Jev) during the run.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "name"],
+      "properties": {
+        "role": {"type": "string", "maxLength": 64},
+        "name": {"type": "string", "maxLength": 200},
+        "provider": {"type": "string", "maxLength": 200},
+        "version": {"type": "string", "maxLength": 200},
+        "request_config": {"type": "object"},
+        "calls": {"type": "integer", "minimum": 0},
+        "latency_ms": {"type": "array", "maxItems": 100000, "items": {"type": "number"}},
+        "validation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["passed", "failed"],
+          "properties": {
+            "passed": {"type": "integer", "minimum": 0},
+            "failed": {"type": "integer", "minimum": 0}
+          }
+        },
+        "decision_trace_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

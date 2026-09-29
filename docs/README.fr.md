@@ -2,6 +2,8 @@
 
 [Expériences examinées et preuves (simulation disponible et feuille de route du registre, en anglais)](research-workflow.md)
 
+[Expériences R.A.I.N. : registre, exécutions et résultats enregistrés (en anglais)](../EXPERIMENTS.md) · [résultats](../RESULTS.md)
+
 Point d’entrée français pour la documentation orientée tâches.
 
 ## Hubs de langue

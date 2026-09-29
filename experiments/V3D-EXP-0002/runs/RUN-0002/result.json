@@ -1,0 +1,539 @@
+{
+  "artifacts": [
+    {
+      "bytes": 20256,
+      "kind": "case_table",
+      "name": "cases.json",
+      "note": null,
+      "sha256": "163ecdc3301dda0ffaa0ac3c27033cb96a31f7b6018faab79bc39149fd16935f",
+      "stored": true
+    }
+  ],
+  "definition": {
+    "created_at": "2026-09-29T01:58:44.190Z",
+    "created_by": "R.A.I.N.Operator",
+    "criteria": {
+      "failure": [
+        {
+          "id": "F1",
+          "metric": "typographic_variant_acceptance_rate",
+          "op": "<",
+          "value": 0.5
+        }
+      ],
+      "guards": [
+        {
+          "id": "G1",
+          "metric": "typographic_cases",
+          "op": ">=",
+          "value": 40
+        },
+        {
+          "id": "G2",
+          "metric": "control_acceptance_rate",
+          "op": ">=",
+          "value": 0.99
+        }
+      ],
+      "success": [
+        {
+          "id": "S1",
+          "metric": "typographic_variant_acceptance_rate",
+          "op": ">=",
+          "value": 0.95
+        }
+      ]
+    },
+    "data_policy": {
+      "classification": "public",
+      "store_artifacts": true
+    },
+    "dependencies": [],
+    "evidence_class": "measured",
+    "experiment_id": "V3D-EXP-0002",
+    "experiment_version": 1,
+    "hypothesis": "At least 95% of genuine 8-20 word quotes containing curly quotes/apostrophes or en/em dashes still verify after those characters are folded to ASCII (' \" -).",
+    "limitations": [
+      "Only quote-mark and dash folding is tested; ellipses, ligatures, non-breaking spaces and Unicode normalization forms are not.",
+      "Whether the gate should tolerate typography is a product decision; this measures behaviour, it does not decide policy.",
+      "The corpus is the repository's papers/ snapshot."
+    ],
+    "metrics": [
+      {
+        "description": "Windows tested after exclusions.",
+        "deterministic": true,
+        "name": "typographic_cases",
+        "unit": "count"
+      },
+      {
+        "description": "Unmodified windows accepted (design check).",
+        "deterministic": true,
+        "name": "control_acceptance_rate",
+        "unit": "ratio"
+      },
+      {
+        "description": "Fully ASCII-folded windows accepted.",
+        "deterministic": true,
+        "name": "typographic_variant_acceptance_rate",
+        "unit": "ratio"
+      },
+      {
+        "description": "Windows with curly quotes accepted after folding quotes only.",
+        "deterministic": true,
+        "name": "quote_mark_variant_acceptance_rate",
+        "unit": "ratio"
+      },
+      {
+        "description": "Windows containing curly quotes.",
+        "deterministic": true,
+        "name": "quote_mark_cases",
+        "unit": "count"
+      },
+      {
+        "description": "Windows with en/em dashes accepted after folding dashes only.",
+        "deterministic": true,
+        "name": "dash_variant_acceptance_rate",
+        "unit": "ratio"
+      },
+      {
+        "description": "Windows containing en/em dashes.",
+        "deterministic": true,
+        "name": "dash_cases",
+        "unit": "count"
+      },
+      {
+        "description": "Windows skipped because the folded text already exists in the corpus.",
+        "deterministic": true,
+        "name": "excluded_ascii_form_present",
+        "unit": "count"
+      },
+      {
+        "description": "Median wall time of one verify_quote call.",
+        "deterministic": false,
+        "name": "median_verify_latency_ms",
+        "unit": "ms"
+      }
+    ],
+    "parameters": {
+      "corpus_dir": "papers",
+      "max_words": 20,
+      "min_words": 8,
+      "quotes": 50
+    },
+    "procedure": [
+      "Load and hash the papers/ corpus as in V3D-EXP-0001.",
+      "Find every token containing a curly quote/apostrophe or en/em dash; with the seed, sample up to 50 distinct 8-20 word windows around them.",
+      "Exclude windows whose ASCII-folded form already occurs verbatim somewhere in the corpus (counted).",
+      "Verify the unmodified window (control), the fully folded window, and quote-only / dash-only folded variants.",
+      "Store the full case table as an artifact."
+    ],
+    "question": "Does verify_quote still accept a genuine quote when only its typography differs from the source, as happens when a model straightens curly quotes or writes hyphens for dashes?",
+    "rationale": "Models commonly normalize typography when reproducing text. If the gate rejects such quotes, faithful citations are shown as ungrounded (false negatives), which erodes trust in the grounding label.",
+    "runner": {
+      "kind": "builtin",
+      "name": "citation-typography"
+    },
+    "schema_version": "rain-experiment/v1",
+    "seed": 20260929,
+    "subsystem": {
+      "component": "citation gate (verify_quote)",
+      "paths": [
+        "james_library/utilities/citation_corpus.py"
+      ],
+      "repository": "topherchris420/james_library"
+    },
+    "title": "Citation gate tolerates typographic normalization of genuine quotes",
+    "variables": {
+      "controls": [
+        "unmodified window must verify",
+        "fixed corpus snapshot",
+        "fixed seed"
+      ],
+      "dependent": [
+        "acceptance by verify_quote"
+      ],
+      "independent": [
+        "typographic folding (none, quotes, dashes, all)"
+      ]
+    }
+  },
+  "definition_sha256": "4ae6ece62ff6f96663766f8d09c47b1b4c5bcd03249ea32676d262d02f5ac521",
+  "duration_ms": 5937.125,
+  "error": null,
+  "evaluation": {
+    "failure": [
+      {
+        "holds": true,
+        "id": "F1",
+        "metric": "typographic_variant_acceptance_rate",
+        "observed": 0.0,
+        "op": "<",
+        "value": 0.5
+      }
+    ],
+    "guards": [
+      {
+        "holds": true,
+        "id": "G1",
+        "metric": "typographic_cases",
+        "observed": 50,
+        "op": ">=",
+        "value": 40
+      },
+      {
+        "holds": true,
+        "id": "G2",
+        "metric": "control_acceptance_rate",
+        "observed": 1.0,
+        "op": ">=",
+        "value": 0.99
+      }
+    ],
+    "rule": "rain-criteria/v1",
+    "success": [
+      {
+        "holds": false,
+        "id": "S1",
+        "metric": "typographic_variant_acceptance_rate",
+        "observed": 0.0,
+        "op": ">=",
+        "value": 0.95
+      }
+    ],
+    "summary": "Failure criterion triggered: F1. The hypothesis is not supported."
+  },
+  "evidence_class": "measured",
+  "experiment_id": "V3D-EXP-0002",
+  "finished_at": "2026-09-29T01:59:41.735Z",
+  "hypothesis_verdict": "not_supported",
+  "inputs": {
+    "corpus_bytes": 392095,
+    "corpus_dir": "papers",
+    "corpus_files": [
+      {
+        "path": "Bidirectional Spiral Interference.md",
+        "sha256": "c87b97158051a9d926fafb5a58f3f99cfccf726f5ee0f0d8a8957250e044d68b"
+      },
+      {
+        "path": "Bounding the Scalar Coupling Constant.md",
+        "sha256": "c3132881a476ea73d58bc89dec681178b319a7da042f9f7f857319e5c32287bd"
+      },
+      {
+        "path": "Coherence Depth.md",
+        "sha256": "84aaa4e9ebf7ca797d0feeac7396a0ab1e0a673b9e1c35d1f38906e025c50596"
+      },
+      {
+        "path": "Dynamic Resonance Rooting (Friction Mechanism).md",
+        "sha256": "2f441329852bcbd0e8e2ea6756475b9eac0b49ee644b98a55636907d0e352cf0"
+      },
+      {
+        "path": "Dynamic Resonance Rooting.md",
+        "sha256": "f34bf5c23db820e84ea959169ead030c1e0cd2c92a40b7c1e587eb1ebb2facd6"
+      },
+      {
+        "path": "Emergent Time and Quantum Correlations.md",
+        "sha256": "e042a24533a7ba58a999eda724fde19f2c902faf5133dc061e8bd46136127284"
+      },
+      {
+        "path": "Geometric Dynamic Location Theory.md",
+        "sha256": "ab52215311e922c417c2ecc2f6ec91d655e71bb0bae3123aece74c566d53061c"
+      },
+      {
+        "path": "Guarino Industries LLC.md",
+        "sha256": "becb9e52dd59aa8d2040e26b597efb015385966d54aeccfb04bf6232261aee3d"
+      },
+      {
+        "path": "Integrated Plasma Confinement.md",
+        "sha256": "903638bf475060869b48625f681458ce9a14598503c2ef89bd4549ad247452c2"
+      },
+      {
+        "path": "Location is a Dynamic Variable.md",
+        "sha256": "295a4101ffeab4ea9adbbd033708d0153832c28b95d481dcb25cf9dd933e0b1e"
+      },
+      {
+        "path": "Project 33-N.md",
+        "sha256": "a317e6cf3634ca6f24dffc54f67cea6209fe8336eba7c20a517055c1d31fdf4d"
+      },
+      {
+        "path": "Reality Built on a Finite Set of Geometric Instructions.md",
+        "sha256": "e0d7ea645b1958e7248110f1728231065ee2535cdca1e2db6350f863be868ecf"
+      },
+      {
+        "path": "Recursive Resonance Stabilization.md",
+        "sha256": "53a377fc637766a18b4ab2ed07ed547cc568403a1f711e040766269d4ca9d1ef"
+      },
+      {
+        "path": "Resonant Dynamics of Sovereign Debt.md",
+        "sha256": "0748c7f43070ea347062d86383ce9c0a478d196fc251e71cbb93b7d7f4532110"
+      },
+      {
+        "path": "Resonant Intelligence.md",
+        "sha256": "732c235955e815158bc5b90d816bbbef00ff0e20451c24bd0b803a56858677af"
+      },
+      {
+        "path": "System and Method for Active Environmental Modulation.md",
+        "sha256": "221d1f75748a0668552a59a830d2d9eedb7e277f6c3ac805eb6c4dff9608ab49"
+      },
+      {
+        "path": "Temporal Re-Localization via Scalar Resonance.md",
+        "sha256": "07036786bb3d47770c9b0acde3758eb643bfd3dab4c2161087b9bf001792a761"
+      }
+    ]
+  },
+  "interpretation": {
+    "deterministic": "Failure criterion triggered: F1. The hypothesis is not supported. Measured on this code and data; the result is bounded by the listed limitations.",
+    "model": null
+  },
+  "kind": "reproduce",
+  "limitations": [
+    "Only quote-mark and dash folding is tested; ellipses, ligatures, non-breaking spaces and Unicode normalization forms are not.",
+    "Whether the gate should tolerate typography is a product decision; this measures behaviour, it does not decide policy.",
+    "The corpus is the repository's papers/ snapshot.",
+    "Only quote-mark and dash folding is tested; ellipses, ligatures and Unicode normalization forms are not.",
+    "Latency depends on the host machine and load; it is recorded, not evaluated."
+  ],
+  "measurements": {
+    "control_acceptance_rate": 1.0,
+    "dash_cases": 36,
+    "dash_variant_acceptance_rate": 0.0,
+    "excluded_ascii_form_present": 0,
+    "median_verify_latency_ms": 40.058,
+    "quote_mark_cases": 26,
+    "quote_mark_variant_acceptance_rate": 0.0,
+    "typographic_cases": 50,
+    "typographic_variant_acceptance_rate": 0.0
+  },
+  "models": [],
+  "observations": [
+    "743 tokens in the corpus contain curly quotes or en/em dashes."
+  ],
+  "parameters": {
+    "corpus_dir": "papers",
+    "max_words": 20,
+    "min_words": 8,
+    "quotes": 50
+  },
+  "provenance": {
+    "dependencies": {},
+    "environment": {
+      "cpu_count": 4,
+      "machine": "x86_64",
+      "os": "Linux",
+      "os_release": "6.18.44-fc-v37",
+      "python": "3.11.15",
+      "python_implementation": "CPython"
+    },
+    "git": {
+      "branch": "claude/gallant-babbage-0lcc4k",
+      "changed_paths": 0,
+      "commit": "c704cf2bdde72003a1a541f2266e22e06785803d",
+      "dirty": false,
+      "note": null
+    },
+    "recorded_at": "2026-09-29T01:59:35.797Z",
+    "runner": {
+      "name": "citation-typography",
+      "source": "james_library/experiments/runners/citation.py",
+      "source_sha256": "f5fdd1fa37b45615e832739df35f69c0775b6f2ed365399778d84ecb91123dfe",
+      "version": "1"
+    },
+    "source": "local_run",
+    "subject_files": [
+      {
+        "note": null,
+        "path": "james_library/utilities/citation_corpus.py",
+        "sha256": "f04e3be0368bd620fdeadacaec1f751a882cb1c45e62cb2be5d2c34333cbff12"
+      }
+    ]
+  },
+  "reproduces": "V3D-EXP-0002-RUN-0001",
+  "reproduction": {
+    "deterministic_metrics_match": true,
+    "mismatches": [],
+    "outcome_matches": true,
+    "source_run": "V3D-EXP-0002-RUN-0001"
+  },
+  "run_id": "V3D-EXP-0002-RUN-0002",
+  "schema_version": "rain-experiment-run/v1",
+  "seed": 20260929,
+  "series": {
+    "verify_latency_ms": [
+      38.562,
+      37.648,
+      37.154,
+      29.235,
+      49.317,
+      41.764,
+      0.827,
+      40.138,
+      43.678,
+      18.106,
+      40.344,
+      45.447,
+      41.565,
+      42.632,
+      50.699,
+      44.803,
+      0.834,
+      39.129,
+      38.932,
+      32.294,
+      39.545,
+      39.372,
+      3.805,
+      40.808,
+      40.567,
+      40.494,
+      3.704,
+      43.132,
+      40.379,
+      40.284,
+      15.949,
+      41.04,
+      40.853,
+      32.07,
+      42.075,
+      47.69,
+      35.261,
+      41.013,
+      39.902,
+      36.724,
+      41.603,
+      41.492,
+      15.188,
+      56.49,
+      61.407,
+      52.191,
+      41.375,
+      51.587,
+      47.106,
+      0.87,
+      38.705,
+      38.364,
+      30.719,
+      38.429,
+      38.422,
+      3.725,
+      44.022,
+      40.785,
+      30.184,
+      42.25,
+      40.106,
+      39.925,
+      42.008,
+      40.509,
+      38.37,
+      38.189,
+      37.592,
+      31.055,
+      37.21,
+      36.796,
+      34.415,
+      36.736,
+      51.427,
+      10.24,
+      53.593,
+      47.021,
+      11.436,
+      40.167,
+      39.245,
+      45.723,
+      7.257,
+      44.185,
+      56.31,
+      3.717,
+      55.09,
+      43.479,
+      42.971,
+      3.961,
+      46.03,
+      44.601,
+      44.9,
+      35.149,
+      46.115,
+      41.767,
+      35.278,
+      43.961,
+      46.03,
+      4.643,
+      43.085,
+      44.151,
+      42.167,
+      43.029,
+      44.349,
+      46.819,
+      40.058,
+      39.423,
+      13.814,
+      40.124,
+      38.714,
+      40.144,
+      37.234,
+      39.266,
+      38.965,
+      31.775,
+      39.321,
+      40.374,
+      17.426,
+      39.748,
+      40.869,
+      45.781,
+      7.128,
+      39.218,
+      39.622,
+      3.817,
+      40.498,
+      43.518,
+      45.43,
+      0.914,
+      44.649,
+      41.349,
+      41.633,
+      6.837,
+      40.694,
+      40.699,
+      40.108,
+      43.326,
+      42.205,
+      14.664,
+      39.53,
+      39.147,
+      35.92,
+      38.725,
+      38.298,
+      17.599,
+      39.172,
+      39.982,
+      40.394,
+      41.807,
+      41.151,
+      0.843,
+      52.547,
+      44.747,
+      1.531,
+      39.342,
+      38.618,
+      30.855,
+      39.321,
+      39.634,
+      36.853,
+      42.776,
+      39.852,
+      39.846
+    ]
+  },
+  "started_at": "2026-09-29T01:59:35.784Z",
+  "statistics": {
+    "verify_latency_ms": {
+      "max": 61.407,
+      "mean": 36.11932716,
+      "median": 40.02,
+      "min": 0.827,
+      "n": 162,
+      "note": null,
+      "stdev": 13.337440677,
+      "variance": 177.887323824
+    }
+  },
+  "status": "failed"
+}

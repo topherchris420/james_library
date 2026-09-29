@@ -1,0 +1,148 @@
+{
+  "created_at": "2026-09-29T01:58:44.190Z",
+  "created_by": "R.A.I.N.Operator",
+  "criteria": {
+    "failure": [
+      {
+        "id": "F1",
+        "metric": "typographic_variant_acceptance_rate",
+        "op": "<",
+        "value": 0.5
+      }
+    ],
+    "guards": [
+      {
+        "id": "G1",
+        "metric": "typographic_cases",
+        "op": ">=",
+        "value": 40
+      },
+      {
+        "id": "G2",
+        "metric": "control_acceptance_rate",
+        "op": ">=",
+        "value": 0.99
+      }
+    ],
+    "success": [
+      {
+        "id": "S1",
+        "metric": "typographic_variant_acceptance_rate",
+        "op": ">=",
+        "value": 0.95
+      }
+    ]
+  },
+  "data_policy": {
+    "classification": "public",
+    "store_artifacts": true
+  },
+  "dependencies": [],
+  "evidence_class": "measured",
+  "experiment_id": "V3D-EXP-0002",
+  "experiment_version": 1,
+  "hypothesis": "At least 95% of genuine 8-20 word quotes containing curly quotes/apostrophes or en/em dashes still verify after those characters are folded to ASCII (' \" -).",
+  "limitations": [
+    "Only quote-mark and dash folding is tested; ellipses, ligatures, non-breaking spaces and Unicode normalization forms are not.",
+    "Whether the gate should tolerate typography is a product decision; this measures behaviour, it does not decide policy.",
+    "The corpus is the repository's papers/ snapshot."
+  ],
+  "metrics": [
+    {
+      "description": "Windows tested after exclusions.",
+      "deterministic": true,
+      "name": "typographic_cases",
+      "unit": "count"
+    },
+    {
+      "description": "Unmodified windows accepted (design check).",
+      "deterministic": true,
+      "name": "control_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Fully ASCII-folded windows accepted.",
+      "deterministic": true,
+      "name": "typographic_variant_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Windows with curly quotes accepted after folding quotes only.",
+      "deterministic": true,
+      "name": "quote_mark_variant_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Windows containing curly quotes.",
+      "deterministic": true,
+      "name": "quote_mark_cases",
+      "unit": "count"
+    },
+    {
+      "description": "Windows with en/em dashes accepted after folding dashes only.",
+      "deterministic": true,
+      "name": "dash_variant_acceptance_rate",
+      "unit": "ratio"
+    },
+    {
+      "description": "Windows containing en/em dashes.",
+      "deterministic": true,
+      "name": "dash_cases",
+      "unit": "count"
+    },
+    {
+      "description": "Windows skipped because the folded text already exists in the corpus.",
+      "deterministic": true,
+      "name": "excluded_ascii_form_present",
+      "unit": "count"
+    },
+    {
+      "description": "Median wall time of one verify_quote call.",
+      "deterministic": false,
+      "name": "median_verify_latency_ms",
+      "unit": "ms"
+    }
+  ],
+  "parameters": {
+    "corpus_dir": "papers",
+    "max_words": 20,
+    "min_words": 8,
+    "quotes": 50
+  },
+  "procedure": [
+    "Load and hash the papers/ corpus as in V3D-EXP-0001.",
+    "Find every token containing a curly quote/apostrophe or en/em dash; with the seed, sample up to 50 distinct 8-20 word windows around them.",
+    "Exclude windows whose ASCII-folded form already occurs verbatim somewhere in the corpus (counted).",
+    "Verify the unmodified window (control), the fully folded window, and quote-only / dash-only folded variants.",
+    "Store the full case table as an artifact."
+  ],
+  "question": "Does verify_quote still accept a genuine quote when only its typography differs from the source, as happens when a model straightens curly quotes or writes hyphens for dashes?",
+  "rationale": "Models commonly normalize typography when reproducing text. If the gate rejects such quotes, faithful citations are shown as ungrounded (false negatives), which erodes trust in the grounding label.",
+  "runner": {
+    "kind": "builtin",
+    "name": "citation-typography"
+  },
+  "schema_version": "rain-experiment/v1",
+  "seed": 20260929,
+  "subsystem": {
+    "component": "citation gate (verify_quote)",
+    "paths": [
+      "james_library/utilities/citation_corpus.py"
+    ],
+    "repository": "topherchris420/james_library"
+  },
+  "title": "Citation gate tolerates typographic normalization of genuine quotes",
+  "variables": {
+    "controls": [
+      "unmodified window must verify",
+      "fixed corpus snapshot",
+      "fixed seed"
+    ],
+    "dependent": [
+      "acceptance by verify_quote"
+    ],
+    "independent": [
+      "typographic folding (none, quotes, dashes, all)"
+    ]
+  }
+}

@@ -176,9 +176,10 @@ A passed unit test is software evidence, not a physical measurement. The tests i
 | Bounded Laya/Jev routing and typed claim judgment | Implemented, optional, with their own validation/consent boundaries. |
 | Reviewed simulated experiment, evidence bundle and observation replay | Implemented in this workflow. |
 | External v1 simulated result admission | Implemented as a non-executing Python API. |
-| Research Registry | Partial: linked file bundles and session artifacts; no unified cross-session index. |
+| Research Registry | Experiments: implemented as the [experiment registry](../EXPERIMENTS.md) (`V3D-EXP-NNNN`, per-run records, generated `RESULTS.md`). CIRCLE bundles and session artifacts remain separate; no unified claim index. |
 | Claim support / contradiction queries | Partial: `inspect` exposes one bundle's deterministic critique and falsification criteria. |
-| General external environments and authenticated authorization | Planned; current contracts still describe CIRCLE-style simulated experiments. |
+| General external environments | Implemented for the registry: external repositories submit `rain-experiment-submission/v1` runs of registered experiments; the host evaluates. This CIRCLE workflow still admits only its v1 simulated contracts. |
+| Authenticated authorization | Planned. |
 | Executable papers, unified registry search and automatic environment recreation | Planned. No public research-query MCP is claimed. |
 
 Rollback is a normal revert of this feature. Existing bundles remain data files;

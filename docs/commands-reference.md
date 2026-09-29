@@ -110,3 +110,28 @@ rain rig --library PATH <command> # point discovery at a James Library checkout
 ```bash
 python -m james_library.services.experiment_protocol.research --help
 ```
+
+## R.A.I.N. Experiments (registry)
+
+[R.A.I.N. Experiments: registry, runs and recorded results](../EXPERIMENTS.md) · [recorded results](../RESULTS.md).
+
+```bash
+python rain_lab.py experiment list
+python rain_lab.py experiment run V3D-EXP-0001
+python rain_lab.py experiment show V3D-EXP-0001
+python rain_lab.py experiment reproduce V3D-EXP-0001
+python rain_lab.py experiment compare V3D-EXP-0001
+python rain_lab.py experiment verify
+python rain_lab.py experiment results --check
+python rain_lab.py experiment create --help
+python rain_lab.py experiment record V3D-EXP-0004 submission.json
+```
+
+- Registry verbs follow `experiment`; without a verb, `python rain_lab.py experiment`
+  keeps running the legacy CIRCLE simulation flags (`--fixture`, `--verify-bundle`, ...).
+- `python -m james_library.experiments <verb>` is equivalent. `--registry PATH` selects a
+  scratch registry.
+- `run` executes only builtin runners registered in `james_library/experiments/runners/`;
+  external experiments are admitted with `record`, and the host evaluates the criteria.
+- Exit codes: `0` result recorded (including failed/inconclusive), `1` verification problem
+  or stale `RESULTS.md`, `2` refused request, `3` run recorded with status `error`.

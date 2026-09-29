@@ -7,6 +7,8 @@ Last refreshed: **February 18, 2026**.
 ## Research workflow
 
 - [Reviewed experiments, external result admission and evidence replay](research-workflow.md)
+- [R.A.I.N. Experiments: pre-register, run, reproduce, compare, admit external runs](../EXPERIMENTS.md)
+- [Recorded experimental results](../RESULTS.md)
 
 ## Language Entry
 
