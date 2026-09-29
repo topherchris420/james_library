@@ -295,6 +295,19 @@ Suggested practice:
 2. Run from a clean checkout of committed code.
 3. Commit the run records and RESULTS.md.
 
+Parallel branches:
+
+- **`RESULTS.md` conflicts.** It is generated, so resolve a conflict by running
+  `python rain_lab.py experiment results`.
+- **Run collisions.** Two branches that add runs to the same experiment can both create
+  `RUN-000N`. Git reports an add/add conflict, and nothing is silently merged. Keep one side,
+  then re-run the other side's experiment after merging so it gets the next number.
+- **Experiment ID collisions.** Two branches can also pre-register the same next ID. Git
+  surfaces this too. The branch that merges second re-creates its experiment under a new ID
+  with `create --from`, then runs it again, because run records embed their IDs.
+- **Prevention.** Pre-register on the main line first, or in a small dedicated PR, and run
+  experiments afterwards.
+
 Registry files are excluded from the dirty check, so recording one run does not make the
 next one look dirty. A squash merge can drop the recorded commit SHA from `main`. The per-run
 SHA-256 of the files under test and of the runner source still identifies the exact code.
